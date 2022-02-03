@@ -3,5 +3,5 @@
 pragma solidity 0.8.10;
 
 interface IOracle {
-    function read() external view returns(uint256);
+    function read() external view returns (uint256);
 }
