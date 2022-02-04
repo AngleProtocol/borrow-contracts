@@ -110,6 +110,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         // TODO does it open to exploits to have this
         IStableMaster(stableMaster).updateStocksUsers(amount, poolManager);
     }
+
     // TODO version of the function with no updateStocksUsers on poolManager: does it introduce weaknesses?
     function burnStablecoin(uint256 amount) external {
         _burn(msg.sender, amount);

@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/ITreasury.sol";
+import "../interfaces/ITreasurySurplusRecipient.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title Treasury
@@ -28,6 +29,7 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
 
     IAgToken public stablecoin;
     address public surplusManager;
+    address public flashLoanModule;
     uint256 public badDebt;
     // Surplus to be distributed and not yet taken into account, otherwise surplus is taken into account
     // as just the balance in the protocol
@@ -84,13 +86,25 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
         stablecoin.removeMinter(vaultManager);
     }
 
+    function setFlashLoanModule(address _flashLoanModule) external onlyRole(GOVERNOR_ROLE) {
+        address oldFlashLoanModule = flashLoanModule;
+        if (oldFlashLoanModule != address(0)) {
+            stablecoin.removeMinter(oldFlashLoanModule);
+        }
+        // We may want to cancel the module
+        if (_flashLoanModule != address(0)) {
+            stablecoin.addMinter(_flashLoanModule);
+        }
+        flashLoanModule = _flashLoanModule;
+    }
+
     function addMinter(address minter) external onlyRole(GOVERNOR_ROLE) {
         stablecoin.addMinter(minter);
     }
 
     function removeMinter(address minter) external onlyRole(GOVERNOR_ROLE) {
         // If you want to remove the minter role to a vaultManager you have to make sure it no longer has the vaultManager role
-        require(!hasRole(VAULTMANAGER_ROLE,minter));
+        require(!hasRole(VAULTMANAGER_ROLE, minter));
         stablecoin.removeMinter(minter);
     }
 
@@ -142,6 +156,9 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
             surplusBufferValue += newSurplus;
             badDebtValue += newBadDebt;
         }
+        if (flashLoanModule != address(0)) {
+            surplusBufferValue += ITreasurySurplusRecipient(flashLoanModule).accrueInterestToTreasury();
+        }
         (surplusBufferValue, badDebtValue) = _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
     }
 
@@ -158,6 +175,13 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
             surplusBufferValue += newSurplus;
             badDebtValue += newBadDebt;
         }
+        (surplusBufferValue, badDebtValue) = _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
+    }
+
+    function fetchSurplusFromFlashLoan() external returns (uint256 surplusBufferValue, uint256 badDebtValue) {
+        // it will fail if flashLoanModule is 0 address -> no need for a require
+        badDebtValue = badDebt;
+        surplusBufferValue = surplusBuffer + ITreasurySurplusRecipient(flashLoanModule).accrueInterestToTreasury();
         (surplusBufferValue, badDebtValue) = _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
     }
 

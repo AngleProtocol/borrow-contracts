@@ -7,7 +7,7 @@ import "./BaseVaultManager.sol";
 /// @title VaultManager
 /// @author Angle Core Team
 /// @notice One VaultManager implementation of Angle Borrowing Module accounting for a non-rebasing ERC20
-// TODO do we still keep 
+// TODO do we still keep
 contract VaultManager is BaseVaultManager {
     /// @custom:oz-upgrades-unsafe-allow constructor
     // TODO check if still needed with new version of OpenZeppelin initializable contract

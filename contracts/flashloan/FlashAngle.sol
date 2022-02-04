@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/ITreasury.sol";
+import "../interfaces/ITreasurySurplusRecipient.sol";
+
 // OpenZeppelin may update its version of the ERC20PermitUpgradeable token
 
 /// @title FlashAngle
@@ -17,8 +19,7 @@ import "../interfaces/ITreasury.sol";
 /// @dev This contract is used to create and handle the stablecoins of Angle protocol
 /// @dev Only the `StableMaster` contract can mint or burn agTokens
 /// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange
-contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender {
-
+contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender, ITreasurySurplusRecipient {
     uint256 public constant BASE_PARAMS = 10**9;
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
@@ -27,14 +28,13 @@ contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender {
     uint64 public flashLoanFee;
     uint256 public maxBorrowable;
 
-    // Pausable 
+    // Pausable
     // Treasury can rule it and governor can set fees for it
     constructor(ITreasury _treasury, uint64 _flashLoanFee) {
         require(_flashLoanFee <= BASE_PARAMS);
         flashLoanFee = _flashLoanFee;
         treasury = _treasury;
         stablecoin = IAgToken(_treasury.stablecoin());
-
     }
 
     modifier onlyGovernorOrGuardian() {
@@ -70,21 +70,21 @@ contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender {
     }
 
     // --- ERC 3156 Spec ---
-    function flashFee(address token, uint256 amount) external view override returns(uint256) {
-        return _flashFee(token,amount);
+    function flashFee(address token, uint256 amount) external view override returns (uint256) {
+        return _flashFee(token, amount);
     }
 
     function maxFlashLoan(address token) external view override returns (uint256) {
-        if(token == address(stablecoin) && !paused() && stablecoin.isMinter(address(this))) {
+        if (token == address(stablecoin) && !paused() && stablecoin.isMinter(address(this))) {
             return maxBorrowable;
         } else {
             return 0;
         }
     }
 
-    function _flashFee(address token, uint256 amount) internal view returns(uint256) {
+    function _flashFee(address token, uint256 amount) internal view returns (uint256) {
         require(token == address(stablecoin));
-        return amount * flashLoanFee / BASE_PARAMS;
+        return (amount * flashLoanFee) / BASE_PARAMS;
     }
 
     function flashLoan(
@@ -102,11 +102,9 @@ contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender {
         return true;
     }
 
-
-
-
-
-
-
-
+    function accrueInterestToTreasury() external override returns (uint256 balance) {
+        require(msg.sender == address(treasury));
+        balance = stablecoin.balanceOf(address(this));
+        stablecoin.transfer(address(treasury), balance);
+    }
 }

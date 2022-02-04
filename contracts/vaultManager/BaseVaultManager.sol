@@ -67,7 +67,13 @@ struct LiquidatorData {
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
 
 // solhint-disable-next-line max-states-count
-abstract contract BaseVaultManager is Initializable, PausableUpgradeable, ReentrancyGuardUpgradeable, IERC721Metadata, IVaultManager {
+abstract contract BaseVaultManager is
+    Initializable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    IERC721Metadata,
+    IVaultManager
+{
     using SafeERC20 for IERC20;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using Address for address;
@@ -143,7 +149,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, Reentr
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
-        require(address(oracle)!= address(0), "0");
+        require(address(oracle) != address(0), "0");
         treasury = _treasury;
         require(_treasury.isVaultManager(address(this)));
         collateral = IERC20(_collateral);
@@ -508,11 +514,9 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, Reentr
         badDebtEndValue = badDebt;
         // TODO do we still need to do it here if accounting is done in the end in the treasury
         if (surplusCurrentValue >= badDebtEndValue) {
-            surplusCurrentValue -= badDebtEndValue;
             badDebtEndValue = 0;
-            stablecoin.mint(address(treasury), surplusCurrentValue);
+            stablecoin.mint(address(treasury), surplusCurrentValue - badDebtEndValue);
         } else {
-            surplusCurrentValue = 0;
             badDebtEndValue -= surplusCurrentValue;
         }
         surplus = 0;
@@ -575,7 +579,11 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, Reentr
         liqData.newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         for (uint256 i = 0; i < vaultIDs.length; i++) {
             Vault memory vault = vaultData[vaultIDs[i]];
-            LiquidationOpportunity memory liqOpp = _checkLiquidation(vault, liqData.oracleValue, liqData.newInterestRateAccumulator);
+            LiquidationOpportunity memory liqOpp = _checkLiquidation(
+                vault,
+                liqData.oracleValue,
+                liqData.newInterestRateAccumulator
+            );
             // TODO see if the flow works for liquidators or if we should do better
             if (
                 (liqOpp.maxStablecoinAmountToRepay > 0) &&
@@ -642,10 +650,10 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, Reentr
             uint256 maxAmountToRepay = (((targetHealthFactor * currentDebt) /
                 collateralFactor -
                 collateralAmountInStable) * BASE_PARAMS) /
-                ((BASE_PARAMS - liquidationFee) * targetHealthFactor) /
-                collateralFactor -
-                BASE_PARAMS**2 /
-                (BASE_PARAMS - liquidationDiscount);
+                (((BASE_PARAMS - liquidationFee) * targetHealthFactor) /
+                    collateralFactor -
+                    BASE_PARAMS**2 /
+                    (BASE_PARAMS - liquidationDiscount));
             // Now we need to look for extreme cases
             // First with this in mind, we need to check for the dust
             uint256 maxAmountToRepayLessSurcharge = (maxAmountToRepay * (BASE_PARAMS - liquidationFee)) / BASE_PARAMS;
