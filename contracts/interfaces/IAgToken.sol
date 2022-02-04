@@ -19,6 +19,12 @@ interface IAgToken is IERC20Upgradeable {
 
     function burnSelf(uint256 amount, address burner) external;
 
+    function addMinter(address minter) external;
+
+    function removeMinter(address minter) external;
+
+    function isMinter(address minter) external view returns (bool);
+
     // ========================= External function =================================
 
     function stableMaster() external view returns (address);

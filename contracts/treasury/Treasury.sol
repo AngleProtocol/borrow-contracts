@@ -74,6 +74,26 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
         return hasRole(GUARDIAN_ROLE, admin);
     }
 
+    function addVaultManager(address vaultManager) external {
+        grantRole(VAULTMANAGER_ROLE, vaultManager);
+        stablecoin.addMinter(vaultManager);
+    }
+
+    function removeVaultManager(address vaultManager) external {
+        revokeRole(VAULTMANAGER_ROLE, vaultManager);
+        stablecoin.removeMinter(vaultManager);
+    }
+
+    function addMinter(address minter) external onlyRole(GOVERNOR_ROLE) {
+        stablecoin.addMinter(minter);
+    }
+
+    function removeMinter(address minter) external onlyRole(GOVERNOR_ROLE) {
+        // If you want to remove the minter role to a vaultManager you have to make sure it no longer has the vaultManager role
+        require(!hasRole(VAULTMANAGER_ROLE,minter));
+        stablecoin.removeMinter(minter);
+    }
+
     function setSurplusForGovernance(uint64 _surplusForGovernance) external onlyRole(GOVERNOR_ROLE) {
         surplusForGovernance = _surplusForGovernance;
     }

@@ -64,10 +64,10 @@ struct LiquidatorData {
 }
 
 // TODO split in multiple files and leave some space each time for upgradeability -> check how we can leverage libraries this time
-// TODO reentrancy calls here
+// TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
 
 // solhint-disable-next-line max-states-count
-abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC721Metadata, IVaultManager {
+abstract contract BaseVaultManager is Initializable, PausableUpgradeable, ReentrancyGuardUpgradeable, IERC721Metadata, IVaultManager {
     using SafeERC20 for IERC20;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using Address for address;
@@ -143,6 +143,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
+        require(address(oracle)!= address(0), "0");
         treasury = _treasury;
         require(_treasury.isVaultManager(address(this)));
         collateral = IERC20(_collateral);
@@ -259,7 +260,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     function setAddress(address param, bytes32 what) external onlyGovernor {
         if (what == "oracle") oracle = IOracle(param);
         else if (what == "treasury") treasury = ITreasury(param); // TODO check that vaultManager is valid in it and that governor
-        // calling the function is also a new governor in the new one
+        // calling the function is also a new governor in the new one also perform zero check
     }
 
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
@@ -271,7 +272,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         return totalNormalizedDebt * _calculateCurrentInterestRateAccumulator();
     }
 
-    // TODO could increase efficiency by reducing the size of this function's signature
+    // TODO could increase efficiency by reducing the size of this function's signature?
     function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
         // TODO test Aave's solution wrt to Maker solution in terms of gas and how much it costs here
         uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
@@ -325,7 +326,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         address to,
         address who,
         bytes calldata data
-    ) external whenNotPaused onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) external whenNotPaused onlyApprovedOrOwner(msg.sender, vaultID) nonReentrant {
         // TODO check exact data types for what to do with the swap
         // TODO check what happens in other protocols if you come to close but you're about to get liquidated
         // TODO once again here need to check the allowance in the repay with from
@@ -347,11 +348,13 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         bytes calldata data
     ) internal {
         collateral.safeTransfer(to, collateralAmountToGive);
-        // TODO check for which contract we need to be careful -> like do we need to add a reentrancy or to restirct the who address
+        // TODO check for which contract we need to be careful -> like do we need to add a reentrancy or to restrict the who address
         if (data.length > 0 && who != address(stablecoin)) {
+            // TODO do we keep the interface here: Maker has the same, same for Abracadabra -> maybe need to do something different
+            // Like flashloan callee is for sure not the right name to set here given that it's not a flash loan
             IFlashLoanCallee(who).flashLoanCall(from, stableAmountToRepay, collateralAmountToGive, data);
         }
-        stablecoin.burnFrom(stableAmountToRepay, from, address(this));
+        stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
     }
 
     function addCollateral(
@@ -407,11 +410,8 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         address from,
         uint256 newInterestRateAccumulator
     ) internal {
-        // TODO check allowance of the person we are burning from -> might need another interface here: because if allowance given
-        // does not suffice
-        // Change agEUR contract
-        stablecoin.burnFrom(stablecoinAmount, from, address(this));
-        // TODO check dust
+        // TODO Change agEUR contract
+        stablecoin.burnFrom(stablecoinAmount, from, msg.sender);
         _decreaseDebt(vaultID, stablecoinAmount, newInterestRateAccumulator);
     }
 
@@ -533,7 +533,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     */
 
     // For composability of calls
-    function angle(uint8[] calldata actions, bytes[] calldata datas) external payable whenNotPaused {
+    function angle(uint8[] calldata actions, bytes[] calldata datas) external payable whenNotPaused nonReentrant {
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
         for (uint256 i = 0; i < actions.length; i++) {
@@ -568,7 +568,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         address to,
         address who,
         bytes calldata data
-    ) external whenNotPaused {
+    ) external whenNotPaused nonReentrant {
         LiquidatorData memory liqData;
         require(vaultIDs.length == amounts.length);
         liqData.oracleValue = oracle.read();
