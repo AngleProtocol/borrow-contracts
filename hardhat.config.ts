@@ -43,7 +43,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000000,
+            runs: 1,
           },
           // debug: { revertStrings: 'strip' },
         },

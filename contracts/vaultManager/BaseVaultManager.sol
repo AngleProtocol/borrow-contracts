@@ -59,6 +59,8 @@ struct LiquidatorData {
     uint256 stablecoinAmountToRepay;
     uint256 collateralAmountToGive;
     uint256 badDebtFromLiquidation;
+    uint256 oracleValue;
+    uint256 newInterestRateAccumulator;
 }
 
 // TODO split in multiple files and leave some space each time for upgradeability -> check how we can leverage libraries this time
@@ -569,11 +571,11 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     ) external whenNotPaused {
         LiquidatorData memory liqData;
         require(vaultIDs.length == amounts.length);
-        uint256 oracleValue = oracle.read();
-        uint256 newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+        liqData.oracleValue = oracle.read();
+        liqData.newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         for (uint256 i = 0; i < vaultIDs.length; i++) {
             Vault memory vault = vaultData[vaultIDs[i]];
-            LiquidationOpportunity memory liqOpp = _checkLiquidation(vault, oracleValue, newInterestRateAccumulator);
+            LiquidationOpportunity memory liqOpp = _checkLiquidation(vault, liqData.oracleValue, liqData.newInterestRateAccumulator);
             // TODO see if the flow works for liquidators or if we should do better
             if (
                 (liqOpp.maxStablecoinAmountToRepay > 0) &&
@@ -582,7 +584,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
                         (amounts[i] == liqOpp.maxStablecoinAmountToRepay || amounts[i] <= liqOpp.thresholdRepayAmount)))
             ) {
                 uint256 collateralReleased = ((amounts[i] * BASE_PARAMS) * collatBase) /
-                    ((BASE_PARAMS - liqOpp.discount) * oracleValue);
+                    ((BASE_PARAMS - liqOpp.discount) * liqData.oracleValue);
                 liqData.collateralAmountToGive += collateralReleased;
                 liqData.stablecoinAmountToRepay += amounts[i];
 
@@ -599,7 +601,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
                     _decreaseDebt(
                         vaultIDs[i],
                         (amounts[i] * (BASE_PARAMS - liquidationFee)) / BASE_PARAMS,
-                        newInterestRateAccumulator
+                        liqData.newInterestRateAccumulator
                     );
                 }
             }
