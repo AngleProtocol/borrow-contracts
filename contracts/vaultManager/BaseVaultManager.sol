@@ -18,6 +18,7 @@ import "../interfaces/IAgToken.sol";
 import "../interfaces/IERC721.sol";
 import "../interfaces/IFlashLoanCallee.sol";
 import "../interfaces/IOracle.sol";
+import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 
 struct VaultParameters {
@@ -49,20 +50,28 @@ struct LiquidationOpportunity {
     uint256 healthScore;
     // Discount proposed
     uint256 discount;
-    // TODO do we do something like the conversionRate Euler is doing
+    // TODO do we do something like the conversionRate Euler is doing for liquidation opportunities
+    uint256 collateralAmount;
+    uint256 currentDebt;
 }
 
-// TODO split in multiple files and leave some space each time for upgradeability -> check how we can leverahe libraries this time
+struct LiquidatorData {
+    uint256 stablecoinAmountToRepay;
+    uint256 collateralAmountToGive;
+    uint256 badDebtFromLiquidation;
+    uint256 oracleValue;
+}
+
+// TODO split in multiple files and leave some space each time for upgradeability -> check how we can leverage libraries this time
 
 // solhint-disable-next-line max-states-count
-abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC721Metadata {
+abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC721Metadata, IVaultManager {
     using SafeERC20 for IERC20;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using Address for address;
 
-    uint256 public constant BASE = 10**18;
     uint256 public constant BASE_PARAMS = 10**9;
-    // TODO check trade-off 10**27 and 10**18
+    // TODO check trade-off 10**27 and 10**18 for interest accumulated
     uint256 public constant BASE_INTEREST = 10**27;
 
     event FiledUint64(uint64 param, bytes32 what);
@@ -76,7 +85,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     mapping(address => bool) public isWhitelisted;
 
     /// References to other contracts
-    address public treasury;
+    ITreasury public treasury;
     IERC20 public collateral;
     IAgToken public stablecoin;
     IOracle public oracle;
@@ -126,48 +135,57 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     mapping(address => mapping(address => bool)) internal _operatorApprovals;
 
     function initialize(
-        address _treasury,
+        ITreasury _treasury,
         address _collateral,
-        address _stablecoin,
-        address _oracle,
+        IOracle _oracle,
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
         treasury = _treasury;
-        // require(treasury.activated address)
-        // collateral and stablecoin could be fetched from the treasury
+        require(_treasury.isVaultManager(address(this)));
         collateral = IERC20(_collateral);
         collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
-        stablecoin = IAgToken(_stablecoin);
-        oracle = IOracle(_oracle);
+        stablecoin = IAgToken(_treasury.stablecoin());
+        oracle = _oracle;
 
         name = string(abi.encodePacked("Angle Protocol ", symbolVault, " Vault"));
         symbol = string(abi.encodePacked(symbolVault, "-vault"));
 
         // Check what is used here
         interestAccumulator = BASE_INTEREST;
-        // TODO initialize parameters
-        // and verify conditions for all of them
+        // TODO verify conditions for all of them
+        dust = params.dust;
+        debtCeiling = params.debtCeiling;
+        collateralFactor = params.collateralFactor;
+        targetHealthFactor = params.targetHealthFactor;
+        dustHealthFactor = params.dustHealthFactor;
+        borrowFee = params.borrowFee;
+        interestRate = params.interestRate;
+        liquidationFee = params.liquidationFee;
+        maxLiquidationDiscount = params.maxLiquidationDiscount;
+        liquidationBooster = params.liquidationBooster;
+        _pause();
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
+    // TODO check if still needed with new version of OpenZeppelin initializable contract
     constructor() initializer {}
 
     modifier onlyGovernorOrGuardian() {
-        //TODO
+        require(treasury.isGovernorOrGuardian(msg.sender));
         _;
     }
 
     modifier onlyGovernor() {
-        // TODO from the treasury contract
+        require(treasury.isGovernor(msg.sender));
         _;
     }
 
-    modifier isLiquidable(uint256 vaultID) {
+    modifier isSolvent(uint256 vaultID) {
         _;
         Vault memory vault = vaultData[vaultID];
-        _isLiquidable(vault, 0);
-        // TODO
+        (bool solvent, , , ) = _isSolvent(vault, 0);
+        require(solvent);
     }
 
     modifier onlyApprovedOrOwner(address caller, uint256 vaultID) {
@@ -175,14 +193,23 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         _;
     }
 
-    function _isLiquidable(Vault memory vault, uint256 oracleValue) internal view returns (bool) {
+    function _isSolvent(Vault memory vault, uint256 oracleValue)
+        internal
+        view
+        returns (
+            bool solvent,
+            uint256 currentDebt,
+            uint256 collateralAmount,
+            uint256 collateralAmountInStable
+        )
+    {
         // TODO optimize values which are fetched to avoid duplicate reads in storage
         // Could be done by storing a memory struct or something like that
         if (oracleValue == 0) oracleValue = oracle.read();
-        uint256 currentDebt = _getVaultCurrentDebt(vault.normalizedDebt);
-        uint256 collateralAmount = _getCollateralAmount(vault.collateralInternalValue);
-        uint256 collateralAmountInStable = (collateralAmount * oracleValue) / collatBase;
-        return collateralAmountInStable * collateralFactor >= currentDebt * BASE_PARAMS;
+        currentDebt = _getVaultCurrentDebt(vault.normalizedDebt);
+        collateralAmount = _getCollateralAmount(vault.collateralInternalValue);
+        collateralAmountInStable = (collateralAmount * oracleValue) / collatBase;
+        solvent = collateralAmountInStable * collateralFactor >= currentDebt * BASE_PARAMS;
     }
 
     // For the case with stETH and ETH: there can be differences here
@@ -229,8 +256,10 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         if (what == "whitelisting") dust = param;
     }
 
-    function setAddress(address param, bytes32 what) external onlyGovernorOrGuardian {
-        // TODO
+    function setAddress(address param, bytes32 what) external onlyGovernor {
+        if (what == "oracle") oracle = IOracle(param);
+        else if (what == "treasury") treasury = ITreasury(param); // TODO check that vaultManager is valid in it and that governor
+        // calling the function is also a new governor in the new one
     }
 
     function getVaultDebt(uint256 normalizedDebt) external view returns (uint256) {
@@ -301,14 +330,13 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     ) external whenNotPaused onlyApprovedOrOwner(msg.sender, vaultID) {
         // TODO check exact data types for what to do with the swap
         // TODO check what happens in other protocols if you come to close but you're about to get liquidated
-        // TODO once again here need to check the allowance
+        // TODO once again here need to check the allowance in the repay with from
         // Get vault debt
         Vault memory vault = vaultData[vaultID];
         // Optimize for gas here
-        require(!_isLiquidable(vault, 0));
+        (bool solvent, uint256 currentDebt, uint256 collateralAmount, ) = _isSolvent(vault, 0);
+        require(solvent);
         _burn(vaultID);
-        uint256 currentDebt = _getVaultCurrentDebt(vault.normalizedDebt);
-        uint256 collateralAmount = _getCollateralAmount(vault.collateralInternalValue);
         _handleRepay(collateralAmount, currentDebt, from, to, who, data);
     }
 
@@ -358,7 +386,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         uint256 vaultID,
         uint256 collateralAmount,
         address to
-    ) internal onlyApprovedOrOwner(msg.sender, vaultID) isLiquidable(vaultID) {
+    ) internal onlyApprovedOrOwner(msg.sender, vaultID) isSolvent(vaultID) {
         vaultData[vaultID].collateralInternalValue -= _getCollateralInternalValue(collateralAmount);
         collateral.transfer(to, collateralAmount);
     }
@@ -397,7 +425,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         uint256 vaultID,
         uint256 stablecoinAmount,
         address to
-    ) internal onlyApprovedOrOwner(msg.sender, vaultID) isLiquidable(vaultID) {
+    ) internal onlyApprovedOrOwner(msg.sender, vaultID) isSolvent(vaultID) {
         _increaseDebt(vaultID, stablecoinAmount);
         uint256 borrowFeePaid = (borrowFee * stablecoinAmount) / BASE_PARAMS;
         stablecoin.mint(to, stablecoinAmount - borrowFeePaid);
@@ -428,7 +456,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         uint256 srcVaultID,
         uint256 dstVaultID,
         uint256 stablecoinAmount
-    ) external whenNotPaused onlyApprovedOrOwner(msg.sender, srcVaultID) isLiquidable(srcVaultID) {
+    ) external whenNotPaused onlyApprovedOrOwner(msg.sender, srcVaultID) isSolvent(srcVaultID) {
         // Checking if the vaultManager has been initialized
         // TODO
         // require(treasury.vaultManagerMap(vaultManager).token != address(0))
@@ -437,7 +465,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     }
 
     // Should be public to allow `getDebtOut`
-    function getDebtOut(uint256 vaultID, uint256 stablecoinAmount) public whenNotPaused {
+    function getDebtOut(uint256 vaultID, uint256 stablecoinAmount) public override whenNotPaused {
         // TODO require that collateral comes from the right source
         // require(treasury.vaultManagerMap(msg.sender).token != address(0))
         _decreaseDebt(vaultID, stablecoinAmount);
@@ -453,15 +481,19 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         lastInterestAccumulatorUpdated = block.timestamp;
     }
 
-    function accrueInterestToTreasury() external returns (uint256 surplusCurrentValue, uint256 badDebtEndValue) {
-        require(msg.sender == treasury);
+    function accrueInterestToTreasury()
+        external
+        override
+        returns (uint256 surplusCurrentValue, uint256 badDebtEndValue)
+    {
+        require(msg.sender == address(treasury));
         _accrue();
         surplusCurrentValue = surplus;
         badDebtEndValue = badDebt;
         if (surplusCurrentValue >= badDebtEndValue) {
             surplusCurrentValue -= badDebtEndValue;
             badDebtEndValue = 0;
-            stablecoin.mint(treasury, surplusCurrentValue);
+            stablecoin.mint(address(treasury), surplusCurrentValue);
         } else {
             surplusCurrentValue = 0;
             badDebtEndValue -= surplusCurrentValue;
@@ -476,7 +508,7 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     uint8 public constant ACTION_BORROW = 4;
 
     /*
-    // TODO: do we add the following actions:
+    // TODO: do we add the following actions? for more composability
     uint8 public constant ACTION_OPEN_VAULT = 5;
     uint8 public constant ACTION_CLOSE_VAULT = 6;
     uint8 public constant ACTION_ACCRUE = 7;
@@ -487,54 +519,34 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
     function angle(uint8[] calldata actions, bytes[] calldata datas) external payable whenNotPaused {
         for (uint256 i = 0; i < actions.length; i++) {
             uint8 action = actions[i];
+            (uint256 vaultID, uint256 amount, address concerned) = abi.decode(datas[i], (uint256, uint256, address));
             if (action == ACTION_ADD_COLLATERAL) {
-                (uint256 vaultID, uint256 collateralAmount, address from) = abi.decode(
-                    datas[i],
-                    (uint256, uint256, address)
-                );
-                _addCollateral(vaultID, collateralAmount, from);
+                _addCollateral(vaultID, amount, concerned);
             } else if (action == ACTION_REMOVE_COLLATERAL) {
-                (uint256 vaultID, uint256 collateralAmount, address to) = abi.decode(
-                    datas[i],
-                    (uint256, uint256, address)
-                );
-                _removeCollateral(vaultID, collateralAmount, to);
+                _removeCollateral(vaultID, amount, concerned);
             } else if (action == ACTION_REPAY_DEBT) {
-                (uint256 vaultID, uint256 stablecoinAmount, address from) = abi.decode(
-                    datas[i],
-                    (uint256, uint256, address)
-                );
-                _repayDebt(vaultID, stablecoinAmount, from);
+                _repayDebt(vaultID, amount, concerned);
             } else if (action == ACTION_BORROW) {
-                (uint256 vaultID, uint256 stablecoinAmount, address to) = abi.decode(
-                    datas[i],
-                    (uint256, uint256, address)
-                );
-                _borrow(vaultID, stablecoinAmount, to);
+                _borrow(vaultID, amount, concerned);
             }
         }
     }
 
     // name of the function should be smaller to save some gas for liquidators: allows for bigger discounts
     function liquidate(
-        uint256[] calldata vaultIDs,
-        uint256[] calldata amounts,
+        uint256[] memory vaultIDs,
+        uint256[] memory amounts,
         address from,
         address to,
         address who,
         bytes calldata data
     ) external whenNotPaused {
-        uint256 stablecoinAmountToRepay;
-        uint256 collateralAmountToGive;
-        uint256 surplusFromLiquidation;
-        uint256 badDebtFromLiquidation;
-        uint256 currentDebt;
-        uint256 collateralAmount;
+        LiquidatorData memory liqData;
         require(vaultIDs.length == amounts.length);
-        uint256 oracleValue = oracle.read();
+        liqData.oracleValue = oracle.read();
         for (uint256 i = 0; i < vaultIDs.length; i++) {
             Vault memory vault = vaultData[vaultIDs[i]];
-            LiquidationOpportunity memory liqOpp = _checkLiquidation(vault, oracleValue);
+            LiquidationOpportunity memory liqOpp = _checkLiquidation(vault, liqData.oracleValue);
             // TODO see if the flow works for liquidators or if we should do better
             if (
                 (liqOpp.maxStablecoinAmountToRepay > 0) &&
@@ -542,28 +554,35 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
                     (liqOpp.thresholdRepayAmount != 0 &&
                         (amounts[i] == liqOpp.maxStablecoinAmountToRepay || amounts[i] <= liqOpp.thresholdRepayAmount)))
             ) {
-                stablecoinAmountToRepay += amounts[i];
                 uint256 collateralReleased = ((amounts[i] * BASE_PARAMS) * collatBase) /
-                    ((BASE_PARAMS - liqOpp.discount) * oracleValue);
-                collateralAmountToGive += collateralReleased;
-                surplusFromLiquidation += (amounts[i] * liquidationFee) / BASE_PARAMS;
-                // TODO duplicate here it has already been called -> Optimize for it
-                currentDebt = _getVaultCurrentDebt(vault.normalizedDebt);
-                collateralAmount = _getCollateralAmount(vault.collateralInternalValue);
-                uint256 debtChange = (amounts[i] * (BASE_PARAMS - liquidationFee)) / BASE_PARAMS;
-                if (collateralAmount <= collateralReleased) {
+                    ((BASE_PARAMS - liqOpp.discount) * liqData.oracleValue);
+                liqData.collateralAmountToGive += collateralReleased;
+                liqData.stablecoinAmountToRepay += amounts[i];
+
+                // TODO duplicate checks here it has already been called -> Optimize for it
+                // Checking if we end in a situation where too much collateral is being released
+                if (liqOpp.collateralAmount <= collateralReleased) {
                     _burn(vaultIDs[i]);
-                    badDebtFromLiquidation += currentDebt - debtChange;
+                    liqData.badDebtFromLiquidation +=
+                        liqOpp.currentDebt -
+                        (amounts[i] * (BASE_PARAMS - liquidationFee)) /
+                        BASE_PARAMS;
                 } else {
                     vaultData[vaultIDs[i]].collateralInternalValue -= _getCollateralInternalValue(collateralReleased);
-                    _decreaseDebt(vaultIDs[i], debtChange);
+                    _decreaseDebt(vaultIDs[i], (amounts[i] * (BASE_PARAMS - liquidationFee)) / BASE_PARAMS);
                 }
             }
         }
         // Normalization of good and bad debt is already handled
-        surplus += surplusFromLiquidation;
-        badDebt += badDebtFromLiquidation;
-        _handleRepay(collateralAmountToGive, stablecoinAmountToRepay, from, to, who, data);
+        surplus += (liqData.stablecoinAmountToRepay * liquidationFee) / BASE_PARAMS;
+        badDebt += liqData.badDebtFromLiquidation;
+        _handleRepay(liqData.collateralAmountToGive, liqData.stablecoinAmountToRepay, from, to, who, data);
+    }
+
+    function checkLiquidation(uint256 vaultID) external view returns (LiquidationOpportunity memory liqOpp) {
+        Vault memory vault = vaultData[vaultID];
+        uint256 oracleValue = oracle.read();
+        liqOpp = _checkLiquidation(vault, oracleValue);
     }
 
     // For liquidators: should return the max amount to liquidate
@@ -573,26 +592,25 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
         view
         returns (LiquidationOpportunity memory liqOpp)
     {
-        if (_isLiquidable(vault, oracleValue)) {
+        (bool solvent, uint256 currentDebt, uint256 collateralAmount, uint256 collateralAmountInStable) = _isSolvent(
+            vault,
+            oracleValue
+        );
+        if (!solvent) {
             // TODO improve: duplicate amount read, can do far far better
-            uint256 currentDebt = _getVaultCurrentDebt(vault.normalizedDebt);
-            uint256 collateralAmount = _getCollateralAmount(vault.collateralInternalValue);
-
-            uint256 collateralAmountInStable = (collateralAmount * oracleValue) / collatBase;
             uint256 healthFactor = (collateralAmountInStable * collateralFactor) / currentDebt;
             uint256 liquidationDiscount = (liquidationBooster * (BASE_PARAMS - healthFactor)) / BASE_PARAMS;
             liquidationDiscount = liquidationDiscount >= maxLiquidationDiscount
                 ? maxLiquidationDiscount
                 : liquidationDiscount;
-            uint256 maxAmountForRepayNum = ((targetHealthFactor * currentDebt) /
+            // This is the max amount to repay that will bring the person to the target health factor
+            uint256 maxAmountToRepay = (((targetHealthFactor * currentDebt) /
                 collateralFactor -
-                collateralAmountInStable);
-            uint256 maxAmountToRepayDenom = ((BASE_PARAMS - liquidationFee) * targetHealthFactor) /
+                collateralAmountInStable) * BASE_PARAMS) /
+                ((BASE_PARAMS - liquidationFee) * targetHealthFactor) /
                 collateralFactor -
                 BASE_PARAMS**2 /
                 (BASE_PARAMS - liquidationDiscount);
-            // This is the max amount to repay that will bring the person to the target health factor
-            uint256 maxAmountToRepay = (maxAmountForRepayNum * BASE_PARAMS) / maxAmountToRepayDenom;
             // Now we need to look for extreme cases
             // First with this in mind, we need to check for the dust
             uint256 maxAmountToRepayLessSurcharge = (maxAmountToRepay * (BASE_PARAMS - liquidationFee)) / BASE_PARAMS;
@@ -624,13 +642,15 @@ abstract contract BaseVaultManager is Initializable, PausableUpgradeable, IERC72
                         BASE_PARAMS**2 /
                         (BASE_PARAMS - liquidationDiscount));
             }
-            uint256 maxCollateralAmountRepaid = (maxAmountToRepay * BASE_PARAMS * collatBase) /
-                (oracleValue * (BASE_PARAMS - liquidationDiscount));
             liqOpp.maxStablecoinAmountToRepay = maxAmountToRepay;
-            liqOpp.maxCollateralAmountGiven = maxCollateralAmountRepaid;
+            liqOpp.maxCollateralAmountGiven =
+                (maxAmountToRepay * BASE_PARAMS * collatBase) /
+                (oracleValue * (BASE_PARAMS - liquidationDiscount));
             liqOpp.healthScore = healthFactor;
             liqOpp.discount = liquidationDiscount;
             liqOpp.thresholdRepayAmount = thresholdAmountToRepay;
+            liqOpp.collateralAmount = collateralAmount;
+            liqOpp.currentDebt = currentDebt;
         }
     }
 
