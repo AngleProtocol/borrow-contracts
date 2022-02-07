@@ -300,13 +300,12 @@ abstract contract BaseVaultManager is
     function createVault(
         uint256 collateralAmount,
         uint256 stablecoinAmount,
-        address from,
         address toVault,
         address toStablecoin
     ) external whenNotPaused returns (uint256 vaultID) {
         require(!whitelistingActivated || isWhitelisted[msg.sender], "not whitelisted");
         require(stablecoinAmount >= dust);
-        collateral.safeTransferFrom(from, address(this), collateralAmount);
+        collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
         uint256 newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
 
         uint256 vaultNormalizedDebt = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
