@@ -3,15 +3,25 @@
 pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 
 import "../interfaces/IAgToken.sol";
+import "../interfaces/ICoreBorrow.sol";
+import "../interfaces/IFlashAngle.sol";
 import "../interfaces/ITreasury.sol";
-import "../interfaces/ITreasurySurplusRecipient.sol";
 
 // OpenZeppelin may update its version of the ERC20PermitUpgradeable token
+
+// TODO with mapping
+
+struct StablecoinData {
+    address treasury;
+    uint256 maxBorrowable;
+    uint64 flashLoanFee;
+}
 
 /// @title FlashAngle
 /// @author Angle Core Team
@@ -19,54 +29,77 @@ import "../interfaces/ITreasurySurplusRecipient.sol";
 /// @dev This contract is used to create and handle the stablecoins of Angle protocol
 /// @dev Only the `StableMaster` contract can mint or burn agTokens
 /// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange
-contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender, ITreasurySurplusRecipient {
+contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, ReentrancyGuardUpgradeable {
     uint256 public constant BASE_PARAMS = 10**9;
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
-    ITreasury public treasury;
-    IAgToken public stablecoin;
-    uint64 public flashLoanFee;
-    uint256 public maxBorrowable;
+    mapping(IAgToken => StablecoinData) public stablecoinMap;
+    ICoreBorrow public core;
 
     // Pausable
     // Treasury can rule it and governor can set fees for it
-    constructor(ITreasury _treasury, uint64 _flashLoanFee) {
+    function initialize(
+        ICoreBorrow _core,
+        address _treasury,
+        uint256 _maxBorrowable,
+        uint64 _flashLoanFee
+    ) public initializer {
         require(_flashLoanFee <= BASE_PARAMS);
-        flashLoanFee = _flashLoanFee;
-        treasury = _treasury;
-        stablecoin = IAgToken(_treasury.stablecoin());
+        require(address(core) != address(0));
+        core = _core;
+        IAgToken stablecoin = IAgToken(ITreasury(_treasury).stablecoin());
+        StablecoinData storage firstStablecoinData = stablecoinMap[stablecoin];
+        firstStablecoinData.treasury = _treasury;
+        firstStablecoinData.flashLoanFee = _flashLoanFee;
+        firstStablecoinData.maxBorrowable = _maxBorrowable;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
+
     modifier onlyGovernorOrGuardian() {
-        require(treasury.isGovernorOrGuardian(msg.sender));
+        require(core.isGovernorOrGuardian(msg.sender));
         _;
     }
 
     modifier onlyGovernor() {
-        require(treasury.isGovernor(msg.sender));
+        require(core.isGovernor(msg.sender));
         _;
     }
 
-    function pause() external onlyGovernorOrGuardian {
-        _pause();
+    modifier onlyCore() {
+        require(msg.sender == address(core));
+        _;
     }
 
-    function unpause() external onlyGovernorOrGuardian {
-        _unpause();
+    modifier onlyExistingStablecoin(IAgToken stablecoin) {
+        require(stablecoinMap[stablecoin].treasury != address(0));
+        _;
     }
 
-    function setFlashLoanFee(uint64 _flashLoanFee) external onlyGovernorOrGuardian {
+    function setFlashLoanFee(uint64 _flashLoanFee, IAgToken stablecoin)
+        external
+        onlyGovernorOrGuardian
+        onlyExistingStablecoin(stablecoin)
+    {
         require(_flashLoanFee <= BASE_PARAMS);
-        flashLoanFee = _flashLoanFee;
+        stablecoinMap[stablecoin].flashLoanFee = _flashLoanFee;
     }
 
-    function setMaxBorrowable(uint256 _maxBorrowable) external onlyGovernorOrGuardian {
-        maxBorrowable = _maxBorrowable;
+    function setMaxBorrowable(uint256 _maxBorrowable, IAgToken stablecoin)
+        external
+        onlyGovernorOrGuardian
+        onlyExistingStablecoin(stablecoin)
+    {
+        stablecoinMap[stablecoin].maxBorrowable = _maxBorrowable;
     }
 
-    function setTreasury(ITreasury _treasury) external onlyGovernor {
-        require(_treasury.isGovernor(msg.sender) && _treasury.stablecoin() == stablecoin);
-        treasury = _treasury;
+    function addStablecoinSupport(address _treasury) external override onlyCore {
+        stablecoinMap[IAgToken(ITreasury(_treasury).stablecoin())].treasury = _treasury;
+    }
+
+    function removeStablecoinSupport(address _treasury) external override onlyCore {
+        delete stablecoinMap[IAgToken(ITreasury(_treasury).stablecoin())];
     }
 
     // --- ERC 3156 Spec ---
@@ -75,26 +108,32 @@ contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender, ITreasury
     }
 
     function maxFlashLoan(address token) external view override returns (uint256) {
-        if (token == address(stablecoin) && !paused() && stablecoin.isMinter(address(this))) {
-            return maxBorrowable;
+        IAgToken stablecoin = IAgToken(token);
+        if (stablecoinMap[stablecoin].treasury != address(0) && stablecoin.isMinter(address(this))) {
+            return stablecoinMap[stablecoin].maxBorrowable;
         } else {
             return 0;
         }
     }
 
-    function _flashFee(address token, uint256 amount) internal view returns (uint256) {
-        require(token == address(stablecoin));
-        return (amount * flashLoanFee) / BASE_PARAMS;
+    function _flashFee(address token, uint256 amount)
+        internal
+        view
+        onlyExistingStablecoin(IAgToken(token))
+        returns (uint256)
+    {
+        return (amount * stablecoinMap[IAgToken(token)].flashLoanFee) / BASE_PARAMS;
     }
 
+    // To pause the contract you just have to set max borrowable to 0
     function flashLoan(
         IERC3156FlashBorrower receiver,
         address token,
         uint256 amount,
         bytes calldata data
-    ) external override nonReentrant whenNotPaused returns (bool) {
-        require(amount <= maxBorrowable);
+    ) external override nonReentrant returns (bool) {
         uint256 fee = _flashFee(token, amount);
+        require(amount <= stablecoinMap[IAgToken(token)].maxBorrowable);
         IAgToken(token).mint(address(receiver), amount);
         require(receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS);
         IAgToken(token).transferFrom(address(receiver), address(this), amount + fee);
@@ -102,9 +141,10 @@ contract FlashAngle is Pausable, ReentrancyGuard, IERC3156FlashLender, ITreasury
         return true;
     }
 
-    function accrueInterestToTreasury() external override returns (uint256 balance) {
-        require(msg.sender == address(treasury));
+    function accrueInterestToTreasury(IAgToken stablecoin) external override returns (uint256 balance) {
+        address treasury = stablecoinMap[stablecoin].treasury;
+        require(treasury != address(0));
         balance = stablecoin.balanceOf(address(this));
-        stablecoin.transfer(address(treasury), balance);
+        stablecoin.transfer(treasury, balance);
     }
 }

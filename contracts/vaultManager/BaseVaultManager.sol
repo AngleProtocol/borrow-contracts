@@ -63,8 +63,17 @@ struct LiquidatorData {
     uint256 newInterestRateAccumulator;
 }
 
+struct PaymentData {
+    uint256 stablecoinAmountToGive;
+    uint256 stablecoinAmountToReceive;
+    uint256 collateralAmountToGive;
+    uint256 collateralAmountToReceive;
+}
+
 // TODO split in multiple files and leave some space each time for upgradeability -> check how we can leverage libraries this time
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
+// TODO check trade-off 10**27 and 10**18 for interest accumulated
+// TODO check liquidationBooster depending on veANGLE with like a veANGLE delegation feature
 
 // solhint-disable-next-line max-states-count
 abstract contract BaseVaultManager is
@@ -79,7 +88,7 @@ abstract contract BaseVaultManager is
     using Address for address;
 
     uint256 public constant BASE_PARAMS = 10**9;
-    // TODO check trade-off 10**27 and 10**18 for interest accumulated
+
     uint256 public constant BASE_INTEREST = 10**27;
 
     event FiledUint64(uint64 param, bytes32 what);
@@ -177,7 +186,6 @@ abstract contract BaseVaultManager is
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    // TODO check if still needed with new version of OpenZeppelin initializable contract
     constructor() initializer {}
 
     modifier onlyGovernorOrGuardian() {
@@ -297,31 +305,15 @@ abstract contract BaseVaultManager is
         return interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm);
     }
 
-    function createVault(
-        uint256 collateralAmount,
-        uint256 stablecoinAmount,
-        address toVault,
-        address toStablecoin
-    ) external whenNotPaused returns (uint256 vaultID) {
-        require(!whitelistingActivated || isWhitelisted[msg.sender], "not whitelisted");
-        require(stablecoinAmount >= dust);
-        collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
-        uint256 newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+    function createVault(address toVault) external whenNotPaused returns (uint256) {
+        return _createVault(toVault);
+    }
 
-        uint256 vaultNormalizedDebt = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
-        totalNormalizedDebt += vaultNormalizedDebt;
-        // Checking debt ceiling
-        require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST);
-
-        uint256 borrowFeePaid = (borrowFee * stablecoinAmount) / BASE_PARAMS;
-        surplus += borrowFeePaid;
-
+    function _createVault(address toVault) internal returns (uint256 vaultID) {
+        require(!whitelistingActivated || (isWhitelisted[toVault] && isWhitelisted[msg.sender]), "not whitelisted");
         _vaultIDcount.increment();
         vaultID = _vaultIDcount.current();
-        vaultData[vaultID] = Vault(_getCollateralInternalValue(collateralAmount), vaultNormalizedDebt);
         _mint(toVault, vaultID);
-
-        stablecoin.mint(toStablecoin, stablecoinAmount - borrowFeePaid);
     }
 
     // TODO check allowance of from with respect to msg.sender somewhere
@@ -336,12 +328,17 @@ abstract contract BaseVaultManager is
         // TODO check what happens in other protocols if you come to close but you're about to get liquidated
         // TODO once again here need to check the allowance in the repay with from
         // Get vault debt
+        (uint256 currentDebt, uint256 collateralAmount) = _closeVault(vaultID);
+        _handleRepay(collateralAmount, currentDebt, from, to, who, data);
+    }
+
+    function _closeVault(uint256 vaultID) internal onlyApprovedOrOwner(msg.sender, vaultID) returns (uint256, uint256) {
         Vault memory vault = vaultData[vaultID];
         // Optimize for gas here
         (bool solvent, uint256 currentDebt, uint256 collateralAmount, ) = _isSolvent(vault, 0, 0);
         require(solvent);
         _burn(vaultID);
-        _handleRepay(collateralAmount, currentDebt, from, to, who, data);
+        return (currentDebt, collateralAmount);
     }
 
     function _handleRepay(
@@ -357,25 +354,17 @@ abstract contract BaseVaultManager is
         if (data.length > 0 && who != address(stablecoin)) {
             // TODO do we keep the interface here: Maker has the same, same for Abracadabra -> maybe need to do something different
             // Like flashloan callee is for sure not the right name to set here given that it's not a flash loan
-            IFlashLoanCallee(who).flashLoanCall(from, stableAmountToRepay, collateralAmountToGive, data);
+            IFlashLoanCallee(who).flashLoanCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
         }
         stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
     }
 
-    function addCollateral(
-        uint256 vaultID,
-        uint256 collateralAmount,
-        address from
-    ) external whenNotPaused {
-        _addCollateral(vaultID, collateralAmount, from);
+    function addCollateral(uint256 vaultID, uint256 collateralAmount) external whenNotPaused {
+        collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
+        _addCollateral(vaultID, collateralAmount);
     }
 
-    function _addCollateral(
-        uint256 vaultID,
-        uint256 collateralAmount,
-        address from
-    ) internal {
-        collateral.safeTransferFrom(from, address(this), collateralAmount);
+    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         vaultData[vaultID].collateralInternalValue += _getCollateralInternalValue(collateralAmount);
     }
 
@@ -384,21 +373,20 @@ abstract contract BaseVaultManager is
         uint256 collateralAmount,
         address to
     ) external whenNotPaused {
-        _removeCollateral(vaultID, collateralAmount, to, 0, 0);
+        _removeCollateral(vaultID, collateralAmount, 0, 0);
+        collateral.transfer(to, collateralAmount);
     }
 
     // Optimize the `isLiquidable` thing
     function _removeCollateral(
         uint256 vaultID,
         uint256 collateralAmount,
-        address to,
         uint256 oracleValue,
         uint256 newInterestRateAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
         vaultData[vaultID].collateralInternalValue -= _getCollateralInternalValue(collateralAmount);
         (bool solvent, , , ) = _isSolvent(vaultData[vaultID], oracleValue, newInterestRateAccumulator);
         require(solvent);
-        collateral.transfer(to, collateralAmount);
     }
 
     function repayDebt(
@@ -406,18 +394,8 @@ abstract contract BaseVaultManager is
         uint256 stablecoinAmount,
         address from
     ) external whenNotPaused {
-        _repayDebt(vaultID, stablecoinAmount, from, 0);
-    }
-
-    function _repayDebt(
-        uint256 vaultID,
-        uint256 stablecoinAmount,
-        address from,
-        uint256 newInterestRateAccumulator
-    ) internal {
-        // TODO Change agEUR contract
         stablecoin.burnFrom(stablecoinAmount, from, msg.sender);
-        _decreaseDebt(vaultID, stablecoinAmount, newInterestRateAccumulator);
+        _decreaseDebt(vaultID, stablecoinAmount, 0);
     }
 
     function borrow(
@@ -425,20 +403,21 @@ abstract contract BaseVaultManager is
         uint256 stablecoinAmount,
         address to
     ) external whenNotPaused {
-        _borrow(vaultID, stablecoinAmount, to, 0, 0);
+        uint256 toMint = _borrow(vaultID, stablecoinAmount, 0, 0);
+        stablecoin.mint(to, toMint);
     }
 
     // TODO check order with which we have to place the modifiers for it to work
     function _borrow(
         uint256 vaultID,
         uint256 stablecoinAmount,
-        address to,
         uint256 oracleValue,
         uint256 newInterestRateAccumulator
-    ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) internal onlyApprovedOrOwner(msg.sender, vaultID) returns (uint256 toMint) {
         _increaseDebt(vaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
         uint256 borrowFeePaid = (borrowFee * stablecoinAmount) / BASE_PARAMS;
-        stablecoin.mint(to, stablecoinAmount - borrowFeePaid);
+        surplus += borrowFeePaid;
+        toMint = stablecoinAmount - borrowFeePaid;
     }
 
     function _increaseDebt(
@@ -477,17 +456,27 @@ abstract contract BaseVaultManager is
         uint256 srcVaultID,
         uint256 dstVaultID,
         uint256 stablecoinAmount
-    ) external whenNotPaused onlyApprovedOrOwner(msg.sender, srcVaultID) {
+    ) external whenNotPaused {
+        _getDebtIn(vaultManager, srcVaultID, dstVaultID, stablecoinAmount, 0, 0);
+    }
+
+    function _getDebtIn(
+        IVaultManager vaultManager,
+        uint256 srcVaultID,
+        uint256 dstVaultID,
+        uint256 stablecoinAmount,
+        uint256 oracleValue,
+        uint256 newInterestRateAccumulator
+    ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) {
         // Checking if the vaultManager has been initialized
-        // TODO
+        // TODO borrow fee -> check the delta to reduce the surface of exploits here
         require(treasury.isVaultManager(address(vaultManager)));
         vaultManager.getDebtOut(dstVaultID, stablecoinAmount);
-        _increaseDebt(srcVaultID, stablecoinAmount, 0, 0);
+        _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
     }
 
     // Should be public to allow `getDebtOut`
     function getDebtOut(uint256 vaultID, uint256 stablecoinAmount) public override whenNotPaused {
-        // TODO require that collateral comes from the right source
         require(treasury.isVaultManager(msg.sender));
         _decreaseDebt(vaultID, stablecoinAmount, 0);
     }
@@ -519,46 +508,118 @@ abstract contract BaseVaultManager is
             badDebtEndValue -= surplusCurrentValue;
         }
         surplus = 0;
-        badDebt = badDebtEndValue;
+        // Reset to 0 once communicated to the protocol
+        badDebt = 0;
     }
 
-    uint8 public constant ACTION_ADD_COLLATERAL = 1;
-    uint8 public constant ACTION_REMOVE_COLLATERAL = 2;
-    uint8 public constant ACTION_REPAY_DEBT = 3;
-    uint8 public constant ACTION_BORROW = 4;
-
-    /*
-    // TODO: do we add the following actions? for more composability
-    uint8 public constant ACTION_OPEN_VAULT = 5;
-    uint8 public constant ACTION_CLOSE_VAULT = 6;
-    uint8 public constant ACTION_ACCRUE = 7;
-    uint8 public constant ACTION_GET_DEBT_IN = 8;
-    */
+    uint8 public constant ACTION_CREATE_VAULT = 1;
+    uint8 public constant ACTION_CLOSE_VAULT = 2;
+    uint8 public constant ACTION_ADD_COLLATERAL = 3;
+    uint8 public constant ACTION_REMOVE_COLLATERAL = 4;
+    uint8 public constant ACTION_REPAY_DEBT = 5;
+    uint8 public constant ACTION_BORROW = 6;
+    uint8 public constant ACTION_GET_DEBT_IN = 7;
 
     // For composability of calls
-    function angle(uint8[] calldata actions, bytes[] calldata datas) external payable whenNotPaused nonReentrant {
+    function angle(
+        uint8[] calldata actions,
+        bytes[] calldata datas,
+        address from,
+        address to,
+        address who,
+        bytes calldata data
+    ) external payable whenNotPaused nonReentrant {
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
+        PaymentData memory paymentData;
         for (uint256 i = 0; i < actions.length; i++) {
             uint8 action = actions[i];
             // TODO can we improve the ifs for oracleValue and interestRateAccumulator to make sure fewer checks are made
-            (uint256 vaultID, uint256 amount, address concerned) = abi.decode(datas[i], (uint256, uint256, address));
-            if (action == ACTION_ADD_COLLATERAL) {
-                _addCollateral(vaultID, amount, concerned);
+            if (action == ACTION_CREATE_VAULT) {
+                address concerned = abi.decode(datas[i], (address));
+                _createVault(concerned);
+            } else if (action == ACTION_CLOSE_VAULT) {
+                uint256 vaultID = abi.decode(datas[i], (uint256));
+                (uint256 debt, uint256 collateralAmount) = _closeVault(vaultID);
+                paymentData.collateralAmountToGive += collateralAmount;
+                paymentData.stablecoinAmountToReceive += debt;
+            } else if (action == ACTION_ADD_COLLATERAL) {
+                (uint256 vaultID, uint256 amount) = abi.decode(datas[i], (uint256, uint256));
+                _addCollateral(vaultID, amount);
+                paymentData.collateralAmountToReceive += amount;
             } else if (action == ACTION_REMOVE_COLLATERAL) {
+                (uint256 vaultID, uint256 amount) = abi.decode(datas[i], (uint256, uint256));
                 if (oracleValue == 0) oracleValue = oracle.read();
                 if (newInterestRateAccumulator == 0)
                     newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-                _removeCollateral(vaultID, amount, concerned, oracleValue, newInterestRateAccumulator);
+                _removeCollateral(vaultID, amount, oracleValue, newInterestRateAccumulator);
+                paymentData.collateralAmountToGive += amount;
             } else if (action == ACTION_REPAY_DEBT) {
+                (uint256 vaultID, uint256 amount) = abi.decode(datas[i], (uint256, uint256));
                 if (newInterestRateAccumulator == 0)
                     newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-                _repayDebt(vaultID, amount, concerned, newInterestRateAccumulator);
+                _decreaseDebt(vaultID, amount, newInterestRateAccumulator);
+                paymentData.stablecoinAmountToReceive += amount;
             } else if (action == ACTION_BORROW) {
+                (uint256 vaultID, uint256 amount) = abi.decode(datas[i], (uint256, uint256));
                 if (oracleValue == 0) oracleValue = oracle.read();
                 if (newInterestRateAccumulator == 0)
                     newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-                _borrow(vaultID, amount, concerned, oracleValue, newInterestRateAccumulator);
+                paymentData.stablecoinAmountToGive = _borrow(vaultID, amount, oracleValue, newInterestRateAccumulator);
+            } else if (action == ACTION_GET_DEBT_IN) {
+                (address vaultManager, uint256 srcVaultID, uint256 dstVaultID, uint256 stablecoinAmount) = abi.decode(
+                    datas[i],
+                    (address, uint256, uint256, uint256)
+                );
+                if (oracleValue == 0) oracleValue = oracle.read();
+                if (newInterestRateAccumulator == 0)
+                    newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+                _getDebtIn(
+                    IVaultManager(vaultManager),
+                    srcVaultID,
+                    dstVaultID,
+                    stablecoinAmount,
+                    oracleValue,
+                    newInterestRateAccumulator
+                );
+            }
+        }
+        if (paymentData.stablecoinAmountToReceive > paymentData.stablecoinAmountToGive) {
+            uint256 stablecoinPayment = paymentData.stablecoinAmountToReceive - paymentData.stablecoinAmountToGive;
+            if (paymentData.collateralAmountToGive > paymentData.collateralAmountToReceive) {
+                _handleRepay(
+                    paymentData.collateralAmountToGive - paymentData.collateralAmountToReceive,
+                    stablecoinPayment,
+                    from,
+                    to,
+                    who,
+                    data
+                );
+            } else {
+                stablecoin.burnFrom(stablecoinPayment, from, msg.sender);
+                collateral.safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive
+                );
+            }
+        } else {
+            // TODO check dest addresses
+            uint256 stablecoinPayment = paymentData.stablecoinAmountToGive - paymentData.stablecoinAmountToReceive;
+            stablecoin.mint(to, stablecoinPayment);
+            if (paymentData.collateralAmountToGive < paymentData.collateralAmountToReceive) {
+                uint256 collateralPayment = paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive;
+                if (data.length > 0 && who != address(collateral)) {
+                    IFlashLoanCallee(who).flashLoanCallCollateral(
+                        msg.sender,
+                        stablecoinPayment,
+                        collateralPayment,
+                        data
+                    );
+                }
+                collateral.safeTransferFrom(msg.sender, address(this), collateralPayment);
+            } else {
+                collateral.safeTransfer(to, paymentData.collateralAmountToGive - paymentData.collateralAmountToReceive);
             }
         }
     }
@@ -622,6 +683,7 @@ abstract contract BaseVaultManager is
     function checkLiquidation(uint256 vaultID) external view returns (LiquidationOpportunity memory liqOpp) {
         Vault memory vault = vaultData[vaultID];
         uint256 oracleValue = oracle.read();
+        // TODO improve efficiency
         uint256 newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         liqOpp = _checkLiquidation(vault, oracleValue, newInterestRateAccumulator);
     }
@@ -884,7 +946,7 @@ abstract contract BaseVaultManager is
     ) internal {
         require(_ownerOf(vaultID) == from, "1");
         require(to != address(0), "26");
-
+        require(!whitelistingActivated || isWhitelisted[to], "not whitelisted");
         // Clear approvals from the previous owner
         _approve(address(0), vaultID);
 

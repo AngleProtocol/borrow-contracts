@@ -3,91 +3,94 @@
 pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../interfaces/IAgToken.sol";
+import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/ITreasury.sol";
-import "../interfaces/ITreasurySurplusRecipient.sol";
+import "../interfaces/IFlashAngle.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title Treasury
 /// @author Angle Core Team
 /// @notice Treasury of Angle Borrowing Module doing the accounting across all VaultManagers
-contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeable {
+contract Treasury is ITreasury, Initializable {
     using SafeERC20 for IERC20;
-
-    /// @notice Role for guardians
-    bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
-    /// @notice Role for governors
-    bytes32 public constant GOVERNOR_ROLE = keccak256("GOVERNOR_ROLE");
-    /// @notice Role for VaultManagers only
-    bytes32 public constant VAULTMANAGER_ROLE = keccak256("VAULTMANAGER_ROLE");
 
     uint256 public constant BASE_PARAMS = 10**9;
 
     IAgToken public stablecoin;
+    ICoreBorrow public core;
+    IFlashAngle public flashLoanModule;
     address public surplusManager;
-    address public flashLoanModule;
     uint256 public badDebt;
     // Surplus to be distributed and not yet taken into account, otherwise surplus is taken into account
     // as just the balance in the protocol
     uint256 public surplusBuffer;
     uint64 public surplusForGovernance;
 
+    mapping(address => bool) public vaultManagerMap;
+    address[] public vaultManagerList;
+
     event Recovered(address indexed token, address indexed to, uint256 amount);
 
     function initialize(
-        address governor,
-        address guardian,
-        address _stablecoin,
+        ICoreBorrow _core,
+        IAgToken _stablecoin,
         address _surplusManager
     ) public initializer {
         require(
-            governor != address(0) &&
-                guardian != address(0) &&
-                _stablecoin != address(0) &&
-                surplusManager != address(0),
+            address(_stablecoin) != address(0) && surplusManager != address(0) && address(_core) != address(0),
             "O"
         );
-        _setupRole(GOVERNOR_ROLE, governor);
-        _setupRole(GUARDIAN_ROLE, guardian);
-        _setupRole(GUARDIAN_ROLE, governor);
-        _setRoleAdmin(GUARDIAN_ROLE, GOVERNOR_ROLE);
-        _setRoleAdmin(GOVERNOR_ROLE, GOVERNOR_ROLE);
-        _setRoleAdmin(VAULTMANAGER_ROLE, GOVERNOR_ROLE);
-        stablecoin = IAgToken(_stablecoin);
+        core = _core;
+        stablecoin = _stablecoin;
         surplusManager = _surplusManager;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
+    modifier onlyGovernor() {
+        require(core.isGovernor(msg.sender));
+        _;
+    }
+
     function isVaultManager(address vaultManager) external view override returns (bool) {
-        return hasRole(VAULTMANAGER_ROLE, vaultManager);
+        return vaultManagerMap[vaultManager];
     }
 
     function isGovernor(address admin) external view override returns (bool) {
-        return hasRole(GOVERNOR_ROLE, admin);
+        return core.isGovernor(admin);
     }
 
     function isGovernorOrGuardian(address admin) external view override returns (bool) {
-        return hasRole(GUARDIAN_ROLE, admin);
+        return core.isGovernorOrGuardian(admin);
     }
 
-    function addVaultManager(address vaultManager) external {
-        grantRole(VAULTMANAGER_ROLE, vaultManager);
+    function addVaultManager(address vaultManager) external onlyGovernor {
+        require(!vaultManagerMap[vaultManager]);
+        vaultManagerMap[vaultManager] = true;
         stablecoin.addMinter(vaultManager);
     }
 
-    function removeVaultManager(address vaultManager) external {
-        revokeRole(VAULTMANAGER_ROLE, vaultManager);
+    function removeVaultManager(address vaultManager) external onlyGovernor {
+        require(vaultManagerMap[vaultManager]);
+        uint256 vaultManagerListLength = vaultManagerList.length;
+        for (uint256 i = 0; i < vaultManagerListLength - 1; i++) {
+            if (vaultManagerList[i] == vaultManager) {
+                vaultManagerList[i] = vaultManagerList[vaultManagerListLength - 1];
+                break;
+            }
+        }
+        vaultManagerList.pop();
         stablecoin.removeMinter(vaultManager);
     }
 
-    function setFlashLoanModule(address _flashLoanModule) external onlyRole(GOVERNOR_ROLE) {
-        address oldFlashLoanModule = flashLoanModule;
+    function setFlashLoanModule(address _flashLoanModule) external override {
+        require(msg.sender == address(core));
+        address oldFlashLoanModule = address(flashLoanModule);
         if (oldFlashLoanModule != address(0)) {
             stablecoin.removeMinter(oldFlashLoanModule);
         }
@@ -95,24 +98,24 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
         if (_flashLoanModule != address(0)) {
             stablecoin.addMinter(_flashLoanModule);
         }
-        flashLoanModule = _flashLoanModule;
+        flashLoanModule = IFlashAngle(_flashLoanModule);
     }
 
-    function addMinter(address minter) external onlyRole(GOVERNOR_ROLE) {
+    function addMinter(address minter) external onlyGovernor {
         stablecoin.addMinter(minter);
     }
 
-    function removeMinter(address minter) external onlyRole(GOVERNOR_ROLE) {
+    function removeMinter(address minter) external onlyGovernor {
         // If you want to remove the minter role to a vaultManager you have to make sure it no longer has the vaultManager role
-        require(!hasRole(VAULTMANAGER_ROLE, minter));
+        require(!vaultManagerMap[minter]);
         stablecoin.removeMinter(minter);
     }
 
-    function setSurplusForGovernance(uint64 _surplusForGovernance) external onlyRole(GOVERNOR_ROLE) {
+    function setSurplusForGovernance(uint64 _surplusForGovernance) external onlyGovernor {
         surplusForGovernance = _surplusForGovernance;
     }
 
-    function setSurplusManager(address _surplusManager) external onlyRole(GOVERNOR_ROLE) {
+    function setSurplusManager(address _surplusManager) external onlyGovernor {
         require(surplusManager != address(0), "0");
         surplusManager = _surplusManager;
     }
@@ -148,16 +151,16 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
         badDebtValue = badDebt;
         // tracks value of the surplus buffer at the end of the call
         surplusBufferValue = surplusBuffer;
-        uint256 count = getRoleMemberCount(VAULTMANAGER_ROLE);
+        uint256 vaultManagerListLength = vaultManagerList.length;
         uint256 newSurplus;
         uint256 newBadDebt;
-        for (uint256 i = 0; i < count; i++) {
-            (newSurplus, newBadDebt) = IVaultManager(getRoleMember(VAULTMANAGER_ROLE, i)).accrueInterestToTreasury();
+        for (uint256 i = 0; i < vaultManagerListLength; i++) {
+            (newSurplus, newBadDebt) = IVaultManager(vaultManagerList[i]).accrueInterestToTreasury();
             surplusBufferValue += newSurplus;
             badDebtValue += newBadDebt;
         }
-        if (flashLoanModule != address(0)) {
-            surplusBufferValue += ITreasurySurplusRecipient(flashLoanModule).accrueInterestToTreasury();
+        if (address(flashLoanModule) != address(0)) {
+            surplusBufferValue += flashLoanModule.accrueInterestToTreasury(stablecoin);
         }
         (surplusBufferValue, badDebtValue) = _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
     }
@@ -181,7 +184,7 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
     function fetchSurplusFromFlashLoan() external returns (uint256 surplusBufferValue, uint256 badDebtValue) {
         // it will fail if flashLoanModule is 0 address -> no need for a require
         badDebtValue = badDebt;
-        surplusBufferValue = surplusBuffer + ITreasurySurplusRecipient(flashLoanModule).accrueInterestToTreasury();
+        surplusBufferValue = surplusBuffer + flashLoanModule.accrueInterestToTreasury(stablecoin);
         (surplusBufferValue, badDebtValue) = _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
     }
 
@@ -204,7 +207,7 @@ contract Treasury is ITreasury, Initializable, AccessControlEnumerableUpgradeabl
         address tokenAddress,
         address to,
         uint256 amountToRecover
-    ) external onlyRole(GOVERNOR_ROLE) {
+    ) external onlyGovernor {
         // Cannot recover stablecoin if badDebt or tap into the surplus buffer
         if (tokenAddress == address(stablecoin)) {
             require(badDebt == 0);
