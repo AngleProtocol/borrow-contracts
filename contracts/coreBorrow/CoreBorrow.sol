@@ -46,6 +46,10 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
         return hasRole(GUARDIAN_ROLE, admin);
     }
 
+    function isFlashLoanerTreasury(address treasury) external view override returns (bool) {
+        return hasRole(FLASHLOANER_TREASURY_ROLE, treasury);
+    }
+
     function setFlashLoanModule(address _flashLoanModule) external onlyRole(GOVERNOR_ROLE) {
         uint256 count = getRoleMemberCount(FLASHLOANER_TREASURY_ROLE);
         for (uint256 i = 0; i < count; i++) {

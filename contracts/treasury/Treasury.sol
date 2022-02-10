@@ -101,6 +101,18 @@ contract Treasury is ITreasury, Initializable {
         flashLoanModule = IFlashAngle(_flashLoanModule);
     }
 
+    function setTreasury(address _newTreasury) external onlyGovernor {
+        require(_newTreasury != address(0));
+        // TODO: not checking that it's the same stablecoin otherwise it would prevent us from setting some custom params
+        // but do we really want it
+        // Flash loan role should be removed before calling this function
+        require(!core.isFlashLoanerTreasury(_newTreasury));
+        for (uint256 i = 0; i < vaultManagerList.length; i++) {
+            IVaultManager(vaultManagerList[i]).setTreasury(_newTreasury);
+        }
+        stablecoin.setTreasury(_newTreasury);
+    }
+
     function addMinter(address minter) external onlyGovernor {
         stablecoin.addMinter(minter);
     }

@@ -25,6 +25,8 @@ interface IAgToken is IERC20Upgradeable {
 
     function isMinter(address minter) external view returns (bool);
 
+    function setTreasury(address _newTreasury) external;
+
     // ========================= External function =================================
 
     function stableMaster() external view returns (address);

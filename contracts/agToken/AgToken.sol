@@ -45,11 +45,15 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     mapping(address => bool) public override isMinter;
     ITreasury public treasury;
+    bool public treasuryInitialized;
 
     function setUpTreasury(address _treasury) external {
         // We have to hardcode the address in the first place since this is linked to a smart contract upgrade
         require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
+        require(address(ITreasury(_treasury).stablecoin()) == address(this));
+        require(!treasuryInitialized);
         treasury = ITreasury(_treasury);
+        treasuryInitialized = true;
     }
 
     /// @notice Checks to see if it is the `StableMaster` calling this contract
@@ -69,14 +73,13 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         isMinter[minter] = true;
     }
 
+    function setTreasury(address _newTreasury) external override onlyTreasury {
+        treasury = ITreasury(_newTreasury);
+    }
+
     function removeMinter(address minter) external override {
         require(msg.sender == address(treasury) || msg.sender == minter);
         isMinter[minter] = false;
-    }
-
-    function setTreasury(ITreasury _treasury) external onlyTreasury {
-        require(_treasury.stablecoin() == IAgToken(address(this)));
-        treasury = _treasury;
     }
 
     // ========================= External Functions ================================

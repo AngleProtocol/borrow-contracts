@@ -6,4 +6,6 @@ interface ICoreBorrow {
     function isGovernorOrGuardian(address admin) external view returns (bool);
 
     function isGovernor(address admin) external view returns (bool);
+
+    function isFlashLoanerTreasury(address treasury) external view returns (bool);
 }
