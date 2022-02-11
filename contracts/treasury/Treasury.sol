@@ -47,7 +47,7 @@ contract Treasury is ITreasury, Initializable {
     /// given to governance, then this surplus is reset
     uint256 public surplusBuffer;
 
-    // =============================== Parameters ==================================
+    // =============================== Parameter ===================================
 
     /// @notice Share of the `surplusBuffer` distributed to governance
     uint64 public surplusForGovernance;

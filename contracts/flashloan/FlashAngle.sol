@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.10;
 
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
@@ -13,10 +12,6 @@ import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/IFlashAngle.sol";
 import "../interfaces/ITreasury.sol";
 
-// OpenZeppelin may update its version of the ERC20PermitUpgradeable token
-
-// TODO with mapping
-
 struct StablecoinData {
     address treasury;
     uint256 maxBorrowable;
@@ -25,10 +20,7 @@ struct StablecoinData {
 
 /// @title FlashAngle
 /// @author Angle Core Team
-/// @notice Contract to take flash loans on top of an AgToken contract
-/// @dev This contract is used to create and handle the stablecoins of Angle protocol
-/// @dev Only the `StableMaster` contract can mint or burn agTokens
-/// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange
+/// @notice Contract to take flash loans on top of several AgToken contracts
 contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, ReentrancyGuardUpgradeable {
     uint256 public constant BASE_PARAMS = 10**9;
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
@@ -36,7 +28,6 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     mapping(IAgToken => StablecoinData) public stablecoinMap;
     ICoreBorrow public core;
 
-    // Pausable
     // Treasury can rule it and governor can set fees for it
     function initialize(
         ICoreBorrow _core,
