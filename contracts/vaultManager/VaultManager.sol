@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/IAgToken.sol";
-import "../interfaces/IFlashLoanCallee.sol";
+import "../interfaces/IRepayCallee.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
@@ -26,8 +26,10 @@ import "../interfaces/IVaultManager.sol";
 // TODO check liquidationBooster depending on veANGLE with like a veANGLE delegation feature
 // TODO add returns to functions
 // TODO think of more view functions
-// TODO liquidations for vaults which have just been created
-// TODO recoverERC20?
+// TODO liquidations for vaults which have just been created: check
+// TODO Events
+// TODO fill require
+// TODO additional checks for liquidations -> some checks are missing here, cf Guillaume's comment
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -318,6 +320,13 @@ contract VaultManager is
         return totalNormalizedDebt * _calculateCurrentInterestRateAccumulator();
     }
 
+    /// @notice Checks whether a given vault is liquidable and if yes gives information regarding its liquidation
+    /// @param vaultID ID of the vault to check
+    /// @return liqOpp Description of the opportunity of liquidation
+    function checkLiquidation(uint256 vaultID) external view returns (LiquidationOpportunity memory liqOpp) {
+        liqOpp = _checkLiquidation(vaultData[vaultID], oracle.read(), _calculateCurrentInterestRateAccumulator());
+    }
+
     // =================== Internal Utility View Functions =========================
 
     /// @notice Verifies whether a given vault is solvent (i.e. should be liquidated or not)
@@ -472,7 +481,7 @@ contract VaultManager is
         uint256 dstVaultID,
         uint256 stablecoinAmount
     ) external whenNotPaused {
-        _getDebtIn(vaultManager, srcVaultID, dstVaultID, stablecoinAmount, 0, 0);
+        _getDebtIn(srcVaultID, vaultManager, dstVaultID, stablecoinAmount, 0, 0);
     }
 
     /// @inheritdoc IVaultManager
@@ -480,7 +489,7 @@ contract VaultManager is
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 senderBorrowFee
-    ) public override whenNotPaused {
+    ) external override whenNotPaused {
         require(treasury.isVaultManager(msg.sender));
         // Checking the delta of borrow fees to eliminate the risk of exploits here
         if (senderBorrowFee > borrowFee) {
@@ -505,7 +514,7 @@ contract VaultManager is
     /// @param vaultID ID of the vault to close
     /// @param oracleValueStart Oracle value at the start of the call: if it's 0 it's going to be computed
     /// in the `_isSolvent` function
-    /// @param interestRateAccumulatorStart Interest rate accumulator value at the start of the call: if it's 0
+    /// @param newInterestRateAccumulatorStart Interest rate accumulator value at the start of the call: if it's 0
     /// it's going to be computed in the `isSolvent` function
     /// @return Current debt of the vault to be repaid
     /// @return Value of the collateral in the vault to reimburse
@@ -515,7 +524,7 @@ contract VaultManager is
     function _closeVault(
         uint256 vaultID,
         uint256 oracleValueStart,
-        uint256 interestRateAccumulatorStart
+        uint256 newInterestRateAccumulatorStart
     )
         internal
         onlyApprovedOrOwner(msg.sender, vaultID)
@@ -531,7 +540,7 @@ contract VaultManager is
         (bool solvent, uint256 currentDebt, , uint256 oracleValue, uint256 newInterestRateAccumulator) = _isSolvent(
             vault,
             oracleValueStart,
-            interestRateAccumulatorStart
+            newInterestRateAccumulatorStart
         );
         require(solvent);
         _burn(vaultID);
@@ -569,7 +578,15 @@ contract VaultManager is
         return (oracleValue, newInterestRateAccumulator);
     }
 
-    // TODO check order with which we have to place the modifiers for it to work
+    /// @notice Increases the debt balance of a vault and takes into account borrowing fees
+    /// @param vaultID ID of the vault to increase borrow balance of
+    /// @param stablecoinAmount Amount of stablecoins to borrow
+    /// @param oracleValueStart Oracle value at the start of the call (given here to avoid double computations)
+    /// @param newInterestRateAccumulatorStart Value of the interest rate accumulator (potentially zero if it has not been
+    /// computed yet)
+    /// @return toMint Amount of stablecoins to mint
+    /// @return oracleValue Computed value of the oracle
+    /// @return interestRateAccumulator Computed value of the interest rate accumulator
     function _borrow(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -595,22 +612,35 @@ contract VaultManager is
         toMint = stablecoinAmount - borrowFeePaid;
     }
 
+    /// @notice Internal version of the `getDebtIn` function
+    /// @return Computed value of the oracle
+    /// @return Computed value of the interest rate accumulator
     function _getDebtIn(
-        IVaultManager vaultManager,
         uint256 srcVaultID,
+        IVaultManager vaultManager,
         uint256 dstVaultID,
         uint256 stablecoinAmount,
         uint256 oracleValue,
         uint256 newInterestRateAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
-        // Checking if the vaultManager has been initialized
-        // TODO borrow fee ->
-        // TODO simplify if same vault
-        require(treasury.isVaultManager(address(vaultManager)));
-        vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
+        if(address(vaultManager) == address(this)) {
+            _decreaseDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
+        } else {
+            require(treasury.isVaultManager(address(vaultManager)));
+            vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
+        }
         return _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
     }
 
+    /// @notice Increases the debt of a given vault and verifies that this vault is still solvent
+    /// @param vaultID ID of the vault to increase the debt of
+    /// @param stablecoinAmount Amount of stablecoin to increase the debt of: this amount is converted in 
+    /// normalized debt using the pre-computed (or not) `newInterestRateAccumulator` value
+    /// @param oracleValueStart Oracle value at the start of the call (given here to avoid double computations)
+    /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// computed yet)
+    /// @return Computed value of the oracle
+    /// @return Computed value of the interest rate accumulator
     function _increaseDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -631,6 +661,14 @@ contract VaultManager is
         return (oracleValue, newInterestRateAccumulator);
     }
 
+    /// @notice Decreases the debt of a given vault and verifies that this vault still has an amount of debt superior
+    /// to a dusty amount or no debt at all
+    /// @param vaultID ID of the vault to decrease the debt of
+    /// @param stablecoinAmount Amount of stablecoin to increase the debt of: this amount is converted in 
+    /// normalized debt using the pre-computed (or not) `newInterestRateAccumulator` value
+    /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// computed yet)
+    /// @return Computed value of the interest rate accumulator
     function _decreaseDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -640,7 +678,6 @@ contract VaultManager is
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
         uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt - changeAmount;
         totalNormalizedDebt -= changeAmount;
-        // TODO check if can be done more efficiently
         require(
             newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestRateAccumulator >= dust * BASE_INTEREST
         );
@@ -648,6 +685,16 @@ contract VaultManager is
         return newInterestRateAccumulator;
     }
 
+    /// @notice Handles the simultaneous repayment of stablecoins with a transfer of collateral
+    /// @param collateralAmountToGive Amount of collateral the contract should give
+    /// @param stableAmountToRepay Amount of stablecoins the contract should burn from the call
+    /// @param from Address from which stablecoins should be burnt: it should be the `msg.sender` or at least
+    /// approved by it
+    /// @param to Address to which stablecoins should be sent
+    /// @param who Address which should be notified if needed of the transfer
+    /// @param data Data to pass to the `who` contract for it to successfully give the correct amount of stablecoins
+    /// to the `from` address
+    /// @dev This function allows for capital-efficient liquidations and repayments of loans
     function _handleRepay(
         uint256 collateralAmountToGive,
         uint256 stableAmountToRepay,
@@ -661,14 +708,38 @@ contract VaultManager is
         if (data.length > 0 && who != address(stablecoin)) {
             // TODO do we keep the interface here: Maker has the same, same for Abracadabra -> maybe need to do something different
             // Like flashloan callee is for sure not the right name to set here given that it's not a flash loan
-            IFlashLoanCallee(who).flashLoanCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
+            IRepayCallee(who).repayCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
         }
         stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
     }
 
+    /// @inheritdoc IVaultManager
+    function accrueInterestToTreasury()
+        external
+        override
+        onlyTreasury
+        returns (uint256 surplusValue, uint256 badDebtValue)
+    {
+        _accrue();
+        surplusValue = surplus;
+        badDebtValue = badDebt;
+        if (surplusValue >= badDebtValue) {
+            surplusValue -= badDebtValue;
+            badDebtValue = 0;
+            stablecoin.mint(address(treasury), surplusValue);
+        } else {
+            badDebtValue -= surplusValue;
+            surplusValue = 0;
+        }
+        surplus = 0;
+        badDebt = 0;
+    }
+
+    /// @notice Accrues interest accumulated across all vaults to the surplus
+    /// @dev This function updates the `interestAccumulator`
+    /// @dev It should also be called when updating the value of the per second interest rate
     function _accrue() internal {
         uint256 newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        // TODO can change
         uint256 interestAccrued = (totalNormalizedDebt * (newInterestRateAccumulator - interestAccumulator)) /
             BASE_INTEREST;
         surplus += interestAccrued;
@@ -676,27 +747,7 @@ contract VaultManager is
         lastInterestAccumulatorUpdated = block.timestamp;
     }
 
-    function accrueInterestToTreasury()
-        external
-        override
-        onlyTreasury
-        returns (uint256 surplusCurrentValue, uint256 badDebtEndValue)
-    {
-        _accrue();
-        surplusCurrentValue = surplus;
-        badDebtEndValue = badDebt;
-        // TODO do we still need to do it here if accounting is done in the end in the treasury
-        if (surplusCurrentValue >= badDebtEndValue) {
-            badDebtEndValue = 0;
-            stablecoin.mint(address(treasury), surplusCurrentValue - badDebtEndValue);
-        } else {
-            badDebtEndValue -= surplusCurrentValue;
-        }
-        surplus = 0;
-        // Reset to 0 once communicated to the protocol
-        badDebt = 0;
-    }
-
+    // TODO enum
     uint8 public constant ACTION_CREATE_VAULT = 1;
     uint8 public constant ACTION_CLOSE_VAULT = 2;
     uint8 public constant ACTION_ADD_COLLATERAL = 3;
@@ -766,8 +817,8 @@ contract VaultManager is
                     (address, uint256, uint256, uint256)
                 );
                 (oracleValue, newInterestRateAccumulator) = _getDebtIn(
-                    IVaultManager(vaultManager),
                     vaultID,
+                    IVaultManager(vaultManager),
                     dstVaultID,
                     stablecoinAmount,
                     oracleValue,
@@ -801,7 +852,7 @@ contract VaultManager is
             if (paymentData.collateralAmountToGive < paymentData.collateralAmountToReceive) {
                 uint256 collateralPayment = paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive;
                 if (data.length > 0 && who != address(collateral)) {
-                    IFlashLoanCallee(who).flashLoanCallCollateral(
+                    IRepayCallee(who).repayCallCollateral(
                         msg.sender,
                         stablecoinPayment,
                         collateralPayment,
@@ -849,7 +900,8 @@ contract VaultManager is
 
                 // TODO check whether with rounding it still works
                 if (vault.collateralAmount <= collateralReleased) {
-                    _burn(vaultIDs[i]);
+                    // Reinitializing the vaultID
+                    delete vaultData[vaultIDs[i]];
                     liqData.badDebtFromLiquidation +=
                         liqOpp.currentDebt -
                         (amounts[i] * liquidationSurcharge) /
@@ -868,10 +920,6 @@ contract VaultManager is
         surplus += (liqData.stablecoinAmountToReceive * (BASE_PARAMS - liquidationSurcharge)) / BASE_PARAMS;
         badDebt += liqData.badDebtFromLiquidation;
         _handleRepay(liqData.collateralAmountToGive, liqData.stablecoinAmountToReceive, from, to, who, data);
-    }
-
-    function checkLiquidation(uint256 vaultID) external view returns (LiquidationOpportunity memory liqOpp) {
-        liqOpp = _checkLiquidation(vaultData[vaultID], oracle.read(), _calculateCurrentInterestRateAccumulator());
     }
 
     // For liquidators: should return the max amount to liquidate

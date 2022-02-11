@@ -2,15 +2,15 @@
 
 pragma solidity 0.8.10;
 
-interface IFlashLoanCallee {
-    function flashLoanCallStablecoin(
+interface IRepayCallee {
+    function repayCallStablecoin(
         address stablecoinRecipient,
         uint256 stablecoinOwed,
         uint256 collateralObtained,
         bytes calldata data
     ) external;
 
-    function flashLoanCallCollateral(
+    function repayCallCollateral(
         address collateralRecipient,
         uint256 stablecoinPayment,
         uint256 collateralPayment,
