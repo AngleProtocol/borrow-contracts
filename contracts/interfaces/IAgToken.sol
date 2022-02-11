@@ -7,8 +7,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 /// @title IAgToken
 /// @author Angle Core Team
 /// @notice Interface for the stablecoins `AgToken` contracts
-/// @dev The only functions that are left in the interface are the functions which are used
-/// at another point in the protocol by a different contract
 interface IAgToken is IERC20Upgradeable {
     // ======================= `StableMaster` functions ============================
     function mint(address account, uint256 amount) external;
@@ -20,6 +18,14 @@ interface IAgToken is IERC20Upgradeable {
     ) external;
 
     function burnSelf(uint256 amount, address burner) external;
+
+    function addMinter(address minter) external;
+
+    function removeMinter(address minter) external;
+
+    function isMinter(address minter) external view returns (bool);
+
+    function setTreasury(address _newTreasury) external;
 
     // ========================= External function =================================
 
