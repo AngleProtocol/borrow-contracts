@@ -11,8 +11,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/IFlashLoanCallee.sol";
@@ -27,6 +27,7 @@ import "../interfaces/IVaultManager.sol";
 // TODO add returns to functions
 // TODO think of more view functions
 // TODO liquidations for vaults which have just been created
+// TODO recoverERC20?
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -379,14 +380,6 @@ contract VaultManager is
         return _createVault(toVault);
     }
 
-    /// @notice Internal version of the `createVault` function
-    function _createVault(address toVault) internal returns (uint256 vaultID) {
-        require(!whitelistingActivated || (isWhitelisted[toVault] && isWhitelisted[msg.sender]), "not whitelisted");
-        _vaultIDcount.increment();
-        vaultID = _vaultIDcount.current();
-        _mint(toVault, vaultID);
-    }
-
     /// @notice Closes a vault
     /// @param vaultID Vault to close
     /// @param from Address from which stablecoins for the repayment of the debt should be taken
@@ -434,6 +427,12 @@ contract VaultManager is
         collateral.transfer(to, collateralAmount);
     }
 
+    /// @notice Repays a portion of the debt of a vault
+    /// @param vaultID ID of the vault for which debt should be repayed
+    /// @param stablecoinAmount Amount of stablecoins
+    /// @param from Address to take the stablecoins from
+    /// @dev `from` should have approved the `msg.sender` for debt repayment
+    /// @dev Any address can repay debt for any address
     function repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -443,6 +442,12 @@ contract VaultManager is
         _decreaseDebt(vaultID, stablecoinAmount, 0);
     }
 
+    /// @notice Borrows stablecoins from a vault
+    /// @param vaultID ID of the vault for which stablecoins should be borrowed
+    /// @param stablecoinAmount Amount of stablecoins to borrow
+    /// @param to Address to which stablecoins should be sent
+    /// @dev A solvency check is performed after the debt increase
+    /// @dev Only approved addresses by the vault owner or the vault owner can perform this action
     function borrow(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -452,29 +457,48 @@ contract VaultManager is
         stablecoin.mint(to, toMint);
     }
 
+    /// @notice Gets debt in a vault from another vault potentially in another `VaultManager` contract
+    /// @param srcVaultID ID of the vault from this contract for which growing debt
+    /// @param vaultManager Address of the `vaultManager` where the targeted vault is
+    /// @param dstVaultID ID of the vault in the target contract
+    /// @param stablecoinAmount Amount of stablecoins to grow the debt of. This amount will be converted
+    /// to a normalized value in both vaultManager contracts
+    /// @dev A solvency check is performed after the debt increase in the source `vaultID`
+    /// @dev Only approved addresses by the source vault owner can perform this action, however any vault
+    /// from any vaultManager contract can see its debt reduced by this means
     function getDebtIn(
-        IVaultManager vaultManager,
         uint256 srcVaultID,
+        IVaultManager vaultManager,
         uint256 dstVaultID,
         uint256 stablecoinAmount
     ) external whenNotPaused {
         _getDebtIn(vaultManager, srcVaultID, dstVaultID, stablecoinAmount, 0, 0);
     }
 
-    // Should be public to allow `getDebtOut`
+    /// @inheritdoc IVaultManager
     function getDebtOut(
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 senderBorrowFee
     ) public override whenNotPaused {
         require(treasury.isVaultManager(msg.sender));
-        // Check the delta of borrow fees to reduce the surface of exploits here
+        // Checking the delta of borrow fees to eliminate the risk of exploits here
         if (senderBorrowFee > borrowFee) {
             uint256 borrowFeePaid = ((senderBorrowFee - borrowFee) * stablecoinAmount) / BASE_PARAMS;
             stablecoinAmount -= borrowFeePaid;
             surplus += borrowFeePaid;
         }
         _decreaseDebt(vaultID, stablecoinAmount, 0);
+    }
+
+    // =============== Internal Utility State-Modifying Functions ==================
+
+    /// @notice Internal version of the `createVault` function
+    function _createVault(address toVault) internal returns (uint256 vaultID) {
+        require(!whitelistingActivated || (isWhitelisted[toVault] && isWhitelisted[msg.sender]), "not whitelisted");
+        _vaultIDcount.increment();
+        vaultID = _vaultIDcount.current();
+        _mint(toVault, vaultID);
     }
 
     /// @notice Closes a vault without handling the repayment of the concerned address
@@ -514,29 +538,21 @@ contract VaultManager is
         return (currentDebt, vault.collateralAmount, oracleValue, newInterestRateAccumulator);
     }
 
-    function _handleRepay(
-        uint256 collateralAmountToGive,
-        uint256 stableAmountToRepay,
-        address from,
-        address to,
-        address who,
-        bytes calldata data
-    ) internal {
-        collateral.safeTransfer(to, collateralAmountToGive);
-        // TODO check for which contract we need to be careful -> like do we need to add a reentrancy or to restrict the who address
-        if (data.length > 0 && who != address(stablecoin)) {
-            // TODO do we keep the interface here: Maker has the same, same for Abracadabra -> maybe need to do something different
-            // Like flashloan callee is for sure not the right name to set here given that it's not a flash loan
-            IFlashLoanCallee(who).flashLoanCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
-        }
-        stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
-    }
-
+    /// @notice Increases the collateral balance of a vault
+    /// @param vaultID ID of the vault to increase the collateral balance of
+    /// @param collateralAmount Amount by which increasing the collateral balance of
     function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         vaultData[vaultID].collateralAmount += collateralAmount;
     }
 
-    // Optimize the `isLiquidable` thing
+    /// @notice Decreases the collateral balance from a vault (without proceeding to collateral transfers)
+    /// @param vaultID ID of the vault to decrease the collateral balance of
+    /// @param collateralAmount Amount of collateral to reduce the balance of
+    /// @param oracleValueStart Oracle value at the start of the call (given here to avoid double computations)
+    /// @param interestRateAccumulatorStart Value of the interest rate accumulator (potentially zero if it has not been
+    /// computed yet)
+    /// @return Computed value of the oracle
+    /// @return Computed value of the interest rate accumulator
     function _removeCollateral(
         uint256 vaultID,
         uint256 collateralAmount,
@@ -579,6 +595,22 @@ contract VaultManager is
         toMint = stablecoinAmount - borrowFeePaid;
     }
 
+    function _getDebtIn(
+        IVaultManager vaultManager,
+        uint256 srcVaultID,
+        uint256 dstVaultID,
+        uint256 stablecoinAmount,
+        uint256 oracleValue,
+        uint256 newInterestRateAccumulator
+    ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
+        // Checking if the vaultManager has been initialized
+        // TODO borrow fee ->
+        // TODO simplify if same vault
+        require(treasury.isVaultManager(address(vaultManager)));
+        vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
+        return _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
+    }
+
     function _increaseDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -616,19 +648,22 @@ contract VaultManager is
         return newInterestRateAccumulator;
     }
 
-    function _getDebtIn(
-        IVaultManager vaultManager,
-        uint256 srcVaultID,
-        uint256 dstVaultID,
-        uint256 stablecoinAmount,
-        uint256 oracleValue,
-        uint256 newInterestRateAccumulator
-    ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
-        // Checking if the vaultManager has been initialized
-        // TODO borrow fee ->
-        require(treasury.isVaultManager(address(vaultManager)));
-        vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
-        return _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
+    function _handleRepay(
+        uint256 collateralAmountToGive,
+        uint256 stableAmountToRepay,
+        address from,
+        address to,
+        address who,
+        bytes calldata data
+    ) internal {
+        collateral.safeTransfer(to, collateralAmountToGive);
+        // TODO check for which contract we need to be careful -> like do we need to add a reentrancy or to restrict the who address
+        if (data.length > 0 && who != address(stablecoin)) {
+            // TODO do we keep the interface here: Maker has the same, same for Abracadabra -> maybe need to do something different
+            // Like flashloan callee is for sure not the right name to set here given that it's not a flash loan
+            IFlashLoanCallee(who).flashLoanCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
+        }
+        stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
     }
 
     function _accrue() internal {
