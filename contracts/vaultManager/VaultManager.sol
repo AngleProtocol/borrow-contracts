@@ -259,8 +259,8 @@ contract VaultManager is
         emit FiledUint256(param, what);
     }
 
-    function toggleBool(uint256 param, bytes32 what) external onlyGovernor {
-        if (what == "whitelisting") dust = param;
+    function toggleBool(bool param, bytes32 what) external onlyGovernor {
+        if (what == "whitelisting") whitelistingActivated = param;
     }
 
     function setAddress(address param, bytes32 what) external onlyGovernor {
