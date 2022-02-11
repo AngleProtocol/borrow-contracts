@@ -5,6 +5,7 @@ pragma solidity 0.8.10;
 import "./ITreasury.sol";
 
 interface IVaultManager {
+    /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury);
 
     function getDebtOut(

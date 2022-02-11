@@ -21,60 +21,19 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 
-struct VaultParameters {
-    uint256 dust;
-    uint256 debtCeiling;
-    uint64 collateralFactor;
-    uint64 targetHealthFactor;
-    uint64 dustCollateral;
-    uint64 borrowFee;
-    uint64 interestRate;
-    uint64 liquidationSurcharge;
-    uint64 maxLiquidationDiscount;
-    uint64 liquidationBooster;
-}
-
-struct Vault {
-    uint256 collateralAmount;
-    uint256 normalizedDebt;
-}
-
-struct LiquidationOpportunity {
-    // Only populated if repay > 0
-    uint256 maxStablecoinAmountToRepay;
-    // Collateral Amount given to the person in case of max amount
-    uint256 maxCollateralAmountGiven;
-    // Ok to repay below threshold, but if above, should repay max stablecoin amount
-    uint256 thresholdRepayAmount;
-    // Discount proposed
-    uint256 discount;
-    uint256 currentDebt;
-}
-
-struct LiquidatorData {
-    uint256 stablecoinAmountToRepay;
-    uint256 collateralAmountToGive;
-    uint256 badDebtFromLiquidation;
-    uint256 oracleValue;
-    uint256 newInterestRateAccumulator;
-}
-
-struct PaymentData {
-    uint256 stablecoinAmountToGive;
-    uint256 stablecoinAmountToReceive;
-    uint256 collateralAmountToGive;
-    uint256 collateralAmountToReceive;
-}
-
 // TODO split in multiple files and leave some space each time for upgradeability -> check how we can leverage libraries this time
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
 // TODO check trade-off 10**27 and 10**18 for interest accumulated
 // TODO check liquidationBooster depending on veANGLE with like a veANGLE delegation feature
 // TODO add returns to functions
+/// TODO think of more view functions
 
 /// @title VaultManager
 /// @author Angle Core Team
-/// @notice VaultManager implementation of Angle Borrowing Module working only with non-rebasing ERC-20
+/// @notice This contract allows people to deposit collateral and open up loans of a given AgToken. It handles all the loan
+/// logic (fees and interest rate) as well as the liquidation logic
+/// @dev This implementation only supports non-rebasing ERC20 tokens as collateral
+/// @dev This contract is encoded as a NFT contract
 // solhint-disable-next-line max-states-count
 contract VaultManager is
     Initializable,
@@ -92,53 +51,154 @@ contract VaultManager is
     /// @notice Base used for interest rate computation
     uint256 public constant BASE_INTEREST = 10**27;
 
-    event FiledUint64(uint64 param, bytes32 what);
-    event FiledUint256(uint256 param, bytes32 what);
-    event FiledAddress(address param, bytes32 what);
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+    // ================================ Key Structs ================================
 
-    /// Mappings
+    /// @notice Parameters associated to a given `VaultManager` contract: these all correspond
+    /// to parameters which signification is detailed below
+    struct VaultParameters {
+        uint256 dust;
+        uint256 dustCollateral;
+        uint256 debtCeiling;
+        uint64 collateralFactor;
+        uint64 targetHealthFactor;
+        uint64 borrowFee;
+        uint64 interestRate;
+        uint64 liquidationSurcharge;
+        uint64 maxLiquidationDiscount;
+        uint64 liquidationBooster;
+    }
+
+    /// @notice Data stored to track someone's loan (or equivalently called position)
+    struct Vault {
+        // Amount of collateral deposited in the vault
+        uint256 collateralAmount;
+        // Normalized value of the debt (that is to say of the stablecoins borrowed)
+        uint256 normalizedDebt;
+    }
+
+    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximul
+    /// amount that could be repaid by liquidating the position
+    /// @dev All the values are null in the case of a vault which cannot be liquidated under these conditions
+    struct LiquidationOpportunity {
+        // Maximum stablecoin amount that can be repaid upon liquidating the vault
+        uint256 maxStablecoinAmountToRepay;
+        // Collateral amount given to the person in the case where the maximum amount to repay is given
+        uint256 maxCollateralAmountGiven;
+        // Threshold value of stablecoin amount to repay: it is ok for a liquidator to repay below threshold,
+        // but if this threshold is non null and the liquidator wants to repay more than threshold, it should repay
+        // the max stablecoin amount given in this vault
+        uint256 thresholdRepayAmount;
+        // Discount proposed to the liquidator on the collateral
+        uint256 discount;
+        // Amount of debt in the vault
+        uint256 currentDebt;
+    }
+
+    /// @notice Data stored during a liquidation process to keep in memory what's due to a liquidator and some
+    /// essential data for vaults being liquidated
+    struct LiquidatorData {
+        // Current amount of stablecoins the liquidator should give to the contract
+        uint256 stablecoinAmountToReceive;
+        // Current amount of collateral the contract should give to the liquidator
+        uint256 collateralAmountToGive;
+        // Bad debt accrued across the liquidation process
+        uint256 badDebtFromLiquidation;
+        // Oracle value at the time of the liquidation
+        uint256 oracleValue;
+        // Value of the interestRateAccumulator at the time of the call
+        uint256 newInterestRateAccumulator;
+    }
+
+    /// @notice Data to track during a series of action the amount to give or receive in stablecoins and collateral
+    /// to the caller or associated addresses
+    struct PaymentData {
+        // Stablecoin amount the contract should give
+        uint256 stablecoinAmountToGive;
+        // Stablecoin amount owed to the contract
+        uint256 stablecoinAmountToReceive;
+        // Collateral amount the contract should give
+        uint256 collateralAmountToGive;
+        // Collateral amount owed to the contract
+        uint256 collateralAmountToReceive;
+    }
+
+    // ================================ Mappings ===================================
+
+    /// @notice Maps an address to whether it's whitelisted and can open or own a vault
     mapping(address => bool) public isWhitelisted;
+    /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
+    mapping(uint256 => Vault) public vaultData;
 
-    /// References to other contracts
+    // =============================== References ==================================
+
+    /// @inheritdoc IVaultManager
     ITreasury public override treasury;
+    /// @notice Reference to the collateral handled by this `VaultManager`
     IERC20 public collateral;
+    /// @notice Stablecoin handled by this contract. Another `VaultManager` contract could have
+    /// the same rights as this `VaultManager` on the stablecoin contract
     IAgToken public stablecoin;
+    /// @notice Oracle contract to get access to the price of the collateral with respect to the stablecoin
     IOracle public oracle;
+    /// @notice Base of the collateral
     uint256 public collatBase;
 
-    /// Parameters
+    // =============================== Parameters ==================================
+
+    /// @notice Minimum amount of debt a vault can have
     uint256 public dust;
+    /// @notice Maximum amount of stablecoins that can be issued with this contract
     uint256 public debtCeiling;
+    /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
+    /// where the health factor function is decreasing
+    uint256 public dustCollateral;
+    /// @notice Encodes the minimum ratio collateral/stablecoin a vault can have before being liquidated. It's what
+    /// determines the minimum collateral ratio of a position
     uint64 public collateralFactor;
+    /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)
     uint64 public targetHealthFactor;
-    uint64 public dustCollateral;
+    /// @notice Upfront fee taken when borrowing stablecoins
     uint64 public borrowFee;
-    // should be per second
+    /// @notice Per second interest taken to borrowers taking agToken loans
     uint64 public interestRate;
+    /// @notice Fee taken by the protocol during a liquidation. Technically, this value is not the fee per se, it's 1 - fee.
+    /// For instance for a 2% fee, `liquidationSurcharge` should be 98%
     uint64 public liquidationSurcharge;
+    /// @notice Maximum discount given to liquidators
     uint64 public maxLiquidationDiscount;
+    /// @notice Base liquidation booster to compute the discount
     uint64 public liquidationBooster;
+    /// @notice Whether whitelisting is required to own a vault or not
     bool public whitelistingActivated;
 
-    /// Variables
+    // =============================== Variables ===================================
+
+    /// @notice Timestamp at which the `interestAccumulator` was updated
     uint256 public lastInterestAccumulatorUpdated;
+    /// @notice Keeps track of the interest that should accrue to the protocol. The stored value
+    /// is not necessarily the true value: this one is recomputed every time an action takes place
+    /// within the protocol
     uint256 public interestAccumulator;
+    /// @notice Total normalized amount of stablecoins borrowed
     uint256 public totalNormalizedDebt;
+    /// @notice Surplus accumulated by the contract: surplus is always in stablecoins, and is then reset
+    /// when the value is communicated to the treasury contract
     uint256 public surplus;
+    /// @notice Bad debt made from liquidated vaults which ended up having no collateral and a positive amount
+    /// of stablecoins
     uint256 public badDebt;
-    // Counter to generate a unique `vaultID` for each vault
-    CountersUpgradeable.Counter internal _vaultIDcount;
 
-    // ============================== ERC721 Data ==============================
+    // ================================ ERC721 Data ================================
 
+    /// @notice URI
     string public baseURI;
+    /// @notice Name of the NFT contract
     string public override name;
+    /// @notice Symbol of the NFT contract
     string public override symbol;
 
-    mapping(uint256 => Vault) public vaultData;
+    // Counter to generate a unique `vaultID` for each vault
+    CountersUpgradeable.Counter internal _vaultIDcount;
 
     // Mapping from `vaultID` to owner address
     mapping(uint256 => address) internal _owners;
@@ -152,16 +212,32 @@ contract VaultManager is
     // Mapping from owner to operator approvals
     mapping(address => mapping(address => bool)) internal _operatorApprovals;
 
+    // =============================== Events ======================================
+
+    event FiledUint64(uint64 param, bytes32 what);
+    event FiledUint256(uint256 param, bytes32 what);
+    event FiledAddress(address param, bytes32 what);
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+
+    /// @notice Initializes the `VaultManager` contract
+    /// @param _treasury Treasury address handling the contract
+    /// @param _collateral Collateral supported by this contract
+    /// @param _oracle Oracle contract used
+    /// @param symbolVault Symbol used for the NFT contract
+    /// @dev The parameters and the oracle are the only elements which could be modified once the
+    /// contract has been initialized
     function initialize(
         ITreasury _treasury,
-        address _collateral,
+        IERC20 _collateral,
         IOracle _oracle,
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
         require(address(oracle) != address(0), "0");
         treasury = _treasury;
-        collateral = IERC20(_collateral);
+        collateral = _collateral;
         collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
@@ -716,7 +792,7 @@ contract VaultManager is
                 uint256 collateralReleased = ((amounts[i] * BASE_PARAMS) * collatBase) /
                     ((BASE_PARAMS - liqOpp.discount) * liqData.oracleValue);
                 liqData.collateralAmountToGive += collateralReleased;
-                liqData.stablecoinAmountToRepay += amounts[i];
+                liqData.stablecoinAmountToReceive += amounts[i];
 
                 // TODO check whether with rounding it still works
                 if (vault.collateralAmount <= collateralReleased) {
@@ -736,9 +812,9 @@ contract VaultManager is
             }
         }
         // Normalization of good and bad debt is already handled
-        surplus += (liqData.stablecoinAmountToRepay * (BASE_PARAMS - liquidationSurcharge)) / BASE_PARAMS;
+        surplus += (liqData.stablecoinAmountToReceive * (BASE_PARAMS - liquidationSurcharge)) / BASE_PARAMS;
         badDebt += liqData.badDebtFromLiquidation;
-        _handleRepay(liqData.collateralAmountToGive, liqData.stablecoinAmountToRepay, from, to, who, data);
+        _handleRepay(liqData.collateralAmountToGive, liqData.stablecoinAmountToReceive, from, to, who, data);
     }
 
     function checkLiquidation(uint256 vaultID) external view returns (LiquidationOpportunity memory liqOpp) {
