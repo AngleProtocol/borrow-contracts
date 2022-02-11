@@ -4,6 +4,7 @@ pragma solidity 0.8.10;
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/IStableMaster.sol";
+import "../interfaces/ITreasury.sol";
 // OpenZeppelin may update its version of the ERC20PermitUpgradeable token
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
@@ -42,11 +43,43 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     constructor() initializer {}
     */
 
+    mapping(address => bool) public override isMinter;
+    ITreasury public treasury;
+    bool public treasuryInitialized;
+
+    function setUpTreasury(address _treasury) external {
+        // We have to hardcode the address in the first place since this is linked to a smart contract upgrade
+        require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
+        require(address(ITreasury(_treasury).stablecoin()) == address(this));
+        require(!treasuryInitialized);
+        treasury = ITreasury(_treasury);
+        treasuryInitialized = true;
+    }
+
     /// @notice Checks to see if it is the `StableMaster` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
-    modifier onlyStableMaster() {
-        require(msg.sender == stableMaster, "1");
+    modifier onlyTreasury() {
+        require(msg.sender == address(treasury), "1");
         _;
+    }
+
+    modifier onlyMinter() {
+        require(msg.sender == stableMaster || isMinter[msg.sender]);
+        _;
+    }
+
+    function addMinter(address minter) external override onlyTreasury {
+        require(minter != address(0));
+        isMinter[minter] = true;
+    }
+
+    function setTreasury(address _newTreasury) external override onlyTreasury {
+        treasury = ITreasury(_newTreasury);
+    }
+
+    function removeMinter(address minter) external override {
+        require(msg.sender == address(treasury) || msg.sender == minter);
+        isMinter[minter] = false;
     }
 
     // ========================= External Functions ================================
@@ -76,7 +109,14 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         address poolManager
     ) external {
         _burnFromNoRedeem(amount, account, msg.sender);
+
+        // TODO does it open to exploits to have this
         IStableMaster(stableMaster).updateStocksUsers(amount, poolManager);
+    }
+
+    // TODO version of the function with no updateStocksUsers on poolManager: does it introduce weaknesses?
+    function burnStablecoin(uint256 amount) external {
+        _burn(msg.sender, amount);
     }
 
     // ========================= `StableMaster` Functions ==========================
@@ -86,7 +126,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @param burner Address to burn from
     /// @dev This method is to be called by the `StableMaster` contract after being requested to do so
     /// by an address willing to burn tokens from its address
-    function burnSelf(uint256 amount, address burner) external override onlyStableMaster {
+    function burnSelf(uint256 amount, address burner) external override onlyMinter {
         _burn(burner, amount);
     }
 
@@ -101,7 +141,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         uint256 amount,
         address burner,
         address sender
-    ) external override onlyStableMaster {
+    ) external override onlyMinter {
         _burnFromNoRedeem(amount, burner, sender);
     }
 
@@ -109,7 +149,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @param account Address to mint to
     /// @param amount Amount to mint
     /// @dev Only the `StableMaster` contract can issue agTokens
-    function mint(address account, uint256 amount) external override onlyStableMaster {
+    function mint(address account, uint256 amount) external override onlyMinter {
         _mint(account, amount);
     }
 
