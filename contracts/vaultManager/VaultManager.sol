@@ -74,7 +74,7 @@ struct PaymentData {
 
 /// @title VaultManager
 /// @author Angle Core Team
-/// @notice One VaultManager implementation of Angle Borrowing Module accounting for a non-rebasing ERC20
+/// @notice VaultManager implementation of Angle Borrowing Module working only with non-rebasing ERC-20
 // solhint-disable-next-line max-states-count
 contract VaultManager is
     Initializable,
@@ -87,8 +87,9 @@ contract VaultManager is
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using Address for address;
 
+    /// @notice Base used for parameter computation
     uint256 public constant BASE_PARAMS = 10**9;
-
+    /// @notice Base used for interest rate computation
     uint256 public constant BASE_INTEREST = 10**27;
 
     event FiledUint64(uint64 param, bytes32 what);
@@ -787,6 +788,7 @@ contract VaultManager is
             } else {
                 // We're in the situation where the function is decreasing and hence:
                 maxAmountToRepay = (collateralAmountInStable * liquidationDiscount) / BASE_PARAMS;
+                // TODO add check threshold amount to repay
                 thresholdAmountToRepay = (dustCollateral * liquidationDiscount) / BASE_PARAMS;
             }
             // TODO check improvements for what we store or not
