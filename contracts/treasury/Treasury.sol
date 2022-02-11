@@ -55,6 +55,7 @@ contract Treasury is ITreasury, Initializable {
     // =============================== Events ======================================
 
     event BadDebtUpdated(uint256 badDebtValue);
+    event CoreUpdated(address indexed _core);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event SurplusBufferUpdated(uint256 surplusBufferValue);
     event SurplusForGovernanceUpdated(uint64 _surplusForGovernance);
@@ -300,10 +301,9 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Changes the treasury contract and communicates this change to all `VaultManager` contract
     /// @param _treasury New treasury address for this stablecoin
     /// @dev This function is basically a way to remove rights to this contract and grant them to a new one
+    /// @dev It could be used to set a new core contract
     function setTreasury(address _treasury) external onlyGovernor {
-        require(_treasury != address(0), "0");
-        // TODO: not checking that it's the same stablecoin otherwise it would prevent us from setting some custom params
-        // but do we really want it?
+        require(ITreasury(_treasury).stablecoin() == stablecoin, "19");
         // Flash loan role should be removed before calling this function
         require(!core.isFlashLoanerTreasury(address(this)), "7");
         for (uint256 i = 0; i < vaultManagerList.length; i++) {
@@ -328,6 +328,17 @@ contract Treasury is ITreasury, Initializable {
         require(surplusManager != address(0), "0");
         surplusManager = _surplusManager;
         emit SurplusManagerUpdated(_surplusManager);
+    }
+
+    /// @notice Sets a new `Core` contract
+    /// @dev This function should typically be called on all treasury contracts after the `setCore`
+    /// function has been called on the `Core` contract
+    /// @dev One sanity check that can be performed here is to verify whether at least the governor
+    /// calling the contract is still a governor in the new core
+    function setCore(ICoreBorrow _core) external onlyGovernor {
+        require(_core.isGovernor(msg.sender), "1");
+        core = ICoreBorrow(_core);
+        emit CoreUpdated(address(_core));
     }
 
     /// @inheritdoc ITreasury

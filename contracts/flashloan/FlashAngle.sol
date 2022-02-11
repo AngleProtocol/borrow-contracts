@@ -151,4 +151,9 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     function removeStablecoinSupport(address _treasury) external override onlyCore {
         delete stablecoinMap[IAgToken(ITreasury(_treasury).stablecoin())];
     }
+
+    /// @inheritdoc IFlashAngle
+    function setCore(address _core) external override onlyCore {
+        core = ICoreBorrow(_core);
+    }
 }

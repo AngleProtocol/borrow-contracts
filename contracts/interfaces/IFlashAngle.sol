@@ -24,4 +24,9 @@ interface IFlashAngle {
     /// @param _treasury Treasury associated to the stablecoin to remove support for
     /// @dev This function can only be called by the `CoreBorrow` contract
     function removeStablecoinSupport(address _treasury) external;
+
+    /// @notice Sets a new core contract
+    /// @param _core Core contract address to set
+    /// @dev This function can only be called by the `CoreBorrow` contract
+    function setCore(address _core) external;
 }

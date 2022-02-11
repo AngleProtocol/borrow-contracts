@@ -13,5 +13,10 @@
   "11": "invalid core contract",
   "12": "governor must different than guardian",
   "13": "unsupported stablecoin",
-  "14": "sender is not treasury"
+  "14": "sender is not treasury",
+  "15": "invalid set of parameters",
+  "16": "caller not approved",
+  "17": "too small parameter value",
+  "18": "invalid parameter",
+  "19": "invalid treasury contract"
 }
