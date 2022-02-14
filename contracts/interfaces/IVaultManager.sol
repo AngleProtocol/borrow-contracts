@@ -5,7 +5,6 @@ pragma solidity 0.8.10;
 import "./ITreasury.sol";
 
 interface IVaultManager {
-
     /// @notice Accrues interest accumulated across all vaults to the surplus and sends the surplus to the treasury
     /// @return surplusValue Value of the surplus communicated to the `Treasury`
     /// @return badDebtValue Value of the bad debt communicated to the `Treasury`

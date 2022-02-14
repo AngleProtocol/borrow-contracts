@@ -18,5 +18,17 @@
   "16": "caller not approved",
   "17": "too small parameter value",
   "18": "invalid parameter",
-  "19": "invalid treasury contract"
+  "19": "invalid treasury contract",
+  "20": "not whitelisted",
+  "21": "insolvent vault",
+  "22": "invalid vaultManager contract",
+  "23": "exceed debt ceiling",
+  "24": "too small debt amount leftover in the vault",
+  "25": "incompatible lengths",
+  "26": "nonexistent vault",
+  "27": "approval to owner",
+  "28": "approval to caller",
+  "29": "non ERC721Receiver",
+  "30": "incorrect caller",
+  "31": "transfer to the zero address"
 }

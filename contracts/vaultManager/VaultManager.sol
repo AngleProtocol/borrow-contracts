@@ -26,7 +26,6 @@ import "../interfaces/IVaultManager.sol";
 // TODO check liquidationBooster depending on veANGLE with like a veANGLE delegation feature
 // TODO think of more view functions -> cf Pierre
 // TODO Events double check
-// TODO fill require
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -235,7 +234,6 @@ contract VaultManager is
     event FiledUint256(uint256 param, bytes32 what);
     event OracleUpdated(address indexed _oracle);
     event ToggledWhitelisting(bool);
-    
 
     /// @notice Initializes the `VaultManager` contract
     /// @param _treasury Treasury address handling the contract
@@ -403,13 +401,7 @@ contract VaultManager is
         uint256 healthFactor;
         if (currentDebt == 0) healthFactor = type(uint256).max;
         else healthFactor = (collateralAmountInStable * collateralFactor) / currentDebt;
-        return (
-            healthFactor,
-            currentDebt,
-            collateralAmountInStable,
-            oracleValue,
-            newInterestRateAccumulator
-        );
+        return (healthFactor, currentDebt, collateralAmountInStable, oracleValue, newInterestRateAccumulator);
     }
 
     /// @notice Calculates the current value of the `interestRateAccumulator` without updating the value
@@ -542,7 +534,7 @@ contract VaultManager is
         uint256 stablecoinAmount,
         uint256 senderBorrowFee
     ) external override whenNotPaused {
-        require(treasury.isVaultManager(msg.sender));
+        require(treasury.isVaultManager(msg.sender), "3");
         // Checking the delta of borrow fees to eliminate the risk of exploits here
         if (senderBorrowFee > borrowFee) {
             uint256 borrowFeePaid = ((senderBorrowFee - borrowFee) * stablecoinAmount) / BASE_PARAMS;
@@ -681,7 +673,7 @@ contract VaultManager is
 
     /// @notice Internal version of the `createVault` function
     function _createVault(address toVault) internal returns (uint256 vaultID) {
-        require(!whitelistingActivated || (isWhitelisted[toVault] && isWhitelisted[msg.sender]), "not whitelisted");
+        require(!whitelistingActivated || (isWhitelisted[toVault] && isWhitelisted[msg.sender]), "20");
         _vaultIDCount.increment();
         vaultID = _vaultIDCount.current();
         _mint(toVault, vaultID);
@@ -721,7 +713,7 @@ contract VaultManager is
             uint256 oracleValue,
             uint256 newInterestRateAccumulator
         ) = _isSolvent(vault, oracleValueStart, newInterestRateAccumulatorStart);
-        require(healthFactor > BASE_PARAMS);
+        require(healthFactor > BASE_PARAMS, "21");
         _burn(vaultID);
         return (currentDebt, vault.collateralAmount, oracleValue, newInterestRateAccumulator);
     }
@@ -754,7 +746,7 @@ contract VaultManager is
             oracleValueStart,
             interestRateAccumulatorStart
         );
-        require(healthFactor > BASE_PARAMS);
+        require(healthFactor > BASE_PARAMS, "21");
         emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
         return (oracleValue, newInterestRateAccumulator);
     }
@@ -807,7 +799,7 @@ contract VaultManager is
         if (address(vaultManager) == address(this)) {
             _decreaseDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
-            require(treasury.isVaultManager(address(vaultManager)));
+            require(treasury.isVaultManager(address(vaultManager)), "22");
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
         }
         return _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
@@ -832,13 +824,13 @@ contract VaultManager is
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
-        require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST);
+        require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "23");
         (uint256 healthFactor, , , uint256 oracleValue, ) = _isSolvent(
             vaultData[vaultID],
             oracleValueStart,
             newInterestRateAccumulator
         );
-        require(healthFactor > BASE_PARAMS);
+        require(healthFactor > BASE_PARAMS, "21");
         emit InternalDebtUpdated(vaultID, changeAmount, 1);
         return (oracleValue, newInterestRateAccumulator);
     }
@@ -861,7 +853,8 @@ contract VaultManager is
         uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt - changeAmount;
         totalNormalizedDebt -= changeAmount;
         require(
-            newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestRateAccumulator >= dust * BASE_INTEREST
+            newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestRateAccumulator >= dust * BASE_INTEREST,
+            "24"
         );
         vaultData[vaultID].normalizedDebt = newVaultNormalizedDebt;
         emit InternalDebtUpdated(vaultID, changeAmount, 0);
@@ -953,7 +946,7 @@ contract VaultManager is
     ) external whenNotPaused nonReentrant {
         // Stores all the data about an ongoing liquidation of multiple vaults
         LiquidatorData memory liqData;
-        require(vaultIDs.length == amounts.length);
+        require(vaultIDs.length == amounts.length, "25");
         liqData.oracleValue = oracle.read();
         liqData.newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         for (uint256 i = 0; i < vaultIDs.length; i++) {
@@ -1052,9 +1045,11 @@ contract VaultManager is
                 // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
                 // in the liquidated vault
                 maxAmountToRepay = (collateralAmountInStable * liquidationDiscount) / BASE_PARAMS;
-                // It should however make sure not to leave a dusty amount of collateral (in stablecoin value) in the vault 
-                if (collateralAmountInStable > dustCollateral) 
-                    thresholdRepayAmount = (collateralAmountInStable - dustCollateral) * liquidationDiscount / BASE_PARAMS;
+                // It should however make sure not to leave a dusty amount of collateral (in stablecoin value) in the vault
+                if (collateralAmountInStable > dustCollateral)
+                    thresholdRepayAmount =
+                        ((collateralAmountInStable - dustCollateral) * liquidationDiscount) /
+                        BASE_PARAMS;
                     // If there is from the beginning a dusty amount of collateral, liquidator should repay everything that's left
                 else thresholdRepayAmount = maxAmountToRepay;
             }
@@ -1140,7 +1135,7 @@ contract VaultManager is
 
     /// @inheritdoc IERC721MetadataUpgradeable
     function tokenURI(uint256 vaultID) external view override returns (string memory) {
-        require(_exists(vaultID), "2");
+        require(_exists(vaultID), "26");
         // There is no vault with `vaultID` equal to 0, so the following variable is
         // always greater than zero
         uint256 temp = vaultID;
@@ -1172,21 +1167,21 @@ contract VaultManager is
     /// @inheritdoc IERC721Upgradeable
     function approve(address to, uint256 vaultID) external override {
         address owner = _ownerOf(vaultID);
-        require(to != owner, "35");
-        require(msg.sender == owner || isApprovedForAll(owner, msg.sender), "21");
+        require(to != owner, "27");
+        require(msg.sender == owner || isApprovedForAll(owner, msg.sender), "16");
 
         _approve(to, vaultID);
     }
 
     /// @inheritdoc IERC721Upgradeable
     function getApproved(uint256 vaultID) external view override returns (address) {
-        require(_exists(vaultID), "2");
+        require(_exists(vaultID), "26");
         return _getApproved(vaultID);
     }
 
     /// @inheritdoc IERC721Upgradeable
     function setApprovalForAll(address operator, bool approved) external override {
-        require(operator != msg.sender, "36");
+        require(operator != msg.sender, "28");
         _operatorApprovals[msg.sender][operator] = approved;
         emit ApprovalForAll(_msgSender(), operator, approved);
     }
@@ -1239,7 +1234,7 @@ contract VaultManager is
     /// @notice Internal version of the `ownerOf` function
     function _ownerOf(uint256 vaultID) internal view returns (address owner) {
         owner = _owners[vaultID];
-        require(owner != address(0), "2");
+        require(owner != address(0), "26");
     }
 
     /// @notice Internal version of the `getApproved` function
@@ -1255,7 +1250,7 @@ contract VaultManager is
         bytes memory _data
     ) internal {
         _transfer(from, to, vaultID);
-        require(_checkOnERC721Received(from, to, vaultID, _data), "24");
+        require(_checkOnERC721Received(from, to, vaultID, _data), "29");
     }
 
     /// @notice Checks whether a vault exists
@@ -1271,6 +1266,7 @@ contract VaultManager is
         address owner = _ownerOf(vaultID);
         return (spender == owner || _getApproved(vaultID) == spender || _operatorApprovals[owner][spender]);
     }
+
     /// @notice Mints `vaultID` and transfers it to `to`
     /// @dev This method is equivalent to the `_safeMint` method used in OpenZeppelin ERC721 contract
     /// @dev `vaultID` must not exist and `to` cannot be the zero address
@@ -1283,7 +1279,7 @@ contract VaultManager is
         _balances[to] += 1;
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
-        require(_checkOnERC721Received(address(0), to, vaultID, ""), "24");
+        require(_checkOnERC721Received(address(0), to, vaultID, ""), "29");
     }
 
     /// @notice Destroys `vaultID`
@@ -1312,9 +1308,9 @@ contract VaultManager is
         address to,
         uint256 vaultID
     ) internal {
-        require(_ownerOf(vaultID) == from, "1");
-        require(to != address(0), "26");
-        require(!whitelistingActivated || isWhitelisted[to], "not whitelisted");
+        require(_ownerOf(vaultID) == from, "30");
+        require(to != address(0), "31");
+        require(!whitelistingActivated || isWhitelisted[to], "20");
         // Clear approvals from the previous owner
         _approve(address(0), vaultID);
 
