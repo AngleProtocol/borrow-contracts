@@ -15,8 +15,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/IAgToken.sol";
-import "../interfaces/IRepayCallee.sol";
 import "../interfaces/IOracle.sol";
+import "../interfaces/IRepayCallee.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 
@@ -1119,6 +1119,9 @@ contract VaultManager is
     /// @inheritdoc IVaultManager
     function setTreasury(address _treasury) external override onlyTreasury {
         treasury = ITreasury(_treasury);
+        // This function makes sure to propagate the change to the associated contract
+        // even though a single oracle contract could be used in different places
+        oracle.setTreasury(_treasury);
     }
 
     /// @notice Pauses external permissionless functions of the contract
