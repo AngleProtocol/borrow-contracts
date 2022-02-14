@@ -249,7 +249,7 @@ contract VaultManager is
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
-        require(address(oracle) != address(0), "0");
+        require(oracle.treasury() == _treasury, "33");
         treasury = _treasury;
         collateral = _collateral;
         collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
@@ -408,7 +408,7 @@ contract VaultManager is
     /// in storage
     // TODO: check Aave's raymul: https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/libraries/math/WadRayMath.sol
     // TODO: check Aave's solution wrt to Maker in terms of gas and how much it costs
-    // TODO: should we have a few function on top of this
+    // TODO: should we have a few function on top of this?
     function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
         uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
         if (exp == 0) return interestAccumulator;
@@ -442,8 +442,6 @@ contract VaultManager is
     /// @dev The `from` address should have approved the `msg.sender`
     /// @dev Only the owner of the vault or an approved address for this vault can decide to close it
     /// @dev Specifying a who address along with data allows for a capital efficient closing of vaults
-    /// TODO check reentrancy -> maybe in handle repay
-    /// TODO check who in handle repay
     function closeVault(
         uint256 vaultID,
         address from,
@@ -881,6 +879,7 @@ contract VaultManager is
     ) internal {
         if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
         // TODO check for which contract we need to be careful -> like do we need to add a reentrancy or to restrict the who address
+        // TODO check who here: do we need to impose a restriction on the address
         if (data.length > 0 && stableAmountToRepay > 0 && who != address(stablecoin)) {
             IRepayCallee(who).repayCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
             stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
@@ -1110,8 +1109,7 @@ contract VaultManager is
     /// @notice Changes the reference to the oracle contract used to get the price of the oracle
     /// @param _oracle Reference to the oracle contract
     function setOracle(address _oracle) external onlyGovernor {
-        // TODO check if more checks should be added
-        require(_oracle != address(0), "0");
+        require(IOracle(_oracle).treasury() == treasury, "33");
         oracle = IOracle(_oracle);
         emit OracleUpdated(_oracle);
     }

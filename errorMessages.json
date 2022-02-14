@@ -31,5 +31,6 @@
   "29": "non ERC721Receiver",
   "30": "incorrect caller",
   "31": "transfer to the zero address",
-  "32": "incorrect Chainlink circuit length"
+  "32": "incorrect Chainlink circuit length",
+  "33": "not plugged to the same treasury contract"
 }
