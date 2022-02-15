@@ -12,12 +12,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20Pe
 /// @author Angle Core Team
 /// @notice Base contract for agToken, that is to say Angle's stablecoins
 /// @dev This contract is used to create and handle the stablecoins of Angle protocol
-/// @dev Only the `StableMaster` contract can mint or burn agTokens
 /// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange
+/// @dev This contract is the upgraded version of the AgToken that was first deployed on Ethereum mainnet
 contract AgToken is IAgToken, ERC20PermitUpgradeable {
     // ========================= References to other contracts =====================
 
-    /// @notice Reference to the `StableMaster` contract associated to this `AgToken`
+    /// @inheritdoc IAgToken
     address public override stableMaster;
 
     // ============================= Constructor ===================================
@@ -38,10 +38,38 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         stableMaster = stableMaster_;
     }
 
-    /*
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
-    */
+
+    // ======= Added Parameters and Variables from the first implementation ========
+
+    /// @inheritdoc IAgToken
+    mapping(address => bool) public override isMinter;
+    /// @notice Reference to the treasury contract which can grant minting rights
+    ITreasury public treasury;
+    /// @notice Boolean to check whether the contract has been reinitialized after its upgrade
+    bool public treasuryInitialized;
+
+    // =============================== Added Events ================================
+
+    event TreasuryUpdated(address indexed _treasury);
+    event MinterToggled(address indexed minter);
+
+    // =============================== Setup Function ==============================
+
+    /// @notice Sets up the treasury contract in this AgToken contract
+    /// @param _treasury Treasury contract to add
+    /// @dev The address calling this function has to be hard-coded in the contract
+    function setUpTreasury(address _treasury) external {
+        require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
+        require(address(ITreasury(_treasury).stablecoin()) == address(this));
+        require(!treasuryInitialized);
+        treasury = ITreasury(_treasury);
+        treasuryInitialized = true;
+        emit TreasuryUpdated(_treasury);
+    }
+
+    // =============================== Modifiers ===================================
 
     mapping(address => bool) public override isMinter;
     ITreasury public treasury;
@@ -63,6 +91,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         _;
     }
 
+    /// @notice Checks whether the sender has the minting right
     modifier onlyMinter() {
         require(msg.sender == stableMaster || isMinter[msg.sender]);
         _;
@@ -92,8 +121,6 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// need to be updated
     /// @dev When calling this function, people should specify the `poolManager` for which they want to decrease
     /// the `stocksUsers`: this a way for the protocol to maintain healthy accounting variables
-    /// @dev This function is for instance to be used by governance to burn the tokens accumulated by the `BondingCurve`
-    /// contract
     function burnNoRedeem(uint256 amount, address poolManager) external {
         _burn(msg.sender, amount);
         IStableMaster(stableMaster).updateStocksUsers(amount, poolManager);
@@ -114,29 +141,21 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         IStableMaster(stableMaster).updateStocksUsers(amount, poolManager);
     }
 
-    // TODO version of the function with no updateStocksUsers on poolManager: does it introduce weaknesses?
+    /// @notice Allows anyone to burn agToken without redeeming collateral back
+    /// @param amount Amount of stablecoins to burn
+    /// @dev This function can typically be called if there
     function burnStablecoin(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
-    // ========================= `StableMaster` Functions ==========================
+    // ======================= Minter Role Only Functions ==========================
 
-    /// @notice Burns `amount` tokens from a `burner` address
-    /// @param amount Amount of tokens to burn
-    /// @param burner Address to burn from
-    /// @dev This method is to be called by the `StableMaster` contract after being requested to do so
-    /// by an address willing to burn tokens from its address
+    /// @inheritdoc IAgToken
     function burnSelf(uint256 amount, address burner) external override onlyMinter {
         _burn(burner, amount);
     }
 
-    /// @notice Burns `amount` tokens from a `burner` address after being asked to by `sender`
-    /// @param amount Amount of tokens to burn
-    /// @param burner Address to burn from
-    /// @param sender Address which requested the burn from `burner`
-    /// @dev This method is to be called by the `StableMaster` contract after being requested to do so
-    /// by a `sender` address willing to burn tokens from another `burner` address
-    /// @dev The method checks the allowance between the `sender` and the `burner`
+    /// @inheritdoc IAgToken
     function burnFrom(
         uint256 amount,
         address burner,
@@ -145,12 +164,31 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         _burnFromNoRedeem(amount, burner, sender);
     }
 
-    /// @notice Lets the `StableMaster` contract mint agTokens
-    /// @param account Address to mint to
-    /// @param amount Amount to mint
-    /// @dev Only the `StableMaster` contract can issue agTokens
+    /// @inheritdoc IAgToken
     function mint(address account, uint256 amount) external override onlyMinter {
         _mint(account, amount);
+    }
+
+    // ======================= Treasury Only Functions =============================
+
+    /// @inheritdoc IAgToken
+    function addMinter(address minter) external override onlyTreasury {
+        require(minter != address(0));
+        isMinter[minter] = true;
+        emit MinterToggled(minter);
+    }
+
+    /// @inheritdoc IAgToken
+    function removeMinter(address minter) external override {
+        require(msg.sender == address(treasury) || msg.sender == minter);
+        isMinter[minter] = false;
+        emit MinterToggled(minter);
+    }
+
+    /// @inheritdoc IAgToken
+    function setTreasury(address _treasury) external override onlyTreasury {
+        treasury = ITreasury(_treasury);
+        emit TreasuryUpdated(_treasury);
     }
 
     // ============================ Internal Function ==============================
