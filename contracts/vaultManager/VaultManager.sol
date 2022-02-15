@@ -26,11 +26,11 @@ import "../interfaces/IVeBoostProxy.sol";
 // the thing is that in the handle repay we are exposed to reentrancy attacks because people can call any other function
 // but I can't find a circuit where there is an exploit at the moment since the only thing that normally follow after
 // this call are
-// TODO in the handleRepay: do we impose restrictions on the called addresses like Maker does here or is there no point 
+// TODO in the handleRepay: do we impose restrictions on the called addresses like Maker does here or is there no point
 // in doing it: https://github.com/makerdao/dss/blob/master/src/clip.sol
 // TODO check trade-off 10**27 and 10**18 for interest accumulated
 // TODO check liquidationBooster depending on veANGLE with like a veANGLE delegation feature
-// TODO think of more view functions -> cf Picodes
+// TODO think of more (or less) view functions -> cf Picodes
 // TODO Events double check
 
 /// @title VaultManager
@@ -184,13 +184,14 @@ contract VaultManager is
     uint64 public liquidationSurcharge;
     /// @notice Maximum discount given to liquidators
     uint64 public maxLiquidationDiscount;
-    /// @notice Base liquidation booster to compute the discount
-    uint64 public liquidationBooster;
     /// @notice Whether whitelisting is required to own a vault or not
     bool public whitelistingActivated;
 
-    uint64[] public xBoost;
-    uint64 public maxBoost;
+    /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
+    /// should be 2
+    uint256[] public xLiquidationBoost;
+    /// @notice Values of the liquidation boost at the threshold values of x
+    uint256[] public yLiquidationBoost;
 
     // =============================== Variables ===================================
 
@@ -242,6 +243,7 @@ contract VaultManager is
     event InternalDebtUpdated(uint256 vaultID, uint256 internalAmount, uint8 isIncrease);
     event FiledUint64(uint64 param, bytes32 what);
     event FiledUint256(uint256 param, bytes32 what);
+    event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
     event OracleUpdated(address indexed _oracle);
     event ToggledWhitelisting(bool);
 
@@ -252,11 +254,12 @@ contract VaultManager is
     /// @param symbolVault Symbol used for the NFT contract
     /// @dev The parameters and the oracle are the only elements which could be modified once the
     /// contract has been initialized
+    /// @dev For the contract to be fully initialized, governance needs to set the parameters for the liquidation
+    /// boost
     function initialize(
         ITreasury _treasury,
         IERC20 _collateral,
         IOracle _oracle,
-        IVeBoostProxy _veBoostProxy,
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
@@ -266,7 +269,6 @@ contract VaultManager is
         collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
-        veBoostProxy = _veBoostProxy;
 
         name = string(abi.encodePacked("Angle Protocol ", symbolVault, " Vault"));
         symbol = string(abi.encodePacked(symbolVault, "-vault"));
@@ -291,7 +293,6 @@ contract VaultManager is
         interestRate = params.interestRate;
         liquidationSurcharge = params.liquidationSurcharge;
         maxLiquidationDiscount = params.maxLiquidationDiscount;
-        liquidationBooster = params.liquidationBooster;
         whitelistingActivated = params.whitelistingActivated;
         _pause();
     }
@@ -345,9 +346,19 @@ contract VaultManager is
 
     /// @notice Checks whether a given vault is liquidable and if yes gives information regarding its liquidation
     /// @param vaultID ID of the vault to check
+    /// @param liquidator Address of the liquidator which will be performing the liquidation
     /// @return liqOpp Description of the opportunity of liquidation
-    function checkLiquidation(uint256 vaultID) external view returns (LiquidationOpportunity memory liqOpp) {
-        liqOpp = _checkLiquidation(vaultData[vaultID], oracle.read(), _calculateCurrentInterestRateAccumulator());
+    function checkLiquidation(uint256 vaultID, address liquidator)
+        external
+        view
+        returns (LiquidationOpportunity memory liqOpp)
+    {
+        liqOpp = _checkLiquidation(
+            vaultData[vaultID],
+            liquidator,
+            oracle.read(),
+            _calculateCurrentInterestRateAccumulator()
+        );
     }
 
     /// @notice Returns all the vaults owned or controlled (under the form of approval) by an address
@@ -428,62 +439,15 @@ contract VaultManager is
     // TODO: should we have a few function on top of this?
     function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
         uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
-        if (exp == 0) return interestAccumulator;
+        uint256 ratePerSecond = interestRate;
+        if (exp == 0 || ratePerSecond == 0) return interestAccumulator;
         uint256 expMinusOne = exp - 1;
         uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
-        uint256 ratePerSecond = interestRate;
         uint256 basePowerTwo = ratePerSecond * ratePerSecond;
         uint256 basePowerThree = basePowerTwo * ratePerSecond;
         uint256 secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
         uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
-        return interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm) / BASE_INTEREST;
-    }
-
-    /// @notice Computes the value of a linear by part function at a given point
-    /// @param x Point of the function we want to compute
-    /// @param xArray List of breaking points (in ascending order) that define the linear by part function
-    /// @param yArray List of values at breaking points (not necessarily in ascending order)
-    /// @dev The evolution of the linear by part function between two breaking points is linear
-    /// @dev Before the first breaking point and after the last one, the function is constant with a value
-    /// equal to the first or last value of the yArray
-    /// @dev This function is relevant if `x` is between O and `BASE_PARAMS`. If `x` is greater than that, then
-    /// everything will be as if `x` is equal to the greater element of the `xArray`
-    function _piecewiseLinear(
-        uint64 x,
-        uint64[] memory xArray,
-        uint64[] memory yArray
-    ) internal pure returns (uint64) {
-        if (x >= xArray[xArray.length - 1]) {
-            return yArray[xArray.length - 1];
-        } else if (x <= xArray[0]) {
-            return yArray[0];
-        } else {
-            uint256 lower;
-            uint256 upper = xArray.length - 1;
-            uint256 mid;
-            while (upper - lower > 1) {
-                mid = lower + (upper - lower) / 2;
-                if (xArray[mid] <= x) {
-                    lower = mid;
-                } else {
-                    upper = mid;
-                }
-            }
-            if (yArray[upper] > yArray[lower]) {
-                // There is no risk of overflow here as in the product of the difference of `y`
-                // with the difference of `x`, the product is inferior to `BASE_PARAMS**2` which does not
-                // overflow for `uint64`
-                return
-                    yArray[lower] +
-                    ((yArray[upper] - yArray[lower]) * (x - xArray[lower])) /
-                    (xArray[upper] - xArray[lower]);
-            } else {
-                return
-                    yArray[lower] -
-                    ((yArray[lower] - yArray[upper]) * (x - xArray[lower])) /
-                    (xArray[upper] - xArray[lower]);
-            }
-        }
+        return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
     }
 
     // ========================= External Access Functions =========================
@@ -1017,6 +981,7 @@ contract VaultManager is
             // Computing if liquidation can take place for a vault
             LiquidationOpportunity memory liqOpp = _checkLiquidation(
                 vault,
+                msg.sender,
                 liqData.oracleValue,
                 liqData.newInterestRateAccumulator
             );
@@ -1067,6 +1032,7 @@ contract VaultManager is
     /// and `newInterestRateAccumulator` should have always been computed
     function _checkLiquidation(
         Vault memory vault,
+        address liquidator,
         uint256 oracleValue,
         uint256 newInterestRateAccumulator
     ) internal view returns (LiquidationOpportunity memory liqOpp) {
@@ -1077,7 +1043,8 @@ contract VaultManager is
             newInterestRateAccumulator
         );
         if (healthFactor <= BASE_PARAMS) {
-            uint256 liquidationDiscount = (liquidationBooster * (BASE_PARAMS - healthFactor)) / BASE_PARAMS;
+            uint256 liquidationDiscount = (_computeLiquidationBoost(liquidator) * (BASE_PARAMS - healthFactor)) /
+                BASE_PARAMS;
             // In fact `liquidationDiscount` is stored here as 1 minus discount to save some computation costs
             liquidationDiscount = liquidationDiscount >= maxLiquidationDiscount
                 ? BASE_PARAMS - maxLiquidationDiscount
@@ -1126,6 +1093,25 @@ contract VaultManager is
         }
     }
 
+    /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
+    /// @param liquidator Address for which boost should be computed
+    /// @return The slope of the discount function
+    function _computeLiquidationBoost(address liquidator) internal view returns (uint256) {
+        if (yLiquidationBoost.length == 0) return BASE_PARAMS;
+        else if (address(veBoostProxy) == address(0)) {
+            return yLiquidationBoost[0];
+        } else {
+            uint256 adjustedBalance = veBoostProxy.adjusted_balance_of(liquidator);
+            if (adjustedBalance >= xLiquidationBoost[1]) return yLiquidationBoost[1];
+            else if (adjustedBalance <= xLiquidationBoost[0]) return yLiquidationBoost[0];
+            else
+                return
+                    yLiquidationBoost[0] +
+                    ((yLiquidationBoost[1] - yLiquidationBoost[0]) * (adjustedBalance - xLiquidationBoost[0])) /
+                    (xLiquidationBoost[1] - xLiquidationBoost[0]);
+        }
+    }
+
     // ============================== Setters ======================================
 
     /// @notice Sets parameters encoded as uint64
@@ -1149,7 +1135,7 @@ contract VaultManager is
         } else if (what == "maxLiquidationDiscount") {
             require(param <= maxLiquidationDiscount, "9");
             maxLiquidationDiscount = param;
-        } else if (what == "liquidationBooster") liquidationBooster = param;
+        }
         emit FiledUint64(param, what);
     }
 
@@ -1161,6 +1147,24 @@ contract VaultManager is
         else if (what == "dustCollateral") dustCollateral = param;
         else if (what == "debtCeiling") debtCeiling = param;
         emit FiledUint256(param, what);
+    }
+
+    /// @notice Sets the parameters for the liquidation booster which encodes the slope of the discount
+    /// @param _veBoostProxy Address which queries veANGLE balances and adjusted balances from delegation
+    /// @param xBoost Threshold values of veANGLE adjusted balances
+    /// @param yBoost Values of the liquidation boost at the threshold values of x
+    /// @dev `xBoost` and `yBoost` should have a length of 2, but if they have a higher length contract
+    /// will still work as expected
+    function setLiquidationBoostParameters(
+        address _veBoostProxy,
+        uint256[] memory xBoost,
+        uint256[] memory yBoost
+    ) external onlyGovernorOrGuardian {
+        require(yBoost[0] > 0 && xBoost[1] > xBoost[0] && yBoost[1] >= yBoost[0], "15");
+        veBoostProxy = IVeBoostProxy(_veBoostProxy);
+        xLiquidationBoost = xBoost;
+        yLiquidationBoost = yBoost;
+        emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }
 
     /// @notice Toggles permission for owning vaults by any account

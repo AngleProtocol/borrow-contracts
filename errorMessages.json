@@ -1,22 +1,13 @@
 {
   "0": "zero address",
-<<<<<<< HEAD
-  "1": "not governor",
-  "2": "not governor and not guardian",
-  "3": "not vaultManager",
-=======
   "1": "sender is not governor",
   "2": "sender is not governor and not guardian",
   "3": "sender is not vaultManager",
->>>>>>> aba1ec4ad1ec944ae34b76d608e37f058035251f
   "4": "too big amount",
   "5": "vaultManager already added",
   "6": "invalid treasury",
   "7": "still has rights over the flash loan contract",
   "8": "no right over the flash loan contract",
-<<<<<<< HEAD
-  "9": "too high parameter value"
-=======
   "9": "too high parameter value",
   "10": "sender is not core",
   "11": "invalid core contract",
@@ -42,5 +33,4 @@
   "31": "transfer to the zero address",
   "32": "incorrect Chainlink circuit length",
   "33": "not plugged to the same treasury contract"
->>>>>>> aba1ec4ad1ec944ae34b76d608e37f058035251f
 }
