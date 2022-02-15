@@ -21,6 +21,7 @@ import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVeBoostProxy.sol";
 
+
 // TODO think about exporting things to libraries to make it more practical
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
 // the thing is that in the handle repay we are exposed to reentrancy attacks because people can call any other function
@@ -157,9 +158,10 @@ contract VaultManager is
     IAgToken public stablecoin;
     /// @notice Oracle contract to get access to the price of the collateral with respect to the stablecoin
     IOracle public oracle;
+    /// @notice Reference to the contract which computes adjusted veANGLE balances for liquidators boosts
+    IVeBoostProxy public veBoostProxy;
     /// @notice Base of the collateral
     uint256 public collatBase;
-    IVeBoostProxy public veBoostProxy;
 
     // =============================== Parameters ==================================
 
@@ -192,6 +194,10 @@ contract VaultManager is
     uint256[] public xLiquidationBoost;
     /// @notice Values of the liquidation boost at the threshold values of x
     uint256[] public yLiquidationBoost;
+    /// @notice Base liquidation booster to compute the discount
+    uint64 public liquidationBooster;
+    /// @notice Whether whitelisting is required to own a vault or not
+    bool public whitelistingActivated;
 
     // =============================== Variables ===================================
 
