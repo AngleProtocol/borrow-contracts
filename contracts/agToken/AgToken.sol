@@ -71,19 +71,6 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     // =============================== Modifiers ===================================
 
-    mapping(address => bool) public override isMinter;
-    ITreasury public treasury;
-    bool public treasuryInitialized;
-
-    function setUpTreasury(address _treasury) external {
-        // We have to hardcode the address in the first place since this is linked to a smart contract upgrade
-        require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
-        require(address(ITreasury(_treasury).stablecoin()) == address(this));
-        require(!treasuryInitialized);
-        treasury = ITreasury(_treasury);
-        treasuryInitialized = true;
-    }
-
     /// @notice Checks to see if it is the `StableMaster` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
     modifier onlyTreasury() {
@@ -95,20 +82,6 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     modifier onlyMinter() {
         require(msg.sender == stableMaster || isMinter[msg.sender]);
         _;
-    }
-
-    function addMinter(address minter) external override onlyTreasury {
-        require(minter != address(0));
-        isMinter[minter] = true;
-    }
-
-    function setTreasury(address _newTreasury) external override onlyTreasury {
-        treasury = ITreasury(_newTreasury);
-    }
-
-    function removeMinter(address minter) external override {
-        require(msg.sender == address(treasury) || msg.sender == minter);
-        isMinter[minter] = false;
     }
 
     // ========================= External Functions ================================
@@ -136,8 +109,6 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         address poolManager
     ) external {
         _burnFromNoRedeem(amount, account, msg.sender);
-
-        // TODO does it open to exploits to have this
         IStableMaster(stableMaster).updateStocksUsers(amount, poolManager);
     }
 

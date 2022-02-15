@@ -19,6 +19,7 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/IRepayCallee.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
+import "../interfaces/IVeBoostProxy.sol";
 
 // TODO think about exporting things to libraries to make it more practical
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
@@ -158,6 +159,7 @@ contract VaultManager is
     IOracle public oracle;
     /// @notice Base of the collateral
     uint256 public collatBase;
+    IVeBoostProxy public veBoostProxy;
 
     // =============================== Parameters ==================================
 
@@ -186,6 +188,9 @@ contract VaultManager is
     uint64 public liquidationBooster;
     /// @notice Whether whitelisting is required to own a vault or not
     bool public whitelistingActivated;
+
+    uint64[] public xBoost;
+    uint64 public maxBoost;
 
     // =============================== Variables ===================================
 
@@ -251,6 +256,7 @@ contract VaultManager is
         ITreasury _treasury,
         IERC20 _collateral,
         IOracle _oracle,
+        IVeBoostProxy _veBoostProxy,
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
@@ -260,6 +266,7 @@ contract VaultManager is
         collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
+        veBoostProxy = _veBoostProxy;
 
         name = string(abi.encodePacked("Angle Protocol ", symbolVault, " Vault"));
         symbol = string(abi.encodePacked(symbolVault, "-vault"));
@@ -431,6 +438,55 @@ contract VaultManager is
         uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
         return interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm) / BASE_INTEREST;
     }
+
+    /// @notice Computes the value of a linear by part function at a given point
+    /// @param x Point of the function we want to compute
+    /// @param xArray List of breaking points (in ascending order) that define the linear by part function
+    /// @param yArray List of values at breaking points (not necessarily in ascending order)
+    /// @dev The evolution of the linear by part function between two breaking points is linear
+    /// @dev Before the first breaking point and after the last one, the function is constant with a value
+    /// equal to the first or last value of the yArray
+    /// @dev This function is relevant if `x` is between O and `BASE_PARAMS`. If `x` is greater than that, then
+    /// everything will be as if `x` is equal to the greater element of the `xArray`
+    function _piecewiseLinear(
+        uint64 x,
+        uint64[] memory xArray,
+        uint64[] memory yArray
+    ) internal pure returns (uint64) {
+        if (x >= xArray[xArray.length - 1]) {
+            return yArray[xArray.length - 1];
+        } else if (x <= xArray[0]) {
+            return yArray[0];
+        } else {
+            uint256 lower;
+            uint256 upper = xArray.length - 1;
+            uint256 mid;
+            while (upper - lower > 1) {
+                mid = lower + (upper - lower) / 2;
+                if (xArray[mid] <= x) {
+                    lower = mid;
+                } else {
+                    upper = mid;
+                }
+            }
+            if (yArray[upper] > yArray[lower]) {
+                // There is no risk of overflow here as in the product of the difference of `y`
+                // with the difference of `x`, the product is inferior to `BASE_PARAMS**2` which does not
+                // overflow for `uint64`
+                return
+                    yArray[lower] +
+                    ((yArray[upper] - yArray[lower]) * (x - xArray[lower])) /
+                    (xArray[upper] - xArray[lower]);
+            } else {
+                return
+                    yArray[lower] -
+                    ((yArray[lower] - yArray[upper]) * (x - xArray[lower])) /
+                    (xArray[upper] - xArray[lower]);
+            }
+        }
+    }
+
+    // ========================= External Access Functions =========================
 
     /// @notice Creates a vault
     /// @param toVault Address for which the va
