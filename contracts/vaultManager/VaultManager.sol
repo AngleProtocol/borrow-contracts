@@ -627,10 +627,10 @@ contract VaultManager is
                 newInterestRateAccumulator = _decreaseDebt(vaultID, collateralAmount, newInterestRateAccumulator);
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.borrow) {
-                (vaultID, collateralAmount) = abi.decode(datas[i], (uint256, uint256));
+                (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
                 (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _borrow(
                     vaultID,
-                    collateralAmount,
+                    stablecoinAmount,
                     oracleValue,
                     newInterestRateAccumulator
                 );
