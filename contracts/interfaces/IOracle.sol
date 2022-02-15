@@ -4,6 +4,11 @@ pragma solidity 0.8.10;
 
 import "./ITreasury.sol";
 
+/// @title IOracle
+/// @author Angle Core Team
+/// @notice Interface for the `Oracle` contract
+/// @dev This interface only contains functions of the contract which are called by other contracts
+/// of this module
 interface IOracle {
     /// @notice Reads the rate from the Chainlink circuit
     /// @return quoteAmount The current rate between the in-currency and out-currency
