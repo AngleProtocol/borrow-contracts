@@ -8,7 +8,6 @@ pragma solidity 0.8.10;
 /// @dev This interface only contains functions of the `CoreBorrow` contract which are called by other contracts
 /// of this module
 interface ICoreBorrow {
-
     /// @notice Checks if an address corresponds to a treasury of a stablecoin with a flash loan
     /// module initialized on it
     /// @param treasury Address to check
@@ -26,5 +25,4 @@ interface ICoreBorrow {
     /// @dev Governance should make sure when adding a governor to also give this governor the guardian
     /// role by calling the `addGovernor` function
     function isGovernorOrGuardian(address admin) external view returns (bool);
-
 }

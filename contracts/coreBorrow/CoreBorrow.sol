@@ -12,7 +12,7 @@ import "../interfaces/ITreasury.sol";
 /// @title CoreBorrow
 /// @author Angle Core Team
 /// @notice Core contract of the borrowing module. This contract handles the access control across all contracts
-/// (it is read by all treasury contracts), and manages the `flashLoanModule`. It has no minting rights over the 
+/// (it is read by all treasury contracts), and manages the `flashLoanModule`. It has no minting rights over the
 /// stablecoin contracts
 contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgradeable {
     /// @notice Role for guardians
@@ -27,16 +27,17 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// @notice Reference to the `flashLoanModule` with minting rights over the different stablecoins of the protocol
     address public flashLoanModule;
 
-    // =============================== Event =======================================
+    // =============================== Events ======================================
 
     event FlashLoanModuleUpdated(address indexed _flashloanModule);
+    event CoreUpdated(address indexed _core);
 
     /// @notice Initializes the `CoreBorrow` contract and the access control of the borrowing module
     /// @param governor Address of the governor of the Angle Protocol
     /// @param guardian Guardian address of the protocol
     function initialize(address governor, address guardian) public initializer {
         require(governor != address(0) && guardian != address(0), "O");
-        require(governor != guardian);
+        require(governor != guardian, "12");
         _setupRole(GOVERNOR_ROLE, governor);
         _setupRole(GUARDIAN_ROLE, guardian);
         _setupRole(GUARDIAN_ROLE, governor);
@@ -73,12 +74,12 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     function addFlashLoanerTreasuryRole(address treasury) external {
         address _flashLoanModule = flashLoanModule;
         grantRole(FLASHLOANER_TREASURY_ROLE, treasury);
-        IFlashAngle(_flashLoanModule).addStablecoinSupport(treasury);
         // This call will revert if `treasury` is the zero address or if it is not linked
         // to this `CoreBorrow` contract
         ITreasury(treasury).setFlashLoanModule(_flashLoanModule);
+        IFlashAngle(_flashLoanModule).addStablecoinSupport(treasury);
     }
-    
+
     /// @notice Adds a governor in the protocol
     /// @param governor Address to grant the role to
     /// @dev It is necessary to call this function to grant a governor role to make sure
@@ -93,8 +94,8 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// should no longer be available
     function removeFlashLoanerTreasuryRole(address treasury) external {
         revokeRole(FLASHLOANER_TREASURY_ROLE, treasury);
-        IFlashAngle(flashLoanModule).removeStablecoinSupport(treasury);
         ITreasury(treasury).setFlashLoanModule(address(0));
+        IFlashAngle(flashLoanModule).removeStablecoinSupport(treasury);
     }
 
     /// @notice Revokes a governor from the protocol
@@ -109,11 +110,33 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// @notice Changes the `flashLoanModule` of the protocol
     /// @param _flashLoanModule Address of the new flash loan module
     function setFlashLoanModule(address _flashLoanModule) external onlyRole(GOVERNOR_ROLE) {
+        if (_flashLoanModule != address(0)) {
+            require(address(IFlashAngle(_flashLoanModule).core()) == address(this), "11");
+        }
         uint256 count = getRoleMemberCount(FLASHLOANER_TREASURY_ROLE);
         for (uint256 i = 0; i < count; i++) {
             ITreasury(getRoleMember(FLASHLOANER_TREASURY_ROLE, i)).setFlashLoanModule(_flashLoanModule);
         }
         flashLoanModule = _flashLoanModule;
         emit FlashLoanModuleUpdated(_flashLoanModule);
+    }
+
+    /// @notice Changes the core contract of the protocol
+    /// @param _core New core contract
+    /// @dev This function verifies that the governors of the new core contract are exactly
+    /// the same as those of this one. It also notifies the `flashLoanModule` of the change
+    /// @dev Governance wishing to change the core contract should also make sure to call `setCore`
+    /// in the different treasury contracts
+    function setCore(ICoreBorrow _core) external onlyRole(GOVERNOR_ROLE) {
+        uint256 count = getRoleMemberCount(GOVERNOR_ROLE);
+        bool success;
+        for (uint256 i = 0; i < count; i++) {
+            success = _core.isGovernor(getRoleMember(GOVERNOR_ROLE, i));
+            if (!success) break;
+        }
+        require(success, "11");
+        address _flashLoanModule = flashLoanModule;
+        if (_flashLoanModule != address(0)) IFlashAngle(_flashLoanModule).setCore(address(_core));
+        emit CoreUpdated(address(_core));
     }
 }

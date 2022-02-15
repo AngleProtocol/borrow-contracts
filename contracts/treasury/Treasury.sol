@@ -55,11 +55,11 @@ contract Treasury is ITreasury, Initializable {
     // =============================== Events ======================================
 
     event BadDebtUpdated(uint256 badDebtValue);
+    event CoreUpdated(address indexed _core);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event SurplusBufferUpdated(uint256 surplusBufferValue);
     event SurplusForGovernanceUpdated(uint64 _surplusForGovernance);
     event SurplusManagerUpdated(address indexed surplusManager);
-    event TreasurySet(address indexed _newTreasury);
     event VaultManagerToggled(address indexed vaultManager);
 
     // =============================== Modifier ====================================
@@ -290,7 +290,7 @@ contract Treasury is ITreasury, Initializable {
             // If balance is non zero then this means, after the call to `fetchSurplusFromAll` that
             // bad debt is necessarily null
             uint256 balance = stablecoin.balanceOf(address(this));
-            require(amountToRecover + surplusBuffer <= balance);
+            require(amountToRecover + surplusBuffer <= balance, "4");
             stablecoin.transfer(to, amountToRecover);
         } else {
             IERC20(tokenAddress).safeTransfer(to, amountToRecover);
@@ -299,19 +299,18 @@ contract Treasury is ITreasury, Initializable {
     }
 
     /// @notice Changes the treasury contract and communicates this change to all `VaultManager` contract
-    /// @param _newTreasury New treasury address for this stablecoin
+    /// @param _treasury New treasury address for this stablecoin
     /// @dev This function is basically a way to remove rights to this contract and grant them to a new one
-    function setTreasury(address _newTreasury) external onlyGovernor {
-        require(_newTreasury != address(0), "0");
-        // TODO: not checking that it's the same stablecoin otherwise it would prevent us from setting some custom params
-        // but do we really want it?
+    /// @dev It could be used to set a new core contract
+    function setTreasury(address _treasury) external onlyGovernor {
+        require(ITreasury(_treasury).stablecoin() == stablecoin, "19");
         // Flash loan role should be removed before calling this function
-        require(!core.isFlashLoanerTreasury(_newTreasury), "7");
-        emit TreasurySet(_newTreasury);
+        require(!core.isFlashLoanerTreasury(address(this)), "7");
         for (uint256 i = 0; i < vaultManagerList.length; i++) {
-            IVaultManager(vaultManagerList[i]).setTreasury(_newTreasury);
+            IVaultManager(vaultManagerList[i]).setTreasury(_treasury);
         }
-        stablecoin.setTreasury(_newTreasury);
+        // A `TreasuryUpdated` event is triggered in the stablecoin
+        stablecoin.setTreasury(_treasury);
     }
 
     /// @notice Sets the `surplusForGovernance` parameter
@@ -331,9 +330,20 @@ contract Treasury is ITreasury, Initializable {
         emit SurplusManagerUpdated(_surplusManager);
     }
 
+    /// @notice Sets a new `Core` contract
+    /// @dev This function should typically be called on all treasury contracts after the `setCore`
+    /// function has been called on the `Core` contract
+    /// @dev One sanity check that can be performed here is to verify whether at least the governor
+    /// calling the contract is still a governor in the new core
+    function setCore(ICoreBorrow _core) external onlyGovernor {
+        require(_core.isGovernor(msg.sender), "1");
+        core = ICoreBorrow(_core);
+        emit CoreUpdated(address(_core));
+    }
+
     /// @inheritdoc ITreasury
     function setFlashLoanModule(address _flashLoanModule) external override {
-        require(msg.sender == address(core));
+        require(msg.sender == address(core), "10");
         address oldFlashLoanModule = address(flashLoanModule);
         if (oldFlashLoanModule != address(0)) {
             stablecoin.removeMinter(oldFlashLoanModule);
