@@ -30,7 +30,6 @@ import "../interfaces/IVeBoostProxy.sol";
 // TODO in the handleRepay: do we impose restrictions on the called addresses like Maker does here or is there no point
 // in doing it: https://github.com/makerdao/dss/blob/master/src/clip.sol
 // TODO check trade-off 10**27 and 10**18 for interest accumulated
-// TODO check liquidationBooster depending on veANGLE with like a veANGLE delegation feature
 // TODO think of more (or less) view functions -> cf Picodes
 // TODO Events double check
 
@@ -172,6 +171,11 @@ contract VaultManager is
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
     uint256 public dustCollateral;
+    /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
+    /// should be 2
+    uint256[] public xLiquidationBoost;
+    /// @notice Values of the liquidation boost at the threshold values of x
+    uint256[] public yLiquidationBoost;
     /// @notice Encodes the minimum ratio collateral/stablecoin a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     uint64 public collateralFactor;
@@ -186,16 +190,6 @@ contract VaultManager is
     uint64 public liquidationSurcharge;
     /// @notice Maximum discount given to liquidators
     uint64 public maxLiquidationDiscount;
-    /// @notice Whether whitelisting is required to own a vault or not
-    bool public whitelistingActivated;
-
-    /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
-    /// should be 2
-    uint256[] public xLiquidationBoost;
-    /// @notice Values of the liquidation boost at the threshold values of x
-    uint256[] public yLiquidationBoost;
-    /// @notice Base liquidation booster to compute the discount
-    uint64 public liquidationBooster;
     /// @notice Whether whitelisting is required to own a vault or not
     bool public whitelistingActivated;
 
