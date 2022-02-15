@@ -7,6 +7,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 /// @title IAgToken
 /// @author Angle Core Team
 /// @notice Interface for the stablecoins `AgToken` contracts
+/// @dev This interface only contains functions of the `AgToken` contract which are called by other contracts
+/// of this module or of the first module of the Angle Protocol
 interface IAgToken is IERC20Upgradeable {
     // ======================= Minter Role Only Functions ===========================
 
