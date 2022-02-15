@@ -20,11 +20,16 @@ import "../interfaces/IRepayCallee.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 
-// TODO split in multiple files and leave some space each time for upgradeability -> check how we can leverage libraries this time
+// TODO think about exporting things to libraries to make it more practical
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
+// the thing is that in the handle repay we are exposed to reentrancy attacks because people can call any other function
+// but I can't find a circuit where there is an exploit at the moment since the only thing that normally follow after
+// this call are
+// TODO in the handleRepay: do we impose restrictions on the called addresses like Maker does here or is there no point 
+// in doing it: https://github.com/makerdao/dss/blob/master/src/clip.sol
 // TODO check trade-off 10**27 and 10**18 for interest accumulated
 // TODO check liquidationBooster depending on veANGLE with like a veANGLE delegation feature
-// TODO think of more view functions -> cf Pierre
+// TODO think of more view functions -> cf Picodes
 // TODO Events double check
 
 /// @title VaultManager
@@ -406,7 +411,12 @@ contract VaultManager is
 
     /// @notice Calculates the current value of the `interestRateAccumulator` without updating the value
     /// in storage
-    // TODO: check Aave's raymul: https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/libraries/math/WadRayMath.sol
+    /// @dev This function avoids expensive exponentiation and the calculation is performed using a binomial approximation
+    /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+    /// @dev The approximation slightly undercharges borrowers with the advantage of a great gas cost reduction
+    /// @dev This function was mostly inspired from Aave implementation
+    // TODO: check Aave's raymul and impact of rounding up or down: https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/libraries/math/WadRayMath.sol
+    // TODO check 10**27 or 10**18
     // TODO: check Aave's solution wrt to Maker in terms of gas and how much it costs
     // TODO: should we have a few function on top of this?
     function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
@@ -419,7 +429,7 @@ contract VaultManager is
         uint256 basePowerThree = basePowerTwo * ratePerSecond;
         uint256 secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
         uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
-        return interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm);
+        return interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm) / BASE_INTEREST;
     }
 
     /// @notice Creates a vault
@@ -457,7 +467,7 @@ contract VaultManager is
     /// @param vaultID ID of the vault to add collateral to
     /// @param collateralAmount Amount of collateral to add
     /// @dev Any address can add collateral on any vault
-    function addCollateral(uint256 vaultID, uint256 collateralAmount) external whenNotPaused {
+    function addCollateral(uint256 vaultID, uint256 collateralAmount) external whenNotPaused nonReentrant {
         collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
         _addCollateral(vaultID, collateralAmount);
     }
@@ -472,7 +482,7 @@ contract VaultManager is
         uint256 vaultID,
         uint256 collateralAmount,
         address to
-    ) external whenNotPaused {
+    ) external whenNotPaused nonReentrant {
         _removeCollateral(vaultID, collateralAmount, 0, 0);
         collateral.transfer(to, collateralAmount);
     }
@@ -487,7 +497,7 @@ contract VaultManager is
         uint256 vaultID,
         uint256 stablecoinAmount,
         address from
-    ) external whenNotPaused {
+    ) external whenNotPaused nonReentrant {
         stablecoin.burnFrom(stablecoinAmount, from, msg.sender);
         _decreaseDebt(vaultID, stablecoinAmount, 0);
     }
@@ -503,7 +513,7 @@ contract VaultManager is
         uint256 vaultID,
         uint256 stablecoinAmount,
         address to
-    ) external whenNotPaused returns (uint256 toMint) {
+    ) external whenNotPaused nonReentrant returns (uint256 toMint) {
         (toMint, , ) = _borrow(vaultID, stablecoinAmount, 0, 0);
         stablecoin.mint(to, toMint);
     }
@@ -522,7 +532,7 @@ contract VaultManager is
         IVaultManager vaultManager,
         uint256 dstVaultID,
         uint256 stablecoinAmount
-    ) external whenNotPaused {
+    ) external whenNotPaused nonReentrant {
         _getDebtIn(srcVaultID, vaultManager, dstVaultID, stablecoinAmount, 0, 0);
     }
 
@@ -531,7 +541,7 @@ contract VaultManager is
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 senderBorrowFee
-    ) external override whenNotPaused {
+    ) external override whenNotPaused nonReentrant {
         require(treasury.isVaultManager(msg.sender), "3");
         // Checking the delta of borrow fees to eliminate the risk of exploits here
         if (senderBorrowFee > borrowFee) {
@@ -659,7 +669,7 @@ contract VaultManager is
                 collateral.safeTransfer(to, paymentData.collateralAmountToGive - paymentData.collateralAmountToReceive);
             } else {
                 uint256 collateralPayment = paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive;
-                if (repayData.length > 0 && who != address(collateral) && collateralPayment > 0) {
+                if (repayData.length > 0 && collateralPayment > 0) {
                     IRepayCallee(who).repayCallCollateral(msg.sender, stablecoinPayment, collateralPayment, repayData);
                 } else if (collateralPayment > 0)
                     collateral.safeTransferFrom(msg.sender, address(this), collateralPayment);
@@ -878,9 +888,7 @@ contract VaultManager is
         bytes calldata data
     ) internal {
         if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
-        // TODO check for which contract we need to be careful -> like do we need to add a reentrancy or to restrict the who address
-        // TODO check who here: do we need to impose a restriction on the address
-        if (data.length > 0 && stableAmountToRepay > 0 && who != address(stablecoin)) {
+        if (data.length > 0 && stableAmountToRepay > 0) {
             IRepayCallee(who).repayCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
             stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
         } else if (stableAmountToRepay > 0) stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
