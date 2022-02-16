@@ -4,6 +4,11 @@ pragma solidity 0.8.10;
 
 import "./ITreasury.sol";
 
+/// @title IVaultManager
+/// @author Angle Core Team
+/// @notice Interface for the `VaultManager` contract
+/// @dev This interface only contains functions of the contract which are called by other contracts
+/// of this module
 interface IVaultManager {
     /// @notice Accrues interest accumulated across all vaults to the surplus and sends the surplus to the treasury
     /// @return surplusValue Value of the surplus communicated to the `Treasury`

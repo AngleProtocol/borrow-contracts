@@ -5,6 +5,11 @@ pragma solidity 0.8.10;
 import "./IAgToken.sol";
 import "./ICoreBorrow.sol";
 
+/// @title IFlashAngle
+/// @author Angle Core Team
+/// @notice Interface for the `FlashAngle` contract
+/// @dev This interface only contains functions of the contract which are called by other contracts
+/// of this module
 interface IFlashAngle {
     /// @notice Reference to the `CoreBorrow` contract managing the FlashLoan module
     function core() external view returns (ICoreBorrow);
