@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/ICoreBorrow.sol";
@@ -16,6 +18,7 @@ import "../interfaces/ITreasury.sol";
 /// @author Angle Core Team
 /// @notice Contract to take flash loans on top of several AgToken contracts
 contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, ReentrancyGuardUpgradeable {
+    using SafeERC20 for IERC20;
     /// @notice Base used for parameter computation
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Success message received when calling a `FlashBorrower` contract
@@ -93,7 +96,10 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         require(amount <= stablecoinMap[IAgToken(token)].maxBorrowable, "4");
         IAgToken(token).mint(address(receiver), amount);
         require(receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS);
-        IAgToken(token).transferFrom(address(receiver), address(this), amount + fee);
+        // Token must be an agToken here so normally no need to use `safeTransferFrom`, but out of safety
+        // and in case governance whitelists an agToken which does not have a correct implementation, we prefer
+        // to use `safeTransferFrom` here
+        IERC20(token).safeTransferFrom(address(receiver), address(this), amount + fee);
         IAgToken(token).burnSelf(amount, address(this));
         return true;
     }
@@ -118,7 +124,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         address treasury = stablecoinMap[stablecoin].treasury;
         require(msg.sender == treasury, "14");
         balance = stablecoin.balanceOf(address(this));
-        stablecoin.transfer(treasury, balance);
+        IERC20(address(stablecoin)).safeTransfer(treasury, balance);
     }
 
     // =========================== Governance Only Function ========================
