@@ -49,7 +49,7 @@ contract Treasury is ITreasury, Initializable {
 
     // =============================== Parameter ===================================
 
-    /// @notice Share of the `surplusBuffer` distributed to governance
+    /// @notice Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
     uint64 public surplusForGovernance;
 
     // =============================== Events ======================================
