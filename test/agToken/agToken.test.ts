@@ -1,16 +1,15 @@
 import { CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ContractFactory, Signer } from 'ethers';
+import { Signer } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
-import { AgToken, AgToken__factory, MockStableMaster, MockStableMaster__factory, ProxyAdmin } from '../../typechain';
+import { AgToken, AgToken__factory, MockStableMaster, MockStableMaster__factory } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { deployUpgradeable } from '../utils/helpers';
 
 contract('AgToken', () => {
   let deployer: SignerWithAddress;
-  let governor: SignerWithAddress;
   let user: SignerWithAddress;
 
   let agToken: AgToken;
@@ -19,7 +18,7 @@ contract('AgToken', () => {
   const impersonatedSigners: { [key: string]: Signer } = {};
 
   before(async () => {
-    [deployer, governor, user] = await ethers.getSigners();
+    [deployer, user] = await ethers.getSigners();
     // add any addresses you want to impersonate here
     const impersonatedAddresses = [CONTRACTS_ADDRESSES[1].Governor!];
 
