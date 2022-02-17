@@ -316,6 +316,8 @@ contract Treasury is ITreasury, Initializable {
 
     /// @notice Sets the `surplusForGovernance` parameter
     /// @param _surplusForGovernance New value of the parameter
+    /// @dev To pause surplus distribution, governance needs to set a zero value for `surplusForGovernance`
+    /// which means
     function setSurplusForGovernance(uint64 _surplusForGovernance) external onlyGovernor {
         require(_surplusForGovernance <= BASE_PARAMS, "9");
         surplusForGovernance = _surplusForGovernance;
@@ -325,8 +327,8 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Sets the `surplusManager` contract responsible for handling the surplus of the
     /// protocol
     /// @param _surplusManager New address responsible for handling the surplus
-    /// @dev Governance can set a zero address for the `surplusManager`
     function setSurplusManager(address _surplusManager) external onlyGovernor {
+        require(_surplusManager != address(0), "0");
         surplusManager = _surplusManager;
         emit SurplusManagerUpdated(_surplusManager);
     }
