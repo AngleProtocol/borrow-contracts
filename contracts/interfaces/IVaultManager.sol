@@ -3,6 +3,26 @@
 pragma solidity 0.8.10;
 
 import "./ITreasury.sol";
+import "./IOracle.sol";
+
+/// @notice Actions possible when composing calls to the different entry functions proposed
+enum ActionType {
+    createVault,
+    closeVault,
+    addCollateral,
+    removeCollateral,
+    repayDebt,
+    borrow,
+    getDebtIn
+}
+
+/// @notice Data stored to track someone's loan (or equivalently called position)
+struct Vault {
+    // Amount of collateral deposited in the vault
+    uint256 collateralAmount;
+    // Normalized value of the debt (that is to say of the stablecoins borrowed)
+    uint256 normalizedDebt;
+}
 
 /// @title IVaultManager
 /// @author Angle Core Team
@@ -36,4 +56,23 @@ interface IVaultManager {
 
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury);
+
+    function getVaultDebt(uint256 vaultID) external view returns (uint256);
+
+    function createVault(address toVault) external returns (uint256 vaultID);
+}
+
+interface IVaultManagerExtended is IVaultManager {
+    function vaultData(uint256 vaultID) external view returns (Vault memory vault);
+
+    function oracle() external view returns (IOracle oracle);
+
+    function angle(
+        ActionType[] memory actions,
+        bytes[] memory datas,
+        address from,
+        address to,
+        address who,
+        bytes calldata repayData
+    ) external;
 }

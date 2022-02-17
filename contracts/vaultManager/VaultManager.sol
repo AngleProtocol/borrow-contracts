@@ -21,7 +21,6 @@ import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVeBoostProxy.sol";
 
-
 // TODO think about exporting things to libraries to make it more practical
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
 // the thing is that in the handle repay we are exposed to reentrancy attacks because people can call any other function
@@ -74,14 +73,6 @@ contract VaultManager is
         bool whitelistingActivated;
     }
 
-    /// @notice Data stored to track someone's loan (or equivalently called position)
-    struct Vault {
-        // Amount of collateral deposited in the vault
-        uint256 collateralAmount;
-        // Normalized value of the debt (that is to say of the stablecoins borrowed)
-        uint256 normalizedDebt;
-    }
-
     /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximul
     /// amount that could be repaid by liquidating the position
     /// @dev All the values are null in the case of a vault which cannot be liquidated under these conditions
@@ -126,17 +117,6 @@ contract VaultManager is
         uint256 collateralAmountToGive;
         // Collateral amount owed to the contract
         uint256 collateralAmountToReceive;
-    }
-
-    /// @notice Actions possible when composing calls to the different entry functions proposed
-    enum ActionType {
-        createVault,
-        closeVault,
-        addCollateral,
-        removeCollateral,
-        repayDebt,
-        borrow,
-        getDebtIn
     }
 
     // ================================ Mappings ===================================
