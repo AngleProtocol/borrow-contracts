@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@angleprotocol/sdk@1.0.33":
-  version "1.0.33"
-  resolved "https://registry.yarnpkg.com/@angleprotocol/sdk/-/sdk-1.0.33.tgz#10d164a8de9a3e58146067ac1a5eb4b5e4a9047c"
-  integrity sha512-hpqn/nbcGRm6Cb5eqmL8NAlOgZW1bNxNdEAok81/Mr0TCzWoE6qfwxHwqJcGNgexnE8L59GiFTOvLOsrVbZ90A==
+"@angleprotocol/sdk@^1.0.41":
+  version "1.0.41"
+  resolved "https://registry.yarnpkg.com/@angleprotocol/sdk/-/sdk-1.0.41.tgz#ec1bc244fd1b60f9e9482d29a640dbc08ac2dc52"
+  integrity sha512-uU6zeMdb5tJndXG5Ou4yc98zwwON38hSZSUBNjDzwCgWERq1CMMdgBDYLMCOxy5QrUJjkfGqA3YP/Zm1kyFaQQ==
   dependencies:
     "@typechain/ethers-v5" "^8.0.5"
     ethers "^5.5.1"
@@ -4936,6 +4936,11 @@ eslint-plugin-promise@^5.1.0:
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-promise/-/eslint-plugin-promise-5.2.0.tgz#a596acc32981627eb36d9d75f9666ac1a4564971"
   integrity sha512-SftLb1pUG01QYq2A/hGAWfDRXqYD82zE7j7TopDOyNdU+7SvvoXREls/+PRTY17vUXzXnZA/zfnyKgRH6x4JJw==
+
+eslint-plugin-simple-import-sort@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-simple-import-sort/-/eslint-plugin-simple-import-sort-7.0.0.tgz#a1dad262f46d2184a90095a60c66fef74727f0f8"
+  integrity sha512-U3vEDB5zhYPNfxT5TYR7u01dboFZp+HNpnGhkDB2g/2E4wZ/g1Q9Ton8UwCLfRV9yAKyYqDh62oHOamvkFxsvw==
 
 eslint-plugin-standard@5.0.0:
   version "5.0.0"
