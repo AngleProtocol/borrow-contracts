@@ -44,6 +44,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     /// @notice Initializes the contract
     /// @param _core Core address handling this module
     function initialize(ICoreBorrow _core) public initializer {
+        require(address(_core) != address(0), "0");
         core = _core;
     }
 

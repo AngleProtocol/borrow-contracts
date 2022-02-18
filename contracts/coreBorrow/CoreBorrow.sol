@@ -74,10 +74,12 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     function addFlashLoanerTreasuryRole(address treasury) external {
         address _flashLoanModule = flashLoanModule;
         grantRole(FLASHLOANER_TREASURY_ROLE, treasury);
-        // This call will revert if `treasury` is the zero address or if it is not linked
-        // to this `CoreBorrow` contract
-        ITreasury(treasury).setFlashLoanModule(_flashLoanModule);
-        IFlashAngle(_flashLoanModule).addStablecoinSupport(treasury);
+        if (_flashLoanModule != address(0)) {
+            // This call will revert if `treasury` is the zero address or if it is not linked
+            // to this `CoreBorrow` contract
+            ITreasury(treasury).setFlashLoanModule(_flashLoanModule);
+            IFlashAngle(_flashLoanModule).addStablecoinSupport(treasury);
+        }
     }
 
     /// @notice Adds a governor in the protocol
@@ -95,7 +97,10 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     function removeFlashLoanerTreasuryRole(address treasury) external {
         revokeRole(FLASHLOANER_TREASURY_ROLE, treasury);
         ITreasury(treasury).setFlashLoanModule(address(0));
-        IFlashAngle(flashLoanModule).removeStablecoinSupport(treasury);
+        address _flashLoanModule = flashLoanModule;
+        if (_flashLoanModule != address(0)) {
+            IFlashAngle(flashLoanModule).removeStablecoinSupport(treasury);
+        }
     }
 
     /// @notice Revokes a governor from the protocol
@@ -103,6 +108,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// @dev It is necessary to call this function to remove a governor role to make sure
     /// the address also loses its guardian role
     function removeGovernor(address governor) external {
+        require(getRoleMemberCount(GOVERNOR_ROLE) > 1, "38");
         revokeRole(GOVERNOR_ROLE, governor);
         revokeRole(GUARDIAN_ROLE, governor);
     }

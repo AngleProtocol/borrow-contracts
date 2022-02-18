@@ -32,5 +32,10 @@
   "30": "incorrect caller",
   "31": "transfer to the zero address",
   "32": "incorrect Chainlink circuit length",
-  "33": "not plugged to the same treasury contract"
+  "33": "not plugged to the same treasury contract",
+  "34": "treasury already initialized",
+  "35": "sender is not minter",
+  "36": "invalid sender",
+  "37": "invalid Chainlink rate",
+  "38": "not enough governors left"
 }

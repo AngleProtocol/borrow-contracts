@@ -5,7 +5,6 @@ pragma solidity 0.8.10;
 import "../interfaces/ITreasury.sol";
 
 contract MockTreasury is ITreasury {
-
     IAgToken public override stablecoin;
     address public governor;
     address public guardian;
@@ -13,7 +12,14 @@ contract MockTreasury is ITreasury {
     address public vaultManager2;
     address public flashLoanModule;
 
-    constructor(IAgToken _stablecoin, address _governor, address _guardian, address _vaultManager1, address _vaultManager2, address _flashLoanModule) {
+    constructor(
+        IAgToken _stablecoin,
+        address _governor,
+        address _guardian,
+        address _vaultManager1,
+        address _vaultManager2,
+        address _flashLoanModule
+    ) {
         stablecoin = _stablecoin;
         governor = _governor;
         guardian = _guardian;
@@ -27,8 +33,7 @@ contract MockTreasury is ITreasury {
     }
 
     function isGovernorOrGuardian(address admin) external view override returns (bool) {
-        return(admin == governor || admin == guardian);
-
+        return (admin == governor || admin == guardian);
     }
 
     function isVaultManager(address _vaultManager) external view override returns (bool) {
@@ -50,5 +55,4 @@ contract MockTreasury is ITreasury {
     function removeMinter(IAgToken _agToken, address _minter) external {
         _agToken.removeMinter(_minter);
     }
-
 }

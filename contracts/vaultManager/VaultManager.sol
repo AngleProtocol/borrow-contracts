@@ -21,7 +21,6 @@ import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVeBoostProxy.sol";
 
-
 // TODO think about exporting things to libraries to make it more practical
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
 // the thing is that in the handle repay we are exposed to reentrancy attacks because people can call any other function
@@ -109,7 +108,7 @@ contract VaultManager is
         uint256 collateralAmountToGive;
         // Bad debt accrued across the liquidation process
         uint256 badDebtFromLiquidation;
-        // Oracle value at the time of the liquidation
+        // Oracle value at the time of the liquidation: it should be given in the base of the stablecoin
         uint256 oracleValue;
         // Value of the interestRateAccumulator at the time of the call
         uint256 newInterestRateAccumulator;
@@ -393,7 +392,7 @@ contract VaultManager is
 
     /// @notice Verifies whether a given vault is solvent (i.e. should be liquidated or not)
     /// @param vault Data of the vault to check
-    /// @param oracleValue Oracle value at the time of the call
+    /// @param oracleValue Oracle value at the time of the call (it is in the base of the stablecoin, that is for agTokens 10**18)
     /// @param newInterestRateAccumulator Value of the `interestRateAccumulator` at the time of the call
     /// @return healthFactor Health factor of the vault: if it's inferior to 1 (`BASE_PARAMS` in fact) this means that the vault can be liquidated
     /// @return currentDebt Current value of the debt of the vault (taking into account interest)
