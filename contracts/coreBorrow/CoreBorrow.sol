@@ -127,7 +127,6 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// the same as those of this one. It also notifies the `flashLoanModule` of the change
     /// @dev Governance wishing to change the core contract should also make sure to call `setCore`
     /// in the different treasury contracts
-    /// TODO why don't we call the setCore from treasury to directly update the core (making the fct onlyCore)
     function setCore(ICoreBorrow _core) external onlyRole(GOVERNOR_ROLE) {
         uint256 count = getRoleMemberCount(GOVERNOR_ROLE);
         bool success;

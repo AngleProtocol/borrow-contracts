@@ -1118,8 +1118,8 @@ contract VaultManager is
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
     /// @dev when setting parameters you should make sure that when HF < ((1-s)(1-e))^{-1} e = max discount
-    /// otherwise it is porfitable for the liquidator to liquidate in multiple times as it willl decrease the
-    /// the hf and therefore increase the discount
+    /// otherwise it is profitable for the liquidator to liquidate in multiple times as it will decrease the
+    /// the HF and therefore increase the discount
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "collateralFactor") {
             require(param <= liquidationSurcharge, "9");
