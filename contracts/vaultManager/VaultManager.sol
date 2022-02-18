@@ -21,7 +21,6 @@ import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVeBoostProxy.sol";
 
-
 // TODO think about exporting things to libraries to make it more practical
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
 // the thing is that in the handle repay we are exposed to reentrancy attacks because people can call any other function
@@ -82,7 +81,7 @@ contract VaultManager is
         uint256 normalizedDebt;
     }
 
-    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximul
+    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximum
     /// amount that could be repaid by liquidating the position
     /// @dev All the values are null in the case of a vault which cannot be liquidated under these conditions
     struct LiquidationOpportunity {
@@ -109,7 +108,7 @@ contract VaultManager is
         uint256 collateralAmountToGive;
         // Bad debt accrued across the liquidation process
         uint256 badDebtFromLiquidation;
-        // Oracle value at the time of the liquidation
+        // Oracle value (in stablecoin base) at the time of the liquidation
         uint256 oracleValue;
         // Value of the interestRateAccumulator at the time of the call
         uint256 newInterestRateAccumulator;
@@ -176,7 +175,7 @@ contract VaultManager is
     uint256[] public xLiquidationBoost;
     /// @notice Values of the liquidation boost at the threshold values of x
     uint256[] public yLiquidationBoost;
-    /// @notice Encodes the minimum ratio collateral/stablecoin a vault can have before being liquidated. It's what
+    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     uint64 public collateralFactor;
     /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)
@@ -1118,6 +1117,9 @@ contract VaultManager is
     /// @param param Value for the parameter
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
+    /// @dev when setting parameters you should make sure that when HF < ((1-s)(1-e))^{-1} e = max discount
+    /// otherwise it is porfitable for the liquidator to liquidate in multiple times as it willl decrease the
+    /// the hf and therefore increase the discount
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "collateralFactor") {
             require(param <= liquidationSurcharge, "9");
@@ -1392,6 +1394,8 @@ contract VaultManager is
 
     /// @notice Approves `to` to operate on `vaultID`
     function _approve(address to, uint256 vaultID) internal {
+        // otherwise a contract could own all vaults and set approval for non whitelisted address?
+        require(!whitelistingActivated || isWhitelisted[to], "20");
         _vaultApprovals[vaultID] = to;
         emit Approval(_ownerOf(vaultID), to, vaultID);
     }

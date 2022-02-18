@@ -127,6 +127,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// the same as those of this one. It also notifies the `flashLoanModule` of the change
     /// @dev Governance wishing to change the core contract should also make sure to call `setCore`
     /// in the different treasury contracts
+    /// TODO why don't we call the setCore from treasury to directly update the core (making the fct onlyCore)
     function setCore(ICoreBorrow _core) external onlyRole(GOVERNOR_ROLE) {
         uint256 count = getRoleMemberCount(GOVERNOR_ROLE);
         bool success;
@@ -134,7 +135,6 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
             success = _core.isGovernor(getRoleMember(GOVERNOR_ROLE, i));
             if (!success) break;
         }
-        require(success, "11");
         address _flashLoanModule = flashLoanModule;
         if (_flashLoanModule != address(0)) IFlashAngle(_flashLoanModule).setCore(address(_core));
         emit CoreUpdated(address(_core));

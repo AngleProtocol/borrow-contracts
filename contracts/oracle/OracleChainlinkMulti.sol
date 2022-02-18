@@ -17,9 +17,6 @@ import "../interfaces/ITreasury.sol";
 contract OracleChainlinkMulti is IOracle {
     // ========================= Parameters and References =========================
 
-    /// @notice Base used for computation
-    uint256 public constant BASE = 10**18;
-
     /// @notice Chainlink pools, the order of the pools has to be the order in which they are read for the computation
     /// of the price
     AggregatorV3Interface[] public circuitChainlink;
@@ -29,8 +26,8 @@ contract OracleChainlinkMulti is IOracle {
     uint8[] public chainlinkDecimals;
     /// @inheritdoc IOracle
     ITreasury public override treasury;
-    /// @notice Unit of the in-currency
-    uint256 public immutable inBase;
+    /// @notice Unit of the stablecoin
+    uint256 public immutable outBase;
     /// @notice Description of the assets concerned by the oracle and the price outputted
     bytes32 public immutable description;
     /// @notice Represent the maximum amount of time (in seconds) between each Chainlink update
@@ -44,16 +41,19 @@ contract OracleChainlinkMulti is IOracle {
     /// @notice Constructor for an oracle using Chainlink with multiple pools to read from
     /// @param _circuitChainlink Chainlink pool addresses (in order)
     /// @param _circuitChainIsMultiplied Whether we should multiply or divide by this rate
+    /// @param _outBase Unit of the stablecoin associated to the oracle
+    /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
+    /// @param _treasury Treasury associated to the VaultManager which reads from this feed
     /// @param _description Description of the assets concerned by the oracle
     constructor(
         address[] memory _circuitChainlink,
         uint8[] memory _circuitChainIsMultiplied,
-        uint256 _inBase,
+        uint256 _outBase,
         uint32 _stalePeriod,
         address _treasury,
         bytes32 _description
     ) {
-        inBase = _inBase;
+        outBase = _outBase;
         description = _description;
         uint256 circuitLength = _circuitChainlink.length;
         require(circuitLength > 0 && circuitLength == _circuitChainIsMultiplied.length, "32");
@@ -71,7 +71,7 @@ contract OracleChainlinkMulti is IOracle {
 
     /// @inheritdoc IOracle
     function read() external view override returns (uint256 quoteAmount) {
-        quoteAmount = BASE;
+        quoteAmount = outBase;
         for (uint256 i = 0; i < circuitChainlink.length; i++) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
@@ -89,7 +89,7 @@ contract OracleChainlinkMulti is IOracle {
     /// @param multiplied Whether the ratio outputted by Chainlink should be multiplied or divided
     /// to the `quoteAmount`
     /// @param decimals Number of decimals of the corresponding Chainlink pair
-    /// @return The `quoteAmount` converted in out-currency (computed using the second return value)
+    /// @return The `quoteAmount` converted in out-currency
     function _readChainlinkFeed(
         uint256 quoteAmount,
         AggregatorV3Interface feed,
