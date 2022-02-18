@@ -1117,9 +1117,9 @@ contract VaultManager is
     /// @param param Value for the parameter
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
-    /// @dev when setting parameters you should make sure that when HF < ((1-s)(1-e))^{-1} e = max discount
-    /// otherwise it is profitable for the liquidator to liquidate in multiple times as it will decrease the
-    /// the HF and therefore increase the discount
+    /// @dev When setting parameters governance should make sure that when HF < ((1-surcharge)(1-discount))^{-1}
+    /// discount = max discount otherwise it is profitable for the liquidator to liquidate in multiple times
+    /// as it will decrease the the HF and therefore increase the discount
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "collateralFactor") {
             require(param <= liquidationSurcharge, "9");
@@ -1394,8 +1394,6 @@ contract VaultManager is
 
     /// @notice Approves `to` to operate on `vaultID`
     function _approve(address to, uint256 vaultID) internal {
-        // otherwise a contract could own all vaults and set approval for non whitelisted address?
-        require(!whitelistingActivated || isWhitelisted[to], "20");
         _vaultApprovals[vaultID] = to;
         emit Approval(_ownerOf(vaultID), to, vaultID);
     }
