@@ -9,12 +9,12 @@
     "etherscan:mainnet": "hardhat --network mainnet etherscan-verify",
     "etherscan:rinkeby": "hardhat --network rinkeby etherscan-verify",
     "license": "hardhat prepend-spdx-license",
-    "lint": "yarn lint:sol",
-    "lint:js:fix": "eslint --ignore-path .gitignore --fix --max-warnings 30 'scripts/**/*.ts' 'test/**/*.{js,ts}' 'deploy/*.{js,ts}' '*.{js,ts}'",
+    "lint": "yarn lint:sol && yarn lint:js:fix",
+    "lint:js:fix": "eslint --ignore-path .gitignore --fix --max-warnings 30 'test/**/*.{js,ts}' '*.{js,ts}'",
     "lint:sol": "solhint --fix --max-warnings 20 \"contracts/**/*.sol\"",
     "prettier": "yarn prettier:js && yarn prettier:sol",
     "prettier:sol": "prettier --write 'contracts/**/*.sol'",
-    "prettier:js": "prettier --write 'scripts/**/*.ts' 'scripts/*.ts' 'test/**/*.{js,ts}' 'deploy/*.{js,ts}' '*.{js,ts}'",
+    "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
     "size": "hardhat size-contracts",
     "test": "hardhat test"
   },
@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "1.0.33",
+    "@angleprotocol/sdk": "^1.0.41",
     "@chainlink/contracts": "0.2.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-solhint": "2.0.0",
@@ -96,6 +96,7 @@
   },
   "dependencies": {
     "dayjs": "^1.10.7",
+    "eslint-plugin-simple-import-sort": "^7.0.0",
     "fs-extra": "^10.0.0",
     "solc": "0.8.10"
   }

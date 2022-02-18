@@ -131,11 +131,12 @@ contract Treasury is ITreasury, Initializable {
     /// @dev Typically this function is to be called once every week by a keeper to distribute rewards to veANGLE
     /// holders
     function pushSurplus() external {
-        require(surplusManager != address(0), "0");
+        address _surplusManager = surplusManager;
+        require(_surplusManager != address(0), "0");
         (uint256 surplusBufferValue, ) = _fetchSurplusFromAll();
         surplusBuffer = 0;
         emit SurplusBufferUpdated(0);
-        stablecoin.transfer(surplusManager, (surplusForGovernance * surplusBufferValue) / BASE_PARAMS);
+        stablecoin.transfer(_surplusManager, (surplusForGovernance * surplusBufferValue) / BASE_PARAMS);
     }
 
     /// @notice Updates the bad debt of the protocol in case where the protocol has accumulated some revenue
@@ -315,6 +316,8 @@ contract Treasury is ITreasury, Initializable {
 
     /// @notice Sets the `surplusForGovernance` parameter
     /// @param _surplusForGovernance New value of the parameter
+    /// @dev To pause surplus distribution, governance needs to set a zero value for `surplusForGovernance`
+    /// which means
     function setSurplusForGovernance(uint64 _surplusForGovernance) external onlyGovernor {
         require(_surplusForGovernance <= BASE_PARAMS, "9");
         surplusForGovernance = _surplusForGovernance;
@@ -325,7 +328,7 @@ contract Treasury is ITreasury, Initializable {
     /// protocol
     /// @param _surplusManager New address responsible for handling the surplus
     function setSurplusManager(address _surplusManager) external onlyGovernor {
-        require(surplusManager != address(0), "0");
+        require(_surplusManager != address(0), "0");
         surplusManager = _surplusManager;
         emit SurplusManagerUpdated(_surplusManager);
     }

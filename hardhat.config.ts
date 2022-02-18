@@ -3,11 +3,6 @@
 // - CI
 // - RUNS
 import 'dotenv/config';
-
-import yargs from 'yargs';
-import { nodeUrl, accounts } from './utils/network';
-import { HardhatUserConfig } from 'hardhat/config';
-
 import 'hardhat-contract-sizer';
 import 'hardhat-spdx-license-identifier';
 import 'hardhat-docgen';
@@ -16,11 +11,15 @@ import 'hardhat-abi-exporter';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-truffle5';
 import '@nomiclabs/hardhat-solhint';
-// import '@nomiclabs/hardhat-vyper';
 import '@openzeppelin/hardhat-upgrades';
 import 'solidity-coverage';
 import '@tenderly/hardhat-tenderly';
 import '@typechain/hardhat';
+
+import { HardhatUserConfig } from 'hardhat/config';
+import yargs from 'yargs';
+
+import { accounts, nodeUrl } from './utils/network';
 
 const argv = yargs
   .env('')
