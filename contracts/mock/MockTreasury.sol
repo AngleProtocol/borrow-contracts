@@ -3,6 +3,7 @@
 pragma solidity 0.8.10;
 
 import "../interfaces/ITreasury.sol";
+import "../interfaces/IFlashAngle.sol";
 
 contract MockTreasury is ITreasury {
     IAgToken public override stablecoin;
@@ -54,5 +55,9 @@ contract MockTreasury is ITreasury {
 
     function removeMinter(IAgToken _agToken, address _minter) external {
         _agToken.removeMinter(_minter);
+    }
+
+    function accrueInterestToTreasury(IFlashAngle flashAngle) external returns(uint256 balance){
+        balance = flashAngle.accrueInterestToTreasury(stablecoin);
     }
 }

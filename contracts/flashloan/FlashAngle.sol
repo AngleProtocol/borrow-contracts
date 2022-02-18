@@ -78,12 +78,8 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
 
     /// @inheritdoc IERC3156FlashLender
     function maxFlashLoan(address token) external view override returns (uint256) {
-        IAgToken stablecoin = IAgToken(token);
-        if (stablecoinMap[stablecoin].treasury != address(0) && stablecoin.isMinter(address(this))) {
-            return stablecoinMap[stablecoin].maxBorrowable;
-        } else {
-            return 0;
-        }
+        // it will be 0 anyway if the token was not added
+        return stablecoinMap[IAgToken(token)].maxBorrowable;
     }
 
     /// @inheritdoc IERC3156FlashLender
