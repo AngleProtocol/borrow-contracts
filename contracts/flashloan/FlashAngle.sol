@@ -138,8 +138,6 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     ) external onlyExistingStablecoin(stablecoin) {
         require(core.isGovernorOrGuardian(msg.sender), "2");
         require(_flashLoanFee <= BASE_PARAMS, "9");
-        require(address(stablecoinMap[stablecoin].treasury) != address(0), "0");
-
         stablecoinMap[stablecoin].flashLoanFee = _flashLoanFee;
         stablecoinMap[stablecoin].maxBorrowable = _maxBorrowable;
     }
