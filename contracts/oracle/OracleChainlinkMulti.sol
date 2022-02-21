@@ -97,7 +97,7 @@ contract OracleChainlinkMulti is IOracle {
         uint256 decimals
     ) internal view returns (uint256) {
         (uint80 roundId, int256 ratio, , uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
-        require(ratio > 0 && roundId <= answeredInRound && block.timestamp - updatedAt <= stalePeriod, "100");
+        require(ratio > 0 && roundId <= answeredInRound && block.timestamp - updatedAt <= stalePeriod, "37");
         uint256 castedRatio = uint256(ratio);
         // Checking whether we should multiply or divide by the ratio computed
         if (multiplied == 1) return (quoteAmount * castedRatio) / (10**decimals);

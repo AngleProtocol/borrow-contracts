@@ -61,9 +61,9 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @param _treasury Treasury contract to add
     /// @dev The address calling this function has to be hard-coded in the contract
     function setUpTreasury(address _treasury) external {
-        require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
-        require(address(ITreasury(_treasury).stablecoin()) == address(this));
-        require(!treasuryInitialized);
+        require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8, "1");
+        require(address(ITreasury(_treasury).stablecoin()) == address(this), "19");
+        require(!treasuryInitialized, "34");
         treasury = ITreasury(_treasury);
         treasuryInitialized = true;
         emit TreasuryUpdated(_treasury);
@@ -80,7 +80,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     /// @notice Checks whether the sender has the minting right
     modifier onlyMinter() {
-        require(msg.sender == stableMaster || isMinter[msg.sender]);
+        require(msg.sender == stableMaster || isMinter[msg.sender], "35");
         _;
     }
 
@@ -144,14 +144,14 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     /// @inheritdoc IAgToken
     function addMinter(address minter) external override onlyTreasury {
-        require(minter != address(0));
+        require(minter != address(0), "0");
         isMinter[minter] = true;
         emit MinterToggled(minter);
     }
 
     /// @inheritdoc IAgToken
     function removeMinter(address minter) external override {
-        require(msg.sender == address(treasury) || msg.sender == minter);
+        require(msg.sender == address(treasury) || msg.sender == minter, "36");
         isMinter[minter] = false;
         emit MinterToggled(minter);
     }

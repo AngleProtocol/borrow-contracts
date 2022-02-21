@@ -6,17 +6,19 @@ import "../interfaces/IStableMaster.sol";
 import "../interfaces/IAgToken.sol";
 
 contract MockStableMaster is IStableMaster {
-
     mapping(address => uint256) public poolManagerMap;
 
-    constructor() {
-    }
+    constructor() {}
 
     function updateStocksUsers(uint256 amount, address poolManager) external override {
-        poolManagerMap[poolManager]+= amount;
+        poolManagerMap[poolManager] += amount;
     }
 
-    function burnSelf(IAgToken agToken, uint256 amount, address burner) external {
+    function burnSelf(
+        IAgToken agToken,
+        uint256 amount,
+        address burner
+    ) external {
         agToken.burnSelf(amount, burner);
     }
 
@@ -29,8 +31,11 @@ contract MockStableMaster is IStableMaster {
         agToken.burnFrom(amount, burner, sender);
     }
 
-    function mint(IAgToken agToken, address account, uint256 amount) external {
+    function mint(
+        IAgToken agToken,
+        address account,
+        uint256 amount
+    ) external {
         agToken.mint(account, amount);
     }
-
 }
