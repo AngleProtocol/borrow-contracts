@@ -51,7 +51,7 @@ contract('AgToken', () => {
 
     stableMaster = (await new MockStableMaster__factory(deployer).deploy()) as MockStableMaster;
 
-    // Example of upgradeable deployment - Default signer will be user
+    // Example of upgradeable deployment - Default signer will be alice
     agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
 
     treasury = (await new MockTreasury__factory(deployer).deploy(

@@ -114,16 +114,16 @@ const time = {
 };
 
 async function deployUpgradeable(factory: ContractFactory): Promise<Contract> {
-  const { deployer, user } = await ethers.getNamedSigners();
+  const { deployer, proxyAdmin, alice } = await ethers.getNamedSigners();
 
   const Implementation = await factory.deploy();
   const Proxy = await new TransparentUpgradeableProxy__factory(deployer).deploy(
     Implementation.address,
-    deployer.address,
+    proxyAdmin.address,
     '0x',
   );
 
-  return new Contract(Proxy.address, factory.interface, user);
+  return new Contract(Proxy.address, factory.interface, alice);
 }
 
 export {

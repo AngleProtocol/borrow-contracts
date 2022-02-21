@@ -24,5 +24,5 @@ interface IOracle {
     function setTreasury(address _treasury) external;
 
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
-    function treasury() external view returns (ITreasury);
+    function treasury() external view returns (ITreasury treasury);
 }
