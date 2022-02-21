@@ -12,6 +12,8 @@ import {
   MockToken__factory,
   Treasury,
   Treasury__factory,
+  MockVaultManager,
+  MockVaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
@@ -23,6 +25,7 @@ contract('Treasury', () => {
 
   let coreBorrow: MockCoreBorrow;
   let stablecoin: MockToken;
+  let vaultManager: MockVaultManager;
   let governor: string;
   let treasury: Treasury;
 
@@ -52,6 +55,7 @@ contract('Treasury', () => {
 
     treasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
     coreBorrow = (await new MockCoreBorrow__factory(deployer).deploy()) as MockCoreBorrow;
+    vaultManager = (await new MockVaultManager__factory(deployer).deploy(treasury.address)) as MockVaultManager;
 
     stablecoin = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
     await coreBorrow.toggleGovernor(governor);
@@ -125,15 +129,139 @@ contract('Treasury', () => {
   });
   describe('addVaultManager', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.addMinter(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.addVaultManager(alice.address)).to.be.revertedWith('1');
     });
     it('reverts - zero value', async () => {
-      await expect(treasury.connect(impersonatedSigners[governor]).addMinter(ZERO_ADDRESS)).to.be.revertedWith('0');
+      await expect(treasury.connect(impersonatedSigners[governor]).addVaultManager(ZERO_ADDRESS)).to.be.reverted;
     });
-    it('success - minter added', async () => {
+    it('reverts - wrong treasury', async () => {
+      const vaultManager2 = (await new MockVaultManager__factory(deployer).deploy(alice.address)) as MockVaultManager;
+      await expect(
+        treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address),
+      ).to.be.revertedWith('6');
+    });
+    it('success - vaultManager added', async () => {
+      const receipt = await (
+        await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address)
+      ).wait();
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.true;
+      expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager.address);
+      inReceipt(receipt, 'VaultManagerToggled', {
+        vaultManager: vaultManager.address,
+      });
+      expect(await stablecoin.minters(vaultManager.address)).to.be.true;
+    });
+  });
+  describe('removeMinter', () => {
+    it('reverts - non governor', async () => {
+      await expect(treasury.removeMinter(alice.address)).to.be.revertedWith('1');
+    });
+    it('reverts - minter is a vaultManager', async () => {
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
+      await expect(
+        treasury.connect(impersonatedSigners[governor]).removeMinter(vaultManager.address),
+      ).to.be.revertedWith('40');
+    });
+    it('success - minter removed', async () => {
       await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
-      expect(await stablecoin.minters(alice.address)).to.be.true;
+      await (await treasury.connect(impersonatedSigners[governor]).removeMinter(alice.address)).wait();
+      expect(await stablecoin.minters(alice.address)).to.be.false;
     });
+  });
+  describe('removeVaultManager', () => {
+    it('reverts - non governor', async () => {
+      await expect(treasury.removeVaultManager(alice.address)).to.be.revertedWith('1');
+    });
+    it('reverts - vaultManager has not been added yet', async () => {
+      await expect(
+        treasury.connect(impersonatedSigners[governor]).removeVaultManager(alice.address),
+      ).to.be.revertedWith('3');
+    });
+    it('success - only one vaultManager', async () => {
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
+      const receipt = await (
+        await treasury.connect(impersonatedSigners[governor]).removeVaultManager(vaultManager.address)
+      ).wait();
+      inReceipt(receipt, 'VaultManagerToggled', {
+        vaultManager: vaultManager.address,
+      });
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.false;
+      await expect(treasury.vaultManagerList(0)).to.be.reverted;
+      expect(await stablecoin.minters(vaultManager.address)).to.be.false;
+    });
+    it('success - several vaultManagers - first one removed', async () => {
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
+      const vaultManager2 = (await new MockVaultManager__factory(deployer).deploy(
+        treasury.address,
+      )) as MockVaultManager;
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address);
+      const receipt = await (
+        await treasury.connect(impersonatedSigners[governor]).removeVaultManager(vaultManager.address)
+      ).wait();
+      inReceipt(receipt, 'VaultManagerToggled', {
+        vaultManager: vaultManager.address,
+      });
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.true;
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.false;
+      expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager2.address);
+      expect(await stablecoin.minters(vaultManager.address)).to.be.false;
+      expect(await stablecoin.minters(vaultManager2.address)).to.be.true;
+    });
+    it('success - several vaultManagers - second one removed', async () => {
+      const vaultManager2 = (await new MockVaultManager__factory(deployer).deploy(
+        treasury.address,
+      )) as MockVaultManager;
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address);
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
+      const receipt = await (
+        await treasury.connect(impersonatedSigners[governor]).removeVaultManager(vaultManager.address)
+      ).wait();
+      inReceipt(receipt, 'VaultManagerToggled', {
+        vaultManager: vaultManager.address,
+      });
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.true;
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.false;
+      expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager2.address);
+      expect(await stablecoin.minters(vaultManager.address)).to.be.false;
+      expect(await stablecoin.minters(vaultManager2.address)).to.be.true;
+    });
+  });
+  describe('recoverERC20', () => {
+    it('reverts - non governor', async () => {
+      await expect(treasury.recoverERC20(alice.address, alice.address, parseEther('1'))).to.be.revertedWith('1');
+    });
+    it('success - non stablecoin token address', async () => {
+      const token = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
+      await token.mint(treasury.address, parseEther('10'));
+      const receipt = await (await treasury.recoverERC20(token.address, alice.address, parseEther('1'))).wait();
+      inReceipt(receipt, 'Recovered', {
+        token: token.address,
+        to: alice.address,
+        amount: parseEther('1'),
+      });
+      expect(await token.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      expect(await token.balanceOf(treasury.address)).to.be.equal(parseEther('9'));
+    });
+    it('success - non stablecoin token address and too high amount', async () => {
+      const token = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
+      await token.mint(treasury.address, parseEther('10'));
+      await expect(treasury.recoverERC20(token.address, alice.address, parseEther('100'))).to.be.reverted;
+    });
+    it('reverts - stablecoin token address and too high amount', async () => {
+      await expect(treasury.recoverERC20(stablecoin.address, alice.address, parseEther('1'))).to.be.revertedWith('4');
+    });
+    it('success - stablecoin token address', async () => {
+      await stablecoin.mint(treasury.address, parseEther('10'));
+      const receipt = await (await treasury.recoverERC20(stablecoin.address, alice.address, parseEther('1'))).wait();
+      inReceipt(receipt, 'Recovered', {
+        token: stablecoin.address,
+        to: alice.address,
+        amount: parseEther('1'),
+      });
+      expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      expect(await stablecoin.balanceOf(treasury.address)).to.be.equal(parseEther('9'));
+    });
+    // TODO test with correct balance
   });
   describe('setSurplusManager', () => {
     it('reverts - non governor', async () => {

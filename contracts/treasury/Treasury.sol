@@ -214,11 +214,11 @@ contract Treasury is ITreasury, Initializable {
                 surplusBufferValue = badDebtValue >= surplusBufferValue ? 0 : surplusBufferValue - badDebtValue;
                 badDebtValue = 0;
             }
+            surplusBuffer = surplusBufferValue;
+            badDebt = badDebtValue;
+            emit SurplusBufferUpdated(surplusBufferValue);
+            emit BadDebtUpdated(badDebtValue);
         }
-        surplusBuffer = surplusBufferValue;
-        badDebt = badDebtValue;
-        emit SurplusBufferUpdated(surplusBufferValue);
-        emit BadDebtUpdated(badDebtValue);
         return (surplusBufferValue, badDebtValue);
     }
 
@@ -248,7 +248,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param minter Minter address to remove
     function removeMinter(address minter) external onlyGovernor {
         // To remove the minter role to a `vaultManager` you have to go through the `removeVaultManager` function
-        require(!vaultManagerMap[minter]);
+        require(!vaultManagerMap[minter], "40");
         stablecoin.removeMinter(minter);
     }
 

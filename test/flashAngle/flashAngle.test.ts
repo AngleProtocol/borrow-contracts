@@ -1,10 +1,8 @@
-import { CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, Signer, utils } from 'ethers';
+import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
-import { Address } from 'hardhat-deploy/dist/types';
-import { inReceipt, inIndirectReceipt } from '../utils/expectEvent';
+import { inIndirectReceipt } from '../utils/expectEvent';
 import { parseAmount } from '../../utils/bignumber';
 
 import {
@@ -14,7 +12,6 @@ import {
   MockTreasury__factory,
   MockCoreBorrow,
   MockCoreBorrow__factory,
-  MockFlashLoanModule__factory,
   MockToken,
   MockToken__factory,
   MockFlashLoanReceiver,

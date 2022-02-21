@@ -38,5 +38,6 @@
   "36": "invalid sender",
   "37": "invalid Chainlink rate",
   "38": "not enough governors left",
-  "39": "wrong return message"
+  "39": "wrong return message",
+  "40": "cannot remove vaultManager minting rights this way"
 }

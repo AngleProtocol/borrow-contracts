@@ -46,4 +46,7 @@ contract MockToken is ERC20 {
     function addMinter(address minter) public {
         minters[minter] = true;
     }
+    function removeMinter(address minter) public {
+        minters[minter] = false;
+    }
 }
