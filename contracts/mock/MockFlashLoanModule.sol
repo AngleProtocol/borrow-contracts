@@ -9,12 +9,14 @@ contract MockFlashLoanModule is IFlashAngle {
     ICoreBorrow public override core;
     mapping(address => bool) public stablecoinsSupported;
     mapping(IAgToken => uint256) public interestAccrued;
+    uint256 public surplusValue;
 
     constructor(ICoreBorrow _core) {
         core = _core;
     }
 
     function accrueInterestToTreasury(IAgToken stablecoin) external override returns (uint256 balance) {
+        balance = surplusValue;
         interestAccrued[stablecoin] += balance;
     }
 
@@ -28,5 +30,9 @@ contract MockFlashLoanModule is IFlashAngle {
 
     function setCore(address _core) external override {
         core = ICoreBorrow(_core);
+    }
+
+    function setSurplusValue(uint256 _surplusValue) external {
+        surplusValue = _surplusValue;
     }
 }
