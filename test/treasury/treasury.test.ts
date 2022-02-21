@@ -233,7 +233,11 @@ contract('Treasury', () => {
     it('success - non stablecoin token address', async () => {
       const token = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
       await token.mint(treasury.address, parseEther('10'));
-      const receipt = await (await treasury.recoverERC20(token.address, alice.address, parseEther('1'))).wait();
+      const receipt = await (
+        await treasury
+          .connect(impersonatedSigners[governor])
+          .recoverERC20(token.address, alice.address, parseEther('1'))
+      ).wait();
       inReceipt(receipt, 'Recovered', {
         token: token.address,
         to: alice.address,
@@ -245,14 +249,24 @@ contract('Treasury', () => {
     it('success - non stablecoin token address and too high amount', async () => {
       const token = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
       await token.mint(treasury.address, parseEther('10'));
-      await expect(treasury.recoverERC20(token.address, alice.address, parseEther('100'))).to.be.reverted;
+      await expect(
+        treasury.connect(impersonatedSigners[governor]).recoverERC20(token.address, alice.address, parseEther('100')),
+      ).to.be.reverted;
     });
     it('reverts - stablecoin token address and too high amount', async () => {
-      await expect(treasury.recoverERC20(stablecoin.address, alice.address, parseEther('1'))).to.be.revertedWith('4');
+      await expect(
+        treasury
+          .connect(impersonatedSigners[governor])
+          .recoverERC20(stablecoin.address, alice.address, parseEther('1')),
+      ).to.be.revertedWith('4');
     });
     it('success - stablecoin token address', async () => {
       await stablecoin.mint(treasury.address, parseEther('10'));
-      const receipt = await (await treasury.recoverERC20(stablecoin.address, alice.address, parseEther('1'))).wait();
+      const receipt = await (
+        await treasury
+          .connect(impersonatedSigners[governor])
+          .recoverERC20(stablecoin.address, alice.address, parseEther('1'))
+      ).wait();
       inReceipt(receipt, 'Recovered', {
         token: stablecoin.address,
         to: alice.address,
@@ -262,6 +276,40 @@ contract('Treasury', () => {
       expect(await stablecoin.balanceOf(treasury.address)).to.be.equal(parseEther('9'));
     });
     // TODO test with correct balance
+  });
+  describe('setTreasury', () => {
+    it('reverts - nonGovernor', async () => {
+      await expect(treasury.setTreasury(alice.address)).to.be.revertedWith('1');
+    });
+    it('reverts - still wrong stablecoin', async () => {
+      const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
+      newTreasury.initialize(coreBorrow.address, alice.address);
+      await expect(treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)).to.be.revertedWith(
+        '19',
+      );
+    });
+    it('reverts - still flashLoaner', async () => {
+      await coreBorrow.toggleFlashLoaners(treasury.address);
+      const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
+      await newTreasury.initialize(coreBorrow.address, stablecoin.address);
+      await expect(treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)).to.be.revertedWith(
+        '7',
+      );
+    });
+    it('success - no vaultManager', async () => {
+      const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
+      await newTreasury.initialize(coreBorrow.address, stablecoin.address);
+      await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address);
+      expect(await stablecoin.treasury()).to.be.equal(newTreasury.address);
+    });
+    it('success - with a VaultManager', async () => {
+      const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
+      await newTreasury.initialize(coreBorrow.address, stablecoin.address);
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
+      await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address);
+      expect(await vaultManager.treasury()).to.be.equal(newTreasury.address);
+      expect(await stablecoin.treasury()).to.be.equal(newTreasury.address);
+    });
   });
   describe('setSurplusManager', () => {
     it('reverts - non governor', async () => {
@@ -302,6 +350,44 @@ contract('Treasury', () => {
       inReceipt(receipt, 'CoreUpdated', {
         _core: coreBorrowNew.address,
       });
+    });
+  });
+  describe('setFlashLoanModule', () => {
+    it('reverts - non core', async () => {
+      await expect(treasury.setFlashLoanModule(alice.address)).to.be.revertedWith('10');
+    });
+    it('success - when no old flash loan Module', async () => {
+      await coreBorrow.setFlashLoanModule(treasury.address, alice.address);
+      expect(await treasury.flashLoanModule()).to.be.equal(alice.address);
+      expect(await stablecoin.minters(alice.address)).to.be.true;
+    });
+    it('success - when there is an old flash loan Module', async () => {
+      await coreBorrow.setFlashLoanModule(treasury.address, alice.address);
+      await coreBorrow.setFlashLoanModule(treasury.address, bob.address);
+      expect(await treasury.flashLoanModule()).to.be.equal(bob.address);
+      expect(await stablecoin.minters(alice.address)).to.be.false;
+      expect(await stablecoin.minters(bob.address)).to.be.true;
+    });
+  });
+  describe('fetchSurplusFromAll', () => {
+    it('success - no vaultManager/no flashLoanModule', async () => {
+      await treasury.fetchSurplusFromAll();
+      expect(await treasury.badDebt()).to.be.equal(0);
+      expect(await treasury.surplusBuffer()).to.be.equal(0);
+    });
+    it('success - one vaultManager - just surplus', async () => {
+      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
+      await vaultManager.setSurplusBadDebt(parseEther('1'), 0, stablecoin.address);
+      const receipt = await (await treasury.fetchSurplusFromAll()).wait();
+      expect(await treasury.surplusBuffer()).to.be.equal(parseEther('1'));
+      expect(await treasury.surplusBuffer()).to.be.equal(parseEther('0'));
+      inReceipt(receipt, 'SurplusBufferUpdated', {
+        surplusBufferValue: parseEther('1'),
+      });
+      inReceipt(receipt, 'BadDebtUpdated', {
+        badDebtValue: parseEther('0'),
+      });
+      expect(await stablecoin.balanceOf(treasury.address)).to.be.equal(parseEther('1'));
     });
   });
 });

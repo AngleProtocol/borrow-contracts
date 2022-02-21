@@ -11,6 +11,7 @@ contract MockToken is ERC20 {
 
     uint8 internal _decimal;
     mapping(address => bool) public minters;
+    address public treasury;
 
     constructor(
         string memory name_,
@@ -46,7 +47,12 @@ contract MockToken is ERC20 {
     function addMinter(address minter) public {
         minters[minter] = true;
     }
+
     function removeMinter(address minter) public {
         minters[minter] = false;
+    }
+
+    function setTreasury(address _treasury) public {
+        treasury = _treasury;
     }
 }

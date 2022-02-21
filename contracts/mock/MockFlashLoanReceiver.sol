@@ -20,13 +20,11 @@ contract MockFlashLoanReceiver is IERC3156FlashBorrower {
         uint256 fee,
         bytes calldata data
     ) external override returns (bytes32) {
-        IERC20(token).approve(msg.sender, amount+fee);
+        IERC20(token).approve(msg.sender, amount + fee);
         if (amount >= 10**21) return keccak256("error");
-        if (amount == 2*10**18) {
+        if (amount == 2 * 10**18) {
             IERC3156FlashLender(msg.sender).flashLoan(IERC3156FlashBorrower(address(this)), token, amount, data);
             return keccak256("reentrant");
-        }
-        else return CALLBACK_SUCCESS;
+        } else return CALLBACK_SUCCESS;
     }
-
 }
