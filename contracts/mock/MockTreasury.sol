@@ -57,7 +57,7 @@ contract MockTreasury is ITreasury {
         _agToken.removeMinter(_minter);
     }
 
-    function accrueInterestToTreasury(IFlashAngle flashAngle) external returns(uint256 balance){
+    function accrueInterestToTreasury(IFlashAngle flashAngle) external returns (uint256 balance) {
         balance = flashAngle.accrueInterestToTreasury(stablecoin);
     }
 }

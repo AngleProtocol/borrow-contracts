@@ -2,7 +2,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
-import { inReceipt, inIndirectReceipt } from '../utils/expectEvent';
 
 import {
   AgToken,
@@ -13,6 +12,7 @@ import {
   MockTreasury__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('AgToken', () => {
@@ -51,7 +51,7 @@ contract('AgToken', () => {
 
     stableMaster = (await new MockStableMaster__factory(deployer).deploy()) as MockStableMaster;
 
-    // Example of upgradeable deployment - Default signer will be user
+    // Example of upgradeable deployment - Default signer will be alice
     agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
 
     treasury = (await new MockTreasury__factory(deployer).deploy(

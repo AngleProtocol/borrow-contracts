@@ -262,13 +262,14 @@ contract VaultManager is
         string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
-        require(oracle.treasury() == _treasury, "33");
+        require(_oracle.treasury() == _treasury, "33");
         treasury = _treasury;
         collateral = _collateral;
         collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
 
+        // Using of `symbolVault` and not directly token symbols for contract size
         name = string(abi.encodePacked("Angle Protocol ", symbolVault, " Vault"));
         symbol = string(abi.encodePacked(symbolVault, "-vault"));
 
@@ -276,10 +277,9 @@ contract VaultManager is
 
         // Checking if the parameters have been correctly initialized
         require(
-            params.collateralFactor <= params.liquidationSurcharge &&
+            BASE_PARAMS <= params.collateralFactor &&
                 params.liquidationSurcharge <= BASE_PARAMS &&
                 params.borrowFee <= BASE_PARAMS &&
-                params.targetHealthFactor <= BASE_PARAMS &&
                 params.maxLiquidationDiscount <= BASE_PARAMS,
             "15"
         );

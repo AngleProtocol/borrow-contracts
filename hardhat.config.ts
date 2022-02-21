@@ -117,7 +117,10 @@ const config: HardhatUserConfig = {
     deployer: 0,
     guardian: 1,
     governor: 2,
-    user: 3,
+    proxyAdmin: 3,
+    alice: 4,
+    bob: 5,
+    charlie: 6,
   },
   mocha: {
     timeout: 100000,
