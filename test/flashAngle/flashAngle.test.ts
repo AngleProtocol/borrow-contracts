@@ -232,5 +232,82 @@ contract('FlashAngle', () => {
         flashAngle.flashLoan(flashLoanReceiver.address, token.address, parseEther('1'), web3.utils.keccak256('test')),
       ).to.be.revertedWith('4');
     });
+    it('reverts - wrong error message', async () => {
+      await flashAngle
+        .connect(impersonatedSigners[governor])
+        .setFlashLoanParameters(token.address, parseAmount.gwei(0.5), parseEther('10000'));
+
+      await expect(
+        flashAngle.flashLoan(
+          flashLoanReceiver.address,
+          token.address,
+          parseEther('1001'),
+          web3.utils.keccak256('test'),
+        ),
+      ).to.be.revertedWith('39');
+    });
+    it('reverts - too small balance, incapable to repay fees', async () => {
+      await flashAngle
+        .connect(impersonatedSigners[governor])
+        .setFlashLoanParameters(token.address, parseAmount.gwei(0.5), parseEther('10000'));
+
+      await expect(
+        flashAngle.flashLoan(flashLoanReceiver.address, token.address, parseEther('100'), web3.utils.keccak256('test')),
+      ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
+    });
+    it('success - repay flash loan', async () => {
+      await flashAngle
+        .connect(impersonatedSigners[governor])
+        .setFlashLoanParameters(token.address, parseAmount.gwei(0.5), parseEther('10000'));
+      await token.mint(flashLoanReceiver.address, parseEther('50'));
+      expect(await token.balanceOf(flashLoanReceiver.address)).to.be.equal(parseEther('50'));
+      expect(await token.balanceOf(flashAngle.address)).to.be.equal(parseEther('0'));
+      expect(await flashAngle.flashFee(token.address, parseEther('100'))).to.be.equal(parseEther('50'));
+      const receipt = await (
+        await flashAngle.flashLoan(
+          flashLoanReceiver.address,
+          token.address,
+          parseEther('100'),
+          web3.utils.keccak256('test'),
+        )
+      ).wait();
+
+      expect(await token.balanceOf(flashLoanReceiver.address)).to.be.equal(parseEther('0'));
+      expect(await token.balanceOf(flashAngle.address)).to.be.equal(parseEther('50'));
+
+      inIndirectReceipt(
+        receipt,
+        new utils.Interface(['event Minting(address indexed _to, address indexed _minter, uint256 _amount)']),
+        'Minting',
+        {
+          _to: flashLoanReceiver.address,
+          _minter: flashAngle.address,
+          _amount: parseEther('100'),
+        },
+      );
+
+      inIndirectReceipt(
+        receipt,
+        new utils.Interface(['event Burning(address indexed _from, address indexed _burner, uint256 _amount)']),
+        'Burning',
+        {
+          _from: flashAngle.address,
+          _burner: flashAngle.address,
+          _amount: parseEther('100'),
+        },
+      );
+    });
+    it('reverts - reentrant', async () => {
+      await flashAngle
+        .connect(impersonatedSigners[governor])
+        .setFlashLoanParameters(token.address, parseAmount.gwei(0.5), parseEther('10000'));
+      await token.mint(flashLoanReceiver.address, parseEther('50'));
+      expect(await token.balanceOf(flashLoanReceiver.address)).to.be.equal(parseEther('50'));
+      expect(await token.balanceOf(flashAngle.address)).to.be.equal(parseEther('0'));
+      expect(await flashAngle.flashFee(token.address, parseEther('100'))).to.be.equal(parseEther('50'));
+      await expect(
+        flashAngle.flashLoan(flashLoanReceiver.address, token.address, parseEther('2'), web3.utils.keccak256('test')),
+      ).to.be.revertedWith('ReentrancyGuard: reentrant call');
+    });
   });
 });

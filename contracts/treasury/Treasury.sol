@@ -59,7 +59,7 @@ contract Treasury is ITreasury, Initializable {
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event SurplusBufferUpdated(uint256 surplusBufferValue);
     event SurplusForGovernanceUpdated(uint64 _surplusForGovernance);
-    event SurplusManagerUpdated(address indexed surplusManager);
+    event SurplusManagerUpdated(address indexed _surplusManager);
     event VaultManagerToggled(address indexed vaultManager);
 
     // =============================== Modifier ====================================
