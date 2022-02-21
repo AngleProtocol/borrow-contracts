@@ -7,12 +7,12 @@ import hre, { contract, ethers } from 'hardhat';
 import {
   AgToken,
   AgToken__factory,
-  MockERC20,
-  MockERC20__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
   MockStableMaster__factory,
+  MockToken,
+  MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
   VaultManager,
@@ -30,7 +30,7 @@ contract('VaultManager', () => {
   let charlie: SignerWithAddress;
 
   let treasury: MockTreasury;
-  let collateral: MockERC20;
+  let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
   let agToken: AgToken;
@@ -77,7 +77,7 @@ contract('VaultManager', () => {
     agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
-    collateral = await new MockERC20__factory(deployer).deploy('A', 'A', collatBase);
+    collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
 
     vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer))) as VaultManager;
 
