@@ -1117,7 +1117,7 @@ contract VaultManager is
     /// @param param Value for the parameter
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
-    /// @dev When setting parameters governance should make sure that when HF < ((1-surcharge)(1-discount))^{-1}
+    /// @dev When setting parameters governance should make sure that when HF < CF*((1-surcharge)(1-discount))^{-1}
     /// discount = max discount otherwise it is profitable for the liquidator to liquidate in multiple times
     /// as it will decrease the the HF and therefore increase the discount
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
