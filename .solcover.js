@@ -2,7 +2,7 @@ module.exports = {
   norpc: true,
   testCommand: 'yarn test',
   compileCommand: 'yarn compile:hardhat',
-  skipFiles: ['mock', 'external', 'interfaces'],
+  skipFiles: ['mock', 'external', 'interfaces', 'oracle/OracleChainlinkMultiTemplate.sol'],
   providerOptions: {
     default_balance_ether: '10000000000000000000000000',
   },
