@@ -7,18 +7,13 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/ITreasury.sol";
 
-// TODO check decimals -> incorrect at the moment
-
 /// @title OracleChainlinkMulti
 /// @author Angle Core Team
-/// @notice Oracle contract, one contract is deployed per collateral/stablecoin pair: `vaultManager` contracts
-/// could be using different interfaces
+/// @notice Oracle contract, one contract is deployed per collateral/stablecoin pair
 /// @dev This contract concerns an oracle that uses Chainlink with multiple pools to read from
+/// @dev Typically we expect to use this contract to read like the ETH/USD and then USD/EUR feed
 contract OracleChainlinkMulti is IOracle {
     // ========================= Parameters and References =========================
-
-    /// @notice Base used for computation
-    uint256 public constant BASE = 10**18;
 
     /// @notice Chainlink pools, the order of the pools has to be the order in which they are read for the computation
     /// of the price
@@ -29,8 +24,8 @@ contract OracleChainlinkMulti is IOracle {
     uint8[] public chainlinkDecimals;
     /// @inheritdoc IOracle
     ITreasury public override treasury;
-    /// @notice Unit of the in-currency
-    uint256 public immutable inBase;
+    /// @notice Unit of the stablecoin
+    uint256 public immutable outBase;
     /// @notice Description of the assets concerned by the oracle and the price outputted
     bytes32 public immutable description;
     /// @notice Represent the maximum amount of time (in seconds) between each Chainlink update
@@ -44,16 +39,21 @@ contract OracleChainlinkMulti is IOracle {
     /// @notice Constructor for an oracle using Chainlink with multiple pools to read from
     /// @param _circuitChainlink Chainlink pool addresses (in order)
     /// @param _circuitChainIsMultiplied Whether we should multiply or divide by this rate
+    /// @param _outBase Unit of the stablecoin (or the out asset) associated to the oracle
+    /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
+    /// @param _treasury Treasury associated to the VaultManager which reads from this feed
     /// @param _description Description of the assets concerned by the oracle
+    /// @dev For instance, if this oracle is supposed to give the price of ETH in EUR, and if the agEUR
+    /// stablecoin associated to EUR has 18 decimals, then `outBase` should be 10**18
     constructor(
         address[] memory _circuitChainlink,
         uint8[] memory _circuitChainIsMultiplied,
-        uint256 _inBase,
+        uint256 _outBase,
         uint32 _stalePeriod,
         address _treasury,
         bytes32 _description
     ) {
-        inBase = _inBase;
+        outBase = _outBase;
         description = _description;
         uint256 circuitLength = _circuitChainlink.length;
         require(circuitLength > 0 && circuitLength == _circuitChainIsMultiplied.length, "32");
@@ -71,7 +71,7 @@ contract OracleChainlinkMulti is IOracle {
 
     /// @inheritdoc IOracle
     function read() external view override returns (uint256 quoteAmount) {
-        quoteAmount = BASE;
+        quoteAmount = outBase;
         for (uint256 i = 0; i < circuitChainlink.length; i++) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
@@ -89,7 +89,7 @@ contract OracleChainlinkMulti is IOracle {
     /// @param multiplied Whether the ratio outputted by Chainlink should be multiplied or divided
     /// to the `quoteAmount`
     /// @param decimals Number of decimals of the corresponding Chainlink pair
-    /// @return The `quoteAmount` converted in out-currency (computed using the second return value)
+    /// @return The `quoteAmount` converted in out-currency
     function _readChainlinkFeed(
         uint256 quoteAmount,
         AggregatorV3Interface feed,
@@ -97,7 +97,7 @@ contract OracleChainlinkMulti is IOracle {
         uint256 decimals
     ) internal view returns (uint256) {
         (uint80 roundId, int256 ratio, , uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
-        require(ratio > 0 && roundId <= answeredInRound && block.timestamp - updatedAt <= stalePeriod, "37");
+        require(ratio > 0 && roundId <= answeredInRound && block.timestamp - updatedAt <= stalePeriod, "100");
         uint256 castedRatio = uint256(ratio);
         // Checking whether we should multiply or divide by the ratio computed
         if (multiplied == 1) return (quoteAmount * castedRatio) / (10**decimals);

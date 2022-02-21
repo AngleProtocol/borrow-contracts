@@ -81,7 +81,7 @@ contract VaultManager is
         uint256 normalizedDebt;
     }
 
-    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximul
+    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximum
     /// amount that could be repaid by liquidating the position
     /// @dev All the values are null in the case of a vault which cannot be liquidated under these conditions
     struct LiquidationOpportunity {
@@ -108,7 +108,7 @@ contract VaultManager is
         uint256 collateralAmountToGive;
         // Bad debt accrued across the liquidation process
         uint256 badDebtFromLiquidation;
-        // Oracle value at the time of the liquidation: it should be given in the base of the stablecoin
+        // Oracle value (in stablecoin base) at the time of the liquidation
         uint256 oracleValue;
         // Value of the interestRateAccumulator at the time of the call
         uint256 newInterestRateAccumulator;
@@ -175,7 +175,7 @@ contract VaultManager is
     uint256[] public xLiquidationBoost;
     /// @notice Values of the liquidation boost at the threshold values of x
     uint256[] public yLiquidationBoost;
-    /// @notice Encodes the minimum ratio collateral/stablecoin a vault can have before being liquidated. It's what
+    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     uint64 public collateralFactor;
     /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)
@@ -1117,6 +1117,10 @@ contract VaultManager is
     /// @param param Value for the parameter
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
+    /// @dev When setting parameters governance should make sure that when `HF < CF/((1-surcharge)(1-discount))`
+     /// and hence when liquidating a vault is going to decrease its health factor, `discount = max discount`.
+     /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
+     /// the HF and therefore increase the discount between each time
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "collateralFactor") {
             require(param <= liquidationSurcharge, "9");
