@@ -14,8 +14,10 @@ import "../interfaces/ITreasury.sol";
 /// @dev This is a template and a more gas-efficient implementation of the `OracleChainlinkMulti` contract
 contract OracleChainlinkMultiTemplate is IOracle {
 
+    // ===================== To be modified before deployment ======================
     uint256 public constant OUTBASE = 10**18;
     bytes32 public constant DESCRIPTION = "ETH/EUR Oracle";
+    // =============================================================================
 
     // ========================= Parameters and References =========================
 
@@ -45,9 +47,11 @@ contract OracleChainlinkMultiTemplate is IOracle {
     /// @inheritdoc IOracle
     function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = OUTBASE;
+        // ===================== To be modified before deployment ==================
         AggregatorV3Interface[2] memory circuitChainlink = [AggregatorV3Interface(address(0)), AggregatorV3Interface(address(0))];
         uint8[2] memory circuitChainIsMultiplied = [0,0];
         uint8[2] memory chainlinkDecimals = [0,0];
+        // =========================================================================
         for (uint256 i = 0; i < circuitChainlink.length; i++) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
