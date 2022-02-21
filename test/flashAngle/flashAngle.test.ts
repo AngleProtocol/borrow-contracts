@@ -4,29 +4,29 @@ import { BigNumber, Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
-import { inReceipt, inIndirectReceipt } from '../utils/expectEvent';
-import { parseAmount } from '../../utils/bignumber';
 
 import {
   FlashAngle,
   FlashAngle__factory,
-  MockTreasury,
-  MockTreasury__factory,
   MockCoreBorrow,
   MockCoreBorrow__factory,
   MockFlashLoanModule__factory,
-  MockToken,
-  MockToken__factory,
   MockFlashLoanReceiver,
   MockFlashLoanReceiver__factory,
+  MockToken,
+  MockToken__factory,
+  MockTreasury,
+  MockTreasury__factory,
 } from '../../typechain';
+import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('FlashAngle', () => {
   let deployer: SignerWithAddress;
-  let user: SignerWithAddress;
-  let user2: SignerWithAddress;
+  let alice: SignerWithAddress;
+  let bob: SignerWithAddress;
 
   let flashAngle: FlashAngle;
   let coreBorrow: MockCoreBorrow;
@@ -39,7 +39,7 @@ contract('FlashAngle', () => {
   const impersonatedSigners: { [key: string]: Signer } = {};
 
   before(async () => {
-    [deployer, user, user2] = await ethers.getSigners();
+    [deployer, alice, bob] = await ethers.getSigners();
     // add any addresses you want to impersonate here
     governor = '0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8';
     guardian = '0x0C2553e4B9dFA9f83b1A6D3EAB96c4bAaB42d430';
@@ -187,7 +187,7 @@ contract('FlashAngle', () => {
       await expect(flashAngle.accrueInterestToTreasury(guardian)).to.be.revertedWith('14');
     });
     it('reverts - valid stablecoin but invalid sender', async () => {
-      await expect(flashAngle.connect(user).accrueInterestToTreasury(token.address)).to.be.revertedWith('14');
+      await expect(flashAngle.connect(alice).accrueInterestToTreasury(token.address)).to.be.revertedWith('14');
     });
     it('success - valid stablecoin and valid sender - zero balance', async () => {
       const receipt = await (await treasury.accrueInterestToTreasury(flashAngle.address)).wait();
