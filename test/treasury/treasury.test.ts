@@ -312,14 +312,24 @@ contract('Treasury', () => {
     it('success - no vaultManager', async () => {
       const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
       await newTreasury.initialize(coreBorrow.address, stablecoin.address);
-      await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address);
+      const receipt = await (
+        await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)
+      ).wait();
+      inReceipt(receipt, 'NewTreasurySet', {
+        _treasury: newTreasury.address,
+      });
       expect(await stablecoin.treasury()).to.be.equal(newTreasury.address);
     });
     it('success - with a VaultManager', async () => {
       const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
       await newTreasury.initialize(coreBorrow.address, stablecoin.address);
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
-      await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address);
+      const receipt = await (
+        await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)
+      ).wait();
+      inReceipt(receipt, 'NewTreasurySet', {
+        _treasury: newTreasury.address,
+      });
       expect(await vaultManager.treasury()).to.be.equal(newTreasury.address);
       expect(await stablecoin.treasury()).to.be.equal(newTreasury.address);
     });

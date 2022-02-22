@@ -54,6 +54,8 @@ contract VaultManager is
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Base used for interest rate computation
     uint256 public constant BASE_INTEREST = 10**27;
+    /// @notice Used for interest rate computation
+    uint256 public constant HALF_BASE_INTEREST = 10**27 / 2;
 
     // ========================= Key Structs and Enums =============================
 
@@ -432,18 +434,14 @@ contract VaultManager is
     /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
     /// @dev The approximation slightly undercharges borrowers with the advantage of a great gas cost reduction
     /// @dev This function was mostly inspired from Aave implementation
-    // TODO: check Aave's raymul and impact of rounding up or down: https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/libraries/math/WadRayMath.sol
-    // TODO check 10**27 or 10**18
-    // TODO: check Aave's solution wrt to Maker in terms of gas and how much it costs
-    // TODO: should we have a few function on top of this?
     function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
         uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
         uint256 ratePerSecond = interestRate;
         if (exp == 0 || ratePerSecond == 0) return interestAccumulator;
         uint256 expMinusOne = exp - 1;
         uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
-        uint256 basePowerTwo = ratePerSecond * ratePerSecond;
-        uint256 basePowerThree = basePowerTwo * ratePerSecond;
+        uint256 basePowerTwo = (ratePerSecond * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
+        uint256 basePowerThree = (basePowerTwo * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
         uint256 secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
         uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
         return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;

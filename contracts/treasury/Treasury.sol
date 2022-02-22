@@ -56,6 +56,7 @@ contract Treasury is ITreasury, Initializable {
 
     event BadDebtUpdated(uint256 badDebtValue);
     event CoreUpdated(address indexed _core);
+    event NewTreasurySet(address indexed _treasury);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event SurplusBufferUpdated(uint256 surplusBufferValue);
     event SurplusForGovernanceUpdated(uint64 _surplusForGovernance);
@@ -318,6 +319,7 @@ contract Treasury is ITreasury, Initializable {
         require(ITreasury(_treasury).stablecoin() == stablecoin, "19");
         // Flash loan role should be removed before calling this function
         require(!core.isFlashLoanerTreasury(address(this)), "7");
+        emit NewTreasurySet(_treasury);
         for (uint256 i = 0; i < vaultManagerList.length; i++) {
             IVaultManager(vaultManagerList[i]).setTreasury(_treasury);
         }
