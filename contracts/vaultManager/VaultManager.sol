@@ -28,7 +28,6 @@ import "../interfaces/IVeBoostProxy.sol";
 // this call are
 // TODO in the handleRepay: do we impose restrictions on the called addresses like Maker does here or is there no point
 // in doing it: https://github.com/makerdao/dss/blob/master/src/clip.sol
-// TODO check trade-off 10**27 and 10**18 for interest accumulated
 // TODO think of more (or less) view functions -> cf Picodes
 // TODO Events double check
 
