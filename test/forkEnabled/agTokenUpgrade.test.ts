@@ -1,24 +1,23 @@
+import { CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
+import { ProxyAdmin_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
-import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
-import { parseAmount } from '../../utils/bignumber';
-import { CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
-import { AgToken_Interface, ProxyAdmin_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
 
 import {
-  FlashAngle,
-  FlashAngle__factory,
   AgToken,
   AgToken__factory,
   CoreBorrow,
   CoreBorrow__factory,
+  FlashAngle,
+  FlashAngle__factory,
+  ProxyAdmin,
   Treasury,
   Treasury__factory,
-  ProxyAdmin,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('AgToken - End-to-end Upgrade', () => {
@@ -37,6 +36,7 @@ contract('AgToken - End-to-end Upgrade', () => {
   let guardianRole: string;
   let governorRole: string;
   let flashloanerTreasuryRole: string;
+  let stableMasterAddress: string;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -64,16 +64,14 @@ contract('AgToken - End-to-end Upgrade', () => {
     proxyAdmin = new ethers.Contract(CONTRACTS_ADDRESSES[1].ProxyAdmin!, ProxyAdmin_Interface, deployer) as ProxyAdmin;
 
     const implementation = await new AgToken__factory(deployer).deploy();
+    // eslint-disable-next-line
+    const agTokenAddress = CONTRACTS_ADDRESSES[1].agEUR?.AgToken!;
+    // eslint-disable-next-line
+    stableMasterAddress = CONTRACTS_ADDRESSES[1].agEUR?.StableMaster!;
     await (
-      await proxyAdmin
-        .connect(impersonatedSigners[governor])
-        .upgrade(CONTRACTS_ADDRESSES[1].agEUR?.AgToken!, implementation.address)
+      await proxyAdmin.connect(impersonatedSigners[governor]).upgrade(agTokenAddress, implementation.address)
     ).wait();
-    agToken = new ethers.Contract(
-      CONTRACTS_ADDRESSES[1].agEUR?.AgToken!,
-      AgToken__factory.createInterface(),
-      deployer,
-    ) as AgToken;
+    agToken = new ethers.Contract(agTokenAddress, AgToken__factory.createInterface(), deployer) as AgToken;
     coreBorrow = (await deployUpgradeable(new CoreBorrow__factory(deployer))) as CoreBorrow;
     await coreBorrow.initialize(governor, guardian);
     flashAngle = (await deployUpgradeable(new FlashAngle__factory(deployer))) as FlashAngle;
@@ -90,12 +88,12 @@ contract('AgToken - End-to-end Upgrade', () => {
   describe('upgrade - References & Variables', () => {
     it('success - coreBorrow', async () => {
       expect(await coreBorrow.flashLoanModule()).to.be.equal(flashAngle.address);
-      expect(await coreBorrow.isGovernor(governor)).to.be.true;
-      expect(await coreBorrow.isGovernor(guardian)).to.be.false;
-      expect(await coreBorrow.isGovernorOrGuardian(guardian)).to.be.true;
-      expect(await coreBorrow.isGovernorOrGuardian(governor)).to.be.true;
-      expect(await coreBorrow.isFlashLoanerTreasury(treasury.address)).to.be.true;
-      expect(await coreBorrow.isFlashLoanerTreasury(guardian)).to.be.false;
+      expect(await coreBorrow.isGovernor(governor)).to.be.equal(true);
+      expect(await coreBorrow.isGovernor(guardian)).to.be.equal(false);
+      expect(await coreBorrow.isGovernorOrGuardian(guardian)).to.be.equal(true);
+      expect(await coreBorrow.isGovernorOrGuardian(governor)).to.be.equal(true);
+      expect(await coreBorrow.isFlashLoanerTreasury(treasury.address)).to.be.equal(true);
+      expect(await coreBorrow.isFlashLoanerTreasury(guardian)).to.be.equal(false);
       expect(await coreBorrow.getRoleAdmin(guardianRole)).to.be.equal(guardianRole);
       expect(await coreBorrow.getRoleAdmin(governorRole)).to.be.equal(governorRole);
       expect(await coreBorrow.getRoleAdmin(flashloanerTreasuryRole)).to.be.equal(governorRole);
@@ -110,17 +108,16 @@ contract('AgToken - End-to-end Upgrade', () => {
       expect(await treasury.stablecoin()).to.be.equal(agToken.address);
       expect(await treasury.core()).to.be.equal(coreBorrow.address);
       expect(await treasury.surplusManager()).to.be.equal(ZERO_ADDRESS);
-      expect(await treasury.isGovernor(governor)).to.be.true;
-      expect(await treasury.isGovernor(guardian)).to.be.false;
-      expect(await treasury.isGovernorOrGuardian(guardian)).to.be.true;
-      expect(await treasury.isGovernorOrGuardian(governor)).to.be.true;
+      expect(await treasury.isGovernor(governor)).to.be.equal(true);
+      expect(await treasury.isGovernor(guardian)).to.be.equal(false);
+      expect(await treasury.isGovernorOrGuardian(guardian)).to.be.equal(true);
+      expect(await treasury.isGovernorOrGuardian(governor)).to.be.equal(true);
     });
     it('success - agToken', async () => {
-      const stableMasterAddress = CONTRACTS_ADDRESSES[1].agEUR?.StableMaster!;
-      expect(await agToken.isMinter(flashAngle.address)).to.be.true;
-      expect(await agToken.isMinter(stableMasterAddress)).to.be.true;
+      expect(await agToken.isMinter(flashAngle.address)).to.be.equal(true);
+      expect(await agToken.isMinter(stableMasterAddress)).to.be.equal(true);
       expect(await agToken.treasury()).to.be.equal(treasury.address);
-      expect(await agToken.treasuryInitialized()).to.be.true;
+      expect(await agToken.treasuryInitialized()).to.be.equal(true);
       expect(await agToken.stableMaster()).to.be.equal(stableMasterAddress);
     });
     it('success - flashAngle', async () => {
@@ -145,7 +142,7 @@ contract('AgToken - End-to-end Upgrade', () => {
   describe('addMinter', () => {
     it('success - minter added', async () => {
       const receipt = await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
-      expect(await agToken.isMinter(alice.address)).to.be.true;
+      expect(await agToken.isMinter(alice.address)).to.be.equal(true);
       inIndirectReceipt(
         receipt,
         new utils.Interface(['event MinterToggled(address indexed minter)']),
@@ -188,7 +185,7 @@ contract('AgToken - End-to-end Upgrade', () => {
     });
     it('success - add other minter', async () => {
       const receipt = await (await treasury.connect(impersonatedSigners[governor]).addMinter(bob.address)).wait();
-      expect(await agToken.isMinter(bob.address)).to.be.true;
+      expect(await agToken.isMinter(bob.address)).to.be.equal(true);
       inIndirectReceipt(
         receipt,
         new utils.Interface(['event MinterToggled(address indexed minter)']),
@@ -238,7 +235,8 @@ contract('AgToken - End-to-end Upgrade', () => {
       await expect(agToken.connect(alice).burnNoRedeem(parseEther('100'), bob.address)).to.be.reverted;
     });
     it('success - balance updated', async () => {
-      const poolManagerDAI = CONTRACTS_ADDRESSES[1].agEUR?.collaterals?.['DAI'].PoolManager!;
+      // eslint-disable-next-line
+      const poolManagerDAI = CONTRACTS_ADDRESSES[1].agEUR?.collaterals?.DAI.PoolManager!;
       const receipt = await (await agToken.connect(alice).burnNoRedeem(parseEther('100'), poolManagerDAI)).wait();
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('200'));
       inReceipt(receipt, 'Transfer', {
@@ -260,7 +258,8 @@ contract('AgToken - End-to-end Upgrade', () => {
       await expect(agToken.connect(bob).burnFromNoRedeem(alice.address, parseEther('100'), bob.address)).to.be.reverted;
     });
     it('success - balance updated', async () => {
-      const poolManagerDAI = CONTRACTS_ADDRESSES[1].agEUR?.collaterals?.['DAI'].PoolManager!;
+      // eslint-disable-next-line
+      const poolManagerDAI = CONTRACTS_ADDRESSES[1].agEUR?.collaterals?.DAI.PoolManager!;
       const receipt = await (
         await agToken.connect(bob).burnFromNoRedeem(alice.address, parseEther('100'), poolManagerDAI)
       ).wait();
@@ -277,7 +276,6 @@ contract('AgToken - End-to-end Upgrade', () => {
       await expect(agToken.connect(charlie).removeMinter(alice.address)).to.be.revertedWith('36');
     });
     it('reverts - sender is treasury and address is stableMaster', async () => {
-      const stableMasterAddress = CONTRACTS_ADDRESSES[1].agEUR?.StableMaster!;
       await expect(
         treasury.connect(impersonatedSigners[governor]).removeMinter(stableMasterAddress),
       ).to.be.revertedWith('36');
@@ -292,14 +290,14 @@ contract('AgToken - End-to-end Upgrade', () => {
           minter: alice.address,
         },
       );
-      expect(await agToken.isMinter(alice.address)).to.be.false;
+      expect(await agToken.isMinter(alice.address)).to.be.equal(false);
     });
     it('success - from minter', async () => {
       const receipt = await (await agToken.connect(bob).removeMinter(bob.address)).wait();
       inReceipt(receipt, 'MinterToggled', {
         minter: bob.address,
       });
-      expect(await agToken.isMinter(bob.address)).to.be.false;
+      expect(await agToken.isMinter(bob.address)).to.be.equal(false);
     });
   });
   describe('setTreasury', () => {

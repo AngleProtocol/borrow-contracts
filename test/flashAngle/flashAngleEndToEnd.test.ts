@@ -2,30 +2,29 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
-import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
-import { parseAmount } from '../../utils/bignumber';
 
 import {
-  FlashAngle,
-  FlashAngle__factory,
   AgToken,
   AgToken__factory,
   CoreBorrow,
   CoreBorrow__factory,
+  FlashAngle,
+  FlashAngle__factory,
   MockFlashLoanReceiver,
   MockFlashLoanReceiver__factory,
-  Treasury,
-  Treasury__factory,
   MockStableMaster,
   MockStableMaster__factory,
+  Treasury,
+  Treasury__factory,
 } from '../../typechain';
+import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('FlashAngle - End-to-end', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
-  let bob: SignerWithAddress;
 
   let flashAngle: FlashAngle;
   let coreBorrow: CoreBorrow;
@@ -39,7 +38,7 @@ contract('FlashAngle - End-to-end', () => {
   const impersonatedSigners: { [key: string]: Signer } = {};
 
   before(async () => {
-    [deployer, alice, bob] = await ethers.getSigners();
+    [deployer, alice] = await ethers.getSigners();
     // add any addresses you want to impersonate here
     governor = '0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8';
     guardian = '0x0C2553e4B9dFA9f83b1A6D3EAB96c4bAaB42d430';
@@ -80,7 +79,7 @@ contract('FlashAngle - End-to-end', () => {
       expect(await treasury.stablecoin()).to.be.equal(agToken.address);
       expect(await coreBorrow.flashLoanModule()).to.be.equal(flashAngle.address);
       expect(await treasury.flashLoanModule()).to.be.equal(flashAngle.address);
-      expect(await agToken.isMinter(flashAngle.address)).to.be.true;
+      expect(await agToken.isMinter(flashAngle.address)).to.be.equal(true);
       expect((await flashAngle.stablecoinMap(agToken.address)).treasury).to.be.equal(treasury.address);
       expect((await flashAngle.stablecoinMap(agToken.address)).maxBorrowable).to.be.equal(0);
       expect((await flashAngle.stablecoinMap(agToken.address)).flashLoanFee).to.be.equal(0);
@@ -96,7 +95,7 @@ contract('FlashAngle - End-to-end', () => {
       ).wait();
       expect((await flashAngle.stablecoinMap(agToken.address)).treasury).to.be.equal(ZERO_ADDRESS);
       expect(await treasury.flashLoanModule()).to.be.equal(ZERO_ADDRESS);
-      expect(await agToken.isMinter(flashAngle.address)).to.be.false;
+      expect(await agToken.isMinter(flashAngle.address)).to.be.equal(false);
       inReceipt(receipt, 'RoleRevoked', {
         role: web3.utils.keccak256('FLASHLOANER_TREASURY_ROLE'),
         account: treasury.address,
@@ -137,7 +136,7 @@ contract('FlashAngle - End-to-end', () => {
       await agToken.connect(alice).mint(flashLoanReceiver.address, parseEther('5'));
       expect(await agToken.balanceOf(flashAngle.address)).to.be.equal(parseEther('0'));
       expect(await agToken.balanceOf(flashLoanReceiver.address)).to.be.equal(parseEther('5'));
-      expect(await agToken.isMinter(alice.address)).to.be.true;
+      expect(await agToken.isMinter(alice.address)).to.be.equal(true);
       const receipt = await (
         await flashAngle.flashLoan(
           flashLoanReceiver.address,
