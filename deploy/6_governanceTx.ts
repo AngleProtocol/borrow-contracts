@@ -65,7 +65,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   /* TODO after this:
     - vaultManagers deployed and linked to the treasury
-    - parameters in the FlashAngle contracts (for the flash loan)
+    - parameters in the FlashAngle contracts (for the flash loan) -> SDK
   */
 };
 
