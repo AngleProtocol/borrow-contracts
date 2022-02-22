@@ -28,6 +28,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const flashAngleImplementation = (await ethers.getContract('FlashAngle_Implementation')).address;
 
   console.log(`Successfully deployed the implementation for FlashAngle at ${flashAngleImplementation}`);
+  console.log('');
 
   const flashAngleInterface = FlashAngle__factory.createInterface();
 

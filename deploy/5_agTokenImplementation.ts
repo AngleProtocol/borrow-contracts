@@ -15,6 +15,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   const agTokenImplementation = (await ethers.getContract('AgToken_Implementation')).address;
 
   console.log(`Successfully deployed the implementation for AgToken at ${agTokenImplementation}`);
+  console.log('');
 };
 
 func.tags = ['agTokenImplementation'];

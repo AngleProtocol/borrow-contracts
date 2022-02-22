@@ -15,6 +15,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   const vaultManagerImplementation = (await ethers.getContract('VaultManager_Implementation')).address;
 
   console.log(`Successfully deployed the implementation for VaultManager at ${vaultManagerImplementation}`);
+  console.log('');
 };
 
 func.tags = ['vaultManagerImplementation'];

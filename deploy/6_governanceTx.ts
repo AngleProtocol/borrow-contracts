@@ -1,15 +1,18 @@
-import yargs from 'yargs';
 import { DeployFunction } from 'hardhat-deploy/types';
-import { Signer } from 'ethers';
-import hre, { contract, ethers, web3 } from 'hardhat';
+import hre from 'hardhat';
 
 import { CONTRACTS_ADDRESSES, ChainId } from '@angleprotocol/sdk';
-import { AgToken, ProxyAdmin, ProxyAdmin__factory, AgToken__factory, CoreBorrow } from '../typechain';
+import {
+  AgToken,
+  ProxyAdmin,
+  ProxyAdmin__factory,
+  AgToken__factory,
+  CoreBorrow,
+  CoreBorrow__factory,
+} from '../typechain';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
-  const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const json = await import('./networks/' + network.name + '.json');
   const governor = json.governor;
@@ -39,12 +42,31 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   proxyAdmin = new ethers.Contract(proxyAdminAddress, ProxyAdmin__factory.createInterface(), signer) as ProxyAdmin;
   const agTokenImplementation = await deployments.get('AgToken_Implementation');
   const treasury = await deployments.get('Treasury');
+  const coreBorrowAddress = await deployments.get('CoreBorrow');
+  console.log('Upgrading AgToken');
   await (await proxyAdmin.connect(signer).upgrade(agTokenAddress, agTokenImplementation.address)).wait();
+  console.log('Success');
+  console.log('');
   agToken = new ethers.Contract(agTokenAddress, AgToken__factory.createInterface(), deployer) as AgToken;
-  coreBorrow = (await ethers.getContract('CoreBorrow')) as CoreBorrow;
 
-  await agToken.connect(signer).setUpTreasury(treasury.address);
-  await coreBorrow.connect(signer).addFlashLoanerTreasuryRole(treasury.address);
+  coreBorrow = new ethers.Contract(
+    coreBorrowAddress.address,
+    CoreBorrow__factory.createInterface(),
+    signer,
+  ) as CoreBorrow;
+  console.log('Setting up the treasury on the agToken');
+  await (await agToken.connect(signer).setUpTreasury(treasury.address)).wait();
+  console.log('Success');
+  console.log('');
+  console.log('Setting up the treasury on the flashAngle');
+  await (await coreBorrow.connect(signer).addFlashLoanerTreasuryRole(treasury.address)).wait();
+  console.log('Success');
+  console.log('');
+
+  /* TODO after this:
+    - vaultManagers deployed and linked to the treasury
+    - parameters in the FlashAngle contracts (for the flash loan)
+  */
 };
 
 func.tags = ['governanceTx'];

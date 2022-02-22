@@ -31,6 +31,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
 
   console.log(`Successfully deployed the implementation for CoreBorrow at ${coreBorrowImplementation}`);
+  console.log('');
 
   const coreBorrowInterface = CoreBorrow__factory.createInterface();
 

@@ -31,6 +31,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const treasuryImplementation = (await ethers.getContract('Treasury_Implementation')).address;
 
   console.log(`Successfully deployed the implementation for Treasury at ${treasuryImplementation}`);
+  console.log('');
 
   const treasuryInterface = Treasury__factory.createInterface();
 
