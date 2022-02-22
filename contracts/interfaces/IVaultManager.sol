@@ -4,12 +4,12 @@ pragma solidity 0.8.10;
 
 import "./ITreasury.sol";
 
-/// @title IVaultManager
+/// @title IVaultManagerFunctions
 /// @author Angle Core Team
 /// @notice Interface for the `VaultManager` contract
 /// @dev This interface only contains functions of the contract which are called by other contracts
-/// of this module
-interface IVaultManager {
+/// of this module (without getters)
+interface IVaultManagerFunctions {
     /// @notice Accrues interest accumulated across all vaults to the surplus and sends the surplus to the treasury
     /// @return surplusValue Value of the surplus communicated to the `Treasury`
     /// @return badDebtValue Value of the bad debt communicated to the `Treasury`
@@ -33,7 +33,23 @@ interface IVaultManager {
     /// @dev All required checks when setting up a treasury contract are performed in the contract
     /// calling this function
     function setTreasury(address _treasury) external;
+}
 
+/// @title IVaultManagerStorage
+/// @author Angle Core Team
+/// @notice Interface for the `VaultManager` contract
+/// @dev This interface only contains getters of the contract which are called by other contracts
+/// of this module
+interface IVaultManagerStorage {
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury);
+}
+
+/// @title IVaultManager
+/// @author Angle Core Team
+/// @notice Interface for the `VaultManager` contract
+/// @dev This interface only contains functions of the contract which are called by other contracts
+/// of this module
+interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage {
+
 }

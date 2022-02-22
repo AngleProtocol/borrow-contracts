@@ -3,13 +3,11 @@ __pycache__
 .idea
 .DS_Store
 .deps
-.vscode
 .docs
 .env
 node_modules
 tenderly.yaml
 settings.json
-.mocharc.json
 venv
 
 # Build output

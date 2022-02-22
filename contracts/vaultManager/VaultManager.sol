@@ -2,24 +2,7 @@
 
 pragma solidity 0.8.10;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC721MetadataUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import "../interfaces/IAgToken.sol";
-import "../interfaces/IOracle.sol";
-import "../interfaces/IRepayCallee.sol";
-import "../interfaces/ITreasury.sol";
-import "../interfaces/IVaultManager.sol";
-import "../interfaces/IVeBoostProxy.sol";
+import "./VaultManagerERC721.sol";
 
 // TODO think about exporting things to libraries to make it more practical
 // TODO reentrancy calls here -> should we put more and where to make sure we are not vulnerable to hacks here
@@ -38,214 +21,9 @@ import "../interfaces/IVeBoostProxy.sol";
 /// @dev This implementation only supports non-rebasing ERC20 tokens as collateral
 /// @dev This contract is encoded as a NFT contract
 // solhint-disable-next-line max-states-count
-contract VaultManager is
-    Initializable,
-    PausableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    IERC721MetadataUpgradeable,
-    IVaultManager
-{
+contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     using SafeERC20 for IERC20;
-    using CountersUpgradeable for CountersUpgradeable.Counter;
     using Address for address;
-
-    /// @notice Base used for parameter computation
-    uint256 public constant BASE_PARAMS = 10**9;
-    /// @notice Base used for interest rate computation
-    uint256 public constant BASE_INTEREST = 10**27;
-    /// @notice Used for interest rate computation
-    uint256 public constant HALF_BASE_INTEREST = 10**27 / 2;
-
-    // ========================= Key Structs and Enums =============================
-
-    /// @notice Parameters associated to a given `VaultManager` contract: these all correspond
-    /// to parameters which signification is detailed below
-    struct VaultParameters {
-        uint256 dust;
-        uint256 dustCollateral;
-        uint256 debtCeiling;
-        uint64 collateralFactor;
-        uint64 targetHealthFactor;
-        uint64 borrowFee;
-        uint64 interestRate;
-        uint64 liquidationSurcharge;
-        uint64 maxLiquidationDiscount;
-        uint64 liquidationBooster;
-        bool whitelistingActivated;
-    }
-
-    /// @notice Data stored to track someone's loan (or equivalently called position)
-    struct Vault {
-        // Amount of collateral deposited in the vault
-        uint256 collateralAmount;
-        // Normalized value of the debt (that is to say of the stablecoins borrowed)
-        uint256 normalizedDebt;
-    }
-
-    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximum
-    /// amount that could be repaid by liquidating the position
-    /// @dev All the values are null in the case of a vault which cannot be liquidated under these conditions
-    struct LiquidationOpportunity {
-        // Maximum stablecoin amount that can be repaid upon liquidating the vault
-        uint256 maxStablecoinAmountToRepay;
-        // Collateral amount given to the person in the case where the maximum amount to repay is given
-        uint256 maxCollateralAmountGiven;
-        // Threshold value of stablecoin amount to repay: it is ok for a liquidator to repay below threshold,
-        // but if this threshold is non null and the liquidator wants to repay more than threshold, it should repay
-        // the max stablecoin amount given in this vault
-        uint256 thresholdRepayAmount;
-        // Discount proposed to the liquidator on the collateral
-        uint256 discount;
-        // Amount of debt in the vault
-        uint256 currentDebt;
-    }
-
-    /// @notice Data stored during a liquidation process to keep in memory what's due to a liquidator and some
-    /// essential data for vaults being liquidated
-    struct LiquidatorData {
-        // Current amount of stablecoins the liquidator should give to the contract
-        uint256 stablecoinAmountToReceive;
-        // Current amount of collateral the contract should give to the liquidator
-        uint256 collateralAmountToGive;
-        // Bad debt accrued across the liquidation process
-        uint256 badDebtFromLiquidation;
-        // Oracle value (in stablecoin base) at the time of the liquidation
-        uint256 oracleValue;
-        // Value of the interestRateAccumulator at the time of the call
-        uint256 newInterestRateAccumulator;
-    }
-
-    /// @notice Data to track during a series of action the amount to give or receive in stablecoins and collateral
-    /// to the caller or associated addresses
-    struct PaymentData {
-        // Stablecoin amount the contract should give
-        uint256 stablecoinAmountToGive;
-        // Stablecoin amount owed to the contract
-        uint256 stablecoinAmountToReceive;
-        // Collateral amount the contract should give
-        uint256 collateralAmountToGive;
-        // Collateral amount owed to the contract
-        uint256 collateralAmountToReceive;
-    }
-
-    /// @notice Actions possible when composing calls to the different entry functions proposed
-    enum ActionType {
-        createVault,
-        closeVault,
-        addCollateral,
-        removeCollateral,
-        repayDebt,
-        borrow,
-        getDebtIn
-    }
-
-    // ================================ Mappings ===================================
-
-    /// @notice Maps an address to whether it's whitelisted and can open or own a vault
-    mapping(address => bool) public isWhitelisted;
-    /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
-    mapping(uint256 => Vault) public vaultData;
-
-    // =============================== References ==================================
-
-    /// @inheritdoc IVaultManager
-    ITreasury public override treasury;
-    /// @notice Reference to the collateral handled by this `VaultManager`
-    IERC20 public collateral;
-    /// @notice Stablecoin handled by this contract. Another `VaultManager` contract could have
-    /// the same rights as this `VaultManager` on the stablecoin contract
-    IAgToken public stablecoin;
-    /// @notice Oracle contract to get access to the price of the collateral with respect to the stablecoin
-    IOracle public oracle;
-    /// @notice Reference to the contract which computes adjusted veANGLE balances for liquidators boosts
-    IVeBoostProxy public veBoostProxy;
-    /// @notice Base of the collateral
-    uint256 public collatBase;
-
-    // =============================== Parameters ==================================
-
-    /// @notice Minimum amount of debt a vault can have
-    uint256 public dust;
-    /// @notice Maximum amount of stablecoins that can be issued with this contract
-    uint256 public debtCeiling;
-    /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
-    /// where the health factor function is decreasing
-    uint256 public dustCollateral;
-    /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
-    /// should be 2
-    uint256[] public xLiquidationBoost;
-    /// @notice Values of the liquidation boost at the threshold values of x
-    uint256[] public yLiquidationBoost;
-    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
-    /// determines the minimum collateral ratio of a position
-    uint64 public collateralFactor;
-    /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)
-    uint64 public targetHealthFactor;
-    /// @notice Upfront fee taken when borrowing stablecoins
-    uint64 public borrowFee;
-    /// @notice Per second interest taken to borrowers taking agToken loans
-    uint64 public interestRate;
-    /// @notice Fee taken by the protocol during a liquidation. Technically, this value is not the fee per se, it's 1 - fee.
-    /// For instance for a 2% fee, `liquidationSurcharge` should be 98%
-    uint64 public liquidationSurcharge;
-    /// @notice Maximum discount given to liquidators
-    uint64 public maxLiquidationDiscount;
-    /// @notice Whether whitelisting is required to own a vault or not
-    bool public whitelistingActivated;
-
-    // =============================== Variables ===================================
-
-    /// @notice Timestamp at which the `interestAccumulator` was updated
-    uint256 public lastInterestAccumulatorUpdated;
-    /// @notice Keeps track of the interest that should accrue to the protocol. The stored value
-    /// is not necessarily the true value: this one is recomputed every time an action takes place
-    /// within the protocol
-    uint256 public interestAccumulator;
-    /// @notice Total normalized amount of stablecoins borrowed
-    uint256 public totalNormalizedDebt;
-    /// @notice Surplus accumulated by the contract: surplus is always in stablecoins, and is then reset
-    /// when the value is communicated to the treasury contract
-    uint256 public surplus;
-    /// @notice Bad debt made from liquidated vaults which ended up having no collateral and a positive amount
-    /// of stablecoins
-    uint256 public badDebt;
-
-    // ================================ ERC721 Data ================================
-
-    /// @notice URI
-    string public baseURI;
-    /// @inheritdoc IERC721MetadataUpgradeable
-    string public override name;
-    /// @inheritdoc IERC721MetadataUpgradeable
-    string public override symbol;
-
-    // Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
-    // contracts
-    CountersUpgradeable.Counter internal _vaultIDCount;
-
-    // Mapping from `vaultID` to owner address
-    mapping(uint256 => address) internal _owners;
-
-    // Mapping from owner address to vault owned count
-    mapping(address => uint256) internal _balances;
-
-    // Mapping from `vaultID` to approved address
-    mapping(uint256 => address) internal _vaultApprovals;
-
-    // Mapping from owner to operator approvals
-    mapping(address => mapping(address => bool)) internal _operatorApprovals;
-
-    // =============================== Events ======================================
-
-    event AccruedToTreasury(uint256 surplusEndValue, uint256 badDebtEndValue);
-    event CollateralAmountUpdated(uint256 vaultID, uint256 collateralAmount, uint8 isIncrease);
-    event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp);
-    event InternalDebtUpdated(uint256 vaultID, uint256 internalAmount, uint8 isIncrease);
-    event FiledUint64(uint64 param, bytes32 what);
-    event FiledUint256(uint256 param, bytes32 what);
-    event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
-    event OracleUpdated(address indexed _oracle);
-    event ToggledWhitelisting(bool);
 
     /// @notice Initializes the `VaultManager` contract
     /// @param _treasury Treasury address handling the contract
@@ -278,7 +56,8 @@ contract VaultManager is
 
         // Checking if the parameters have been correctly initialized
         require(
-            BASE_PARAMS <= params.collateralFactor &&
+            params.collateralFactor <= params.liquidationSurcharge &&
+                BASE_PARAMS <= params.targetHealthFactor &&
                 params.liquidationSurcharge <= BASE_PARAMS &&
                 params.borrowFee <= BASE_PARAMS &&
                 params.maxLiquidationDiscount <= BASE_PARAMS,
@@ -320,131 +99,7 @@ contract VaultManager is
         _;
     }
 
-    /// @notice Checks if the person interacting with the vault with `vaultID` is approved
-    /// @param caller Address of the person seeking to interact with the vault
-    /// @param vaultID ID of the concerned vault
-    modifier onlyApprovedOrOwner(address caller, uint256 vaultID) {
-        require(_isApprovedOrOwner(caller, vaultID), "16");
-        _;
-    }
-
-    // ============================= View Functions ================================
-
-    /// @notice Gets the current debt of a vault
-    /// @param vaultID ID of the vault to check
-    /// @return Debt of the vault
-    function getVaultDebt(uint256 vaultID) external view returns (uint256) {
-        return vaultData[vaultID].normalizedDebt * _calculateCurrentInterestRateAccumulator();
-    }
-
-    /// @notice Gets the total debt across all vaults
-    /// @return Total debt across all vaults, taking into account the interest accumulated
-    /// over time
-    function getTotalDebt() external view returns (uint256) {
-        return totalNormalizedDebt * _calculateCurrentInterestRateAccumulator();
-    }
-
-    /// @notice Checks whether a given vault is liquidable and if yes gives information regarding its liquidation
-    /// @param vaultID ID of the vault to check
-    /// @param liquidator Address of the liquidator which will be performing the liquidation
-    /// @return liqOpp Description of the opportunity of liquidation
-    function checkLiquidation(uint256 vaultID, address liquidator)
-        external
-        view
-        returns (LiquidationOpportunity memory liqOpp)
-    {
-        liqOpp = _checkLiquidation(
-            vaultData[vaultID],
-            liquidator,
-            oracle.read(),
-            _calculateCurrentInterestRateAccumulator()
-        );
-    }
-
-    /// @notice Returns all the vaults owned or controlled (under the form of approval) by an address
-    /// @param spender Address for which vault ownerships should be checked
-    /// @return List of `vaultID` controlled by this address
-    /// @dev This function is never to be called on-chain since it iterates over all addresses and is here
-    /// to reduce dependency on an external graph to link an ID to its owner
-    function getControlledVaults(address spender) external view returns (uint256[] memory) {
-        uint256 arraySize = _vaultIDCount.current();
-        uint256[] memory vaultsControlled = new uint256[](arraySize);
-        address owner;
-        uint256 count;
-        for (uint256 i = 1; i <= _vaultIDCount.current(); i++) {
-            owner = _owners[i];
-            if (spender == owner || _getApproved(i) == spender || _operatorApprovals[owner][spender]) {
-                vaultsControlled[count] = i;
-                count += 1;
-            }
-        }
-        return vaultsControlled;
-    }
-
-    /// @notice Checks whether a given address is approved for a vault or owns this vault
-    /// @param spender Address for which vault ownership should be checked
-    /// @param vaultID ID of the vault to check
-    /// @return Whether the `spender` address owns or is approved for `vaultID`
-    function isApprovedOrOwner(address spender, uint256 vaultID) external view returns (bool) {
-        return _isApprovedOrOwner(spender, vaultID);
-    }
-
-    // =================== Internal Utility View Functions =========================
-
-    /// @notice Verifies whether a given vault is solvent (i.e. should be liquidated or not)
-    /// @param vault Data of the vault to check
-    /// @param oracleValue Oracle value at the time of the call (it is in the base of the stablecoin, that is for agTokens 10**18)
-    /// @param newInterestRateAccumulator Value of the `interestRateAccumulator` at the time of the call
-    /// @return healthFactor Health factor of the vault: if it's inferior to 1 (`BASE_PARAMS` in fact) this means that the vault can be liquidated
-    /// @return currentDebt Current value of the debt of the vault (taking into account interest)
-    /// @return collateralAmountInStable Collateral in the vault expressed in stablecoin value
-    /// @return oracleValue Current value of the oracle
-    /// @return newInterestRateAccumulator Current value of the `interestRateAccumulator`
-    /// @dev If the oracle value or the interest rate accumulator has not been called at the time of the
-    /// call, this function computes it
-    function _isSolvent(
-        Vault memory vault,
-        uint256 oracleValue,
-        uint256 newInterestRateAccumulator
-    )
-        internal
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        if (oracleValue == 0) oracleValue = oracle.read();
-        if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        uint256 currentDebt = vault.normalizedDebt * newInterestRateAccumulator;
-        uint256 collateralAmountInStable = (vault.collateralAmount * oracleValue) / collatBase;
-        uint256 healthFactor;
-        if (currentDebt == 0) healthFactor = type(uint256).max;
-        else healthFactor = (collateralAmountInStable * collateralFactor) / currentDebt;
-        return (healthFactor, currentDebt, collateralAmountInStable, oracleValue, newInterestRateAccumulator);
-    }
-
-    /// @notice Calculates the current value of the `interestRateAccumulator` without updating the value
-    /// in storage
-    /// @dev This function avoids expensive exponentiation and the calculation is performed using a binomial approximation
-    /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
-    /// @dev The approximation slightly undercharges borrowers with the advantage of a great gas cost reduction
-    /// @dev This function was mostly inspired from Aave implementation
-    function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
-        uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
-        uint256 ratePerSecond = interestRate;
-        if (exp == 0 || ratePerSecond == 0) return interestAccumulator;
-        uint256 expMinusOne = exp - 1;
-        uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
-        uint256 basePowerTwo = (ratePerSecond * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
-        uint256 basePowerThree = (basePowerTwo * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
-        uint256 secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
-        uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
-        return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
-    }
+    // =========================== Vault Functions =================================
 
     // ========================= External Access Functions =========================
 
@@ -453,7 +108,7 @@ contract VaultManager is
     /// @return vaultID ID of the vault created
     /// @dev This function just creates the vault without doing any collateral or
     function createVault(address toVault) external whenNotPaused returns (uint256) {
-        return _createVault(toVault);
+        return _mint(toVault);
     }
 
     /// @notice Closes a vault
@@ -552,7 +207,7 @@ contract VaultManager is
         _getDebtIn(srcVaultID, vaultManager, dstVaultID, stablecoinAmount, 0, 0);
     }
 
-    /// @inheritdoc IVaultManager
+    /// @inheritdoc IVaultManagerFunctions
     function getDebtOut(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -596,7 +251,7 @@ contract VaultManager is
         for (uint256 i = 0; i < actions.length; i++) {
             ActionType action = actions[i];
             if (action == ActionType.createVault) {
-                _createVault(abi.decode(datas[i], (address)));
+                _mint(abi.decode(datas[i], (address)));
             } else if (action == ActionType.closeVault) {
                 (stablecoinAmount, collateralAmount, oracleValue, newInterestRateAccumulator) = _closeVault(
                     abi.decode(datas[i], (uint256)),
@@ -693,15 +348,101 @@ contract VaultManager is
         }
     }
 
-    // =============== Internal Utility State-Modifying Functions ==================
+    // ============================= View Functions ================================
 
-    /// @notice Internal version of the `createVault` function
-    function _createVault(address toVault) internal returns (uint256 vaultID) {
-        require(!whitelistingActivated || (isWhitelisted[toVault] && isWhitelisted[msg.sender]), "20");
-        _vaultIDCount.increment();
-        vaultID = _vaultIDCount.current();
-        _mint(toVault, vaultID);
+    /// @notice Gets the current debt of a vault
+    /// @param vaultID ID of the vault to check
+    /// @return Debt of the vault
+    function getVaultDebt(uint256 vaultID) external view returns (uint256) {
+        return vaultData[vaultID].normalizedDebt * _calculateCurrentInterestRateAccumulator();
     }
+
+    /// @notice Gets the total debt across all vaults
+    /// @return Total debt across all vaults, taking into account the interest accumulated
+    /// over time
+    function getTotalDebt() external view returns (uint256) {
+        return totalNormalizedDebt * _calculateCurrentInterestRateAccumulator();
+    }
+
+    /// @notice Checks whether a given vault is liquidable and if yes gives information regarding its liquidation
+    /// @param vaultID ID of the vault to check
+    /// @param liquidator Address of the liquidator which will be performing the liquidation
+    /// @return liqOpp Description of the opportunity of liquidation
+    function checkLiquidation(uint256 vaultID, address liquidator)
+        external
+        view
+        returns (LiquidationOpportunity memory liqOpp)
+    {
+        liqOpp = _checkLiquidation(
+            vaultData[vaultID],
+            liquidator,
+            oracle.read(),
+            _calculateCurrentInterestRateAccumulator()
+        );
+    }
+
+    // =================== Internal Utility View Functions =========================
+
+    /// @notice Verifies whether a given vault is solvent (i.e. should be liquidated or not)
+    /// @param vault Data of the vault to check
+    /// @param oracleValue Oracle value at the time of the call (it is in the base of the stablecoin, that is for agTokens 10**18)
+    /// @param newInterestRateAccumulator Value of the `interestRateAccumulator` at the time of the call
+    /// @return healthFactor Health factor of the vault: if it's inferior to 1 (`BASE_PARAMS` in fact) this means that the vault can be liquidated
+    /// @return currentDebt Current value of the debt of the vault (taking into account interest)
+    /// @return collateralAmountInStable Collateral in the vault expressed in stablecoin value
+    /// @return oracleValue Current value of the oracle
+    /// @return newInterestRateAccumulator Current value of the `interestRateAccumulator`
+    /// @dev If the oracle value or the interest rate accumulator has not been called at the time of the
+    /// call, this function computes it
+    function _isSolvent(
+        Vault memory vault,
+        uint256 oracleValue,
+        uint256 newInterestRateAccumulator
+    )
+        internal
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        if (oracleValue == 0) oracleValue = oracle.read();
+        if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+        uint256 currentDebt = vault.normalizedDebt * newInterestRateAccumulator;
+        uint256 collateralAmountInStable = (vault.collateralAmount * oracleValue) / collatBase;
+        uint256 healthFactor;
+        if (currentDebt == 0) healthFactor = type(uint256).max;
+        else healthFactor = (collateralAmountInStable * collateralFactor) / currentDebt;
+        return (healthFactor, currentDebt, collateralAmountInStable, oracleValue, newInterestRateAccumulator);
+    }
+
+    /// @notice Calculates the current value of the `interestRateAccumulator` without updating the value
+    /// in storage
+    /// @dev This function avoids expensive exponentiation and the calculation is performed using a binomial approximation
+    /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+    /// @dev The approximation slightly undercharges borrowers with the advantage of a great gas cost reduction
+    /// @dev This function was mostly inspired from Aave implementation
+    // TODO: check Aave's raymul and impact of rounding up or down: https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/libraries/math/WadRayMath.sol
+    // TODO check 10**27 or 10**18
+    // TODO: check Aave's solution wrt to Maker in terms of gas and how much it costs
+    // TODO: should we have a few function on top of this?
+    function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
+        uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
+        uint256 ratePerSecond = interestRate;
+        if (exp == 0 || ratePerSecond == 0) return interestAccumulator;
+        uint256 expMinusOne = exp - 1;
+        uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
+        uint256 basePowerTwo = ratePerSecond * ratePerSecond; // TODO Divide by the base
+        uint256 basePowerThree = basePowerTwo * ratePerSecond;
+        uint256 secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
+        uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
+        return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
+    }
+
+    // =============== Internal Utility State-Modifying Functions ==================
 
     /// @notice Closes a vault without handling the repayment of the concerned address
     /// @param vaultID ID of the vault to close
@@ -912,7 +653,7 @@ contract VaultManager is
 
     // =================== Treasury Relationship Functions =========================
 
-    /// @inheritdoc IVaultManager
+    /// @inheritdoc IVaultManagerFunctions
     function accrueInterestToTreasury()
         external
         override
@@ -1182,7 +923,7 @@ contract VaultManager is
         emit OracleUpdated(_oracle);
     }
 
-    /// @inheritdoc IVaultManager
+    /// @inheritdoc IVaultManagerFunctions
     function setTreasury(address _treasury) external override onlyTreasury {
         treasury = ITreasury(_treasury);
         // This function makes sure to propagate the change to the associated contract
@@ -1200,232 +941,8 @@ contract VaultManager is
         _unpause();
     }
 
-    // =============================== ERC721 Logic ================================
-
-    /// @inheritdoc IERC721MetadataUpgradeable
-    function tokenURI(uint256 vaultID) external view override returns (string memory) {
-        require(_exists(vaultID), "26");
-        // There is no vault with `vaultID` equal to 0, so the following variable is
-        // always greater than zero
-        uint256 temp = vaultID;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (vaultID != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(vaultID % 10)));
-            vaultID /= 10;
-        }
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, string(buffer))) : "";
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function balanceOf(address owner) external view override returns (uint256) {
-        require(owner != address(0), "0");
-        return _balances[owner];
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function ownerOf(uint256 vaultID) external view override returns (address) {
-        return _ownerOf(vaultID);
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function approve(address to, uint256 vaultID) external override {
-        address owner = _ownerOf(vaultID);
-        require(to != owner, "27");
-        require(msg.sender == owner || isApprovedForAll(owner, msg.sender), "16");
-
-        _approve(to, vaultID);
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function getApproved(uint256 vaultID) external view override returns (address) {
-        require(_exists(vaultID), "26");
-        return _getApproved(vaultID);
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function setApprovalForAll(address operator, bool approved) external override {
-        require(operator != msg.sender, "28");
-        _operatorApprovals[msg.sender][operator] = approved;
-        emit ApprovalForAll(_msgSender(), operator, approved);
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function isApprovedForAll(address owner, address operator) public view override returns (bool) {
-        return _operatorApprovals[owner][operator];
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function transferFrom(
-        address from,
-        address to,
-        uint256 vaultID
-    ) external override onlyApprovedOrOwner(msg.sender, vaultID) {
-        _transfer(from, to, vaultID);
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 vaultID
-    ) external override {
-        safeTransferFrom(from, to, vaultID, "");
-    }
-
-    /// @inheritdoc IERC721Upgradeable
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 vaultID,
-        bytes memory _data
-    ) public override onlyApprovedOrOwner(msg.sender, vaultID) {
-        _safeTransfer(from, to, vaultID, _data);
-    }
-
-    // =============================== ERC165 logic ================================
-
-    /// @inheritdoc IERC165Upgradeable
-    function supportsInterface(bytes4 interfaceId) external pure override(IERC165Upgradeable) returns (bool) {
-        return
-            interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-            interfaceId == type(IERC721Upgradeable).interfaceId ||
-            interfaceId == type(IERC165Upgradeable).interfaceId;
-    }
-
-    // ============== Internal Functions for the ERC721 Logic ======================
-
-    /// @notice Internal version of the `ownerOf` function
-    function _ownerOf(uint256 vaultID) internal view returns (address owner) {
-        owner = _owners[vaultID];
-        require(owner != address(0), "26");
-    }
-
-    /// @notice Internal version of the `getApproved` function
-    function _getApproved(uint256 vaultID) internal view returns (address) {
-        return _vaultApprovals[vaultID];
-    }
-
-    /// @notice Internal version of the `safeTransferFrom` function (with the data parameter)
-    function _safeTransfer(
-        address from,
-        address to,
-        uint256 vaultID,
-        bytes memory _data
-    ) internal {
-        _transfer(from, to, vaultID);
-        require(_checkOnERC721Received(from, to, vaultID, _data), "29");
-    }
-
-    /// @notice Checks whether a vault exists
-    /// @param vaultID ID of the vault to check
-    /// @return Whether `vaultID` has been created
-    function _exists(uint256 vaultID) internal view returns (bool) {
-        return _owners[vaultID] != address(0);
-    }
-
-    /// @notice Internal version of the `isApprovedOrOwner` function
-    function _isApprovedOrOwner(address spender, uint256 vaultID) internal view returns (bool) {
-        // The following checks if the vault exists
-        address owner = _ownerOf(vaultID);
-        return (spender == owner || _getApproved(vaultID) == spender || _operatorApprovals[owner][spender]);
-    }
-
-    /// @notice Mints `vaultID` and transfers it to `to`
-    /// @dev This method is equivalent to the `_safeMint` method used in OpenZeppelin ERC721 contract
-    /// @dev `vaultID` must not exist and `to` cannot be the zero address
-    /// @dev Before calling this function it is checked that the `vaultID` does not exist as it
-    /// comes from a counter that has been incremented
-    /// @dev Emits a {Transfer} event
-    /// @dev This function does not perform any check on the `to` vault, whitelist checks are performed
-    /// elsewhere in the `createVault` function
-    function _mint(address to, uint256 vaultID) internal {
-        _balances[to] += 1;
-        _owners[vaultID] = to;
-        emit Transfer(address(0), to, vaultID);
-        require(_checkOnERC721Received(address(0), to, vaultID, ""), "29");
-    }
-
-    /// @notice Destroys `vaultID`
-    /// @dev `vaultID` must exist
-    /// @dev Emits a {Transfer} event
-    function _burn(uint256 vaultID) internal {
-        address owner = _ownerOf(vaultID);
-
-        // Clear approvals
-        _approve(address(0), vaultID);
-
-        _balances[owner] -= 1;
-        delete _owners[vaultID];
-        delete vaultData[vaultID];
-
-        emit Transfer(owner, address(0), vaultID);
-    }
-
-    /// @notice Transfers `vaultID` from `from` to `to` as opposed to {transferFrom},
-    /// this imposes no restrictions on msg.sender
-    /// @dev `to` cannot be the zero address and `perpetualID` must be owned by `from`
-    /// @dev Emits a {Transfer} event
-    /// @dev A whitelist check is performed if necessary on the `to` address
-    function _transfer(
-        address from,
-        address to,
-        uint256 vaultID
-    ) internal {
-        require(_ownerOf(vaultID) == from, "30");
-        require(to != address(0), "31");
-        require(!whitelistingActivated || isWhitelisted[to], "20");
-        // Clear approvals from the previous owner
-        _approve(address(0), vaultID);
-
-        _balances[from] -= 1;
-        _balances[to] += 1;
-        _owners[vaultID] = to;
-
-        emit Transfer(from, to, vaultID);
-    }
-
-    /// @notice Approves `to` to operate on `vaultID`
-    function _approve(address to, uint256 vaultID) internal {
-        _vaultApprovals[vaultID] = to;
-        emit Approval(_ownerOf(vaultID), to, vaultID);
-    }
-
-    /// @notice Internal function to invoke {IERC721Receiver-onERC721Received} on a target address
-    /// The call is not executed if the target address is not a contract
-    /// @param from Address representing the previous owner of the given token ID
-    /// @param to Target address that will receive the tokens
-    /// @param vaultID ID of the token to be transferred
-    /// @param _data Bytes optional data to send along with the call
-    /// @return Bool whether the call correctly returned the expected value
-    function _checkOnERC721Received(
-        address from,
-        address to,
-        uint256 vaultID,
-        bytes memory _data
-    ) private returns (bool) {
-        if (to.isContract()) {
-            try IERC721ReceiverUpgradeable(to).onERC721Received(msg.sender, from, vaultID, _data) returns (
-                bytes4 retval
-            ) {
-                return retval == IERC721ReceiverUpgradeable(to).onERC721Received.selector;
-            } catch (bytes memory reason) {
-                if (reason.length == 0) {
-                    revert("24");
-                } else {
-                    // solhint-disable-next-line no-inline-assembly
-                    assembly {
-                        revert(add(32, reason), mload(reason))
-                    }
-                }
-            }
-        } else {
-            return true;
-        }
+    /// @notice Changes the ERC721 metadata URI
+    function setBaseURI(string memory _baseURI) external onlyGovernorOrGuardian {
+        baseURI = _baseURI;
     }
 }

@@ -7,7 +7,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
   ],
-  plugins: ['mocha-no-only', 'promise', 'prettier', '@typescript-eslint', 'simple-import-sort'],
+  plugins: ['mocha-no-only', 'promise', 'prettier', '@typescript-eslint', 'simple-import-sort', 'mocha'],
   env: {
     browser: true,
     node: true,
@@ -43,6 +43,7 @@ module.exports = {
     'no-mixed-spaces-and-tabs': ['error', 'smart-tabs'],
     'no-redeclare': ['error', { builtinGlobals: true }],
     'no-trailing-spaces': ['error', { skipBlankLines: false }],
+    'no-unused-expressions': 'off',
     'no-undef': 'error',
     'no-use-before-define': 'off',
     'no-var': 'error',

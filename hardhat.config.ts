@@ -123,10 +123,6 @@ const config: HardhatUserConfig = {
     bob: 5,
     charlie: 6,
   },
-  mocha: {
-    timeout: 100000,
-    retries: argv.ci ? 10 : 0,
-  },
   contractSizer: {
     alphaSort: true,
     runOnCompile: false,
