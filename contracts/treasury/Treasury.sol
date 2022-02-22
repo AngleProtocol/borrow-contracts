@@ -56,10 +56,11 @@ contract Treasury is ITreasury, Initializable {
 
     event BadDebtUpdated(uint256 badDebtValue);
     event CoreUpdated(address indexed _core);
+    event NewTreasurySet(address indexed _treasury);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event SurplusBufferUpdated(uint256 surplusBufferValue);
     event SurplusForGovernanceUpdated(uint64 _surplusForGovernance);
-    event SurplusManagerUpdated(address indexed surplusManager);
+    event SurplusManagerUpdated(address indexed _surplusManager);
     event VaultManagerToggled(address indexed vaultManager);
 
     // =============================== Modifier ====================================
@@ -103,52 +104,62 @@ contract Treasury is ITreasury, Initializable {
 
     /// @notice Fetches the surplus accrued across all the `VaultManager` contracts controlled by this
     /// `Treasury` contract as well as from the fees of the `FlashLoan` module
+    /// @return Surplus buffer value at the end of the call
+    /// @return Bad debt value at the end of the call
     /// @dev This function pools surplus and bad debt across all contracts and then updates the `surplusBuffer`
     /// (or the `badDebt` if more losses were made than profits)
-    function fetchSurplusFromAll() external {
-        _fetchSurplusFromAll();
+    function fetchSurplusFromAll() external returns (uint256, uint256) {
+        return _fetchSurplusFromAll();
     }
 
     /// @notice Fetches the surplus accrued in the flash loan module and updates the `surplusBuffer`
+    /// @return Surplus buffer value at the end of the call
+    /// @return Bad debt value at the end of the call
     /// @dev This function fails if the `flashLoanModule` has not been initialized yet
-    function fetchSurplusFromFlashLoan() external {
+    function fetchSurplusFromFlashLoan() external returns (uint256, uint256) {
         uint256 surplusBufferValue = surplusBuffer + flashLoanModule.accrueInterestToTreasury(stablecoin);
-        _updateSurplusBadDebt(surplusBufferValue, badDebt);
+        return _updateSurplusBadDebt(surplusBufferValue, badDebt);
     }
 
     /// @notice Fetches surplus a list of vaultManager contracts
+    /// @return Surplus buffer value at the end of the call
+    /// @return Bad debt value at the end of the call
     /// TODO: could be removed or not?
-    function fetchSurplusFromVaultManagers(address[] memory vaultManagers) external {
+    function fetchSurplusFromVaultManagers(address[] memory vaultManagers) external returns (uint256, uint256) {
         (uint256 surplusBufferValue, uint256 badDebtValue) = _fetchSurplusFromList(vaultManagers);
-        _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
+        return _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
     }
 
     /// @notice Pushes the surplus buffer to the `surplusManager` contract
+    /// @return governanceAllocation Amount transferred to governance
     /// @dev This function will fail if the `surplusManager` has not been initialized yet
     /// @dev It makes sure to fetch the surplus from all the contracts handled by this treasury to avoid
     /// the situation where rewards are still distributed to governance even though a `VaultManager` has made
     /// a big loss
     /// @dev Typically this function is to be called once every week by a keeper to distribute rewards to veANGLE
     /// holders
-    function pushSurplus() external {
+    /// @dev `stablecoin` must be an AgToken and hence `transfer` reverts if the call is not successful
+    function pushSurplus() external returns (uint256 governanceAllocation) {
         address _surplusManager = surplusManager;
         require(_surplusManager != address(0), "0");
         (uint256 surplusBufferValue, ) = _fetchSurplusFromAll();
         surplusBuffer = 0;
         emit SurplusBufferUpdated(0);
-        stablecoin.transfer(_surplusManager, (surplusForGovernance * surplusBufferValue) / BASE_PARAMS);
+        governanceAllocation = (surplusForGovernance * surplusBufferValue) / BASE_PARAMS;
+        stablecoin.transfer(_surplusManager, governanceAllocation);
     }
 
     /// @notice Updates the bad debt of the protocol in case where the protocol has accumulated some revenue
     /// from an external source
     /// @param amount Amount to reduce the bad debt of
+    /// @return badDebtValue Value of the bad debt at the end of the call
     /// @dev If the protocol has made a loss and managed to make some profits to recover for this loss (through
     /// a program like Olympus Pro), then this function needs to be called
     /// @dev `badDebt` is simply reduced here by burning stablecoins
     /// @dev It is impossible to burn more than the `badDebt` otherwise this function could be used to manipulate
     /// the `surplusBuffer` and hence the amount going to governance
-    function updateBadDebt(uint256 amount) external {
-        uint256 badDebtValue = badDebt;
+    function updateBadDebt(uint256 amount) external returns (uint256 badDebtValue) {
+        badDebtValue = badDebt;
         require(amount <= badDebtValue, "4");
         stablecoin.burnSelf(amount, address(this));
         badDebtValue -= amount;
@@ -162,7 +173,8 @@ contract Treasury is ITreasury, Initializable {
     function _fetchSurplusFromAll() internal returns (uint256 surplusBufferValue, uint256 badDebtValue) {
         (surplusBufferValue, badDebtValue) = _fetchSurplusFromList(vaultManagerList);
         // It will fail anyway if the `flashLoanModule` is the zero address
-        surplusBufferValue += flashLoanModule.accrueInterestToTreasury(stablecoin);
+        if (address(flashLoanModule) != address(0))
+            surplusBufferValue += flashLoanModule.accrueInterestToTreasury(stablecoin);
         (surplusBufferValue, badDebtValue) = _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
     }
 
@@ -248,7 +260,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param minter Minter address to remove
     function removeMinter(address minter) external onlyGovernor {
         // To remove the minter role to a `vaultManager` you have to go through the `removeVaultManager` function
-        require(!vaultManagerMap[minter]);
+        require(!vaultManagerMap[minter], "40");
         stablecoin.removeMinter(minter);
     }
 
@@ -307,6 +319,7 @@ contract Treasury is ITreasury, Initializable {
         require(ITreasury(_treasury).stablecoin() == stablecoin, "19");
         // Flash loan role should be removed before calling this function
         require(!core.isFlashLoanerTreasury(address(this)), "7");
+        emit NewTreasurySet(_treasury);
         for (uint256 i = 0; i < vaultManagerList.length; i++) {
             IVaultManager(vaultManagerList[i]).setTreasury(_treasury);
         }

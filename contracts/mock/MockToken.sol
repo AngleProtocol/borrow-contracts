@@ -10,6 +10,8 @@ contract MockToken is ERC20 {
     event Burning(address indexed _from, address indexed _burner, uint256 _amount);
 
     uint8 internal _decimal;
+    mapping(address => bool) public minters;
+    address public treasury;
 
     constructor(
         string memory name_,
@@ -37,9 +39,20 @@ contract MockToken is ERC20 {
         _approve(from, to, type(uint256).max);
     }
 
-    function burnSelf(address account, uint256 amount) public {
+    function burnSelf(uint256 amount, address account) public {
         _burn(account, amount);
         emit Burning(account, msg.sender, amount);
+    }
 
+    function addMinter(address minter) public {
+        minters[minter] = true;
+    }
+
+    function removeMinter(address minter) public {
+        minters[minter] = false;
+    }
+
+    function setTreasury(address _treasury) public {
+        treasury = _treasury;
     }
 }

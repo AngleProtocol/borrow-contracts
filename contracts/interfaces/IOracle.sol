@@ -11,7 +11,10 @@ import "./ITreasury.sol";
 /// of this module
 interface IOracle {
     /// @notice Reads the rate from the Chainlink circuit
-    /// @return quoteAmount The current rate between the in-currency and out-currency in base 10**18
+    /// @return quoteAmount The current rate between the in-currency and out-currency in the base 
+    /// of the out currency
+    /// @dev For instance if the out currency is EUR (and hence agEUR), then the base of the returned
+    /// value is 10**18
     function read() external view returns (uint256);
 
     /// @notice Changes the treasury contract

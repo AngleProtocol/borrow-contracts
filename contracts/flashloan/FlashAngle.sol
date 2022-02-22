@@ -78,7 +78,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
 
     /// @inheritdoc IERC3156FlashLender
     function maxFlashLoan(address token) external view override returns (uint256) {
-        // it will be 0 anyway if the token was not added
+        // It will be 0 anyway if the token was not added
         return stablecoinMap[IAgToken(token)].maxBorrowable;
     }
 
@@ -92,7 +92,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         uint256 fee = _flashFee(token, amount);
         require(amount <= stablecoinMap[IAgToken(token)].maxBorrowable, "4");
         IAgToken(token).mint(address(receiver), amount);
-        require(receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS);
+        require(receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS, "39");
         // Token must be an agToken here so normally no need to use `safeTransferFrom`, but out of safety
         // and in case governance whitelists an agToken which does not have a correct implementation, we prefer
         // to use `safeTransferFrom` here

@@ -28,7 +28,6 @@ import "../interfaces/IVeBoostProxy.sol";
 // this call are
 // TODO in the handleRepay: do we impose restrictions on the called addresses like Maker does here or is there no point
 // in doing it: https://github.com/makerdao/dss/blob/master/src/clip.sol
-// TODO check trade-off 10**27 and 10**18 for interest accumulated
 // TODO think of more (or less) view functions -> cf Picodes
 // TODO Events double check
 
@@ -54,6 +53,8 @@ contract VaultManager is
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Base used for interest rate computation
     uint256 public constant BASE_INTEREST = 10**27;
+    /// @notice Used for interest rate computation
+    uint256 public constant HALF_BASE_INTEREST = 10**27 / 2;
 
     // ========================= Key Structs and Enums =============================
 
@@ -81,7 +82,7 @@ contract VaultManager is
         uint256 normalizedDebt;
     }
 
-    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximul
+    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximum
     /// amount that could be repaid by liquidating the position
     /// @dev All the values are null in the case of a vault which cannot be liquidated under these conditions
     struct LiquidationOpportunity {
@@ -108,7 +109,7 @@ contract VaultManager is
         uint256 collateralAmountToGive;
         // Bad debt accrued across the liquidation process
         uint256 badDebtFromLiquidation;
-        // Oracle value at the time of the liquidation: it should be given in the base of the stablecoin
+        // Oracle value (in stablecoin base) at the time of the liquidation
         uint256 oracleValue;
         // Value of the interestRateAccumulator at the time of the call
         uint256 newInterestRateAccumulator;
@@ -175,7 +176,7 @@ contract VaultManager is
     uint256[] public xLiquidationBoost;
     /// @notice Values of the liquidation boost at the threshold values of x
     uint256[] public yLiquidationBoost;
-    /// @notice Encodes the minimum ratio collateral/stablecoin a vault can have before being liquidated. It's what
+    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     uint64 public collateralFactor;
     /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)
@@ -432,18 +433,14 @@ contract VaultManager is
     /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
     /// @dev The approximation slightly undercharges borrowers with the advantage of a great gas cost reduction
     /// @dev This function was mostly inspired from Aave implementation
-    // TODO: check Aave's raymul and impact of rounding up or down: https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/libraries/math/WadRayMath.sol
-    // TODO check 10**27 or 10**18
-    // TODO: check Aave's solution wrt to Maker in terms of gas and how much it costs
-    // TODO: should we have a few function on top of this?
     function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
         uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
         uint256 ratePerSecond = interestRate;
         if (exp == 0 || ratePerSecond == 0) return interestAccumulator;
         uint256 expMinusOne = exp - 1;
         uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
-        uint256 basePowerTwo = ratePerSecond * ratePerSecond;
-        uint256 basePowerThree = basePowerTwo * ratePerSecond;
+        uint256 basePowerTwo = (ratePerSecond * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
+        uint256 basePowerThree = (basePowerTwo * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
         uint256 secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
         uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
         return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
@@ -1117,6 +1114,10 @@ contract VaultManager is
     /// @param param Value for the parameter
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
+    /// @dev When setting parameters governance should make sure that when `HF < CF/((1-surcharge)(1-discount))`
+     /// and hence when liquidating a vault is going to decrease its health factor, `discount = max discount`.
+     /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
+     /// the HF and therefore increase the discount between each time
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "collateralFactor") {
             require(param <= liquidationSurcharge, "9");
