@@ -252,13 +252,78 @@ contract('VaultManager', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
         await vaultManager.createVault(alice.address);
-        await vaultManager.createVault(alice.address);
+        for (let i = 0; i < 20; i++) await vaultManager.createVault(alice.address);
         await vaultManager.createVault(alice.address);
         await vaultManager.connect(alice).closeVault(1, alice.address, alice.address, ZERO_ADDRESS, '0x');
       });
 
+      it('revert - Unexistent vault', async () => {
+        await expect(vaultManager.tokenURI(1)).to.be.revertedWith('26');
+      });
+
+      it('success - 1 decimal vault', async () => {
+        expect(await vaultManager.tokenURI(2)).to.be.equal('website2');
+      });
+
+      it('revert - 2 decimal vault', async () => {
+        expect(await vaultManager.tokenURI(11)).to.be.equal('website11');
+      });
+    });
+
+    describe('balanceOf', () => {
+      beforeEach(async () => {
+        await vaultManager.connect(guardian).setBaseURI('website');
+        for (let i = 0; i < 20; i++) await vaultManager.createVault(alice.address);
+        await vaultManager.connect(alice).closeVault(1, alice.address, alice.address, ZERO_ADDRESS, '0x');
+      });
+
+      it('revert - zero address', async () => {
+        await expect(vaultManager.balanceOf(ZERO_ADDRESS)).to.be.revertedWith('0');
+      });
+
       it('success', async () => {
-        expect(await vaultManager.tokenURI(1)).to.be.true;
+        expect(await vaultManager.balanceOf(alice.address)).to.be.equal(19);
+      });
+    });
+
+    describe('ownerOf', () => {
+      beforeEach(async () => {
+        await vaultManager.connect(guardian).setBaseURI('website');
+        for (let i = 0; i < 2; i++) await vaultManager.createVault(alice.address);
+        await vaultManager.connect(alice).closeVault(1, alice.address, alice.address, ZERO_ADDRESS, '0x');
+      });
+
+      it('revert - closed vault', async () => {
+        await expect(vaultManager.ownerOf(1)).to.be.revertedWith('26');
+      });
+
+      it('revert - unexistant vault', async () => {
+        await expect(vaultManager.ownerOf(100)).to.be.revertedWith('26');
+      });
+
+      it('success', async () => {
+        expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
+      });
+    });
+
+    describe('approve', () => {
+      beforeEach(async () => {
+        await vaultManager.connect(guardian).setBaseURI('website');
+        for (let i = 0; i < 2; i++) await vaultManager.createVault(alice.address);
+        await vaultManager.connect(alice).closeVault(1, alice.address, alice.address, ZERO_ADDRESS, '0x');
+      });
+
+      it('revert - cannot self approve', async () => {
+        await expect(vaultManager.connect(alice).approve(alice.address, 2)).to.be.revertedWith('27');
+      });
+
+      it('revert - unexistant vault', async () => {
+        await expect(vaultManager.connect(alice).approve(bob.address, 1)).to.be.revertedWith('26');
+      });
+
+      it('success', async () => {
+        await vaultManager.connect(alice).approve(bob.address, 2);
+        expect(await vaultManager.isApprovedOrOwner(bob.address, 2)).to.be.true;
       });
     });
   });
