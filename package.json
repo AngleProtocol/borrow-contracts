@@ -16,7 +16,8 @@
     "prettier:sol": "prettier --write 'contracts/**/*.sol'",
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
     "size": "hardhat size-contracts",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "testFork": "FORK=true hardhat test"
   },
   "repository": {
     "type": "git",

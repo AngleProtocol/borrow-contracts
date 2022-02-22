@@ -66,6 +66,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         require(!treasuryInitialized, "34");
         treasury = ITreasury(_treasury);
         treasuryInitialized = true;
+        isMinter[stableMaster] = true;
         emit TreasuryUpdated(_treasury);
     }
 
@@ -80,7 +81,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     /// @notice Checks whether the sender has the minting right
     modifier onlyMinter() {
-        require(msg.sender == stableMaster || isMinter[msg.sender], "35");
+        require(isMinter[msg.sender], "35");
         _;
     }
 
@@ -151,7 +152,8 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     /// @inheritdoc IAgToken
     function removeMinter(address minter) external override {
-        require(msg.sender == address(treasury) || msg.sender == minter, "36");
+        // The `treasury` contract cannot remove the `stableMaster`
+        require((msg.sender == address(treasury) && minter != stableMaster) || msg.sender == minter, "36");
         isMinter[minter] = false;
         emit MinterToggled(minter);
     }

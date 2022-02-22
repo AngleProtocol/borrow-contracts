@@ -73,6 +73,7 @@ contract('AgToken', () => {
     it('success - stableMaster, name, symbol, treasury', async () => {
       expect(await agToken.stableMaster()).to.be.equal(stableMaster.address);
       expect(await agToken.name()).to.be.equal('agEUR');
+      expect(await agToken.isMinter(stableMaster.address)).to.be.true;
       expect(await agToken.symbol()).to.be.equal('agEUR');
       expect(await agToken.treasury()).to.be.equal(treasury.address);
       expect(await agToken.treasuryInitialized()).to.be.equal(true);
@@ -209,6 +210,9 @@ contract('AgToken', () => {
   describe('removeMinter', () => {
     it('reverts - non treasury', async () => {
       await expect(agToken.connect(user).removeMinter(user2.address)).to.be.revertedWith('36');
+    });
+    it('reverts - removing stableMaster from the treasury', async () => {
+      await expect(treasury.connect(user).removeMinter(agToken.address, stableMaster.address)).to.be.revertedWith('36');
     });
     it('success - minter removed after being added', async () => {
       await (await treasury.connect(user).addMinter(agToken.address, user.address)).wait();

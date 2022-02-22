@@ -13,7 +13,6 @@ import "../interfaces/ITreasury.sol";
 /// @dev This contract concerns an oracle that uses Chainlink with multiple pools to read from
 /// @dev This is a template and a more gas-efficient implementation of the `OracleChainlinkMulti` contract
 contract OracleChainlinkMultiTemplate is IOracle {
-
     // ===================== To be modified before deployment ======================
     uint256 public constant OUTBASE = 10**18;
     bytes32 public constant DESCRIPTION = "ETH/EUR Oracle";
@@ -34,10 +33,7 @@ contract OracleChainlinkMultiTemplate is IOracle {
     /// @notice Constructor for an oracle using Chainlink with multiple pools to read from
     /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
     /// @param _treasury Treasury associated to the VaultManager which reads from this feed
-    constructor(
-        uint32 _stalePeriod,
-        address _treasury
-    ) {
+    constructor(uint32 _stalePeriod, address _treasury) {
         stalePeriod = _stalePeriod;
         treasury = ITreasury(_treasury);
     }
@@ -48,9 +44,12 @@ contract OracleChainlinkMultiTemplate is IOracle {
     function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = OUTBASE;
         // ===================== To be modified before deployment ==================
-        AggregatorV3Interface[2] memory circuitChainlink = [AggregatorV3Interface(address(0)), AggregatorV3Interface(address(0))];
-        uint8[2] memory circuitChainIsMultiplied = [0,0];
-        uint8[2] memory chainlinkDecimals = [0,0];
+        AggregatorV3Interface[2] memory circuitChainlink = [
+            AggregatorV3Interface(address(0)),
+            AggregatorV3Interface(address(0))
+        ];
+        uint8[2] memory circuitChainIsMultiplied = [0, 0];
+        uint8[2] memory chainlinkDecimals = [0, 0];
         // =========================================================================
         for (uint256 i = 0; i < circuitChainlink.length; i++) {
             quoteAmount = _readChainlinkFeed(

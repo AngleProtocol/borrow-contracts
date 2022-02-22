@@ -3,6 +3,7 @@
 pragma solidity 0.8.10;
 
 import "./IAgToken.sol";
+import "./ICoreBorrow.sol";
 import "./IFlashAngle.sol";
 
 /// @title ITreasury

@@ -1115,9 +1115,9 @@ contract VaultManager is
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
     /// @dev When setting parameters governance should make sure that when `HF < CF/((1-surcharge)(1-discount))`
-     /// and hence when liquidating a vault is going to decrease its health factor, `discount = max discount`.
-     /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
-     /// the HF and therefore increase the discount between each time
+    /// and hence when liquidating a vault is going to decrease its health factor, `discount = max discount`.
+    /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
+    /// the HF and therefore increase the discount between each time
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "collateralFactor") {
             require(param <= liquidationSurcharge, "9");
