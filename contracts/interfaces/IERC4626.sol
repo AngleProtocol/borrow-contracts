@@ -11,10 +11,6 @@ interface IERC4626 {
     event Deposit(address indexed from, address indexed to, uint256 amount, uint256 shares);
     event Withdraw(address indexed from, address indexed to, uint256 amount, uint256 shares);
 
-    /*///////////////////////////////////////////////////////////////
-                        DEPOSIT/WITHDRAWAL LOGIC
-    //////////////////////////////////////////////////////////////*/
-
     function deposit(uint256 amount, address to) external returns (uint256 shares);
 
     function mint(uint256 shares, address to) external returns (uint256 amount);
@@ -31,15 +27,11 @@ interface IERC4626 {
         address from
     ) external returns (uint256 amount);
 
-    /*///////////////////////////////////////////////////////////////
-                           ACCOUNTING LOGIC
-    //////////////////////////////////////////////////////////////*/
-
     function totalAssets() external view returns (uint256);
 
-    function assetsOf(address user) external view returns (uint256);
+    function convertToShares(uint256 amount) external view returns (uint256);
 
-    function assetsPerShare() external view returns (uint256);
+    function convertToAssets(uint256 shares) external view returns (uint256);
 
     function previewDeposit(uint256 amount) external view returns (uint256);
 
@@ -48,10 +40,6 @@ interface IERC4626 {
     function previewWithdraw(uint256 amount) external view returns (uint256);
 
     function previewRedeem(uint256 shares) external view returns (uint256);
-
-    /*///////////////////////////////////////////////////////////////
-                     DEPOSIT/WITHDRAWAL LIMIT LOGIC
-    //////////////////////////////////////////////////////////////*/
 
     function maxDeposit(address) external returns (uint256);
 

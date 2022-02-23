@@ -14,9 +14,9 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     using Address for address;
 
     /// @inheritdoc IERC721MetadataUpgradeable
-    string public override name;
+    string public name;
     /// @inheritdoc IERC721MetadataUpgradeable
-    string public override symbol;
+    string public symbol;
 
     // ============================== Modifiers ====================================
 
@@ -59,7 +59,7 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     }
 
     /// @inheritdoc IERC721MetadataUpgradeable
-    function tokenURI(uint256 vaultID) external view override returns (string memory) {
+    function tokenURI(uint256 vaultID) external view returns (string memory) {
         require(_exists(vaultID), "26");
         // There is no vault with `vaultID` equal to 0, so the following variable is
         // always greater than zero
@@ -79,18 +79,18 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function balanceOf(address owner) external view override returns (uint256) {
+    function balanceOf(address owner) external view returns (uint256) {
         require(owner != address(0), "0");
         return _balances[owner];
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function ownerOf(uint256 vaultID) external view override returns (address) {
+    function ownerOf(uint256 vaultID) external view returns (address) {
         return _ownerOf(vaultID);
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function approve(address to, uint256 vaultID) external override {
+    function approve(address to, uint256 vaultID) external {
         address owner = _ownerOf(vaultID);
         require(to != owner, "27");
         require(msg.sender == owner || isApprovedForAll(owner, msg.sender), "16");
@@ -99,20 +99,20 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function getApproved(uint256 vaultID) external view override returns (address) {
+    function getApproved(uint256 vaultID) external view returns (address) {
         require(_exists(vaultID), "26");
         return _getApproved(vaultID);
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function setApprovalForAll(address operator, bool approved) external override {
+    function setApprovalForAll(address operator, bool approved) external {
         require(operator != msg.sender, "28");
         _operatorApprovals[msg.sender][operator] = approved;
         emit ApprovalForAll(_msgSender(), operator, approved);
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function isApprovedForAll(address owner, address operator) public view override returns (bool) {
+    function isApprovedForAll(address owner, address operator) public view returns (bool) {
         return _operatorApprovals[owner][operator];
     }
 
@@ -121,7 +121,7 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
         address from,
         address to,
         uint256 vaultID
-    ) external override onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) external onlyApprovedOrOwner(msg.sender, vaultID) {
         _transfer(from, to, vaultID);
     }
 
@@ -130,7 +130,7 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
         address from,
         address to,
         uint256 vaultID
-    ) external override {
+    ) external {
         safeTransferFrom(from, to, vaultID, "");
     }
 
@@ -140,14 +140,14 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
         address to,
         uint256 vaultID,
         bytes memory _data
-    ) public override onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) public onlyApprovedOrOwner(msg.sender, vaultID) {
         _safeTransfer(from, to, vaultID, _data);
     }
 
     // =============================== ERC165 logic ================================
 
     /// @inheritdoc IERC165Upgradeable
-    function supportsInterface(bytes4 interfaceId) external pure override(IERC165Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return
             interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
             interfaceId == type(IERC721Upgradeable).interfaceId ||

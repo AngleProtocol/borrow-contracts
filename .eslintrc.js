@@ -28,7 +28,7 @@ module.exports = {
     'prettier/prettier': 'error',
     // Code style
     'array-bracket-spacing': ['off'],
-    camelcase: ['error', { properties: 'always' }],
+    camelcase: ['error', { properties: 'always', allow: ['*__factory'] }],
     'comma-dangle': ['error', 'always-multiline'],
     'comma-spacing': ['error', { before: false, after: true }],
     'dot-notation': ['error', { allowKeywords: true, allowPattern: '' }],
@@ -44,6 +44,7 @@ module.exports = {
     'no-redeclare': ['error', { builtinGlobals: true }],
     'no-trailing-spaces': ['error', { skipBlankLines: false }],
     'no-unused-expressions': 'off',
+    'no-non-null-asserted-optional-chain': 'off',
     'no-undef': 'error',
     'no-use-before-define': 'off',
     'no-var': 'error',

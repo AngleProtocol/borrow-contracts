@@ -36,7 +36,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     // =============================== References ==================================
 
     /// @inheritdoc IVaultManagerStorage
-    ITreasury public override treasury;
+    ITreasury public treasury;
     /// @notice Reference to the collateral handled by this `VaultManager`
     IERC20 public collateral;
     /// @notice Stablecoin handled by this contract. Another `VaultManager` contract could have
@@ -98,7 +98,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     // ================================ Mappings ===================================
 
     /// @inheritdoc IVaultManagerStorage
-    mapping(uint256 => Vault) public override vaultData;
+    mapping(uint256 => Vault) public vaultData;
     /// @notice Maps an address to whether it's whitelisted and can open or own a vault
     mapping(address => bool) public isWhitelisted;
 

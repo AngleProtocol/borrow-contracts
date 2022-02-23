@@ -17,7 +17,7 @@ struct StrategyParameters {
 }
 
 /// @notice Reactor for using a token as collateral for agTokens. ERC4646 tokenized Vault implementation.
-/// @author Angle Core Team, partly Forked from Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
+/// @author Angle Core Team, based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
 /// @dev Do not use in production! ERC-4626 is still in the review stage and is subject to change.
 /// @dev WARNING - Built only for 18 decimals token
 /// @dev WARNING - Built on the assumption that the underlying VaultManager does not take fees
@@ -139,8 +139,8 @@ contract Reactor is IERC4626, ERC20 {
     //////////////////////////////////////////////////////////////*/
 
     function deposit(uint256 amount, address to) public updateAccumulator(msg.sender) returns (uint256 shares) {
-        // Check for rounding error since we round down in previewDeposit.
-        shares = previewDeposit(amount);
+        // Check for rounding error since we round down in convertToShares.
+        shares = convertToShares(amount);
         require(shares != 0, "ZERO_SHARES");
 
         // Need to transfer before minting or ERC777s could reenter.
@@ -206,8 +206,8 @@ contract Reactor is IERC4626, ERC20 {
                 }
             }
         }
-        // Check for rounding error since we round down in previewRedeem.
-        require((amount = previewRedeem(shares)) != 0, "ZERO_ASSETS");
+        // Check for rounding error since we round down in convertToAssets.
+        require((amount = convertToAssets(shares)) != 0, "ZERO_ASSETS");
 
         _beforeWithdraw(amount);
 
@@ -227,36 +227,32 @@ contract Reactor is IERC4626, ERC20 {
         amount = asset.balanceOf(address(this)) + amount;
     }
 
-    function assetsOf(address user) public view returns (uint256) {
-        return previewRedeem(balanceOf(user));
+    function convertToShares(uint256 amount) public view returns (uint256) {
+        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
+
+        return supply == 0 ? amount : (amount * supply) / totalAssets();
     }
 
-    function assetsPerShare() public view returns (uint256) {
-        return previewRedeem(1 ether); // TODO
+    function convertToAssets(uint256 shares) public view returns (uint256) {
+        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
+
+        return supply == 0 ? shares : (shares * totalAssets()) / supply;
     }
 
     function previewDeposit(uint256 amount) public view returns (uint256) {
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
-
-        return supply == 0 ? amount : (amount * supply) / totalAssets();
+        return convertToShares(amount);
     }
 
     function previewMint(uint256 shares) public view returns (uint256) {
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
-
-        return supply == 0 ? shares : (shares * totalAssets()) / supply;
+        return convertToAssets(shares);
     }
 
     function previewWithdraw(uint256 amount) public view virtual returns (uint256) {
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
-
-        return supply == 0 ? amount : (amount * supply) / totalAssets();
+        return convertToShares(amount);
     }
 
     function previewRedeem(uint256 shares) public view virtual returns (uint256) {
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
-
-        return supply == 0 ? shares : (shares * totalAssets()) / supply;
+        return convertToAssets(shares);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -272,7 +268,7 @@ contract Reactor is IERC4626, ERC20 {
     }
 
     function maxWithdraw(address user) public view returns (uint256) {
-        return assetsOf(user); // TODO worth completing with restrictions based on current harvest
+        return convertToShares(balanceOf(user)); // TODO worth completing with restrictions based on current harvest
     }
 
     function maxRedeem(address user) public view returns (uint256) {

@@ -110,7 +110,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 senderBorrowFee
-    ) external override whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant {
         require(treasury.isVaultManager(msg.sender), "3");
         // Checking the delta of borrow fees to eliminate the risk of exploits here
         if (senderBorrowFee > borrowFee) {
@@ -122,7 +122,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     }
 
     /// @inheritdoc IVaultManagerFunctions
-    function createVault(address toVault) external override whenNotPaused returns (uint256) {
+    function createVault(address toVault) external whenNotPaused returns (uint256) {
         return _mint(toVault);
     }
 
@@ -132,7 +132,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         bytes[] memory datas,
         address from,
         address to
-    ) external payable override returns (PaymentData memory) {
+    ) external payable returns (PaymentData memory) {
         return angle(actions, datas, from, to, address(0), new bytes(0));
     }
 
@@ -144,7 +144,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address to,
         address who,
         bytes memory repayData
-    ) public payable override whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
+    ) public payable whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
         uint256 collateralAmount;
@@ -253,7 +253,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     // ============================= View Functions ================================
 
     /// @inheritdoc IVaultManagerFunctions
-    function getVaultDebt(uint256 vaultID) external view override returns (uint256) {
+    function getVaultDebt(uint256 vaultID) external view returns (uint256) {
         return vaultData[vaultID].normalizedDebt * _calculateCurrentInterestRateAccumulator();
     }
 
@@ -550,12 +550,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     // =================== Treasury Relationship Functions =========================
 
     /// @inheritdoc IVaultManagerFunctions
-    function accrueInterestToTreasury()
-        external
-        override
-        onlyTreasury
-        returns (uint256 surplusValue, uint256 badDebtValue)
-    {
+    function accrueInterestToTreasury() external onlyTreasury returns (uint256 surplusValue, uint256 badDebtValue) {
         _accrue();
         surplusValue = surplus;
         badDebtValue = badDebt;
@@ -820,7 +815,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     }
 
     /// @inheritdoc IVaultManagerFunctions
-    function setTreasury(address _treasury) external override onlyTreasury {
+    function setTreasury(address _treasury) external onlyTreasury {
         treasury = ITreasury(_treasury);
         // This function makes sure to propagate the change to the associated contract
         // even though a single oracle contract could be used in different places
