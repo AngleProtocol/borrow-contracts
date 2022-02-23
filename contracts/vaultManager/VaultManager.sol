@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "./VaultManagerERC721.sol";
 
@@ -29,7 +29,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param _treasury Treasury address handling the contract
     /// @param _collateral Collateral supported by this contract
     /// @param _oracle Oracle contract used
-    /// @param symbolVault Symbol used for the NFT contract
     /// @dev The parameters and the oracle are the only elements which could be modified once the
     /// contract has been initialized
     /// @dev For the contract to be fully initialized, governance needs to set the parameters for the liquidation
@@ -38,7 +37,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         ITreasury _treasury,
         IERC20 _collateral,
         IOracle _oracle,
-        string memory symbolVault,
         VaultParameters calldata params
     ) public initializer {
         require(_oracle.treasury() == _treasury, "33");
@@ -48,9 +46,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
 
-        // Using of `symbolVault` and not directly token symbols for contract size
-        name = string(abi.encodePacked("Angle Protocol ", symbolVault, " Vault"));
-        symbol = string(abi.encodePacked(symbolVault, "-vault"));
+        string memory fetchedSymbol = string.concat(
+            IERC20Metadata(address(collateral)).symbol(),
+            "/",
+            IERC20Metadata(address(stablecoin)).symbol()
+        );
+        name = string.concat("Angle Protocol ", fetchedSymbol, " Vault");
+        symbol = string.concat(fetchedSymbol, "-vault");
 
         interestAccumulator = BASE_INTEREST;
 
@@ -119,31 +121,35 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         _repayDebt(vaultID, stablecoinAmount, 0);
     }
 
-    /// @notice Allows composability between calls to the different entry points of this module. Any user calling
-    /// this function can perform any of the allowed actions in the order of their choice
-    /// @param actions Set of actions to perform
-    /// @param datas Data to be decoded for each action: it can include like the `vaultID` or the
-    /// @param from Address from which stablecoins will be taken if one action includes burning stablecoins. This address
-    /// should either be the `msg.sender` or be approved by the latter
-    /// @param to Address to which stablecoins and/or collateral will be sent in case of
-    /// @param who Address of the contract to handle in case of repayment of stablecoins from received collateral
-    /// @param repayData Data to pass to the repayment contract in case of
-    /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
-    /// or computations (like `oracleValue`) are done only once
+    /// @inheritdoc IVaultManagerFunctions
+    function createVault(address toVault) external override whenNotPaused returns (uint256) {
+        return _mint(toVault);
+    }
+
+    /// @inheritdoc IVaultManagerFunctions
+    function angle(
+        ActionType[] memory actions,
+        bytes[] memory datas,
+        address from,
+        address to
+    ) external payable override returns (PaymentData memory) {
+        return angle(actions, datas, from, to, address(0), new bytes(0));
+    }
+
+    /// @inheritdoc IVaultManagerFunctions
     function angle(
         ActionType[] memory actions,
         bytes[] memory datas,
         address from,
         address to,
         address who,
-        bytes calldata repayData
-    ) public payable whenNotPaused nonReentrant {
+        bytes memory repayData
+    ) public payable override whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
         uint256 collateralAmount;
         uint256 stablecoinAmount;
         uint256 vaultID;
-        PaymentData memory paymentData;
         for (uint256 i = 0; i < actions.length; i++) {
             ActionType action = actions[i];
             if (action == ActionType.createVault) {
@@ -246,10 +252,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     // ============================= View Functions ================================
 
-    /// @notice Gets the current debt of a vault
-    /// @param vaultID ID of the vault to check
-    /// @return Debt of the vault
-    function getVaultDebt(uint256 vaultID) external view returns (uint256) {
+    /// @inheritdoc IVaultManagerFunctions
+    function getVaultDebt(uint256 vaultID) external view override returns (uint256) {
         return vaultData[vaultID].normalizedDebt * _calculateCurrentInterestRateAccumulator();
     }
 
@@ -534,7 +538,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address from,
         address to,
         address who,
-        bytes calldata data
+        bytes memory data
     ) internal {
         if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
         if (data.length > 0 && stableAmountToRepay > 0) {

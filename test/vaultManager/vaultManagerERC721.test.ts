@@ -48,7 +48,6 @@ contract('VaultManager', () => {
   const impersonatedSigners: { [key: string]: Signer } = {};
 
   const collatBase = 10;
-  const vaultSymbol = 'EXAMPLE';
   const params = {
     dust: 100,
     dustCollateral: 100,
@@ -89,7 +88,7 @@ contract('VaultManager', () => {
     agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
-    collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
+    collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);
 
     vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer))) as VaultManager;
 
@@ -110,25 +109,25 @@ contract('VaultManager', () => {
   describe('initializer', () => {
     it('revert - oracle treasury differs', async () => {
       oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, collatBase, ZERO_ADDRESS);
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, params);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       await expect(tx).to.be.revertedWith('33');
     });
 
     it('success - setters', async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       expect(await vaultManager.oracle()).to.be.equal(oracle.address);
       expect(await vaultManager.treasury()).to.be.equal(treasury.address);
       expect(await vaultManager.collateral()).to.be.equal(collateral.address);
       expect(await vaultManager.collatBase()).to.be.equal(10 ** collatBase);
       expect(await vaultManager.stablecoin()).to.be.equal(agToken.address);
       expect(await vaultManager.stablecoin()).to.be.equal(agToken.address);
-      expect(await vaultManager.name()).to.be.equal('Angle Protocol ' + vaultSymbol + ' Vault');
-      expect(await vaultManager.symbol()).to.be.equal(vaultSymbol + '-vault');
+      expect(await vaultManager.name()).to.be.equal('Angle Protocol USDC/agEUR Vault');
+      expect(await vaultManager.symbol()).to.be.equal('USDC/agEUR-vault');
       expect(await vaultManager.paused()).to.be.true;
     });
 
     it('success - access control', async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       await expect(vaultManager.connect(alice).unpause()).to.be.reverted;
       await expect(vaultManager.connect(deployer).unpause()).to.be.reverted;
       await expect(vaultManager.connect(proxyAdmin).unpause()).to.be.reverted;
@@ -142,50 +141,50 @@ contract('VaultManager', () => {
     });
 
     it('revert - already initialized', async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, params);
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       await expect(tx).to.be.reverted;
     });
 
     it('revert - collateral factor > liquidation surcharge', async () => {
       const auxPar = { ...params };
       auxPar.collateralFactor = parseUnits('0.95', 'gwei');
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - targetHealthFactor < 1', async () => {
       const auxPar = { ...params };
       auxPar.targetHealthFactor = parseUnits('0.9999', 'gwei');
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - liquidationSurcharge > 1', async () => {
       const auxPar = { ...params };
       auxPar.liquidationSurcharge = parseUnits('1.0001', 'gwei');
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - borrowFee > 1', async () => {
       const auxPar = { ...params };
       auxPar.borrowFee = parseUnits('1.0001', 'gwei');
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - maxLiquidationDiscount > 1', async () => {
       const auxPar = { ...params };
       auxPar.maxLiquidationDiscount = parseUnits('1.0001', 'gwei');
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
   });
 
   describe('ERC721', () => {
     beforeEach(async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, vaultSymbol, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       await vaultManager.connect(guardian).unpause();
     });
     describe('getControlledVaults', () => {

@@ -101,6 +101,6 @@
     "eslint-plugin-mocha": "^10.0.3",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "fs-extra": "^10.0.0",
-    "solc": "0.8.10"
+    "solc": "0.8.12"
   }
 }

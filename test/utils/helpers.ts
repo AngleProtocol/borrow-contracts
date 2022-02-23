@@ -181,7 +181,9 @@ async function angle(
     actions.push(o.action);
     datas.push(o.data);
   });
-  await vaultManager.connect(signer).angle(actions, datas, from, to, who, repayData);
+  await vaultManager
+    .connect(signer)
+    ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
 }
 
 export {

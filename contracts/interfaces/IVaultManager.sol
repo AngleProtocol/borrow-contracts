@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "./ITreasury.sol";
 
@@ -113,11 +113,60 @@ interface IVaultManagerFunctions {
         uint256 senderBorrowFee
     ) external;
 
+    /// @notice Gets the current debt of a vault
+    /// @param vaultID ID of the vault to check
+    /// @return Debt of the vault
+    function getVaultDebt(uint256 vaultID) external view returns (uint256);
+
     /// @notice Sets the treasury contract
     /// @param _treasury New treasury contract
     /// @dev All required checks when setting up a treasury contract are performed in the contract
     /// calling this function
     function setTreasury(address _treasury) external;
+
+    /// @notice Creates a vault
+    /// @param toVault Address for which the va
+    /// @return vaultID ID of the vault created
+    /// @dev This function just creates the vault without doing any collateral or
+    function createVault(address toVault) external returns (uint256);
+
+    /// @notice Allows composability between calls to the different entry points of this module. Any user calling
+    /// this function can perform any of the allowed actions in the order of their choice
+    /// @param actions Set of actions to perform
+    /// @param datas Data to be decoded for each action: it can include like the `vaultID` or the
+    /// @param from Address from which stablecoins will be taken if one action includes burning stablecoins. This address
+    /// should either be the `msg.sender` or be approved by the latter
+    /// @param to Address to which stablecoins and/or collateral will be sent in case of
+    /// @return paymentData Struct containing the final transfers executed
+    /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
+    /// or computations (like `oracleValue`) are done only once
+    function angle(
+        ActionType[] memory actions,
+        bytes[] memory datas,
+        address from,
+        address to
+    ) external payable returns (PaymentData memory paymentData);
+
+    /// @notice Allows composability between calls to the different entry points of this module. Any user calling
+    /// this function can perform any of the allowed actions in the order of their choice
+    /// @param actions Set of actions to perform
+    /// @param datas Data to be decoded for each action: it can include like the `vaultID` or the
+    /// @param from Address from which stablecoins will be taken if one action includes burning stablecoins. This address
+    /// should either be the `msg.sender` or be approved by the latter
+    /// @param to Address to which stablecoins and/or collateral will be sent in case of
+    /// @param who Address of the contract to handle in case of repayment of stablecoins from received collateral
+    /// @param repayData Data to pass to the repayment contract in case of
+    /// @return paymentData Struct containing the final transfers executed
+    /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
+    /// or computations (like `oracleValue`) are done only once
+    function angle(
+        ActionType[] memory actions,
+        bytes[] memory datas,
+        address from,
+        address to,
+        address who,
+        bytes memory repayData
+    ) external payable returns (PaymentData memory paymentData);
 }
 
 /// @title IVaultManagerStorage
@@ -128,6 +177,9 @@ interface IVaultManagerFunctions {
 interface IVaultManagerStorage {
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury);
+
+    /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
+    function vaultData(uint256 vaultID) external view returns (uint256 collateralAmount, uint256 normalizedDebt);
 }
 
 /// @title IVaultManager
@@ -136,19 +188,5 @@ interface IVaultManagerStorage {
 /// @dev This interface only contains functions of the contract which are called by other contracts
 /// of this module
 interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage {
-    function angle(
-        ActionType[] memory actions,
-        bytes[] memory datas,
-        address from,
-        address to
-    ) external payable;
 
-    function angle(
-        ActionType[] memory actions,
-        bytes[] memory datas,
-        address from,
-        address to,
-        address who,
-        bytes calldata repayData
-    ) external payable;
 }

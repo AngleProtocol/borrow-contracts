@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -97,8 +97,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
 
     // ================================ Mappings ===================================
 
-    /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
-    mapping(uint256 => Vault) public vaultData;
+    /// @inheritdoc IVaultManagerStorage
+    mapping(uint256 => Vault) public override vaultData;
     /// @notice Maps an address to whether it's whitelisted and can open or own a vault
     mapping(address => bool) public isWhitelisted;
 

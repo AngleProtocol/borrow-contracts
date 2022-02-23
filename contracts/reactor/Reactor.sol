@@ -91,7 +91,8 @@ contract Reactor is IERC4626, ERC20 {
         asset = _asset;
         stable = _stable;
         vaultManager = _vaultManager;
-        _vaultManager.angle([ActionType.createVault], [""], address(this), address(this));
+        // _vaultManager.angle([ActionType.createVault], [""], address(this), address(this));
+        vaultID = 0;
         treasury = _treasury;
         startTime = block.timestamp;
         lastTime = block.timestamp;
@@ -222,7 +223,8 @@ contract Reactor is IERC4626, ERC20 {
     //////////////////////////////////////////////////////////////*/
 
     function totalAssets() public view returns (uint256 amount) {
-        amount = asset.balanceOf(address(this)) + vaultManager.vaultData(vaultID).collateralAmount;
+        (amount, ) = vaultManager.vaultData(vaultID);
+        amount = asset.balanceOf(address(this)) + amount;
     }
 
     function assetsOf(address user) public view returns (uint256) {
@@ -442,12 +444,12 @@ contract Reactor is IERC4626, ERC20 {
     function _rebalance(uint256 toWithdraw) internal {
         // TODO How to optimize this call ? I don't think it is doable
         // TODO store oracle or fetch each time
-        uint256 oracleValue = vaultManager.oracle().read();
+        uint256 oracleValue = 0; //TODO
         uint256 debt = vaultManager.getVaultDebt(vaultID);
         _handleLoss(debt - lastDebt); //TODO assert here that > 0 ?
         lastDebt = debt;
         uint256 looseAssets = asset.balanceOf(address(this));
-        uint256 usedAssets = vaultManager.vaultData(vaultID).collateralAmount;
+        (uint256 usedAssets, ) = vaultManager.vaultData(vaultID);
         uint256 collateralFactor = ((usedAssets + looseAssets - toWithdraw) * oracleValue) / 1 ether / debt;
 
         uint16 len = 1;
