@@ -1,18 +1,28 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber } from 'ethers';
-import { parseUnits } from 'ethers/lib/utils';
-import { contract, ethers } from 'hardhat';
+import { BigNumber, Signer, utils } from 'ethers';
+import { parseEther, parseUnits } from 'ethers/lib/utils';
+import hre, { contract, ethers } from 'hardhat';
 
-import { MockInterestRateComputer, MockInterestRateComputer__factory } from '../../typechain';
+import {
+  MockInterestRateComputer,
+  MockInterestRateComputer__factory,
+  MockTreasury,
+  MockTreasury__factory,
+} from '../../typechain';
+import { expect } from '../utils/chai-setup';
+import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('Interest Rates', () => {
+contract('Treasury', () => {
   let deployer: SignerWithAddress;
+  let alice: SignerWithAddress;
+  let bob: SignerWithAddress;
 
   let computer: MockInterestRateComputer;
   let delta: BigNumber;
+  let treasury: MockTreasury;
 
   beforeEach(async () => {
-    [deployer] = await ethers.getSigners();
+    [deployer, alice, bob] = await ethers.getSigners();
     // If the forked-network state needs to be reset between each test, run this
     // await network.provider.request({method: 'hardhat_reset', params: []});
 
@@ -22,6 +32,15 @@ contract('Interest Rates', () => {
       parseUnits('0.000000001243680714', 27),
     )) as MockInterestRateComputer;
     delta = BigNumber.from(86400 * 52);
+
+    treasury = (await new MockTreasury__factory(deployer).deploy(
+      ZERO_ADDRESS,
+      ZERO_ADDRESS,
+      ZERO_ADDRESS,
+      ZERO_ADDRESS,
+      ZERO_ADDRESS,
+      ZERO_ADDRESS,
+    )) as MockTreasury;
   });
 
   describe('calculate delta', () => {
