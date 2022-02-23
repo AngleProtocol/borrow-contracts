@@ -64,17 +64,6 @@ contract MockChainlinkOracle is MockAggregatorV3Interface {
         });
     }
 
-    function setLatestAnswerFromTimestamp(int256 answer) external {
-        roundId++;
-        entries[roundId] = Entry({
-            roundId: roundId,
-            answer: answer,
-            startedAt: block.timestamp,
-            updatedAt: block.timestamp,
-            answeredInRound: roundId
-        });
-    }
-
     function setLatestAnswerWithRound(
         int256 answer,
         uint256 timestamp,
