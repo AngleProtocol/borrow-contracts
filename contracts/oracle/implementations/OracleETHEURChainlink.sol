@@ -13,9 +13,9 @@ contract OracleETHEURChainlink is BaseOracleChainlinkMulti {
     uint256 public constant OUTBASE = 10**18;
     bytes32 public constant DESCRIPTION = "ETH/EUR Oracle";
 
-    /// @notice Constructor for an oracle using Chainlink with multiple pools to read from
+    /// @notice Constructor of the contract
     /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
-    /// @param _treasury Treasury associated to the VaultManager which reads from this feed
+    /// @param _treasury Treasury associated to the `VaultManager` which reads from this feed
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMulti(_stalePeriod, _treasury) {}
 
     /// @inheritdoc IOracle

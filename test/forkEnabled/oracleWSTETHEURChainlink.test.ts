@@ -12,7 +12,7 @@ import {
 import { expect } from '../utils/chai-setup';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('Treasury', () => {
+contract('OracleWSTETHEURChainlink', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
