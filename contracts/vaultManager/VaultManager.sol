@@ -14,6 +14,7 @@ import "./VaultManagerERC721.sol";
 // TODO think of more (or less) view functions -> cf Picodes
 // TODO Events double check
 //TODO If enough space add recoverERC20
+// TODO Decide if we want to keep pause: size is 0.83
 
 /// @title VaultManager
 /// @author Angle Core Team

@@ -108,7 +108,7 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     function setApprovalForAll(address operator, bool approved) external {
         require(operator != msg.sender, "28");
         _operatorApprovals[msg.sender][operator] = approved;
-        emit ApprovalForAll(_msgSender(), operator, approved);
+        emit ApprovalForAll(msg.sender, operator, approved);
     }
 
     /// @inheritdoc IERC721Upgradeable
