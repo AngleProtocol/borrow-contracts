@@ -176,6 +176,7 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
         bytes memory _data
     ) internal {
         _transfer(from, to, vaultID);
+        require(_checkOnERC721Received(from, to, vaultID, _data), "29");
     }
 
     /// @notice Checks whether a vault exists
@@ -203,6 +204,7 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
         _balances[to] += 1;
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
+        require(_checkOnERC721Received(address(0), to, vaultID, ""), "29");
     }
 
     /// @notice Destroys `vaultID`
@@ -248,5 +250,38 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     function _approve(address to, uint256 vaultID) internal {
         _vaultApprovals[vaultID] = to;
         emit Approval(_ownerOf(vaultID), to, vaultID);
+    }
+
+    /// @notice Internal function to invoke {IERC721Receiver-onERC721Received} on a target address
+    /// The call is not executed if the target address is not a contract
+    /// @param from Address representing the previous owner of the given token ID
+    /// @param to Target address that will receive the tokens
+    /// @param vaultID ID of the token to be transferred
+    /// @param _data Bytes optional data to send along with the call
+    /// @return Bool whether the call correctly returned the expected value
+    function _checkOnERC721Received(
+        address from,
+        address to,
+        uint256 vaultID,
+        bytes memory _data
+    ) private returns (bool) {
+        if (to.isContract()) {
+            try IERC721ReceiverUpgradeable(to).onERC721Received(msg.sender, from, vaultID, _data) returns (
+                bytes4 retval
+            ) {
+                return retval == IERC721ReceiverUpgradeable(to).onERC721Received.selector;
+            } catch (bytes memory reason) {
+                if (reason.length == 0) {
+                    revert("24");
+                } else {
+                    // solhint-disable-next-line no-inline-assembly
+                    assembly {
+                        revert(add(32, reason), mload(reason))
+                    }
+                }
+            }
+        } else {
+            return true;
+        }
     }
 }

@@ -1,7 +1,8 @@
-import { BigNumber, BigNumberish, Contract, ContractFactory, Signer } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Signer } from 'ethers';
 import hre, { ethers } from 'hardhat';
 
-import { TransparentUpgradeableProxy__factory } from '../../typechain';
+import { TransparentUpgradeableProxy__factory, VaultManager } from '../../typechain';
 
 async function getImpersonatedSigner(address: string): Promise<Signer> {
   await hre.network.provider.request({
@@ -126,14 +127,79 @@ async function deployUpgradeable(factory: ContractFactory): Promise<Contract> {
   return new Contract(Proxy.address, factory.interface, alice);
 }
 
+type Call = {
+  action: number;
+  data: BytesLike;
+};
+
+function createVault(to: string): Call {
+  return { action: 0, data: ethers.utils.defaultAbiCoder.encode(['address'], [to]) };
+}
+
+function closeVault(vaultID: number): Call {
+  return { action: 1, data: ethers.utils.defaultAbiCoder.encode(['uint256'], [vaultID]) };
+}
+
+function addCollateral(vaultID: number, collateralAmount: BigNumberish): Call {
+  return { action: 2, data: ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [vaultID, collateralAmount]) };
+}
+
+function removeCollateral(vaultID: number, collateralAmount: BigNumberish): Call {
+  return { action: 3, data: ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [vaultID, collateralAmount]) };
+}
+
+function repayDebt(vaultID: number, stablecoinAmount: BigNumberish): Call {
+  return { action: 4, data: ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [vaultID, stablecoinAmount]) };
+}
+
+function borrow(vaultID: number, stablecoinAmount: BigNumberish): Call {
+  return { action: 5, data: ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [vaultID, stablecoinAmount]) };
+}
+
+function getDebtIn(vaultID: number, vaultManager: string, dstVaultID: number, stablecoinAmount: BigNumberish): Call {
+  return {
+    action: 6,
+    data: ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'address', 'uint256', 'uint256'],
+      [vaultID, vaultManager, dstVaultID, stablecoinAmount],
+    ),
+  };
+}
+
+async function angle(
+  vaultManager: VaultManager,
+  signer: SignerWithAddress,
+  calls: Call[],
+  from: string = signer.address,
+  to: string = from,
+  who: string = ZERO_ADDRESS,
+  repayData = '0x',
+): Promise<void> {
+  const actions: number[] = [];
+  const datas: BytesLike[] = [];
+  calls.forEach(o => {
+    actions.push(o.action);
+    datas.push(o.data);
+  });
+  await vaultManager.connect(signer).angle(actions, datas, from, to, who, repayData);
+}
+
 export {
+  addCollateral,
+  angle,
   balance,
+  borrow,
+  closeVault,
+  createVault,
   deployUpgradeable,
+  getDebtIn,
   getImpersonatedSigner,
   increaseTime,
   latestTime,
   MAX_UINT256,
   mine,
+  removeCollateral,
+  repayDebt,
   resetFork,
   resetTime,
   setNextBlockTimestamp,

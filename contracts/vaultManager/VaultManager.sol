@@ -103,110 +103,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     // ========================= External Access Functions =========================
 
-    /// @notice Creates a vault
-    /// @param toVault Address for which the va
-    /// @return vaultID ID of the vault created
-    /// @dev This function just creates the vault without doing any collateral or
-    function createVault(address toVault) external whenNotPaused returns (uint256) {
-        return _mint(toVault);
-    }
-
-    /// @notice Closes a vault
-    /// @param vaultID Vault to close
-    /// @param from Address from which stablecoins for the repayment of the debt should be taken
-    /// @param to Address to which the collateral of the vault should be given
-    /// @param who If necessary contract to call to handle the repayment of the stablecoins upon receipt
-    /// of the collateral
-    /// @param data Data to send to the `who` contract
-    /// @return currentDebt Amount of debt of the vault
-    /// @return collateralAmount Amount of collateral obtained from the vault
-    /// @dev The `from` address should have approved the `msg.sender`
-    /// @dev Only the owner of the vault or an approved address for this vault can decide to close it
-    /// @dev Specifying a who address along with data allows for a capital efficient closing of vaults
-    function closeVault(
-        uint256 vaultID,
-        address from,
-        address to,
-        address who,
-        bytes calldata data
-    ) external whenNotPaused nonReentrant returns (uint256 currentDebt, uint256 collateralAmount) {
-        (currentDebt, collateralAmount, , ) = _closeVault(vaultID, 0, 0);
-        _handleRepay(collateralAmount, currentDebt, from, to, who, data);
-    }
-
-    /// @notice Adds collateral in a vault
-    /// @param vaultID ID of the vault to add collateral to
-    /// @param collateralAmount Amount of collateral to add
-    /// @dev Any address can add collateral on any vault
-    function addCollateral(uint256 vaultID, uint256 collateralAmount) external whenNotPaused nonReentrant {
-        collateral.safeTransferFrom(msg.sender, address(this), collateralAmount);
-        _addCollateral(vaultID, collateralAmount);
-    }
-
-    /// @notice Removes collateral from a vault
-    /// @param vaultID ID of the vault to remove collateral from
-    /// @param collateralAmount Amount of collateral to remove
-    /// @param to Address to send the collateral to
-    /// @dev Solvency is checked after removing collateral
-    /// @dev Only approved addresses can remove collateral from a vault
-    function removeCollateral(
-        uint256 vaultID,
-        uint256 collateralAmount,
-        address to
-    ) external whenNotPaused nonReentrant {
-        _removeCollateral(vaultID, collateralAmount, 0, 0);
-        collateral.transfer(to, collateralAmount);
-    }
-
-    /// @notice Repays a portion of the debt of a vault
-    /// @param vaultID ID of the vault for which debt should be repayed
-    /// @param stablecoinAmount Amount of stablecoins
-    /// @param from Address to take the stablecoins from
-    /// @dev `from` should have approved the `msg.sender` for debt repayment
-    /// @dev Any address can repay debt for any address
-    function repayDebt(
-        uint256 vaultID,
-        uint256 stablecoinAmount,
-        address from
-    ) external whenNotPaused nonReentrant {
-        stablecoin.burnFrom(stablecoinAmount, from, msg.sender);
-        _decreaseDebt(vaultID, stablecoinAmount, 0);
-    }
-
-    /// @notice Borrows stablecoins from a vault
-    /// @param vaultID ID of the vault for which stablecoins should be borrowed
-    /// @param stablecoinAmount Amount of stablecoins to borrow
-    /// @param to Address to which stablecoins should be sent
-    /// @return toMint Amount of stablecoins minted from the call
-    /// @dev A solvency check is performed after the debt increase
-    /// @dev Only approved addresses by the vault owner or the vault owner can perform this action
-    function borrow(
-        uint256 vaultID,
-        uint256 stablecoinAmount,
-        address to
-    ) external whenNotPaused nonReentrant returns (uint256 toMint) {
-        (toMint, , ) = _borrow(vaultID, stablecoinAmount, 0, 0);
-        stablecoin.mint(to, toMint);
-    }
-
-    /// @notice Gets debt in a vault from another vault potentially in another `VaultManager` contract
-    /// @param srcVaultID ID of the vault from this contract for which growing debt
-    /// @param vaultManager Address of the `vaultManager` where the targeted vault is
-    /// @param dstVaultID ID of the vault in the target contract
-    /// @param stablecoinAmount Amount of stablecoins to grow the debt of. This amount will be converted
-    /// to a normalized value in both vaultManager contracts
-    /// @dev A solvency check is performed after the debt increase in the source `vaultID`
-    /// @dev Only approved addresses by the source vault owner can perform this action, however any vault
-    /// from any vaultManager contract can see its debt reduced by this means
-    function getDebtIn(
-        uint256 srcVaultID,
-        IVaultManager vaultManager,
-        uint256 dstVaultID,
-        uint256 stablecoinAmount
-    ) external whenNotPaused nonReentrant {
-        _getDebtIn(srcVaultID, vaultManager, dstVaultID, stablecoinAmount, 0, 0);
-    }
-
     /// @inheritdoc IVaultManagerFunctions
     function getDebtOut(
         uint256 vaultID,
@@ -220,7 +116,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             stablecoinAmount -= borrowFeePaid;
             surplus += borrowFeePaid;
         }
-        _decreaseDebt(vaultID, stablecoinAmount, 0);
+        _repayDebt(vaultID, stablecoinAmount, 0);
     }
 
     /// @notice Allows composability between calls to the different entry points of this module. Any user calling
@@ -275,7 +171,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.collateralAmountToGive += collateralAmount;
             } else if (action == ActionType.repayDebt) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
-                newInterestRateAccumulator = _decreaseDebt(vaultID, collateralAmount, newInterestRateAccumulator);
+                newInterestRateAccumulator = _repayDebt(vaultID, collateralAmount, newInterestRateAccumulator);
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.borrow) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
@@ -425,18 +321,14 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
     /// @dev The approximation slightly undercharges borrowers with the advantage of a great gas cost reduction
     /// @dev This function was mostly inspired from Aave implementation
-    // TODO: check Aave's raymul and impact of rounding up or down: https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/libraries/math/WadRayMath.sol
-    // TODO check 10**27 or 10**18
-    // TODO: check Aave's solution wrt to Maker in terms of gas and how much it costs
-    // TODO: should we have a few function on top of this?
     function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
         uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
         uint256 ratePerSecond = interestRate;
         if (exp == 0 || ratePerSecond == 0) return interestAccumulator;
         uint256 expMinusOne = exp - 1;
         uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
-        uint256 basePowerTwo = ratePerSecond * ratePerSecond; // TODO Divide by the base
-        uint256 basePowerThree = basePowerTwo * ratePerSecond;
+        uint256 basePowerTwo = (ratePerSecond * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
+        uint256 basePowerThree = (basePowerTwo * ratePerSecond + HALF_BASE_INTEREST) / BASE_INTEREST;
         uint256 secondTerm = (exp * expMinusOne * basePowerTwo) / 2;
         uint256 thirdTerm = (exp * expMinusOne * expMinusTwo * basePowerThree) / 6;
         return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
@@ -562,7 +454,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestRateAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
         if (address(vaultManager) == address(this)) {
-            _decreaseDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
+            _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
             require(treasury.isVaultManager(address(vaultManager)), "22");
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
@@ -608,7 +500,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @return Computed value of the interest rate accumulator
-    function _decreaseDebt(
+    function _repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 newInterestRateAccumulator
@@ -750,7 +642,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                         BASE_PARAMS;
                 } else {
                     vaultData[vaultIDs[i]].collateralAmount -= collateralReleased;
-                    _decreaseDebt(
+                    _repayDebt(
                         vaultIDs[i],
                         (amounts[i] * liquidationSurcharge) / BASE_PARAMS,
                         liqData.newInterestRateAccumulator

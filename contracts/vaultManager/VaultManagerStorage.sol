@@ -30,6 +30,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Base used for interest rate computation
     uint256 public constant BASE_INTEREST = 10**27;
+    /// @notice Used for interest rate computation
+    uint256 public constant HALF_BASE_INTEREST = 10**27 / 2;
 
     // ========================= Key Structs and Enums =============================
 
@@ -57,7 +59,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
         uint256 normalizedDebt;
     }
 
-    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximul
+    /// @notice For a given `vaultID`, this encodes a liquidation opportunity that is to say details about the maximum
     /// amount that could be repaid by liquidating the position
     /// @dev All the values are null in the case of a vault which cannot be liquidated under these conditions
     struct LiquidationOpportunity {
@@ -84,7 +86,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
         uint256 collateralAmountToGive;
         // Bad debt accrued across the liquidation process
         uint256 badDebtFromLiquidation;
-        // Oracle value at the time of the liquidation: it should be given in the base of the stablecoin
+        // Oracle value (in stablecoin base) at the time of the liquidation
         uint256 oracleValue;
         // Value of the interestRateAccumulator at the time of the call
         uint256 newInterestRateAccumulator;
@@ -144,7 +146,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     uint256[] public xLiquidationBoost;
     /// @notice Values of the liquidation boost at the threshold values of x
     uint256[] public yLiquidationBoost;
-    /// @notice Encodes the minimum ratio collateral/stablecoin a vault can have before being liquidated. It's what
+    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     uint64 public collateralFactor;
     /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)

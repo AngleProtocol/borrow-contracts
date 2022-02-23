@@ -15,9 +15,9 @@ import {
   MockTreasury,
   MockTreasury__factory,
 } from '../../typechain';
-import { parseAmount, parseAmount } from '../../utils/bignumber';
+import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt, inIndirectReceipt, inReceipt } from '../utils/expectEvent';
+import { inIndirectReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('FlashAngle', () => {
