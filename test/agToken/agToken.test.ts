@@ -2,7 +2,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
-import { inReceipt, inIndirectReceipt } from '../utils/expectEvent';
 
 import {
   AgToken,
@@ -13,6 +12,7 @@ import {
   MockTreasury__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('AgToken', () => {
@@ -73,6 +73,7 @@ contract('AgToken', () => {
     it('success - stableMaster, name, symbol, treasury', async () => {
       expect(await agToken.stableMaster()).to.be.equal(stableMaster.address);
       expect(await agToken.name()).to.be.equal('agEUR');
+      expect(await agToken.isMinter(stableMaster.address)).to.be.equal(true);
       expect(await agToken.symbol()).to.be.equal('agEUR');
       expect(await agToken.treasury()).to.be.equal(treasury.address);
       expect(await agToken.treasuryInitialized()).to.be.equal(true);
@@ -195,7 +196,7 @@ contract('AgToken', () => {
     });
     it('success - minter toggled', async () => {
       const receipt = await (await treasury.connect(user).addMinter(agToken.address, user.address)).wait();
-      expect(await agToken.isMinter(user.address)).to.be.true;
+      expect(await agToken.isMinter(user.address)).to.be.equal(true);
       inIndirectReceipt(
         receipt,
         new utils.Interface(['event MinterToggled(address indexed minter)']),
@@ -210,9 +211,12 @@ contract('AgToken', () => {
     it('reverts - non treasury', async () => {
       await expect(agToken.connect(user).removeMinter(user2.address)).to.be.revertedWith('36');
     });
+    it('reverts - removing stableMaster from the treasury', async () => {
+      await expect(treasury.connect(user).removeMinter(agToken.address, stableMaster.address)).to.be.revertedWith('36');
+    });
     it('success - minter removed after being added', async () => {
       await (await treasury.connect(user).addMinter(agToken.address, user.address)).wait();
-      expect(await agToken.isMinter(user.address)).to.be.true;
+      expect(await agToken.isMinter(user.address)).to.be.equal(true);
       await expect(agToken.connect(user2).removeMinter(user.address)).to.be.revertedWith('36');
       const receipt = await (await treasury.connect(user).removeMinter(agToken.address, user.address)).wait();
       inIndirectReceipt(

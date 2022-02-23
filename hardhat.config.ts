@@ -58,13 +58,14 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       accounts: accounts('mainnet'),
-      live: argv.fork || false,
+      live: false,
       blockGasLimit: 125e5,
       initialBaseFeePerGas: 0,
       hardfork: 'london',
       forking: {
         enabled: argv.fork || false,
         url: nodeUrl('fork'),
+        blockNumber: 14256515,
       },
       mining: argv.disableAutoMining
         ? {

@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish, Contract, ContractFactory, Signer } from 'ethers';
 import hre, { ethers } from 'hardhat';
 
-import { ProxyAdmin, TransparentUpgradeableProxy__factory } from '../../typechain';
+import { TransparentUpgradeableProxy__factory } from '../../typechain';
 
 async function getImpersonatedSigner(address: string): Promise<Signer> {
   await hre.network.provider.request({

@@ -1,17 +1,17 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer } from 'ethers';
 import hre, { contract, ethers, web3 } from 'hardhat';
-import { inReceipt } from '../utils/expectEvent';
 
 import {
-  CoreBorrow__factory,
   CoreBorrow,
-  MockTreasury,
-  MockTreasury__factory,
+  CoreBorrow__factory,
   MockFlashLoanModule,
   MockFlashLoanModule__factory,
+  MockTreasury,
+  MockTreasury__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
+import { inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('CoreBorrow', () => {
@@ -81,12 +81,12 @@ contract('CoreBorrow', () => {
 
   describe('initializer', () => {
     it('success - Access Control', async () => {
-      expect(await coreBorrow.isGovernor(governor)).to.be.true;
-      expect(await coreBorrow.isGovernor(guardian)).to.be.false;
-      expect(await coreBorrow.isGovernorOrGuardian(guardian)).to.be.true;
-      expect(await coreBorrow.isGovernorOrGuardian(governor)).to.be.true;
-      expect(await coreBorrow.isFlashLoanerTreasury(governor)).to.be.false;
-      expect(await coreBorrow.isFlashLoanerTreasury(guardian)).to.be.false;
+      expect(await coreBorrow.isGovernor(governor)).to.be.equal(true);
+      expect(await coreBorrow.isGovernor(guardian)).to.be.equal(false);
+      expect(await coreBorrow.isGovernorOrGuardian(guardian)).to.be.equal(true);
+      expect(await coreBorrow.isGovernorOrGuardian(governor)).to.be.equal(true);
+      expect(await coreBorrow.isFlashLoanerTreasury(governor)).to.be.equal(false);
+      expect(await coreBorrow.isFlashLoanerTreasury(guardian)).to.be.equal(false);
       expect(await coreBorrow.getRoleAdmin(guardianRole)).to.be.equal(guardianRole);
       expect(await coreBorrow.getRoleAdmin(governorRole)).to.be.equal(governorRole);
       expect(await coreBorrow.getRoleAdmin(flashloanerTreasuryRole)).to.be.equal(governorRole);
@@ -114,15 +114,15 @@ contract('CoreBorrow', () => {
     });
     it('success - governor added', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).addGovernor(user.address);
-      expect(await coreBorrow.isGovernor(user.address)).to.be.true;
-      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.true;
+      expect(await coreBorrow.isGovernor(user.address)).to.be.equal(true);
+      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.equal(true);
       expect(await coreBorrow.hasRole(guardianRole, user.address)).to.be.equal(true);
       expect(await coreBorrow.hasRole(governorRole, user.address)).to.be.equal(true);
     });
     it('success - new governor can add other governors', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).addGovernor(user.address);
       await coreBorrow.connect(user).addGovernor(guardian);
-      expect(await coreBorrow.isGovernor(guardian)).to.be.true;
+      expect(await coreBorrow.isGovernor(guardian)).to.be.equal(true);
       expect(await coreBorrow.hasRole(guardianRole, user.address)).to.be.equal(true);
     });
   });
@@ -137,16 +137,16 @@ contract('CoreBorrow', () => {
     it('success - governor removed (after having been added)', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).addGovernor(user.address);
       await coreBorrow.connect(impersonatedSigners[governor]).removeGovernor(user.address);
-      expect(await coreBorrow.isGovernor(user.address)).to.be.false;
-      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.false;
+      expect(await coreBorrow.isGovernor(user.address)).to.be.equal(false);
+      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.equal(false);
       expect(await coreBorrow.hasRole(guardianRole, user.address)).to.be.equal(false);
       expect(await coreBorrow.hasRole(governorRole, user.address)).to.be.equal(false);
     });
     it('success - governor removed (after having been added) and requested by user', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).addGovernor(user.address);
       await coreBorrow.connect(user).removeGovernor(user.address);
-      expect(await coreBorrow.isGovernor(user.address)).to.be.false;
-      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.false;
+      expect(await coreBorrow.isGovernor(user.address)).to.be.equal(false);
+      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.equal(false);
       expect(await coreBorrow.hasRole(guardianRole, user.address)).to.be.equal(false);
       expect(await coreBorrow.hasRole(governorRole, user.address)).to.be.equal(false);
     });
@@ -274,8 +274,8 @@ contract('CoreBorrow', () => {
     });
     it('success - guardianRole updated', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).grantRole(guardianRole, user.address);
-      expect(await coreBorrow.hasRole(guardianRole, user.address)).to.be.true;
-      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.true;
+      expect(await coreBorrow.hasRole(guardianRole, user.address)).to.be.equal(true);
+      expect(await coreBorrow.isGovernorOrGuardian(user.address)).to.be.equal(true);
     });
   });
   describe('revokeGuardianRole', () => {
@@ -284,8 +284,8 @@ contract('CoreBorrow', () => {
     });
     it('success - guardianRole updated', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).revokeRole(guardianRole, guardian);
-      expect(await coreBorrow.hasRole(guardianRole, guardian)).to.be.false;
-      expect(await coreBorrow.isGovernorOrGuardian(guardian)).to.be.false;
+      expect(await coreBorrow.hasRole(guardianRole, guardian)).to.be.equal(false);
+      expect(await coreBorrow.isGovernorOrGuardian(guardian)).to.be.equal(false);
     });
   });
 });

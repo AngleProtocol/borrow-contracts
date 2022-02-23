@@ -2,22 +2,22 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
-import { inReceipt, inIndirectReceipt } from '../utils/expectEvent';
-import { parseAmount } from '../../utils/bignumber';
 
 import {
   MockCoreBorrow,
   MockCoreBorrow__factory,
-  MockToken,
-  MockToken__factory,
-  Treasury,
-  Treasury__factory,
-  MockVaultManager,
-  MockVaultManager__factory,
   MockFlashLoanModule,
   MockFlashLoanModule__factory,
+  MockToken,
+  MockToken__factory,
+  MockVaultManager,
+  MockVaultManager__factory,
+  Treasury,
+  Treasury__factory,
 } from '../../typechain';
+import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('Treasury', () => {
@@ -126,7 +126,7 @@ contract('Treasury', () => {
     });
     it('success - minter added', async () => {
       await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
-      expect(await stablecoin.minters(alice.address)).to.be.true;
+      expect(await stablecoin.minters(alice.address)).to.be.equal(true);
     });
   });
   describe('addVaultManager', () => {
@@ -146,13 +146,13 @@ contract('Treasury', () => {
       const receipt = await (
         await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address)
       ).wait();
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.true;
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(true);
       expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager.address);
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
       });
-      expect(await treasury.isVaultManager(vaultManager.address)).to.be.true;
-      expect(await stablecoin.minters(vaultManager.address)).to.be.true;
+      expect(await treasury.isVaultManager(vaultManager.address)).to.be.equal(true);
+      expect(await stablecoin.minters(vaultManager.address)).to.be.equal(true);
     });
     it('reverts - vaultManager already added', async () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
@@ -174,7 +174,7 @@ contract('Treasury', () => {
     it('success - minter removed', async () => {
       await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
       await (await treasury.connect(impersonatedSigners[governor]).removeMinter(alice.address)).wait();
-      expect(await stablecoin.minters(alice.address)).to.be.false;
+      expect(await stablecoin.minters(alice.address)).to.be.equal(false);
     });
   });
   describe('removeVaultManager', () => {
@@ -188,17 +188,17 @@ contract('Treasury', () => {
     });
     it('success - only one vaultManager', async () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.true;
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(true);
       const receipt = await (
         await treasury.connect(impersonatedSigners[governor]).removeVaultManager(vaultManager.address)
       ).wait();
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
       });
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.false;
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
       await expect(treasury.vaultManagerList(0)).to.be.reverted;
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.false;
-      expect(await stablecoin.minters(vaultManager.address)).to.be.false;
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
+      expect(await stablecoin.minters(vaultManager.address)).to.be.equal(false);
     });
     it('success - several vaultManagers - first one removed', async () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
@@ -206,19 +206,19 @@ contract('Treasury', () => {
         treasury.address,
       )) as MockVaultManager;
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address);
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.true;
-      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.true;
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(true);
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(true);
       const receipt = await (
         await treasury.connect(impersonatedSigners[governor]).removeVaultManager(vaultManager.address)
       ).wait();
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
       });
-      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.true;
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.false;
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(true);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
       expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager2.address);
-      expect(await stablecoin.minters(vaultManager.address)).to.be.false;
-      expect(await stablecoin.minters(vaultManager2.address)).to.be.true;
+      expect(await stablecoin.minters(vaultManager.address)).to.be.equal(false);
+      expect(await stablecoin.minters(vaultManager2.address)).to.be.equal(true);
     });
     it('success - several vaultManagers - second one removed', async () => {
       const vaultManager2 = (await new MockVaultManager__factory(deployer).deploy(
@@ -232,11 +232,11 @@ contract('Treasury', () => {
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
       });
-      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.true;
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.false;
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(true);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
       expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager2.address);
-      expect(await stablecoin.minters(vaultManager.address)).to.be.false;
-      expect(await stablecoin.minters(vaultManager2.address)).to.be.true;
+      expect(await stablecoin.minters(vaultManager.address)).to.be.equal(false);
+      expect(await stablecoin.minters(vaultManager2.address)).to.be.equal(true);
     });
   });
   describe('recoverERC20', () => {
@@ -382,21 +382,21 @@ contract('Treasury', () => {
     it('success - when no old flash loan Module', async () => {
       await coreBorrow.setFlashLoanModule(treasury.address, alice.address);
       expect(await treasury.flashLoanModule()).to.be.equal(alice.address);
-      expect(await stablecoin.minters(alice.address)).to.be.true;
+      expect(await stablecoin.minters(alice.address)).to.be.equal(true);
     });
     it('success - when there is an old flash loan Module', async () => {
       await coreBorrow.setFlashLoanModule(treasury.address, alice.address);
       await coreBorrow.setFlashLoanModule(treasury.address, bob.address);
       expect(await treasury.flashLoanModule()).to.be.equal(bob.address);
-      expect(await stablecoin.minters(alice.address)).to.be.false;
-      expect(await stablecoin.minters(bob.address)).to.be.true;
+      expect(await stablecoin.minters(alice.address)).to.be.equal(false);
+      expect(await stablecoin.minters(bob.address)).to.be.equal(true);
     });
     it('success - when flash loan Module is address 0', async () => {
       await coreBorrow.setFlashLoanModule(treasury.address, alice.address);
       await coreBorrow.setFlashLoanModule(treasury.address, ZERO_ADDRESS);
       expect(await treasury.flashLoanModule()).to.be.equal(ZERO_ADDRESS);
-      expect(await stablecoin.minters(alice.address)).to.be.false;
-      expect(await stablecoin.minters(bob.address)).to.be.false;
+      expect(await stablecoin.minters(alice.address)).to.be.equal(false);
+      expect(await stablecoin.minters(bob.address)).to.be.equal(false);
     });
   });
   describe('fetchSurplusFromAll', () => {
