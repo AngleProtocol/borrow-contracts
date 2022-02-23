@@ -58,7 +58,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     // ============================= Reading Oracles ===============================
 
     /// @inheritdoc IOracle
-    function read() external view returns (uint256 quoteAmount) {
+    function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = outBase;
         for (uint256 i = 0; i < circuitChainlink.length; i++) {
             quoteAmount = _readChainlinkFeed(

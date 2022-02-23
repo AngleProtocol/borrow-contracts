@@ -26,7 +26,7 @@ contract OracleChainlinkMultiTemplate is BaseOracleChainlinkMulti {
     // ============================= Reading Oracles ===============================
 
     /// @inheritdoc IOracle
-    function read() external view returns (uint256 quoteAmount) {
+    function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = OUTBASE;
         // ===================== To be modified before deployment ==================
         AggregatorV3Interface[2] memory circuitChainlink = [
