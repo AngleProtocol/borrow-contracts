@@ -13,6 +13,7 @@ import "./VaultManagerERC721.sol";
 // in doing it: https://github.com/makerdao/dss/blob/master/src/clip.sol
 // TODO think of more (or less) view functions -> cf Picodes
 // TODO Events double check
+//TODO If enough space add recoverERC20
 
 /// @title VaultManager
 /// @author Angle Core Team

@@ -247,11 +247,11 @@ contract Reactor is IERC4626, ERC20 {
         return convertToAssets(shares);
     }
 
-    function previewWithdraw(uint256 amount) public view virtual returns (uint256) {
+    function previewWithdraw(uint256 amount) public view returns (uint256) {
         return convertToShares(amount);
     }
 
-    function previewRedeem(uint256 shares) public view virtual returns (uint256) {
+    function previewRedeem(uint256 shares) public view returns (uint256) {
         return convertToAssets(shares);
     }
 
