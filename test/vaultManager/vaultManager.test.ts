@@ -109,6 +109,34 @@ contract('VaultManager', () => {
   });
 
   describe('angle', () => {
+    it('revert - paused', async () => {
+      await vaultManager.connect(guardian).pause();
+      await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('Pausable: paused');
+    });
+
+    it('success - state', async () => {
+      await angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
+      expect(await vaultManager.ownerOf(1)).to.be.equal(alice.address);
+      expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
+    });
+
+    it('revert - not whitelisted', async () => {
+      await vaultManager.connect(governor).toggleWhitelisting();
+      await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
+    });
+
+    it('success - whitelisted', async () => {
+      await vaultManager.connect(governor).toggleWhitelisting();
+      await vaultManager.connect(governor).whitelistingActivated;
+      await angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
+      expect(await vaultManager.ownerOf(1)).to.be.equal(alice.address);
+      expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
+    });
+  });
+
+  describe('liquidate', () => {
     it('createVault', async () => {
       await angle(vaultManager, alice, [createVault(alice.address)]);
     });
