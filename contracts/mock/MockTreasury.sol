@@ -45,6 +45,14 @@ contract MockTreasury is ITreasury {
         flashLoanModule = _flashLoanModule;
     }
 
+    function setGovernor(address _governor) external {
+        governor = _governor;
+    }
+
+    function setVaultManager(address _vaultManager) external {
+        vaultManager1 = _vaultManager;
+    }
+
     function setTreasury(address _agTokenOrVaultManager, address _treasury) external {
         IAgToken(_agTokenOrVaultManager).setTreasury(_treasury);
     }

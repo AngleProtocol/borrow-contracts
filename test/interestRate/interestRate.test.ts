@@ -5,7 +5,7 @@ import { contract, ethers } from 'hardhat';
 
 import { MockInterestRateComputer, MockInterestRateComputer__factory } from '../../typechain';
 
-contract('Treasury', () => {
+contract('Interest Rates', () => {
   let deployer: SignerWithAddress;
 
   let computer: MockInterestRateComputer;
