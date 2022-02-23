@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.12;
 
+import "@openzeppelin/contracts/interfaces/IERC721Metadata.sol";
 import "./ITreasury.sol";
 
 // ========================= Key Structs and Enums =============================
@@ -172,7 +173,7 @@ interface IVaultManagerFunctions {
 /// @title IVaultManagerStorage
 /// @author Angle Core Team
 /// @notice Interface for the `VaultManager` contract
-/// @dev This interface only contains getters of the contract which are called by other contracts
+/// @dev This interface contains getters of the contract's public variables used by other contracts
 /// of this module
 interface IVaultManagerStorage {
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
@@ -185,8 +186,6 @@ interface IVaultManagerStorage {
 /// @title IVaultManager
 /// @author Angle Core Team
 /// @notice Interface for the `VaultManager` contract
-/// @dev This interface only contains functions of the contract which are called by other contracts
-/// of this module
-interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage {
+interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721Metadata {
 
 }

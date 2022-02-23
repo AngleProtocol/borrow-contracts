@@ -1,4 +1,3 @@
-import { ActionType, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
@@ -193,7 +192,7 @@ contract('VaultManager', () => {
         expect(count).to.be.equal(0);
       });
 
-      it('success -,first vault', async () => {
+      it('success - first vault', async () => {
         await angle(vaultManager, alice, [createVault(alice.address)]);
         const [vaults] = await vaultManager.getControlledVaults(alice.address);
         expect(vaults.length).to.be.equal(1);
