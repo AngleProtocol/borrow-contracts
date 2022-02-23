@@ -110,7 +110,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 senderBorrowFee
-    ) external whenNotPaused nonReentrant {
+    ) external whenNotPaused {
         require(treasury.isVaultManager(msg.sender), "3");
         // Checking the delta of borrow fees to eliminate the risk of exploits here
         if (senderBorrowFee > borrowFee) {

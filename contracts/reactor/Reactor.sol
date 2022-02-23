@@ -150,7 +150,7 @@ contract Reactor is IERC4626, ERC20 {
 
         emit Deposit(msg.sender, to, amount, shares);
 
-        _afterDeposit(amount);
+        _rebalance(0);
     }
 
     function mint(uint256 shares, address to) public updateAccumulator(msg.sender) returns (uint256 amount) {
@@ -163,7 +163,7 @@ contract Reactor is IERC4626, ERC20 {
 
         emit Deposit(msg.sender, to, amount, shares);
 
-        _afterDeposit(amount);
+        _rebalance(0);
     }
 
     function withdraw(
@@ -183,7 +183,7 @@ contract Reactor is IERC4626, ERC20 {
             }
         }
 
-        _beforeWithdraw(amount);
+        _rebalance(amount);
 
         _burn(from, shares);
 
@@ -209,7 +209,7 @@ contract Reactor is IERC4626, ERC20 {
         // Check for rounding error since we round down in convertToAssets.
         require((amount = convertToAssets(shares)) != 0, "ZERO_ASSETS");
 
-        _beforeWithdraw(amount);
+        _rebalance(amount);
 
         _burn(from, shares);
 
@@ -519,17 +519,5 @@ contract Reactor is IERC4626, ERC20 {
         require(debtRatio <= BASE_PARAMS, "76"); //TODO Check error message
         params.debtRatio = _debtRatio;
         emit StrategyAdded(strategy, debtRatio);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                         INTERNAL HOOKS LOGIC
-    //////////////////////////////////////////////////////////////*/
-
-    function _beforeWithdraw(uint256 amount) internal {
-        _rebalance(amount);
-    }
-
-    function _afterDeposit(uint256 amount) internal {
-        _rebalance(0);
     }
 }
