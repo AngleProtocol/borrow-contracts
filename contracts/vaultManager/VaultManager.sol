@@ -137,7 +137,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address to,
         address who,
         bytes calldata repayData
-    ) external payable whenNotPaused nonReentrant {
+    ) public payable whenNotPaused nonReentrant {
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
         uint256 collateralAmount;

@@ -6,7 +6,7 @@ import "../interfaces/IVaultManager.sol";
 import "../interfaces/ITreasury.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract MockVaultManager is IVaultManager {
+contract MockVaultManager is IVaultManagerFunctions, IVaultManagerStorage {
     ITreasury public override treasury;
     uint256 public surplus;
     uint256 public badDebt;
