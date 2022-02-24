@@ -1,4 +1,5 @@
 import { ActionType, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
+import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
@@ -26,6 +27,7 @@ import {
   closeVault,
   createVault,
   deployUpgradeable,
+  expectApprox,
   ZERO_ADDRESS,
 } from '../utils/helpers';
 
@@ -103,9 +105,16 @@ contract('VaultManager', () => {
     await agToken.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
     await treasury.addMinter(agToken.address, vaultManager.address);
 
-    oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, collatBase, treasury.address);
+    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
     await vaultManager.connect(guardian).unpause();
+  });
+
+  describe('oracle', () => {
+    it('success - read', async () => {
+      const oracle = (await ethers.getContractAt(Oracle__factory.abi, await vaultManager.oracle())) as Oracle;
+      expect(await oracle.read()).to.be.equal(parseUnits('2', 18));
+    });
   });
 
   describe('angle', () => {
@@ -128,7 +137,7 @@ contract('VaultManager', () => {
 
     it('success - whitelisted', async () => {
       await vaultManager.connect(governor).toggleWhitelisting();
-      await vaultManager.connect(governor).whitelistingActivated;
+      await vaultManager.connect(governor).toggleWhitelist(alice.address);
       await angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
       expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
       expect(await vaultManager.ownerOf(1)).to.be.equal(alice.address);
@@ -136,9 +145,111 @@ contract('VaultManager', () => {
     });
   });
 
+  describe('addCollateral', () => {
+    it('success', async () => {
+      const amount = parseUnits('1', collatBase);
+      await collateral.connect(alice).mint(alice.address, amount);
+      await collateral.connect(alice).approve(vaultManager.address, amount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, amount),
+      ]);
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(0);
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(amount);
+    });
+
+    it('success - twice', async () => {
+      const amount = parseUnits('1', collatBase);
+      await collateral.connect(alice).mint(alice.address, amount);
+      await collateral.connect(alice).approve(vaultManager.address, amount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, amount),
+      ]);
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(0);
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(amount);
+
+      const amount2 = parseUnits('3', collatBase);
+      await collateral.connect(alice).mint(alice.address, amount2);
+      await collateral.connect(alice).approve(vaultManager.address, amount2);
+      await angle(vaultManager, alice, [addCollateral(1, amount2)]);
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(0);
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(amount.add(amount2));
+    });
+  });
+
+  describe('borrow', () => {
+    it('revert - limit CF', async () => {
+      // Collat amount in stable should be 4
+      // So max borrowable amount is 2
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('2');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+      ]);
+
+      await expect(angle(vaultManager, alice, [borrow(2, borrowAmount)])).to.be.revertedWith('21');
+    });
+
+    it('success', async () => {
+      // Collat amount in stable should be 4
+      // So max borrowable amount is 2
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1.999');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+      ]);
+
+      await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
+    });
+  });
+
   describe('liquidate', () => {
-    it('createVault', async () => {
-      await angle(vaultManager, alice, [createVault(alice.address)]);
+    it('success', async () => {
+      // Collat amount in stable should be 4
+      // So max borrowable amount is 2
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
+
+      await collateral.connect(bob).mint(bob.address, collatAmount);
+      await collateral.connect(bob).approve(vaultManager.address, collatAmount);
+      await angle(vaultManager, bob, [
+        createVault(bob.address),
+        createVault(bob.address),
+        addCollateral(3, collatAmount),
+        borrow(3, borrowAmount),
+      ]);
+
+      await oracle.update(parseEther('0.9'));
+
+      // Liquidation enabled
+      expect((await vaultManager.checkLiquidation(2, bob.address)).currentDebt).to.be.gt(0);
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)']([2], [borrowAmount.div(2)], bob.address, bob.address);
+      // TODO Does nothing
     });
   });
 });

@@ -15,6 +15,7 @@ import "./VaultManagerERC721.sol";
 // TODO Events double check
 //TODO If enough space add recoverERC20
 // TODO Decide if we want to keep pause: size is 0.83
+// TODO Add native support for permit ?
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -256,14 +257,14 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     /// @inheritdoc IVaultManagerFunctions
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
-        return vaultData[vaultID].normalizedDebt * _calculateCurrentInterestRateAccumulator();
+        return (vaultData[vaultID].normalizedDebt * _calculateCurrentInterestRateAccumulator()) / BASE_INTEREST;
     }
 
     /// @notice Gets the total debt across all vaults
     /// @return Total debt across all vaults, taking into account the interest accumulated
     /// over time
     function getTotalDebt() external view returns (uint256) {
-        return totalNormalizedDebt * _calculateCurrentInterestRateAccumulator();
+        return (totalNormalizedDebt * _calculateCurrentInterestRateAccumulator()) / BASE_INTEREST;
     }
 
     /// @notice Checks whether a given vault is liquidable and if yes gives information regarding its liquidation
@@ -313,7 +314,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     {
         if (oracleValue == 0) oracleValue = oracle.read();
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        uint256 currentDebt = vault.normalizedDebt * newInterestRateAccumulator;
+        uint256 currentDebt = (vault.normalizedDebt * newInterestRateAccumulator) / BASE_INTEREST;
         uint256 collateralAmountInStable = (vault.collateralAmount * oracleValue) / collatBase;
         uint256 healthFactor;
         if (currentDebt == 0) healthFactor = type(uint256).max;
@@ -484,7 +485,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestRateAccumulator
     ) internal returns (uint256, uint256) {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
+        uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator; // TODO Rounding imprecision in favor of borrower: one could borrow 1
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
         require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "23");
@@ -590,6 +591,22 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param from Address from which the stablecoins for the liquidation should be taken: this address should be the `msg.sender`
     /// or have received an approval
     /// @param to Address to which discounted collateral should be sent
+    /// @dev This function will not revert if it's called on a vault that cannot be liquidated
+    function liquidate(
+        uint256[] memory vaultIDs,
+        uint256[] memory amounts,
+        address from,
+        address to
+    ) external {
+        liquidate(vaultIDs, amounts, from, to, address(0), new bytes(0));
+    }
+
+    /// @notice Liquidates an ensemble of vaults specified by their IDs
+    /// @param vaultIDs List of the vaults to liquidate
+    /// @param amounts Amount of stablecoin to bring for the liquidation of each vault
+    /// @param from Address from which the stablecoins for the liquidation should be taken: this address should be the `msg.sender`
+    /// or have received an approval
+    /// @param to Address to which discounted collateral should be sent
     /// @param who Address of the contract to handle repayment of stablecoins from received collateral
     /// @param data Data to pass to the repayment contract in case of
     /// @dev This function will not revert if it's called on a vault that cannot be liquidated
@@ -599,8 +616,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address from,
         address to,
         address who,
-        bytes calldata data
-    ) external whenNotPaused nonReentrant {
+        bytes memory data
+    ) public whenNotPaused nonReentrant {
         // Stores all the data about an ongoing liquidation of multiple vaults
         LiquidatorData memory liqData;
         require(vaultIDs.length == amounts.length, "25");
@@ -672,7 +689,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             oracleValue,
             newInterestRateAccumulator
         );
-        if (healthFactor <= BASE_PARAMS) {
+        if (healthFactor < BASE_PARAMS) {
+            // TODO equality case would bring liquidationDiscount = 0 and a division by 0 later
             uint256 liquidationDiscount = (_computeLiquidationBoost(liquidator) * (BASE_PARAMS - healthFactor)) /
                 BASE_PARAMS;
             // In fact `liquidationDiscount` is stored here as 1 minus discount to save some computation costs
@@ -714,11 +732,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 else thresholdRepayAmount = maxAmountToRepay;
             }
             liqOpp.maxStablecoinAmountToRepay = maxAmountToRepay;
+            // TODO double check -> Cannot divide by 0 as liquidationDiscount > 0
             liqOpp.maxCollateralAmountGiven =
                 (maxAmountToRepay * BASE_PARAMS * collatBase) /
                 (oracleValue * (BASE_PARAMS - liquidationDiscount));
             liqOpp.thresholdRepayAmount = thresholdRepayAmount;
-            liqOpp.discount = liquidationDiscount;
+            liqOpp.discount = liquidationDiscount; // TODO Shall we re do 1 - liquidation discount to give correct amount to liquidator ?
             liqOpp.currentDebt = currentDebt;
         }
     }
@@ -822,6 +841,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // This function makes sure to propagate the change to the associated contract
         // even though a single oracle contract could be used in different places
         oracle.setTreasury(_treasury);
+    }
+
+    /// @notice Changes the whitelisting of an address
+    /// @param target Address to toggle
+    function toggleWhitelist(address target) external onlyGovernor {
+        isWhitelisted[target] = !isWhitelisted[target];
     }
 
     /// @notice Pauses external permissionless functions of the contract

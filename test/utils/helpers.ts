@@ -3,6 +3,7 @@ import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Signer }
 import hre, { ethers } from 'hardhat';
 
 import { TransparentUpgradeableProxy__factory, VaultManager } from '../../typechain';
+import { expect } from '../utils/chai-setup';
 
 async function getImpersonatedSigner(address: string): Promise<Signer> {
   await hre.network.provider.request({
@@ -127,6 +128,19 @@ async function deployUpgradeable(factory: ContractFactory): Promise<Contract> {
   return new Contract(Proxy.address, factory.interface, alice);
 }
 
+function expectApprox(value: BigNumberish, target: BigNumberish, error: number): void {
+  expect(value).to.be.lt(
+    BigNumber.from(target)
+      .mul((100 + error) * 1e10)
+      .div(100 * 1e10),
+  );
+  expect(value).to.be.gt(
+    BigNumber.from(target)
+      .mul((100 - error) * 1e10)
+      .div(100 * 1e10),
+  );
+}
+
 type Call = {
   action: number;
   data: BytesLike;
@@ -194,6 +208,7 @@ export {
   closeVault,
   createVault,
   deployUpgradeable,
+  expectApprox,
   getDebtIn,
   getImpersonatedSigner,
   increaseTime,
