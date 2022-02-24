@@ -103,7 +103,7 @@ contract('AgToken', () => {
       )) as MockTreasury;
       await expect(
         agToken.connect(impersonatedSigners[governor]).setUpTreasury(mockTreasuryWrong.address),
-      ).to.be.revertedWith('19');
+      ).to.be.revertedWith('6');
     });
     it('reverts - treasuryInitialized', async () => {
       await expect(agToken.connect(impersonatedSigners[governor]).setUpTreasury(treasury.address)).to.be.revertedWith(

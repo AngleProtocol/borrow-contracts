@@ -46,7 +46,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
         outBase = _outBase;
         description = _description;
         uint256 circuitLength = _circuitChainlink.length;
-        require(circuitLength > 0 && circuitLength == _circuitChainIsMultiplied.length, "32");
+        require(circuitLength > 0 && circuitLength == _circuitChainIsMultiplied.length, "25");
         for (uint256 i = 0; i < circuitLength; i++) {
             AggregatorV3Interface _pool = AggregatorV3Interface(_circuitChainlink[i]);
             circuitChainlink.push(_pool);

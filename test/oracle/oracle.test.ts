@@ -67,7 +67,7 @@ contract('OracleChainlinkMulti', () => {
           treasury.address,
           web3.utils.keccak256('desc'),
         ),
-      ).to.be.revertedWith('32');
+      ).to.be.revertedWith('25');
       await expect(
         new OracleChainlinkMulti__factory(deployer).deploy(
           [],
@@ -77,7 +77,7 @@ contract('OracleChainlinkMulti', () => {
           treasury.address,
           web3.utils.keccak256('desc'),
         ),
-      ).to.be.revertedWith('32');
+      ).to.be.revertedWith('25');
     });
   });
   describe('read', () => {

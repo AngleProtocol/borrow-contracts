@@ -169,7 +169,7 @@ contract('Treasury', () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
       await expect(
         treasury.connect(impersonatedSigners[governor]).removeMinter(vaultManager.address),
-      ).to.be.revertedWith('40');
+      ).to.be.revertedWith('36');
     });
     it('success - minter removed', async () => {
       await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
@@ -298,7 +298,7 @@ contract('Treasury', () => {
       const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
       newTreasury.initialize(coreBorrow.address, alice.address);
       await expect(treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)).to.be.revertedWith(
-        '19',
+        '6',
       );
     });
     it('reverts - still flashLoaner', async () => {
