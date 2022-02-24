@@ -10,7 +10,7 @@ import "./IOracle.sol";
 // ========================= Key Structs and Enums =============================
 
 /// @notice Parameters associated to a given `VaultManager` contract: these all correspond
-/// to parameters which signification is detailed below
+/// to parameters which signification is detailed in the `VaultManagerStorage` file
 struct VaultParameters {
     uint256 debtCeiling;
     uint64 collateralFactor;

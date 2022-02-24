@@ -46,10 +46,14 @@ contract MockVaultManager {
     }
 
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
+        vaultID;
+        token;
         return 0;
     }
 
     function createVault(address toVault) external view returns (uint256) {
+        toVault;
+        token;
         return 0;
     }
 }

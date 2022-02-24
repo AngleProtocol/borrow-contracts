@@ -12,8 +12,7 @@ import "./VaultManagerERC721.sol";
 // TODO in the handleRepay: do we impose restrictions on the called addresses like Maker does here or is there no point
 // in doing it: https://github.com/makerdao/dss/blob/master/src/clip.sol
 // TODO think of more (or less) view functions -> cf Picodes
-// TODO Events double check
-//TODO If enough space add recoverERC20
+// TODO If enough space add recoverERC20
 // TODO Decide if we want to keep pause: size is 0.83
 // TODO Add native support for permit ?
 
@@ -23,7 +22,6 @@ import "./VaultManagerERC721.sol";
 /// logic (fees and interest rate) as well as the liquidation logic
 /// @dev This implementation only supports non-rebasing ERC20 tokens as collateral
 /// @dev This contract is encoded as a NFT contract
-// solhint-disable-next-line max-states-count
 contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -598,8 +596,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256[] memory amounts,
         address from,
         address to
-    ) external {
-        liquidate(vaultIDs, amounts, from, to, address(0), new bytes(0));
+    ) external returns (LiquidatorData memory) {
+        return liquidate(vaultIDs, amounts, from, to, address(0), new bytes(0));
     }
 
     /// @notice Liquidates an ensemble of vaults specified by their IDs
@@ -618,9 +616,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address to,
         address who,
         bytes memory data
-    ) public whenNotPaused nonReentrant {
+    ) public whenNotPaused nonReentrant returns (LiquidatorData memory liqData) {
         // Stores all the data about an ongoing liquidation of multiple vaults
-        LiquidatorData memory liqData;
         require(vaultIDs.length == amounts.length, "25");
         liqData.oracleValue = oracle.read();
         liqData.newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
