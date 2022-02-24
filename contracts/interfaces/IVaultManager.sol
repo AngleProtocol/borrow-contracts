@@ -203,6 +203,28 @@ interface IVaultManagerStorage {
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury);
 
+    /// @notice Oracle contract to get access to the price of the collateral with respect to the stablecoin
+    function oracle() external view returns (IOracle);
+
+    /// @notice The `interestAccumulator` variable keeps track of the interest that should accrue to the protocol.
+    /// The stored value is not necessarily the true value: this one is recomputed every time an action takes place
+    /// within the protocol
+    function interestAccumulator() external view returns (uint256);
+
+    /// @notice Reference to the collateral handled by this `VaultManager`
+    function collateral() external view returns (IERC20);
+
+    /// @notice Stablecoin handled by this contract. Another `VaultManager` contract could have
+    /// the same rights as this `VaultManager` on the stablecoin contract
+    function stablecoin() external view returns (IAgToken);
+
+    /// @notice Total normalized amount of stablecoins borrowed
+    function totalNormalizedDebt() external view returns (uint256);
+
+    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
+    /// determines the minimum collateral ratio of a position
+    function collateralFactor() external view returns (uint64);
+
     /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
     function vaultData(uint256 vaultID) external view returns (uint256 collateralAmount, uint256 normalizedDebt);
 }

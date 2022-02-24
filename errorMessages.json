@@ -42,5 +42,10 @@
   "42": "contract paused",
   "43": "incorrect parameter",
   "44": "vault is healthy",
-  "45": "exceed debt ceiling"
+  "45": "exceed debt ceiling",
+  "46": "settlement not initialized",
+  "47": "sender is not owner",
+  "48": "vault already claimed",
+  "49": "claim period for over-collateralized vaults has not ended",
+  "50": "claim period of collateral against stablecoins has not started"
 }
