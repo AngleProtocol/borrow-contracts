@@ -38,7 +38,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.10',
+        version: '0.8.12',
         settings: {
           optimizer: {
             enabled: true,
@@ -118,11 +118,10 @@ const config: HardhatUserConfig = {
     deployer: 0,
     guardian: 1,
     governor: 2,
-    user: 3,
-  },
-  mocha: {
-    timeout: 100000,
-    retries: argv.ci ? 10 : 0,
+    proxyAdmin: 3,
+    alice: 4,
+    bob: 5,
+    charlie: 6,
   },
   contractSizer: {
     alphaSort: true,

@@ -18,6 +18,8 @@
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
     "size": "hardhat size-contracts",
     "test": "hardhat test",
+    "test:e2e": "FORK=true hardhat test e2e/*.ts",
+    "test:all": "yarn test && yarn test:e2e",
     "testFork": "FORK=true hardhat test"
   },
   "repository": {
@@ -84,7 +86,7 @@
     "hardhat-docgen": "1.3.0",
     "hardhat-gas-reporter": "1.0.4",
     "hardhat-spdx-license-identifier": "2.0.3",
-    "mocha": "9.0.2",
+    "mocha": "^9.2.1",
     "prettier": "2.3.2",
     "prettier-plugin-solidity": "1.0.0-beta.17",
     "solhint": "3.3.6",
@@ -98,8 +100,9 @@
   },
   "dependencies": {
     "dayjs": "^1.10.7",
+    "eslint-plugin-mocha": "^10.0.3",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "fs-extra": "^10.0.0",
-    "solc": "0.8.10"
+    "solc": "0.8.12"
   }
 }

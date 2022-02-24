@@ -1,7 +1,7 @@
-import yargs from 'yargs';
+import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
+import yargs from 'yargs';
 
-import { CONTRACTS_ADDRESSES, ChainId } from '@angleprotocol/sdk';
 import { Treasury__factory } from '../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -37,10 +37,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const coreBorrow = await deployments.get('CoreBorrow');
 
-  const dataTreasury = new ethers.Contract(
-    treasuryImplementation,
-    treasuryInterface,
-  ).interface.encodeFunctionData('initialize', [coreBorrow.address, agToken]);
+  const dataTreasury = new ethers.Contract(treasuryImplementation, treasuryInterface).interface.encodeFunctionData(
+    'initialize',
+    [coreBorrow.address, agToken],
+  );
 
   console.log('Now deploying the Proxy');
   await deploy('Treasury', {

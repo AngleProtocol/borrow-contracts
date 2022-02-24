@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -29,7 +29,7 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Flash Loan Module with a minter right on the stablecoin
     IFlashAngle public flashLoanModule;
     /// @inheritdoc ITreasury
-    IAgToken public override stablecoin;
+    IAgToken public stablecoin;
     /// @notice Address responsible for handling the surplus made by the treasury
     address public surplusManager;
     /// @notice List of the accepted `VaultManager` of the protocol
@@ -86,17 +86,17 @@ contract Treasury is ITreasury, Initializable {
     // ========================= View Functions ====================================
 
     /// @inheritdoc ITreasury
-    function isGovernor(address admin) external view override returns (bool) {
+    function isGovernor(address admin) external view returns (bool) {
         return core.isGovernor(admin);
     }
 
     /// @inheritdoc ITreasury
-    function isGovernorOrGuardian(address admin) external view override returns (bool) {
+    function isGovernorOrGuardian(address admin) external view returns (bool) {
         return core.isGovernorOrGuardian(admin);
     }
 
     /// @inheritdoc ITreasury
-    function isVaultManager(address _vaultManager) external view override returns (bool) {
+    function isVaultManager(address _vaultManager) external view returns (bool) {
         return vaultManagerMap[_vaultManager];
     }
 
@@ -358,7 +358,7 @@ contract Treasury is ITreasury, Initializable {
     }
 
     /// @inheritdoc ITreasury
-    function setFlashLoanModule(address _flashLoanModule) external override {
+    function setFlashLoanModule(address _flashLoanModule) external {
         require(msg.sender == address(core), "10");
         address oldFlashLoanModule = address(flashLoanModule);
         if (oldFlashLoanModule != address(0)) {

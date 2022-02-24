@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -52,17 +52,17 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     // =========================== View Functions ==================================
 
     /// @inheritdoc ICoreBorrow
-    function isFlashLoanerTreasury(address treasury) external view override returns (bool) {
+    function isFlashLoanerTreasury(address treasury) external view returns (bool) {
         return hasRole(FLASHLOANER_TREASURY_ROLE, treasury);
     }
 
     /// @inheritdoc ICoreBorrow
-    function isGovernor(address admin) external view override returns (bool) {
+    function isGovernor(address admin) external view returns (bool) {
         return hasRole(GOVERNOR_ROLE, admin);
     }
 
     /// @inheritdoc ICoreBorrow
-    function isGovernorOrGuardian(address admin) external view override returns (bool) {
+    function isGovernorOrGuardian(address admin) external view returns (bool) {
         return hasRole(GUARDIAN_ROLE, admin);
     }
 

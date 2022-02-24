@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/IStableMaster.sol";
@@ -18,7 +18,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     // ========================= References to other contracts =====================
 
     /// @inheritdoc IAgToken
-    address public override stableMaster;
+    address public stableMaster;
 
     // ============================= Constructor ===================================
 
@@ -44,7 +44,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     // ======= Added Parameters and Variables from the first implementation ========
 
     /// @inheritdoc IAgToken
-    mapping(address => bool) public override isMinter;
+    mapping(address => bool) public isMinter;
     /// @notice Reference to the treasury contract which can grant minting rights
     ITreasury public treasury;
     /// @notice Boolean to check whether the contract has been reinitialized after its upgrade
@@ -123,7 +123,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     // ======================= Minter Role Only Functions ==========================
 
     /// @inheritdoc IAgToken
-    function burnSelf(uint256 amount, address burner) external override onlyMinter {
+    function burnSelf(uint256 amount, address burner) external onlyMinter {
         _burn(burner, amount);
     }
 
@@ -132,26 +132,26 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         uint256 amount,
         address burner,
         address sender
-    ) external override onlyMinter {
+    ) external onlyMinter {
         _burnFromNoRedeem(amount, burner, sender);
     }
 
     /// @inheritdoc IAgToken
-    function mint(address account, uint256 amount) external override onlyMinter {
+    function mint(address account, uint256 amount) external onlyMinter {
         _mint(account, amount);
     }
 
     // ======================= Treasury Only Functions =============================
 
     /// @inheritdoc IAgToken
-    function addMinter(address minter) external override onlyTreasury {
+    function addMinter(address minter) external onlyTreasury {
         require(minter != address(0), "0");
         isMinter[minter] = true;
         emit MinterToggled(minter);
     }
 
     /// @inheritdoc IAgToken
-    function removeMinter(address minter) external override {
+    function removeMinter(address minter) external {
         // The `treasury` contract cannot remove the `stableMaster`
         require((msg.sender == address(treasury) && minter != stableMaster) || msg.sender == minter, "36");
         isMinter[minter] = false;
@@ -159,7 +159,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     }
 
     /// @inheritdoc IAgToken
-    function setTreasury(address _treasury) external override onlyTreasury {
+    function setTreasury(address _treasury) external onlyTreasury {
         treasury = ITreasury(_treasury);
         emit TreasuryUpdated(_treasury);
     }

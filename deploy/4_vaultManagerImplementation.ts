@@ -1,5 +1,5 @@
-import yargs from 'yargs';
 import { DeployFunction } from 'hardhat-deploy/types';
+import yargs from 'yargs';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers }) => {

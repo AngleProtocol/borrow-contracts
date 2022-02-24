@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -39,7 +39,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     /// @notice Maps a stablecoin to the data and parameters for flash loans
     mapping(IAgToken => StablecoinData) public stablecoinMap;
     /// @inheritdoc IFlashAngle
-    ICoreBorrow public override core;
+    ICoreBorrow public core;
 
     /// @notice Initializes the contract
     /// @param _core Core address handling this module
@@ -72,12 +72,12 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     // ================================ ERC3156 Spec ===============================
 
     /// @inheritdoc IERC3156FlashLender
-    function flashFee(address token, uint256 amount) external view override returns (uint256) {
+    function flashFee(address token, uint256 amount) external view returns (uint256) {
         return _flashFee(token, amount);
     }
 
     /// @inheritdoc IERC3156FlashLender
-    function maxFlashLoan(address token) external view override returns (uint256) {
+    function maxFlashLoan(address token) external view returns (uint256) {
         // It will be 0 anyway if the token was not added
         return stablecoinMap[IAgToken(token)].maxBorrowable;
     }
@@ -88,7 +88,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         address token,
         uint256 amount,
         bytes calldata data
-    ) external override nonReentrant returns (bool) {
+    ) external nonReentrant returns (bool) {
         uint256 fee = _flashFee(token, amount);
         require(amount <= stablecoinMap[IAgToken(token)].maxBorrowable, "4");
         IAgToken(token).mint(address(receiver), amount);
@@ -117,7 +117,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     // ============================ Treasury Only Function =========================
 
     /// @inheritdoc IFlashAngle
-    function accrueInterestToTreasury(IAgToken stablecoin) external override returns (uint256 balance) {
+    function accrueInterestToTreasury(IAgToken stablecoin) external returns (uint256 balance) {
         address treasury = stablecoinMap[stablecoin].treasury;
         require(msg.sender == treasury, "14");
         balance = stablecoin.balanceOf(address(this));
@@ -146,17 +146,17 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     // =========================== CoreBorrow Only Functions =======================
 
     /// @inheritdoc IFlashAngle
-    function addStablecoinSupport(address _treasury) external override onlyCore {
+    function addStablecoinSupport(address _treasury) external onlyCore {
         stablecoinMap[IAgToken(ITreasury(_treasury).stablecoin())].treasury = _treasury;
     }
 
     /// @inheritdoc IFlashAngle
-    function removeStablecoinSupport(address _treasury) external override onlyCore {
+    function removeStablecoinSupport(address _treasury) external onlyCore {
         delete stablecoinMap[IAgToken(ITreasury(_treasury).stablecoin())];
     }
 
     /// @inheritdoc IFlashAngle
-    function setCore(address _core) external override onlyCore {
+    function setCore(address _core) external onlyCore {
         core = ICoreBorrow(_core);
     }
 }
