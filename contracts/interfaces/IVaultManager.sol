@@ -21,6 +21,7 @@ struct VaultParameters {
     uint64 maxLiquidationDiscount;
     uint64 liquidationBooster;
     bool whitelistingActivated;
+    uint256 baseBoost;
 }
 
 /// @notice Data stored to track someone's loan (or equivalently called position)

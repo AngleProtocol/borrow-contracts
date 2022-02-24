@@ -1,8 +1,7 @@
-import { ActionType, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer } from 'ethers';
-import { parseEther, parseUnits } from 'ethers/lib/utils';
+import { formatBytes32String, formatEther, formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
@@ -24,21 +23,21 @@ import {
   addCollateral,
   angle,
   borrow,
-  closeVault,
   createVault,
   deployUpgradeable,
+  displayVaultState,
   expectApprox,
   ZERO_ADDRESS,
 } from '../utils/helpers';
 
 contract('VaultManager', () => {
+  const log = true;
+
   let deployer: SignerWithAddress;
   let governor: SignerWithAddress;
   let guardian: SignerWithAddress;
-  let proxyAdmin: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
-  let charlie: SignerWithAddress;
 
   let treasury: MockTreasury;
   let collateral: MockToken;
@@ -54,18 +53,19 @@ contract('VaultManager', () => {
     dust: 100,
     dustCollateral: 100,
     debtCeiling: parseEther('100'),
-    collateralFactor: parseUnits('0.5', 'gwei'),
-    targetHealthFactor: parseUnits('1.1', 'gwei'),
-    borrowFee: parseUnits('0.1', 'gwei'),
+    collateralFactor: 0.5e9,
+    targetHealthFactor: 1.1e9,
+    borrowFee: 0.1e9,
     interestRate: 100,
-    liquidationSurcharge: parseUnits('0.9', 'gwei'),
-    maxLiquidationDiscount: parseUnits('0.1', 'gwei'),
-    liquidationBooster: parseUnits('0.1', 'gwei'),
+    liquidationSurcharge: 0.9e9,
+    maxLiquidationDiscount: 0.1e9,
+    liquidationBooster: 0.1e9,
     whitelistingActivated: false,
+    baseBoost: 1e9,
   };
 
   before(async () => {
-    ({ deployer, alice, bob, charlie, governor, guardian, proxyAdmin } = await ethers.getNamedSigners());
+    ({ deployer, alice, bob, governor, guardian } = await ethers.getNamedSigners());
     // add any addresses you want to impersonate here
     const impersonatedAddresses = [{ address: '0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8', name: 'governor' }];
 
@@ -107,20 +107,20 @@ contract('VaultManager', () => {
 
     oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
-    await vaultManager.connect(guardian).unpause();
+    await vaultManager.connect(guardian).togglePause();
   });
 
-  describe('oracle', () => {
+  describe.skip('oracle', () => {
     it('success - read', async () => {
       const oracle = (await ethers.getContractAt(Oracle__factory.abi, await vaultManager.oracle())) as Oracle;
       expect(await oracle.read()).to.be.equal(parseUnits('2', 18));
     });
   });
 
-  describe('angle', () => {
+  describe.skip('angle', () => {
     it('revert - paused', async () => {
-      await vaultManager.connect(guardian).pause();
-      await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('Pausable: paused');
+      await vaultManager.connect(guardian).togglePause();
+      await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('42');
     });
 
     it('success - state', async () => {
@@ -145,7 +145,7 @@ contract('VaultManager', () => {
     });
   });
 
-  describe('addCollateral', () => {
+  describe.skip('addCollateral', () => {
     it('success', async () => {
       const amount = parseUnits('1', collatBase);
       await collateral.connect(alice).mint(alice.address, amount);
@@ -180,7 +180,7 @@ contract('VaultManager', () => {
     });
   });
 
-  describe('borrow', () => {
+  describe.skip('borrow', () => {
     it('revert - limit CF', async () => {
       // Collat amount in stable should be 4
       // So max borrowable amount is 2
@@ -212,11 +212,12 @@ contract('VaultManager', () => {
 
       await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
+      await expect(vaultManager.checkLiquidation(2, alice.address)).to.be.revertedWith('44');
     });
   });
 
-  describe('liquidate', () => {
-    it('success', async () => {
+  describe.skip('discount', () => {
+    beforeEach(async () => {
       // Collat amount in stable should be 4
       // So max borrowable amount is 2
       const collatAmount = parseUnits('2', collatBase);
@@ -229,27 +230,205 @@ contract('VaultManager', () => {
         addCollateral(2, collatAmount),
         borrow(2, borrowAmount),
       ]);
+    });
 
-      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
-
-      await collateral.connect(bob).mint(bob.address, collatAmount);
-      await collateral.connect(bob).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, bob, [
-        createVault(bob.address),
-        createVault(bob.address),
-        addCollateral(3, collatAmount),
-        borrow(3, borrowAmount),
-      ]);
-
+    it('success - without boost', async () => {
       await oracle.update(parseEther('0.9'));
 
-      // Liquidation enabled
-      expect((await vaultManager.checkLiquidation(2, bob.address)).currentDebt).to.be.gt(0);
+      // Health factor should be
+      // `collateralAmountInStable * collateralFactor) / currentDebt`
+      expect((await vaultManager.checkLiquidation(2, bob.address)).discount).to.be.equal(((2 * 0.9 * 0.5) / 1) * 1e9);
+    });
+
+    it('success - max discount', async () => {
+      await oracle.update(parseEther('0.1'));
+
+      // Health factor should be
+      // `collateralAmountInStable * collateralFactor) / currentDebt`
+      expect((await vaultManager.checkLiquidation(2, bob.address)).discount).to.be.equal(
+        1e9 - params.maxLiquidationDiscount,
+      );
+    });
+
+    it('success - modified max discount', async () => {
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('maxLiquidationDiscount'));
+      await oracle.update(parseEther('0.1'));
+
+      // Health factor should be
+      // `collateralAmountInStable * collateralFactor) / currentDebt`
+      expect((await vaultManager.checkLiquidation(2, bob.address)).discount).to.be.equal(1e9 - 0.5e9);
+    });
+
+    it('success - modified base boost', async () => {
+      await vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [], [0.5e9]);
+      await oracle.update(parseEther('0.9'));
+
+      // Health factor should be
+      // `collateralAmountInStable * collateralFactor) / currentDebt`
+      expect((await vaultManager.checkLiquidation(2, bob.address)).discount).to.be.equal(
+        (1 - (1 - 2 * 0.9 * 0.5) * 0.5) * 1e9,
+      );
+    });
+  });
+
+  describe('maxStablecoinAmountToRepay', () => {
+    const collatAmount = parseUnits('2', collatBase);
+    const borrowAmount = parseEther('1');
+
+    beforeEach(async () => {
+      // Collat amount in stable should be 4
+      // So max borrowable amount is 2
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+    });
+
+    it('success', async () => {
+      const rate = 0.99;
+      await oracle.update(parseEther(rate.toString()));
+
+      // Target health factor is 1.1
+      // discount: `collateralAmountInStable * collateralFactor) / currentDebt`
+      const discount = (2 * rate * 0.5) / 1;
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.5) / (0.9 * 1.1 - 0.5 / discount);
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+    });
+
+    it('success - case 2', async () => {
+      const rate = 0.9;
+      await oracle.update(parseEther(rate.toString()));
+
+      // Target health factor is 1.1
+      // discount: `collateralAmountInStable * collateralFactor) / currentDebt`
+      const discount = (2 * rate * 0.5) / 1;
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.5) / (0.9 * 1.1 - 0.5 / discount);
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+    });
+
+    it('success - max discount', async () => {
+      const rate = 0.8;
+      await oracle.update(parseEther(rate.toString()));
+
+      // This time discount is maxed
+      const discount = Math.max((2 * rate * 0.5) / 1, 0.9);
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.5) / (0.9 * 1.1 - 0.5 / discount);
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+    });
+
+    it('success - vault has to be emptied', async () => {
+      const rate = 0.5;
+      await oracle.update(parseEther(rate.toString()));
+
+      // In this case, vault cannot be brought in a healthy pos
+      // Limit is `healthFactor * liquidationDiscount * surcharge >= collateralFactor`
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      const discount = Math.max((2 * rate * 0.5) / 1, 0.9);
+      const maxStablecoinAmountToRepay = rate * 2 * discount;
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        collatAmount,
+        0.0001,
+      );
+    });
+
+    it('success - dust limit', async () => {
+      const rate = 0.9;
+      await oracle.update(parseEther(rate.toString()));
+
+      // Target health factor is 1.1
+      // discount: `collateralAmountInStable * collateralFactor) / currentDebt`
+      const discount = Math.max((2 * rate * 0.5) / 1, 0.9);
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.5) / (0.9 * 1.1 - 0.5 / discount);
 
       await vaultManager
-        .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address)']([2], [borrowAmount.div(2)], bob.address, bob.address);
-      // TODO Does nothing
+        .connect(governor)
+        .setUint256(parseEther((1 - maxStablecoinAmountToRepay * 0.9 + 1).toString()), formatBytes32String('dust'));
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expect((await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount).gt(0);
+    });
+
+    it('success - dust collateral limit', async () => {
+      const rate = 0.5;
+      await oracle.update(parseEther(rate.toString()));
+
+      // In this case, vault cannot be brought in a healthy pos
+      // Limit is `healthFactor * liquidationDiscount * surcharge >= collateralFactor`
+
+      await vaultManager
+        .connect(governor)
+        .setUint256(parseEther((2 * rate).toString()), formatBytes32String('dustCollateral'));
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      const discount = Math.max((2 * rate * 0.5) / 1, 0.9);
+      const maxStablecoinAmountToRepay = rate * 2 * discount;
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        collatAmount,
+        0.0001,
+      );
     });
   });
 });

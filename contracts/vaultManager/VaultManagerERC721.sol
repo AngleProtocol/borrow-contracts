@@ -75,7 +75,7 @@ contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
             buffer[digits] = bytes1(uint8(48 + uint256(vaultID % 10)));
             vaultID /= 10;
         }
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, string(buffer))) : "";
+        return bytes(_baseURI).length > 0 ? string(abi.encodePacked(_baseURI, string(buffer))) : "";
     }
 
     /// @inheritdoc IERC721Upgradeable

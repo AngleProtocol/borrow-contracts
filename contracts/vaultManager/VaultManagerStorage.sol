@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC721MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
@@ -25,7 +24,7 @@ import "../interfaces/IVeBoostProxy.sol";
 /// @author Angle Core Team
 /// @dev Base ERC721 Implementation of VaultManager
 // solhint-disable-next-line max-states-count
-contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpgradeable, ReentrancyGuardUpgradeable {
+contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Base used for parameter computation
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Base used for interest rate computation
@@ -46,8 +45,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     IOracle public oracle;
     /// @notice Reference to the contract which computes adjusted veANGLE balances for liquidators boosts
     IVeBoostProxy public veBoostProxy;
-    /// @notice Base of the collateral
-    uint256 public collatBase;
+    // Base of the collateral
+    uint256 internal _collatBase;
 
     // =============================== Parameters ==================================
 
@@ -107,10 +106,13 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     /// @notice Whether whitelisting is required to own a vault or not
     bool public whitelistingActivated;
 
+    /// @notice Whether the vault paused or not
+    bool public paused;
+
     // ================================ ERC721 Data ================================
 
-    /// @notice URI
-    string public baseURI;
+    // URI
+    string internal _baseURI;
 
     // Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
     // contracts

@@ -39,5 +39,9 @@
   "37": "invalid Chainlink rate",
   "38": "not enough governors left",
   "39": "wrong return message",
-  "40": "cannot remove vaultManager minting rights this way"
+  "40": "cannot remove vaultManager minting rights this way",
+  "41": "liquidation impossible",
+  "42": "contract paused",
+  "43": "incorrect parameter",
+  "44": "vault is healthy"
 }

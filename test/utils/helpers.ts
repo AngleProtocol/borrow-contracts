@@ -1,9 +1,12 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Signer } from 'ethers';
+import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
 import { TransparentUpgradeableProxy__factory, VaultManager } from '../../typechain';
 import { expect } from '../utils/chai-setup';
+
+const BASE_PARAMS = parseUnits('1', 'gwei');
 
 async function getImpersonatedSigner(address: string): Promise<Signer> {
   await hre.network.provider.request({
@@ -180,6 +183,24 @@ function getDebtIn(vaultID: number, vaultManager: string, dstVaultID: number, st
   };
 }
 
+async function displayVaultState(
+  vaultManager: VaultManager,
+  vaultID: number,
+  log: boolean,
+  collatBase: number,
+): Promise<void> {
+  if (log) {
+    const params = await vaultManager.checkLiquidation(vaultID, ZERO_ADDRESS);
+
+    console.log('============ Vault Liquidation ===========');
+    console.log(`Max stablecoin to send:    ${formatEther(params.maxStablecoinAmountToRepay)}`);
+    console.log(`Min stablecoin to send:    ${formatEther(params.thresholdRepayAmount)}`);
+    console.log(`Collateral given:      ${formatUnits(params.maxCollateralAmountGiven, collatBase)}`);
+    console.log(`Discount:              ${(1 - params.discount.toNumber() / 1e9) * 100}%`);
+    console.log('=======================================');
+  }
+}
+
 async function angle(
   vaultManager: VaultManager,
   signer: SignerWithAddress,
@@ -204,10 +225,12 @@ export {
   addCollateral,
   angle,
   balance,
+  BASE_PARAMS,
   borrow,
   closeVault,
   createVault,
   deployUpgradeable,
+  displayVaultState,
   expectApprox,
   getDebtIn,
   getImpersonatedSigner,
