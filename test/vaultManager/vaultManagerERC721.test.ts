@@ -41,8 +41,6 @@ contract('VaultManager', () => {
 
   const collatBase = 10;
   const params = {
-    dust: 100,
-    dustCollateral: 100,
     debtCeiling: parseEther('100'),
     collateralFactor: 0.5e9,
     targetHealthFactor: 1.1e9,
@@ -83,7 +81,7 @@ contract('VaultManager', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer))) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -107,6 +105,8 @@ contract('VaultManager', () => {
     });
 
     it('success - setters', async () => {
+      expect(await vaultManager.dust()).to.be.equal(0.1e9);
+      expect(await vaultManager.dustCollateral()).to.be.equal(0.1e9);
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       expect(await vaultManager.oracle()).to.be.equal(oracle.address);
       expect(await vaultManager.treasury()).to.be.equal(treasury.address);

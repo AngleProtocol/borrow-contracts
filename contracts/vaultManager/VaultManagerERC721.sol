@@ -8,7 +8,7 @@ import "./VaultManagerStorage.sol";
 /// @author Angle Core Team
 /// @dev Base ERC721 Implementation of VaultManager
 // solhint-disable-next-line max-states-count
-contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
+abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     using SafeERC20 for IERC20;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using Address for address;

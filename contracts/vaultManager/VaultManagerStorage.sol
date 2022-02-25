@@ -51,12 +51,12 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     // =============================== Parameters ==================================
 
     /// @notice Minimum amount of debt a vault can have
-    uint256 public dust;
-    /// @notice Maximum amount of stablecoins that can be issued with this contract
-    uint256 public debtCeiling;
+    uint256 public immutable dust;
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
-    uint256 public dustCollateral;
+    uint256 public immutable dustCollateral;
+    /// @notice Maximum amount of stablecoins that can be issued with this contract
+    uint256 public debtCeiling;
     /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
     /// should be 2
     uint256[] public xLiquidationBoost;
@@ -137,8 +137,17 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp);
     event InternalDebtUpdated(uint256 vaultID, uint256 internalAmount, uint8 isIncrease);
     event FiledUint64(uint64 param, bytes32 what);
-    event FiledUint256(uint256 param, bytes32 what);
+    event DebtCeilingUpdated(uint256 debtCeiling);
     event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
     event OracleUpdated(address indexed _oracle);
     event ToggledWhitelisting(bool);
+
+    /// @param _dust Minimum amount of debt a vault from this implementation can have
+    /// @param _dustCollateral Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
+    /// where the health factor function is decreasing
+    /// @dev Run only at the implementation level
+    constructor(uint256 _dust, uint256 _dustCollateral) initializer {
+        dust = _dust;
+        dustCollateral = _dustCollateral;
+    }
 }

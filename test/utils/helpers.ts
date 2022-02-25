@@ -118,10 +118,10 @@ const time = {
   },
 };
 
-async function deployUpgradeable(factory: ContractFactory): Promise<Contract> {
+async function deployUpgradeable(factory: ContractFactory, ...args: any[]): Promise<Contract> {
   const { deployer, proxyAdmin, alice } = await ethers.getNamedSigners();
 
-  const Implementation = await factory.deploy();
+  const Implementation = args.length === 0 ? await factory.deploy() : await factory.deploy(args[0], args[1]);
   const Proxy = await new TransparentUpgradeableProxy__factory(deployer).deploy(
     Implementation.address,
     proxyAdmin.address,
@@ -190,14 +190,22 @@ async function displayVaultState(
   collatBase: number,
 ): Promise<void> {
   if (log) {
-    const params = await vaultManager.checkLiquidation(vaultID, ZERO_ADDRESS);
-
-    console.log('============ Vault Liquidation ===========');
-    console.log(`Max stablecoin to send:    ${formatEther(params.maxStablecoinAmountToRepay)}`);
-    console.log(`Min stablecoin to send:    ${formatEther(params.thresholdRepayAmount)}`);
-    console.log(`Collateral given:      ${formatUnits(params.maxCollateralAmountGiven, collatBase)}`);
-    console.log(`Discount:              ${(1 - params.discount.toNumber() / 1e9) * 100}%`);
-    console.log('=======================================');
+    const vault = await vaultManager.vaultData(vaultID);
+    const debt = await vaultManager.getVaultDebt(vaultID);
+    console.log('');
+    console.log('=============== Vault State ==============');
+    console.log(`Debt:                      ${formatEther(debt)}`);
+    console.log(`Collateral:                ${formatUnits(vault.collateralAmount, collatBase)}`);
+    try {
+      const params = await vaultManager.checkLiquidation(vaultID, ZERO_ADDRESS);
+      console.log('============ Vault Liquidation ===========');
+      console.log(`Max stablecoin to send:    ${formatEther(params.maxStablecoinAmountToRepay)}`);
+      console.log(`Min stablecoin to send:    ${formatEther(params.thresholdRepayAmount)}`);
+      console.log(`Collateral given:          ${formatUnits(params.maxCollateralAmountGiven, collatBase)}`);
+      console.log(`Discount:                  ${(1 - params.discount.toNumber() / 1e9) * 100}%`);
+    } catch {}
+    console.log('==========================================');
+    console.log('');
   }
 }
 
@@ -216,9 +224,12 @@ async function angle(
     actions.push(o.action);
     datas.push(o.data);
   });
-  await vaultManager
-    .connect(signer)
-    ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
+  if (who !== ZERO_ADDRESS) {
+    await vaultManager
+      .connect(signer)
+      ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
+  }
+  await vaultManager.connect(signer)['angle(uint8[],bytes[],address,address)'](actions, datas, from, to);
 }
 
 export {

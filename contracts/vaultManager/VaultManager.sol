@@ -68,11 +68,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 params.maxLiquidationDiscount <= BASE_PARAMS,
             "15"
         );
-        dust = params.dust;
         debtCeiling = params.debtCeiling;
         collateralFactor = params.collateralFactor;
         targetHealthFactor = params.targetHealthFactor;
-        dustCollateral = params.dustCollateral;
         borrowFee = params.borrowFee;
         interestRate = params.interestRate;
         liquidationSurcharge = params.liquidationSurcharge;
@@ -83,7 +81,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
+    constructor(uint256 _dust, uint256 _dustCollateral) VaultManagerStorage(_dust, _dustCollateral) {}
 
     // ============================== Modifiers ====================================
 
@@ -114,22 +112,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     // =========================== Vault Functions =================================
 
     // ========================= External Access Functions =========================
-
-    /// @inheritdoc IVaultManagerFunctions
-    function getDebtOut(
-        uint256 vaultID,
-        uint256 stablecoinAmount,
-        uint256 senderBorrowFee
-    ) external whenNotPaused {
-        require(treasury.isVaultManager(msg.sender), "3");
-        // Checking the delta of borrow fees to eliminate the risk of exploits here
-        if (senderBorrowFee > borrowFee) {
-            uint256 borrowFeePaid = ((senderBorrowFee - borrowFee) * stablecoinAmount) / BASE_PARAMS;
-            stablecoinAmount -= borrowFeePaid;
-            surplus += borrowFeePaid;
-        }
-        _repayDebt(vaultID, stablecoinAmount, 0);
-    }
 
     /// @inheritdoc IVaultManagerFunctions
     function createVault(address toVault) external whenNotPaused returns (uint256) {
@@ -258,6 +240,22 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     collateral.safeTransferFrom(msg.sender, address(this), collateralPayment);
             }
         }
+    }
+
+    /// @inheritdoc IVaultManagerFunctions
+    function getDebtOut(
+        uint256 vaultID,
+        uint256 stablecoinAmount,
+        uint256 senderBorrowFee
+    ) external whenNotPaused {
+        require(treasury.isVaultManager(msg.sender), "3");
+        // Checking the delta of borrow fees to eliminate the risk of exploits here
+        if (senderBorrowFee > borrowFee) {
+            uint256 borrowFeePaid = ((senderBorrowFee - borrowFee) * stablecoinAmount) / BASE_PARAMS;
+            stablecoinAmount -= borrowFeePaid;
+            surplus += borrowFeePaid;
+        }
+        _repayDebt(vaultID, stablecoinAmount, 0);
     }
 
     // ============================= View Functions ================================
@@ -726,7 +724,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
                 maxAmountToRepay = (currentDebt * BASE_PARAMS) / surcharge;
                 // In this case the threshold amount is such that it leaves just enough dust
-                thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
+                thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge; // TODO Line could underflow
             }
         } else {
             // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
@@ -803,16 +801,11 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         emit FiledUint64(param, what);
     }
 
-    /// @notice Sets parameters encoded as uint256
-    /// @param param Value for the parameter
-    /// @param what Parameter to change
-    function setUint256(uint256 param, bytes32 what) external onlyGovernorOrGuardian {
-        if (what == "dust") dust = param;
-        else if (what == "dustCollateral") dustCollateral = param;
-        else if (what == "debtCeiling") debtCeiling = param;
-        else revert("43");
-
-        emit FiledUint256(param, what);
+    /// @notice Sets `debtCeiling`
+    /// @param _debtCeiling New value for `debtCeiling`
+    function setDebtCeiling(uint256 _debtCeiling) external onlyGovernorOrGuardian {
+        debtCeiling = _debtCeiling;
+        emit DebtCeilingUpdated(_debtCeiling);
     }
 
     /// @notice Sets the parameters for the liquidation booster which encodes the slope of the discount

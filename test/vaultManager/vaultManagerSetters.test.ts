@@ -37,8 +37,6 @@ contract('VaultManager', () => {
 
   const collatBase = 10;
   const params = {
-    dust: 100,
-    dustCollateral: 100,
     debtCeiling: parseEther('100'),
     collateralFactor: 0.5e9,
     targetHealthFactor: 1.1e9,
@@ -79,7 +77,7 @@ contract('VaultManager', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer))) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -184,36 +182,21 @@ contract('VaultManager', () => {
     });
   });
 
-  describe('setUint256', () => {
+  describe('setDebtCeiling', () => {
     it('revert - access control', async () => {
-      await expect(
-        vaultManager.connect(alice).setUint256(127, formatBytes32String('collateralFactor')),
-      ).to.be.revertedWith('2');
+      await expect(vaultManager.connect(alice).setDebtCeiling(127)).to.be.revertedWith('2');
     });
     it('success - guardian', async () => {
-      await vaultManager.connect(guardian).setUint256(127, formatBytes32String('dust'));
-      expect(await vaultManager.dust()).to.be.equal(127);
-    });
-    it('success - governor', async () => {
-      await vaultManager.connect(governor).setUint256(127, formatBytes32String('dust'));
-      expect(await vaultManager.dust()).to.be.equal(127);
-    });
-    it('success - dust', async () => {
-      await vaultManager.connect(governor).setUint256(127, formatBytes32String('dust'));
-      expect(await vaultManager.dust()).to.be.equal(127);
-    });
-    it('success - dustCollateral', async () => {
-      await vaultManager.connect(governor).setUint256(127, formatBytes32String('dustCollateral'));
-      expect(await vaultManager.dustCollateral()).to.be.equal(127);
-    });
-    it('success - debtCeiling', async () => {
-      await vaultManager.connect(governor).setUint256(127, formatBytes32String('debtCeiling'));
+      await vaultManager.connect(guardian).setDebtCeiling(127);
       expect(await vaultManager.debtCeiling()).to.be.equal(127);
     });
-    it('revert - wrong parameter', async () => {
-      await expect(
-        vaultManager.connect(governor).setUint256(params.liquidationSurcharge, formatBytes32String('example')),
-      ).to.be.revertedWith('43');
+    it('success - governor', async () => {
+      await vaultManager.connect(governor).setDebtCeiling(127);
+      expect(await vaultManager.debtCeiling()).to.be.equal(127);
+    });
+    it('success - debtCeiling', async () => {
+      await vaultManager.connect(governor).setDebtCeiling(127);
+      expect(await vaultManager.debtCeiling()).to.be.equal(127);
     });
   });
 

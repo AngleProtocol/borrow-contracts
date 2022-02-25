@@ -10,8 +10,6 @@ import "./ITreasury.sol";
 /// @notice Parameters associated to a given `VaultManager` contract: these all correspond
 /// to parameters which signification is detailed below
 struct VaultParameters {
-    uint256 dust;
-    uint256 dustCollateral;
     uint256 debtCeiling;
     uint64 collateralFactor;
     uint64 targetHealthFactor;
