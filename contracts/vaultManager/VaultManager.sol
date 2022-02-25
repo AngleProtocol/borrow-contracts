@@ -65,7 +65,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 BASE_PARAMS <= params.targetHealthFactor &&
                 params.liquidationSurcharge <= BASE_PARAMS &&
                 params.borrowFee <= BASE_PARAMS &&
-                params.maxLiquidationDiscount <= BASE_PARAMS,
+                params.maxLiquidationDiscount < BASE_PARAMS &&
+                0 < params.baseBoost &&
+                ,
             "15"
         );
         debtCeiling = params.debtCeiling;
@@ -697,7 +699,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         );
         require(healthFactor < BASE_PARAMS, "44");
 
-        // TODO equality case would bring liquidationDiscount = 0 and a division by 0 later
         uint256 liquidationDiscount = (_computeLiquidationBoost(liquidator) * (BASE_PARAMS - healthFactor)) /
             BASE_PARAMS;
         // In fact `liquidationDiscount` is stored here as 1 minus discount to save some computation costs
@@ -793,7 +794,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             require(collateralFactor <= param && param <= BASE_PARAMS, "18");
             liquidationSurcharge = param;
         } else if (what == "maxLiquidationDiscount") {
-            require(param <= BASE_PARAMS, "9");
+            require(param < BASE_PARAMS, "9");
             maxLiquidationDiscount = param;
         } else {
             revert("43");
@@ -812,7 +813,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param _veBoostProxy Address which queries veANGLE balances and adjusted balances from delegation
     /// @param xBoost Threshold values of veANGLE adjusted balances
     /// @param yBoost Values of the liquidation boost at the threshold values of x
-    /// @dev There is 2 modes:
+    /// @dev There are 2 modes:
     /// When boost is enabled, `xBoost` and `yBoost` should have a length of 2, but if they have a
     /// higher length contract will still work as expected
     /// When boost is disabled, `_veBoostProxy` needs to be zero address and `yBoost[0]` is the base boost
