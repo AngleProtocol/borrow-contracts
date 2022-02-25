@@ -336,6 +336,10 @@ contract('VaultManager', () => {
           bob.address,
           bob.address,
         );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - case 2', async () => {
@@ -359,6 +363,19 @@ contract('VaultManager', () => {
         parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - max discount', async () => {
@@ -381,6 +398,19 @@ contract('VaultManager', () => {
         parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - vault has to be emptied', async () => {
@@ -406,6 +436,19 @@ contract('VaultManager', () => {
         collatAmount,
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - dust collateral limit', async () => {
@@ -430,6 +473,19 @@ contract('VaultManager', () => {
         collatAmount,
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - dust collateral amount from start', async () => {
@@ -459,6 +515,19 @@ contract('VaultManager', () => {
         collatAmount,
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
   });
 

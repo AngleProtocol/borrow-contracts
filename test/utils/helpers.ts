@@ -1,9 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Signer } from 'ethers';
-import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils';
+import { formatEther, formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
-import { TransparentUpgradeableProxy__factory, VaultManager } from '../../typechain';
+import { IOracle, TransparentUpgradeableProxy__factory, VaultManager } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 
 const BASE_PARAMS = parseUnits('1', 'gwei');
@@ -192,10 +192,21 @@ async function displayVaultState(
   if (log) {
     const vault = await vaultManager.vaultData(vaultID);
     const debt = await vaultManager.getVaultDebt(vaultID);
+    const rate = await ((await ethers.getContractAt('IOracle', await vaultManager.oracle())) as IOracle).read();
+
     console.log('');
     console.log('=============== Vault State ==============');
     console.log(`Debt:                      ${formatEther(debt)}`);
     console.log(`Collateral:                ${formatUnits(vault.collateralAmount, collatBase)}`);
+    debt.gt(0) &&
+      console.log(
+        `CR:                        ${formatEther(
+          vault.collateralAmount
+            .mul(rate)
+            .mul(10 ** (18 - collatBase))
+            .div(debt),
+        )}`,
+      );
     try {
       const params = await vaultManager.checkLiquidation(vaultID, ZERO_ADDRESS);
       console.log('============ Vault Liquidation ===========');
