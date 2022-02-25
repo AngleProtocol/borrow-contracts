@@ -28,7 +28,6 @@ import {
   displayVaultState,
   expectApprox,
   increaseTime,
-  latestTime,
   ZERO_ADDRESS,
 } from '../utils/helpers';
 
@@ -286,7 +285,7 @@ contract('VaultManager', () => {
     });
   });
 
-  describe.skip('maxStablecoinAmountToRepay', () => {
+  describe('liquidation', () => {
     const collatAmount = parseUnits('2', collatBase);
     const borrowAmount = parseEther('1');
 
@@ -295,6 +294,10 @@ contract('VaultManager', () => {
       // So max borrowable amount is 2
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+
+      await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount);
+      await agToken.connect(bob).approve(vaultManager.address, borrowAmount);
+
       await angle(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
@@ -324,6 +327,15 @@ contract('VaultManager', () => {
         parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
     });
 
     it('success - case 2', async () => {
@@ -476,7 +488,7 @@ contract('VaultManager', () => {
 
       await displayVaultState(vaultManager, 1, log, collatBase);
 
-      expectApprox(await vaultManager.getTotalDebt(), debt.mul(yearlyRate * 100).div(100), 0.00001);
+      expectApprox(await vaultManager.getTotalDebt(), debt.mul(yearlyRate * 100).div(100), 0.001);
     });
     it('success - ratePerSecond is 0', async () => {
       const debt = await vaultManager.getTotalDebt();
@@ -484,7 +496,7 @@ contract('VaultManager', () => {
 
       await increaseTime(1000);
 
-      expectApprox(await vaultManager.getTotalDebt(), debt, 0.00001);
+      expectApprox(await vaultManager.getTotalDebt(), debt, 0.001);
     });
   });
 });

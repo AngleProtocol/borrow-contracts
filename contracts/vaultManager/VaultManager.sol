@@ -58,6 +58,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         symbol = string.concat(fetchedSymbol, "-vault");
 
         interestAccumulator = BASE_INTEREST;
+        lastInterestAccumulatorUpdated = block.timestamp;
 
         // Checking if the parameters have been correctly initialized
         require(
@@ -495,7 +496,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         if (vaultData[vaultID].normalizedDebt == 0) require(stablecoinAmount > dust, "24");
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
-        require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "23");
+        require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "45");
         (uint256 healthFactor, , , uint256 oracleValue, ) = _isSolvent(
             vaultData[vaultID],
             oracleValueStart,

@@ -22,7 +22,7 @@
   "20": "not whitelisted",
   "21": "insolvent vault",
   "22": "invalid vaultManager contract",
-  "23": "exceed debt ceiling",
+  "23": "burn amount exceeds allowance",
   "24": "too small debt amount leftover in the vault",
   "25": "incompatible lengths",
   "26": "nonexistent vault",
@@ -43,5 +43,6 @@
   "41": "liquidation impossible",
   "42": "contract paused",
   "43": "incorrect parameter",
-  "44": "vault is healthy"
+  "44": "vault is healthy",
+  "45": "exceed debt ceiling"
 }
