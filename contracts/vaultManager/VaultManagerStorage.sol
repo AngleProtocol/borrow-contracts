@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC721MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
@@ -25,7 +24,7 @@ import "../interfaces/IVeBoostProxy.sol";
 /// @author Angle Core Team
 /// @dev Base ERC721 Implementation of VaultManager
 // solhint-disable-next-line max-states-count
-contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpgradeable, ReentrancyGuardUpgradeable {
+contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Base used for parameter computation
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Base used for interest rate computation
@@ -46,18 +45,18 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     IOracle public oracle;
     /// @notice Reference to the contract which computes adjusted veANGLE balances for liquidators boosts
     IVeBoostProxy public veBoostProxy;
-    /// @notice Base of the collateral
-    uint256 public collatBase;
+    // Base of the collateral
+    uint256 internal _collatBase;
 
     // =============================== Parameters ==================================
 
     /// @notice Minimum amount of debt a vault can have
-    uint256 public dust;
-    /// @notice Maximum amount of stablecoins that can be issued with this contract
-    uint256 public debtCeiling;
+    uint256 internal immutable dust;
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
-    uint256 public dustCollateral;
+    uint256 internal immutable dustCollateral;
+    /// @notice Maximum amount of stablecoins that can be issued with this contract
+    uint256 public debtCeiling;
     /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
     /// should be 2
     uint256[] public xLiquidationBoost;
@@ -107,10 +106,13 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     /// @notice Whether whitelisting is required to own a vault or not
     bool public whitelistingActivated;
 
+    /// @notice Whether the vault paused or not
+    bool public paused;
+
     // ================================ ERC721 Data ================================
 
-    /// @notice URI
-    string public baseURI;
+    // URI
+    string internal _baseURI;
 
     // Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
     // contracts
@@ -135,8 +137,17 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, PausableUpg
     event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp);
     event InternalDebtUpdated(uint256 vaultID, uint256 internalAmount, uint8 isIncrease);
     event FiledUint64(uint64 param, bytes32 what);
-    event FiledUint256(uint256 param, bytes32 what);
+    event DebtCeilingUpdated(uint256 debtCeiling);
     event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
     event OracleUpdated(address indexed _oracle);
     event ToggledWhitelisting(bool);
+
+    /// @param _dust Minimum amount of debt a vault from this implementation can have
+    /// @param _dustCollateral Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
+    /// where the health factor function is decreasing
+    /// @dev Run only at the implementation level
+    constructor(uint256 _dust, uint256 _dustCollateral) initializer {
+        dust = _dust;
+        dustCollateral = _dustCollateral;
+    }
 }

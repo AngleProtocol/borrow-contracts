@@ -1,11 +1,12 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Signer } from 'ethers';
+import { Contract, Signer } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
   AgToken,
   AgToken__factory,
+  MockERC721Receiver__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
@@ -18,15 +19,7 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import {
-  addCollateral,
-  angle,
-  borrow,
-  closeVault,
-  createVault,
-  deployUpgradeable,
-  ZERO_ADDRESS,
-} from '../utils/helpers';
+import { addCollateral, angle, closeVault, createVault, deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('VaultManager', () => {
   let deployer: SignerWithAddress;
@@ -48,17 +41,16 @@ contract('VaultManager', () => {
 
   const collatBase = 10;
   const params = {
-    dust: 100,
-    dustCollateral: 100,
     debtCeiling: parseEther('100'),
-    collateralFactor: parseUnits('0.5', 'gwei'),
-    targetHealthFactor: parseUnits('1.1', 'gwei'),
-    borrowFee: parseUnits('0.1', 'gwei'),
+    collateralFactor: 0.5e9,
+    targetHealthFactor: 1.1e9,
+    borrowFee: 0.1e9,
     interestRate: 100,
-    liquidationSurcharge: parseUnits('0.9', 'gwei'),
-    maxLiquidationDiscount: parseUnits('0.1', 'gwei'),
-    liquidationBooster: parseUnits('0.1', 'gwei'),
+    liquidationSurcharge: 0.9e9,
+    maxLiquidationDiscount: 0.1e9,
+    liquidationBooster: 0.1e9,
     whitelistingActivated: false,
+    baseBoost: 1e9,
   };
 
   before(async () => {
@@ -89,7 +81,7 @@ contract('VaultManager', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer))) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -113,11 +105,12 @@ contract('VaultManager', () => {
     });
 
     it('success - setters', async () => {
+      expect(await vaultManager.dust()).to.be.equal(0.1e9);
+      expect(await vaultManager.dustCollateral()).to.be.equal(0.1e9);
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       expect(await vaultManager.oracle()).to.be.equal(oracle.address);
       expect(await vaultManager.treasury()).to.be.equal(treasury.address);
       expect(await vaultManager.collateral()).to.be.equal(collateral.address);
-      expect(await vaultManager.collatBase()).to.be.equal(10 ** collatBase);
       expect(await vaultManager.stablecoin()).to.be.equal(agToken.address);
       expect(await vaultManager.stablecoin()).to.be.equal(agToken.address);
       expect(await vaultManager.name()).to.be.equal('Angle Protocol USDC/agEUR Vault');
@@ -127,10 +120,10 @@ contract('VaultManager', () => {
 
     it('success - access control', async () => {
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
-      await expect(vaultManager.connect(alice).unpause()).to.be.reverted;
-      await expect(vaultManager.connect(deployer).unpause()).to.be.reverted;
-      await expect(vaultManager.connect(proxyAdmin).unpause()).to.be.reverted;
-      await vaultManager.connect(guardian).unpause();
+      await expect(vaultManager.connect(alice).togglePause()).to.be.reverted;
+      await expect(vaultManager.connect(deployer).togglePause()).to.be.reverted;
+      await expect(vaultManager.connect(proxyAdmin).togglePause()).to.be.reverted;
+      await vaultManager.connect(guardian).togglePause();
       expect(await vaultManager.paused()).to.be.false;
 
       await expect(vaultManager.connect(deployer).toggleWhitelisting()).to.be.reverted;
@@ -147,35 +140,35 @@ contract('VaultManager', () => {
 
     it('revert - collateral factor > liquidation surcharge', async () => {
       const auxPar = { ...params };
-      auxPar.collateralFactor = parseUnits('0.95', 'gwei');
+      auxPar.collateralFactor = 0.95e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - targetHealthFactor < 1', async () => {
       const auxPar = { ...params };
-      auxPar.targetHealthFactor = parseUnits('0.9999', 'gwei');
+      auxPar.targetHealthFactor = 0.999e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - liquidationSurcharge > 1', async () => {
       const auxPar = { ...params };
-      auxPar.liquidationSurcharge = parseUnits('1.0001', 'gwei');
+      auxPar.liquidationSurcharge = 1.0001e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - borrowFee > 1', async () => {
       const auxPar = { ...params };
-      auxPar.borrowFee = parseUnits('1.0001', 'gwei');
+      auxPar.borrowFee = 1.0001e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('revert - maxLiquidationDiscount > 1', async () => {
       const auxPar = { ...params };
-      auxPar.maxLiquidationDiscount = parseUnits('1.0001', 'gwei');
+      auxPar.maxLiquidationDiscount = 1.0001e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
       await expect(tx).to.be.revertedWith('15');
     });
@@ -184,7 +177,7 @@ contract('VaultManager', () => {
   describe('ERC721', () => {
     beforeEach(async () => {
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
-      await vaultManager.connect(guardian).unpause();
+      await vaultManager.connect(guardian).togglePause();
     });
     describe('getControlledVaults', () => {
       it('success - no vault', async () => {
@@ -236,7 +229,7 @@ contract('VaultManager', () => {
         await angle(vaultManager, alice, [createVault(alice.address)]);
         await collateral.connect(alice).mint(alice.address, parseEther('1'));
         await collateral.connect(alice).approve(vaultManager.address, parseEther('1'));
-        await angle(vaultManager, alice, [addCollateral(1, parseEther('1')), borrow(1, 1)]);
+        await angle(vaultManager, alice, [addCollateral(1, parseEther('1'))]);
       });
 
       it('success - owner is approved', async () => {
@@ -326,6 +319,10 @@ contract('VaultManager', () => {
         await expect(vaultManager.connect(alice).approve(bob.address, 1)).to.be.revertedWith('26');
       });
 
+      it('revert - not owner nor approved', async () => {
+        await expect(vaultManager.connect(bob).approve(bob.address, 2)).to.be.revertedWith('16');
+      });
+
       it('success', async () => {
         await vaultManager.connect(alice).approve(bob.address, 2);
         expect(await vaultManager.isApprovedOrOwner(bob.address, 2)).to.be.true;
@@ -394,8 +391,19 @@ contract('VaultManager', () => {
         await angle(vaultManager, alice, [closeVault(1)]);
       });
 
-      it('revert - neither approved or owner', async () => {
-        await expect(vaultManager.connect(charlie).transferFrom(alice.address, bob.address, 2)).to.be.reverted;
+      it('revert - do not own vault', async () => {
+        await expect(vaultManager.connect(alice).transferFrom(charlie.address, bob.address, 2)).to.be.revertedWith(
+          '30',
+        );
+      });
+
+      it('revert - zero address', async () => {
+        await expect(vaultManager.connect(alice).transferFrom(alice.address, ZERO_ADDRESS, 2)).to.be.revertedWith('31');
+      });
+
+      it('revert - not whitelisted', async () => {
+        await vaultManager.connect(governor).toggleWhitelisting();
+        await expect(vaultManager.connect(alice).transferFrom(alice.address, bob.address, 2)).to.be.revertedWith('20');
       });
 
       it('success', async () => {
@@ -448,6 +456,45 @@ contract('VaultManager', () => {
     describe('supportsInterface', () => {
       it('success - IERC721', async () => {
         expect(await vaultManager.supportsInterface('0x55555555')).to.be.false;
+      });
+    });
+
+    describe('_checkOnERC721Received', () => {
+      let receiver: Contract;
+      beforeEach(async () => {
+        receiver = await new MockERC721Receiver__factory(deployer).deploy();
+        await angle(vaultManager, alice, [createVault(alice.address)]);
+        await angle(vaultManager, alice, [createVault(alice.address)]);
+      });
+      it('success', async () => {
+        await vaultManager
+          .connect(alice)
+          ['safeTransferFrom(address,address,uint256)'](alice.address, receiver.address, 1);
+        expect(await vaultManager.balanceOf(receiver.address)).to.be.equal(1);
+      });
+      it('revert - custom message', async () => {
+        await receiver.setMode(1);
+        await expect(
+          vaultManager.connect(alice)['safeTransferFrom(address,address,uint256)'](alice.address, receiver.address, 2),
+        ).to.be.revertedWith('0x1111111');
+      });
+      it('revert - not receiver', async () => {
+        await expect(
+          vaultManager.connect(alice)['safeTransferFrom(address,address,uint256)'](alice.address, agToken.address, 1),
+        ).to.be.revertedWith('24');
+      });
+    });
+
+    describe('_mint', () => {
+      it('revert - not receiver', async () => {
+        const receiver = await new MockERC721Receiver__factory(deployer).deploy();
+        await receiver.setMode(2);
+        await expect(angle(vaultManager, alice, [createVault(receiver.address)])).to.be.revertedWith('29');
+      });
+
+      it('revert - not whitelisted', async () => {
+        await vaultManager.connect(governor).toggleWhitelisting();
+        await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
       });
     });
   });

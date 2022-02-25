@@ -174,9 +174,11 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         address burner,
         address sender
     ) internal {
-        uint256 currentAllowance = allowance(burner, sender);
-        require(currentAllowance >= amount, "23");
-        _approve(burner, sender, currentAllowance - amount);
+        if (burner != sender) {
+            uint256 currentAllowance = allowance(burner, sender);
+            require(currentAllowance >= amount, "23");
+            _approve(burner, sender, currentAllowance - amount);
+        }
         _burn(burner, amount);
     }
 }

@@ -44,6 +44,27 @@ contract('Interest Rates', () => {
       console.log(receipt.toString());
     });
   });
+
+  describe('calculate 1Year without steps', () => {
+    it('aave', async () => {
+      const receipt = await computer.calculateAave1YearDirect();
+      const gas = await computer.estimateGas.calculateAave1YearDirect();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('angle', async () => {
+      const receipt = await computer.calculateAngle1YearDirect();
+      const gas = await computer.estimateGas.calculateAngle1YearDirect();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('maker', async () => {
+      const receipt = await computer.calculateMaker1YearDirect();
+      const gas = await computer.estimateGas.calculateMaker1YearDirect();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+  });
   describe('calculate 1Year', () => {
     it('aave', async () => {
       const receipt = await computer.calculateAave1Year();

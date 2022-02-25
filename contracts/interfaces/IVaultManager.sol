@@ -10,8 +10,6 @@ import "./ITreasury.sol";
 /// @notice Parameters associated to a given `VaultManager` contract: these all correspond
 /// to parameters which signification is detailed below
 struct VaultParameters {
-    uint256 dust;
-    uint256 dustCollateral;
     uint256 debtCeiling;
     uint64 collateralFactor;
     uint64 targetHealthFactor;
@@ -21,6 +19,7 @@ struct VaultParameters {
     uint64 maxLiquidationDiscount;
     uint64 liquidationBooster;
     bool whitelistingActivated;
+    uint256 baseBoost;
 }
 
 /// @notice Data stored to track someone's loan (or equivalently called position)
