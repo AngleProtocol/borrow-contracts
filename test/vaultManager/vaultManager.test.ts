@@ -53,12 +53,13 @@ contract('VaultManager', () => {
   const collatBase = 10;
   const yearlyRate = 1.05;
   const ratePerSecond = yearlyRate ** (1 / (365 * 24 * 3600)) - 1;
+  console.log('Rate per year is: ', (1 + ratePerSecond) ** (365 * 24 * 3600));
   const params = {
     debtCeiling: parseEther('100'),
     collateralFactor: 0.5e9,
     targetHealthFactor: 1.1e9,
     borrowFee: 0.1e9,
-    interestRate: parseUnits(ratePerSecond.toFixed(27), 27), // 4% per year
+    interestRate: parseUnits(ratePerSecond.toFixed(27), 27),
     liquidationSurcharge: 0.9e9,
     maxLiquidationDiscount: 0.1e9,
     liquidationBooster: 0.1e9,
@@ -457,29 +458,23 @@ contract('VaultManager', () => {
     beforeEach(async () => {
       // Collat amount in stable should be 4
       // So max borrowable amount is 2
-      await collateral.connect(alice).mint(alice.address, collatAmount.mul(3));
-      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(3));
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
       await angle(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
-        createVault(alice.address),
-        addCollateral(2, collatAmount),
-        borrow(2, borrowAmount),
-        createVault(alice.address),
-        addCollateral(3, collatAmount),
-        borrow(3, borrowAmount),
       ]);
     });
 
     it('success - one year', async () => {
       const debt = await vaultManager.getTotalDebt();
 
-      console.log((await vaultManager.getTotalDebt()).toString(), await latestTime());
+      await displayVaultState(vaultManager, 1, log, collatBase);
 
       await increaseTime(24 * 3600 * 365);
 
-      console.log((await vaultManager.getTotalDebt()).toString(), await latestTime());
+      await displayVaultState(vaultManager, 1, log, collatBase);
 
       expectApprox(await vaultManager.getTotalDebt(), debt.mul(yearlyRate * 100).div(100), 0.00001);
     });
