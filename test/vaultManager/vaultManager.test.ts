@@ -1,8 +1,7 @@
 import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { time } from 'console';
 import { Signer } from 'ethers';
-import { formatBytes32String, formatEther, formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
+import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {

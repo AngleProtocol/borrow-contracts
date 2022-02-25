@@ -66,8 +66,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 params.liquidationSurcharge <= BASE_PARAMS &&
                 params.borrowFee <= BASE_PARAMS &&
                 params.maxLiquidationDiscount < BASE_PARAMS &&
-                0 < params.baseBoost &&
-                ,
+                0 < params.baseBoost,
             "15"
         );
         debtCeiling = params.debtCeiling;
@@ -824,7 +823,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     ) external onlyGovernorOrGuardian {
         require(
             (_veBoostProxy == address(0) && yBoost[0] > 0) ||
-                (yBoost[0] > 0 && xBoost[1] > xBoost[0] && yBoost[1] >= yBoost[0]),
+                (yBoost.length == xBoost.length && yBoost[0] > 0 && xBoost[1] > xBoost[0] && yBoost[1] >= yBoost[0]),
             "15"
         );
         veBoostProxy = IVeBoostProxy(_veBoostProxy);

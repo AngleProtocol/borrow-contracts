@@ -51,10 +51,10 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     // =============================== Parameters ==================================
 
     /// @notice Minimum amount of debt a vault can have
-    uint256 public immutable dust;
+    uint256 internal immutable dust;
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
-    uint256 public immutable dustCollateral;
+    uint256 internal immutable dustCollateral;
     /// @notice Maximum amount of stablecoins that can be issued with this contract
     uint256 public debtCeiling;
     /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
