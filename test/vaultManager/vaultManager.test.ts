@@ -53,7 +53,6 @@ contract('VaultManager', () => {
   const collatBase = 10;
   const yearlyRate = 1.05;
   const ratePerSecond = yearlyRate ** (1 / (365 * 24 * 3600)) - 1;
-  console.log('Rate per year is: ', (1 + ratePerSecond) ** (365 * 24 * 3600));
   const params = {
     debtCeiling: parseEther('100'),
     collateralFactor: 0.5e9,
@@ -470,6 +469,7 @@ contract('VaultManager', () => {
     it('success - one year', async () => {
       const debt = await vaultManager.getTotalDebt();
 
+      console.log('Rate per year is: ', (1 + ratePerSecond) ** (365 * 24 * 3600));
       await displayVaultState(vaultManager, 1, log, collatBase);
 
       await increaseTime(24 * 3600 * 365);
