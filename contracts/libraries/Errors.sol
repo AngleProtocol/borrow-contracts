@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.12;
 
+//TODO do we still use it or no?
 library Errors {
     string public constant ZERO_ADDRESS = "0"; // 'zero address'
     string public constant NOT_GOVERNOR = "1"; // 'sender is not governor'

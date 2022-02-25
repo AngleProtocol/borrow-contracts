@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/IVaultManager.sol";
+import "hardhat/console.sol";
 
 /// @title Settlement
 /// @author Angle Core Team
@@ -52,17 +53,18 @@ contract Settlement {
 
     // =================== Variables updated during the process ====================
 
-    /// @notice Stablecoin/Collateral exchange rate at the end of the period allowing over-collateralized vaults
-    /// to recover their claims
-    uint256 public stablecoinCollateralExchangeRate;
+    /// @notice How much collateral you can get from stablecoins
+    uint256 public collateralStablecoinExchangeRate;
     /// @notice Amount of collateral that will be left over at the end of the process
     uint256 public leftOverCollateral;
+    /// @notice Whether the `collateralStablecoinExchangeRate` has been computed
+    bool public exchangeRateComputed;
     /// @notice Maps a vault to whether it was claimed or not by its owner
     mapping(uint256 => bool) public vaultCheck;
 
     // ================================ Events =====================================
 
-    event GlobalClaimPeriodActivated(uint256 _stablecoinCollateralExchangeRate);
+    event GlobalClaimPeriodActivated(uint256 _collateralStablecoinExchangeRate);
     event Recovered(address indexed tokenAddress, address indexed to, uint256 amount);
     event SettlementActivated(uint256 _overCollateralizedClaimsDuration, uint256 startTimestamp);
     event VaultClaimed(uint256 vaultID, uint256 stablecoinAmount, uint256 collateralAmount);
@@ -92,6 +94,7 @@ contract Settlement {
     /// 3. Recovered all the collateral available in the `VaultManager` contract either
     /// by doing a contract upgrade or by calling a `recoverERC20` method if supported
     function activateSettlement(uint256 _overCollateralizedClaimsDuration) external onlyGovernor {
+        require(_overCollateralizedClaimsDuration > 0, "18");
         overCollateralizedClaimsDuration = _overCollateralizedClaimsDuration;
         oracleValue = (vaultManager.oracle()).read();
         interestAccumulator = vaultManager.interestAccumulator();
@@ -123,7 +126,7 @@ contract Settlement {
         return _handleTransfer(vaultDebt, collateralAmount, to);
     }
 
-    /// @notice Activates the global claim period by setting the `stablecoinCollateralExchangeRate` which is going to
+    /// @notice Activates the global claim period by setting the `collateralStablecoinExchangeRate` which is going to
     /// dictate how much of collateral will be recoverable for each stablecoin
     /// @dev This function can only be called by the governor in order to allow it in case multiple settlements happen across
     /// different `VaultManager` to rebalance the amount of stablecoins on each to make sure that across all settlement contracts
@@ -134,32 +137,46 @@ contract Settlement {
             "44"
         );
         uint256 collateralBalance = collateral.balanceOf(address(this));
-        uint256 leftOverDebt = (vaultManager.totalNormalizedDebt() * interestAccumulator) /
-            BASE_INTEREST -
-            stablecoin.balanceOf(address(this));
-        // How much 1 of stablecoin will give in collateral (it's an opposite of oracle value)
-        uint256 _stablecoinCollateralExchangeRate = (collateralBalance * BASE_STABLECOIN * BASE_STABLECOIN) /
-            (leftOverDebt * _collatBase);
-        // A too high value means that too much collateral could be obtained from stablecoins
-        uint256 maxExchangeRate = BASE_STABLECOIN**2 / oracleValue;
-        if (_stablecoinCollateralExchangeRate >= maxExchangeRate) {
-            leftOverCollateral = collateralBalance - (leftOverDebt * _collatBase) / oracleValue;
-            _stablecoinCollateralExchangeRate = maxExchangeRate;
+        uint256 leftOverDebt = (vaultManager.totalNormalizedDebt() * interestAccumulator) / BASE_INTEREST;
+        uint256 stablecoinBalance = stablecoin.balanceOf(address(this));
+        // How much 1 of stablecoin will give you in collateral
+        uint256 _collateralStablecoinExchangeRate;
+
+        if (stablecoinBalance < leftOverDebt) {
+            // The left over debt is the total debt minus the stablecoins which have already been accumulated
+            // in the first phase
+            leftOverDebt -= stablecoinBalance;
+            // If you control all the debt, then you are entitled to get all the collateral left in the protocol
+            _collateralStablecoinExchangeRate = (collateralBalance * BASE_STABLECOIN) / leftOverDebt;
+            // But at the same time, you cannot get more collateral than the value of the stablecoins you brought
+            uint256 maxExchangeRate = (BASE_STABLECOIN * _collatBase) / oracleValue;
+            if (_collateralStablecoinExchangeRate >= maxExchangeRate) {
+                // In this situation, we're sure that `leftOverCollateral` will be positive
+                leftOverCollateral = collateralBalance - (leftOverDebt * _collatBase) / oracleValue;
+                _collateralStablecoinExchangeRate = maxExchangeRate;
+            }
         }
-        stablecoinCollateralExchangeRate = _stablecoinCollateralExchangeRate;
-        emit GlobalClaimPeriodActivated(_stablecoinCollateralExchangeRate);
+        exchangeRateComputed = true;
+        // In the else case where there is no debt left, you cannot get anything from your stablecoins
+        // and so the `collateralStablecoinExchangeRate` is null
+        collateralStablecoinExchangeRate = _collateralStablecoinExchangeRate;
+        emit GlobalClaimPeriodActivated(_collateralStablecoinExchangeRate);
     }
 
     /// @notice Allows to claim collateral from stablecoins
     /// @param to Address to which collateral should be sent
     /// @return Amount of stablecoins sent to the contract
     /// @return Amount of collateral sent to the `to` address
-    /// @dev This function reverts if the `stablecoinCollateralExchangeRate` is null and hence if the global claim period has
+    /// @dev This function reverts if the `collateralStablecoinExchangeRate` is null and hence if the global claim period has
     /// not been activated
     function claimCollateralFromStablecoins(uint256 stablecoinAmount, address to) external returns (uint256, uint256) {
-        require(stablecoinCollateralExchangeRate != 0, "45");
+        require(exchangeRateComputed, "45");
         return
-            _handleTransfer(stablecoinAmount, (stablecoinAmount * _collatBase) / stablecoinCollateralExchangeRate, to);
+            _handleTransfer(
+                stablecoinAmount,
+                (stablecoinAmount * collateralStablecoinExchangeRate) / BASE_STABLECOIN,
+                to
+            );
     }
 
     /// @notice Handles the transfer of stablecoins from the `msg.sender` to the protocol and of
@@ -193,7 +210,7 @@ contract Settlement {
         uint256 amountToRecover
     ) external onlyGovernor {
         if (tokenAddress == address(collateral)) {
-            require(stablecoinCollateralExchangeRate != 0, "45");
+            require(exchangeRateComputed, "45");
             leftOverCollateral -= amountToRecover;
             collateral.safeTransfer(to, amountToRecover);
         } else {
