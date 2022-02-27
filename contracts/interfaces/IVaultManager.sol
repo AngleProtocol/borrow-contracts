@@ -3,7 +3,9 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts/interfaces/IERC721Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ITreasury.sol";
+import "./IOracle.sol";
 
 // ========================= Key Structs and Enums =============================
 
@@ -167,6 +169,21 @@ interface IVaultManagerFunctions {
         address who,
         bytes memory repayData
     ) external payable returns (PaymentData memory paymentData);
+
+    /// @notice Initializes the `VaultManager` contract
+    /// @param _treasury Treasury address handling the contract
+    /// @param _collateral Collateral supported by this contract
+    /// @param _oracle Oracle contract used
+    /// @dev The parameters and the oracle are the only elements which could be modified once the
+    /// contract has been initialized
+    /// @dev For the contract to be fully initialized, governance needs to set the parameters for the liquidation
+    /// boost
+    function initialize(
+        ITreasury _treasury,
+        IERC20 _collateral,
+        IOracle _oracle,
+        VaultParameters calldata params
+    ) external;
 }
 
 /// @title IVaultManagerStorage
@@ -175,6 +192,14 @@ interface IVaultManagerFunctions {
 /// @dev This interface contains getters of the contract's public variables used by other contracts
 /// of this module
 interface IVaultManagerStorage {
+    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
+    /// determines the minimum collateral ratio of a position
+    function collateralFactor() external view returns (uint64);
+
+    /// @notice Stablecoin handled by this contract. Another `VaultManager` contract could have
+    /// the same rights as this `VaultManager` on the stablecoin contract
+    function stablecoin() external view returns (IAgToken);
+
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury);
 

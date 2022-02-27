@@ -1,9 +1,15 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Signer } from 'ethers';
-import { formatEther, formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
+import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
-import { IOracle, TransparentUpgradeableProxy__factory, VaultManager } from '../../typechain';
+import {
+  BaseReactor,
+  IERC20Metadata,
+  IOracle,
+  TransparentUpgradeableProxy__factory,
+  VaultManager,
+} from '../../typechain';
 import { expect } from '../utils/chai-setup';
 
 const BASE_PARAMS = parseUnits('1', 'gwei');
@@ -183,9 +189,17 @@ function getDebtIn(vaultID: number, vaultManager: string, dstVaultID: number, st
   };
 }
 
+async function displayReactorState(reactor: BaseReactor, log: boolean): Promise<void> {
+  if (log) {
+    const vaultManager = (await ethers.getContractAt('VaultManager', await reactor.vaultManager())) as VaultManager;
+    const asset = (await ethers.getContractAt('IERC20Metadata', await reactor.asset())) as IERC20Metadata;
+    return await displayVaultState(vaultManager, await reactor.vaultID(), log, await asset.decimals());
+  }
+}
+
 async function displayVaultState(
   vaultManager: VaultManager,
-  vaultID: number,
+  vaultID: BigNumberish,
   log: boolean,
   collatBase: number,
 ): Promise<void> {
@@ -196,16 +210,27 @@ async function displayVaultState(
 
     console.log('');
     console.log('=============== Vault State ==============');
-    console.log(`Debt:                      ${formatEther(debt)}`);
-    console.log(`Collateral:                ${formatUnits(vault.collateralAmount, collatBase)}`);
-    debt.gt(0) &&
+    console.log(
+      `Debt:                      ${parseFloat(formatEther(debt)).toFixed(3)} -- $${parseFloat(
+        formatEther(debt),
+      ).toFixed(3)}`,
+    );
+    console.log(
+      `Collateral:                ${parseFloat(formatUnits(vault.collateralAmount, collatBase)).toFixed(
+        3,
+      )} -- $${parseFloat(formatUnits(vault.collateralAmount.mul(rate), 18 + collatBase)).toFixed(3)}`,
+    );
+    vault.collateralAmount.gt(0) &&
+      rate.gt(0) &&
       console.log(
-        `CR:                        ${formatEther(
-          vault.collateralAmount
-            .mul(rate)
-            .mul(10 ** (18 - collatBase))
-            .div(debt),
-        )}`,
+        `CR:                        ${parseFloat(
+          formatEther(
+            debt
+              .mul(parseUnits('1', 18 + collatBase))
+              .div(rate)
+              .div(vault.collateralAmount),
+          ),
+        ).toFixed(3)}`,
       );
     try {
       const params = await vaultManager.checkLiquidation(vaultID, ZERO_ADDRESS);
@@ -252,6 +277,7 @@ export {
   closeVault,
   createVault,
   deployUpgradeable,
+  displayReactorState,
   displayVaultState,
   expectApprox,
   getDebtIn,

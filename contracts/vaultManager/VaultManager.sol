@@ -28,14 +28,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    /// @notice Initializes the `VaultManager` contract
-    /// @param _treasury Treasury address handling the contract
-    /// @param _collateral Collateral supported by this contract
-    /// @param _oracle Oracle contract used
-    /// @dev The parameters and the oracle are the only elements which could be modified once the
-    /// contract has been initialized
-    /// @dev For the contract to be fully initialized, governance needs to set the parameters for the liquidation
-    /// boost
+    /// @inheritdoc IVaultManagerFunctions
     function initialize(
         ITreasury _treasury,
         IERC20 _collateral,
@@ -116,7 +109,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     // ========================= External Access Functions =========================
 
     /// @inheritdoc IVaultManagerFunctions
-    function createVault(address toVault) external whenNotPaused returns (uint256) {
+    function createVault(address toVault) external returns (uint256) {
         return _mint(toVault);
     }
 
@@ -171,7 +164,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.collateralAmountToGive += collateralAmount;
             } else if (action == ActionType.repayDebt) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
-                newInterestRateAccumulator = _repayDebt(vaultID, collateralAmount, newInterestRateAccumulator);
+                newInterestRateAccumulator = _repayDebt(vaultID, stablecoinAmount, newInterestRateAccumulator);
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.borrow) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
@@ -642,16 +635,15 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             );
 
             require(
-                (liqOpp.maxStablecoinAmountToRepay > 0) && // Vault should be liquidable
-                    // And liquidator should not reimburse more than what can be reimbursed
-                    ((liqOpp.thresholdRepayAmount == 0 && amounts[i] <= liqOpp.maxStablecoinAmountToRepay) ||
-                        // Or it should make sure not to leave a dusty amount in the vault by either not liquidating too much
-                        // or everything
-                        (liqOpp.thresholdRepayAmount != 0 &&
-                            (amounts[i] == liqOpp.maxStablecoinAmountToRepay ||
-                                amounts[i] <= liqOpp.thresholdRepayAmount))),
+                liqOpp.maxStablecoinAmountToRepay > 0 && amounts[i] <= liqOpp.maxStablecoinAmountToRepay,
+                // Vault should be liquidable and liquidator should not reimburse more than what can be reimbursed
                 "41"
             );
+            // Makes sure not to leave a dusty amount in the vault by either not liquidating too much
+            // or everything
+            if (liqOpp.thresholdRepayAmount > 0 && amounts[i] > liqOpp.thresholdRepayAmount)
+                amounts[i] = liqOpp.maxStablecoinAmountToRepay;
+
             // liqOpp.discount stores in fact `1-discount`
             uint256 collateralReleased = (amounts[i] * BASE_PARAMS * _collatBase) /
                 (liqOpp.discount * liqData.oracleValue);
