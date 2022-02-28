@@ -5,8 +5,6 @@ pragma solidity 0.8.12;
 import "hardhat/console.sol";
 import "./BaseReactorStorage.sol";
 
-// TODO what happens if my vault gets liquidated in the `VaultManager`
-
 /// @notice Reactor for using a token as collateral for agTokens. ERC4646 tokenized Vault implementation.
 /// @author Angle Core Team, based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
 /// @dev WARNING - Built with an "internal" `VaultManager`
@@ -20,39 +18,31 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// the underlying `VaultManager`
     /// @param _name Name of the ERC4626 token
     /// @param _symbol Symbol of the ERC4626 token
-    /// @param _asset Asset used as collateral by this reactor
     /// @param _vaultManager Underlying `VaultManager` used to borrow stablecoin
-    /// @param _treasury Reference to the `treasury` contract
-    /// @param _oracle Oracle contract used
     /// @param _lowerCF Lower Collateral Factor accepted without rebalancing
     /// @param _targetCF Target Collateral Factor
     /// @param _upperCF Upper Collateral Factor accepted without rebalancing
     function initialize(
         string memory _name,
         string memory _symbol,
-        IERC20 _asset,
         IVaultManager _vaultManager,
-        ITreasury _treasury,
-        IOracle _oracle,
         uint64 _lowerCF,
         uint64 _targetCF,
-        uint64 _upperCF,
-        VaultParameters calldata params
+        uint64 _upperCF
     ) external initializer {
         __ERC20_init(_name, _symbol);
-
+        vaultManager = _vaultManager;
+        stablecoin = _vaultManager.stablecoin();
+        IERC20 _asset = _vaultManager.collateral();
+        treasury = _vaultManager.treasury();
+        oracle = _vaultManager.oracle();
         asset = _asset;
         _assetBase = IERC20Metadata(address(_asset)).decimals();
-        vaultManager = _vaultManager;
-        stablecoin = IAgToken(_treasury.stablecoin());
-        treasury = _treasury;
-        oracle = _oracle;
         lastTime = block.timestamp;
 
-        vaultManager.initialize(treasury, asset, IOracle(address(this)), params);
         vaultID = _vaultManager.createVault(address(this));
 
-        require(0 < _lowerCF && _lowerCF <= _targetCF && _targetCF <= _upperCF && _upperCF <= params.collateralFactor);
+        require(0 < _lowerCF && _lowerCF <= _targetCF && _targetCF <= _upperCF && _upperCF <= _vaultManager.collateralFactor());
         lowerCF = _lowerCF;
         targetCF = _targetCF;
         upperCF = _upperCF;
@@ -159,7 +149,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @notice Converts an amount of assets to the corresponding amount of reactor shares
     /// @param assets Amount of asset to convert
     function convertToShares(uint256 assets) public view returns (uint256) {
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
+        uint256 supply = totalSupply();
 
         return supply == 0 ? assets : (assets * supply) / totalAssets();
     }
@@ -167,30 +157,30 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @notice Converts an amount of shares to its current value in asset
     /// @param shares Amount of shares to convert
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        uint256 supply = totalSupply(); // Saves an extra SLOAD if totalSupply is non-zero.
+        uint256 supply = totalSupply();
 
         return supply == 0 ? shares : (shares * totalAssets()) / supply;
     }
 
-    /// @notice Computes how many shares one would get by depositing
+    /// @notice Computes how many shares one would get by depositing `assets`
     /// @param assets Amount of asset to convert
     function previewDeposit(uint256 assets) public view returns (uint256) {
         return convertToShares(assets);
     }
 
-    /// @notice Computes how many assets one would need to mint
+    /// @notice Computes how many assets one would need to mint `shares`
     /// @param shares Amount of shares required
     function previewMint(uint256 shares) public view returns (uint256) {
         return convertToAssets(shares);
     }
 
-    /// @notice Computes how many shares one would need to withdraw
+    /// @notice Computes how many shares one would need to withdraw assets
     /// @param assets Amount of asset to withdraw
     function previewWithdraw(uint256 assets) public view returns (uint256) {
         return convertToShares(assets);
     }
 
-    /// @notice Computes how many assets one would need by burning shares
+    /// @notice Computes how many assets one would get by burning shares
     /// @param shares Amount of shares to burn
     function previewRedeem(uint256 shares) public view returns (uint256) {
         return convertToAssets(shares);
@@ -232,11 +222,11 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @notice Handles the new value of the debt: propagates a loss to the claimable rewards
     /// or a gain depending on the evolution of this debt
     /// @param currentDebt Current value of the debt
-    // TODO: set up does not work well if you get liquidated: your debt decreases but so does your collateral value
-    // as well, and you don't want to record that as a gain -> so you need to find another alternative for this
+    /// @notice In the case where you get liquidated, you actually record a gain in stablecoin, 
+    /// which is normal to compensate for the decrease of the collateral in the vault
     function _handleCurrentDebt(uint256 currentDebt) internal {
         if (lastDebt >= currentDebt) {
-            // TODO this is for the case where debt has been paid on your behalf
+            // This happens if you have been liquidated or if debt has been paid on your behalf
             _handleGain(lastDebt - currentDebt);
         } else {
             uint256 loss = currentDebt - lastDebt;
@@ -421,15 +411,14 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         emit Withdraw(from, to, assets, shares);
     }
 
-    // =============================== IOracle =====================================
-
-    /// @notice Reads the rate from the oracle or cached if possible
-    function read() external view returns (uint256 rate) {
-        if (_oracleRateCached) return _oracleRate;
-        return oracle.read();
-    }
-
     // ======================== Governance Functions ===============================
+
+    /// @notice Changes the reference to the `oracle` contract
+    /// @dev This is a permissionless function anyone can call to make sure that the oracle 
+    /// contract of the `VaultManager` is the same as the oracle contract of this contract
+    function setOracle() external {
+        oracle = vaultManager.oracle();
+    }
 
     /// @notice Changes the treasury contract
     /// @param _treasury Address of the new treasury contract

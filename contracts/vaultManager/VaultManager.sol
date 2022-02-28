@@ -19,7 +19,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         ITreasury _treasury,
         IERC20 _collateral,
         IOracle _oracle,
-        VaultParameters calldata params
+        VaultParameters calldata params,
+        string memory symbol
     ) public initializer {
         require(_oracle.treasury() == _treasury, "33");
         treasury = _treasury;
@@ -28,13 +29,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
 
-        string memory fetchedSymbol = string.concat(
-            IERC20Metadata(address(collateral)).symbol(),
-            "/",
-            IERC20Metadata(address(stablecoin)).symbol()
-        );
-        name = string.concat("Angle Protocol ", fetchedSymbol, " Vault");
-        symbol = string.concat(fetchedSymbol, "-vault");
+        name = string.concat("Angle Protocol ", symbol, " Vault");
+        symbol = string.concat(symbol, "-vault");
 
         interestAccumulator = BASE_INTEREST;
         lastInterestAccumulatorUpdated = block.timestamp;
