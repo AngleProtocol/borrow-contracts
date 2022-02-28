@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "../interfaces/IERC4626.sol";
 import "../interfaces/IVaultManager.sol";
 
+// solhint-disable-next-line max-states-count
 contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     uint256 public constant BASE_PARAMS = 10**9;
 
@@ -40,6 +41,7 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
 
     bool internal _oracleRateCached;
     uint256 internal _oracleRate;
+    uint256 internal _assetBase;
 
     uint256[50] private __gap;
 

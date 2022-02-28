@@ -5,10 +5,14 @@ pragma solidity 0.8.12;
 import "hardhat/console.sol";
 import "./BaseReactorStorage.sol";
 
+// TODO what happens if my vault gets liquidated in the `VaultManager`
+
 /// @notice Reactor for using a token as collateral for agTokens. ERC4646 tokenized Vault implementation.
 /// @author Angle Core Team, based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
 /// @dev WARNING - Built with an "internal" `VaultManager`
 /// @dev WARNING - Built on the assumption that the underlying VaultManager does not take fees
+/// @dev A token used as an asset built to exploit this reactor could perform reentrancy attacks if not enough checks
+/// are performed: as such the protocol
 contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     using SafeERC20 for IERC20;
 
@@ -37,8 +41,8 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     ) external initializer {
         __ERC20_init(_name, _symbol);
 
-        require(IERC20Metadata(address(_asset)).decimals() == 18);
         asset = _asset;
+        _assetBase = IERC20Metadata(address(_asset)).decimals();
         vaultManager = _vaultManager;
         stablecoin = IAgToken(_treasury.stablecoin());
         treasury = _treasury;
@@ -73,13 +77,6 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         _;
     }
 
-    /// @notice Checks if the new address given is not null
-    /// @param newAddress Address to check
-    modifier zeroCheck(address newAddress) {
-        require(newAddress != address(0), "0");
-        _;
-    }
-
     /// @notice Reads the oracle and store it in cache during the function call
     modifier needOracle() {
         _oracleRate = oracle.read();
@@ -94,7 +91,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @notice Transfers a given amount of asset to the reactor and mint shares accordingly
     /// @param assets Given amount of asset
     /// @param to Address to mint shares to
-    function deposit(uint256 assets, address to) public returns (uint256 shares) {
+    function deposit(uint256 assets, address to) public nonReentrant returns (uint256 shares) {
         // Check for rounding error since we round down in convertToShares.
         shares = convertToShares(assets);
         require(shares != 0, "ZERO_SHARES");
@@ -107,7 +104,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @notice Mints a given amount of shares to the reactor and transfer assets accordingly
     /// @param shares Given amount of shares
     /// @param to Address to mint shares to
-    function mint(uint256 shares, address to) public returns (uint256 assets) {
+    function mint(uint256 shares, address to) public nonReentrant returns (uint256 assets) {
         assets = previewMint(shares); // No need to check for rounding error, previewMint rounds up.
 
         // Need to transfer before minting or ERC777s could reenter.
@@ -123,7 +120,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         uint256 assets,
         address to,
         address from
-    ) public returns (uint256 shares) {
+    ) public nonReentrant returns (uint256 shares) {
         shares = previewWithdraw(assets); // No need to check for rounding error, previewWithdraw rounds up.
         _withdraw(assets, shares, to, from);
         asset.safeTransfer(to, assets);
@@ -137,7 +134,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         uint256 shares,
         address to,
         address from
-    ) public returns (uint256 assets) {
+    ) public nonReentrant returns (uint256 assets) {
         // Check for rounding error since we round down in convertToAssets.
         require((assets = convertToAssets(shares)) != 0, "ZERO_ASSETS");
         _withdraw(assets, shares, to, from);
@@ -146,7 +143,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     /// @notice Claims earned rewards
     /// @param from Address to claim for
-    function claim(address from) public returns (uint256 amount) {
+    function claim(address from) public nonReentrant returns (uint256 amount) {
         _updateAccumulator(from);
         amount = _claim(from);
     }
@@ -232,52 +229,63 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     // =========================== Internal Functions ==============================
 
-    /// @notice Propagates a loss to the claimable rewards
-    /// @param loss Loss to propagate
-    function _handleLoss(uint256 loss) internal {
-        if (claimableRewards > loss) {
-            claimableRewards -= loss;
+    /// @notice Handles the new value of the debt: propagates a loss to the claimable rewards
+    /// or a gain depending on the evolution of this debt
+    /// @param currentDebt Current value of the debt
+    // TODO: set up does not work well if you get liquidated: your debt decreases but so does your collateral value
+    // as well, and you don't want to record that as a gain -> so you need to find another alternative for this
+    function _handleCurrentDebt(uint256 currentDebt) internal {
+        if (lastDebt >= currentDebt) {
+            // TODO this is for the case where debt has been paid on your behalf
+            _handleGain(lastDebt - currentDebt);
         } else {
-            claimableRewards = 0;
-            currentLoss = loss - claimableRewards;
+            uint256 loss = currentDebt - lastDebt;
+            if (claimableRewards >= loss) {
+                claimableRewards -= loss;
+            } else {
+                currentLoss = loss - claimableRewards;
+                claimableRewards = 0;
+            }
         }
     }
 
     /// @notice Propagates a gain to the claimable rewards
     /// @param gain Gain to propagate
     function _handleGain(uint256 gain) internal {
-        if (currentLoss > gain) {
+        if (currentLoss >= gain) {
             currentLoss -= gain;
         } else {
-            currentLoss = 0;
             claimableRewards += gain - currentLoss;
+            currentLoss = 0;
         }
     }
 
     /// @notice Rebalances the underlying vault
     /// @param toWithdraw Amount of assets to withdraw
     /// @dev `toWithdraw` needs to be always lower than managed assets
-    /// @dev `toWithdraw` needs to be always lower than managed assets
     function _rebalance(uint256 toWithdraw) internal needOracle {
         uint256 debt = vaultManager.getVaultDebt(vaultID);
-        _handleLoss(debt - lastDebt); //TODO assert here that > 0 ?
+        _handleCurrentDebt(debt);
         lastDebt = debt;
 
         uint256 looseAssets = asset.balanceOf(address(this));
-        uint256 usedAssets = 0;
-        uint256 collateralFactor = 0;
-
-        uint256 toRepay = 0;
-        uint256 toBorrow = 0;
+        uint256 usedAssets;
+        uint256 collateralFactor;
+        uint256 toRepay;
+        uint256 toBorrow;
 
         if (debt > 0) {
             (usedAssets, ) = vaultManager.vaultData(vaultID);
         }
 
         if (usedAssets + looseAssets > toWithdraw) {
-            collateralFactor = (BASE_PARAMS * 1 ether * debt) / ((usedAssets + looseAssets - toWithdraw) * _oracleRate);
+            // This is what the collateral factor is going to look like at the end of the call
+            collateralFactor =
+                (BASE_PARAMS * _assetBase * debt) /
+                ((usedAssets + looseAssets - toWithdraw) * _oracleRate);
         } else {
             collateralFactor = type(uint256).max;
+            toRepay = debt;
         }
 
         uint16 len = 1;
@@ -296,27 +304,32 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
             len += 1;
         }
 
-        // TODO Can dust happen or is it fully handled by the vaultManager ?
+        // Dust is fully handled by the `VaultManager`: any action that will lead to a dusty amount
+        // in the vault will revert
         if (collateralFactor >= upperCF) {
-            // Repay
+            // If the `collateralFactor` is too high, then too much has been borrowed
+            // and stablecoins should be repaid
             actions[len] = ActionType.repayDebt;
-            toRepay =
-                debt -
-                (((usedAssets + looseAssets - toWithdraw) * _oracleRate) * targetCF) /
-                (1 ether * BASE_PARAMS);
-
+            if (usedAssets + looseAssets > toWithdraw) {
+                toRepay =
+                    debt -
+                    (((usedAssets + looseAssets - toWithdraw) * _oracleRate) * targetCF) /
+                    (_assetBase * BASE_PARAMS);
+            }
+            // In the other case, we have `toRepay > debt`
             datas[len] = abi.encodePacked(vaultID, toRepay);
-            lastDebt -= toRepay; //Check this line cannot be exploited through reentrancy
+            lastDebt -= toRepay;
             len += 1;
         } else if (collateralFactor <= lowerCF) {
-            // Borrow
+            // If the `collateralFactor` is too low, then stablecoins can be borrowed and later
+            // invested in strategies
             actions[len] = ActionType.borrow;
             toBorrow =
                 (((usedAssets + looseAssets - toWithdraw) * _oracleRate) * targetCF) /
-                (1 ether * BASE_PARAMS) -
+                (_assetBase * BASE_PARAMS) -
                 debt;
             datas[len] = abi.encodePacked(vaultID, toBorrow);
-            lastDebt += toBorrow; //Check this line cannot be exploited through reentrancy
+            lastDebt += toBorrow;
             len += 1;
         }
 
@@ -408,7 +421,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         emit Withdraw(from, to, assets, shares);
     }
 
-    // =============================== IOracle :====================================
+    // =============================== IOracle =====================================
 
     /// @notice Reads the rate from the oracle or cached if possible
     function read() external view returns (uint256 rate) {
@@ -416,14 +429,15 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         return oracle.read();
     }
 
+    // ======================== Governance Functions ===============================
+
     /// @notice Changes the treasury contract
     /// @param _treasury Address of the new treasury contract
-    /// @dev Propagates the changes to the oracle
+    /// @dev To propagate the changes to the oracle, governance should make sure
+    /// to call the oracle contract as well
     function setTreasury(address _treasury) external {
         require(treasury.isVaultManager(msg.sender), "3");
         treasury = ITreasury(_treasury);
-        // TODO Won't work with the current implementation
-        oracle.setTreasury(_treasury);
     }
 
     /// @notice Sets parameters encoded as uint64
@@ -455,8 +469,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         address tokenAddress,
         address to,
         uint256 amountToRecover
-    ) external onlyGovernorOrGuardian {
-        require(tokenAddress != address(stablecoin));
+    ) external onlyGovernor {
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }

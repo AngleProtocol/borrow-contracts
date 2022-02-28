@@ -119,7 +119,7 @@ contract('VaultManager', () => {
   });
 
   describe('createVault', () => {
-    it('revert - paused', async () => {
+    it('reverts - paused', async () => {
       await vaultManager.connect(guardian).togglePause();
       await expect(vaultManager.createVault(alice.address)).to.be.revertedWith('42');
     });
@@ -132,7 +132,7 @@ contract('VaultManager', () => {
   });
 
   describe('angle', () => {
-    it('revert - paused', async () => {
+    it('reverts - paused', async () => {
       await vaultManager.connect(guardian).togglePause();
       await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('42');
     });
@@ -144,7 +144,7 @@ contract('VaultManager', () => {
       expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
     });
 
-    it('revert - not whitelisted', async () => {
+    it('reverts - not whitelisted', async () => {
       await vaultManager.connect(governor).toggleWhitelisting();
       await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
     });
@@ -194,8 +194,10 @@ contract('VaultManager', () => {
     });
   });
 
+  describe('removeCollateral', () => {});
+
   describe('borrow', () => {
-    it('revert - limit CF', async () => {
+    it('reverts - limit CF', async () => {
       // Collat amount in stable should be 4
       // So max borrowable amount is 2
       const collatAmount = parseUnits('2', collatBase);

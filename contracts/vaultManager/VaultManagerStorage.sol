@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC721MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
@@ -50,10 +51,10 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     // =============================== Parameters ==================================
 
     /// @notice Minimum amount of debt a vault can have
-    uint256 internal immutable dust;
+    uint256 internal immutable _dust;
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
-    uint256 internal immutable dustCollateral;
+    uint256 internal immutable _dustCollateral;
     /// @notice Maximum amount of stablecoins that can be issued with this contract
     uint256 public debtCeiling;
     /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
@@ -126,6 +127,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     // Mapping from owner to operator approvals
     mapping(address => mapping(address => bool)) internal _operatorApprovals;
 
+    uint256[50] private __gap;
+
     // =============================== Events ======================================
 
     event AccruedToTreasury(uint256 surplusEndValue, uint256 badDebtEndValue);
@@ -138,12 +141,12 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event OracleUpdated(address indexed _oracle);
     event ToggledWhitelisting(bool);
 
-    /// @param _dust Minimum amount of debt a vault from this implementation can have
-    /// @param _dustCollateral Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
+    /// @param dust_ Minimum amount of debt a vault from this implementation can have
+    /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
     /// @dev Run only at the implementation level
-    constructor(uint256 _dust, uint256 _dustCollateral) initializer {
-        dust = _dust;
-        dustCollateral = _dustCollateral;
+    constructor(uint256 dust_, uint256 dustCollateral_) initializer {
+        _dust = dust_;
+        _dustCollateral = dustCollateral_;
     }
 }

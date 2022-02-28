@@ -86,7 +86,8 @@ enum ActionType {
     removeCollateral,
     repayDebt,
     borrow,
-    getDebtIn
+    getDebtIn,
+    permit
 }
 
 // ========================= Interfaces =============================
