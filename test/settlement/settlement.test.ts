@@ -10,6 +10,8 @@ import {
   MockVaultManager__factory,
   MockToken,
   MockToken__factory,
+  MockRepayCallee,
+  MockRepayCallee__factory,
 } from '../../typechain';
 import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
@@ -48,8 +50,8 @@ contract('Settlement', () => {
       parseEther('3'),
     );
     settlement = (await new Settlement__factory(deployer).deploy(vaultManager.address)) as Settlement;
-    settlementDuration = BigNumber.from(86400 * 52);
-    settlementDurationExceeded = BigNumber.from(86400 * 53);
+    settlementDuration = BigNumber.from(86400 * 3);
+    settlementDurationExceeded = BigNumber.from(86400 * 4);
     await stablecoin.mint(alice.address, parseEther('100'));
     await stablecoin.connect(alice).approve(settlement.address, parseEther('100'));
   });
@@ -59,59 +61,58 @@ contract('Settlement', () => {
       expect(await settlement.vaultManager()).to.be.equal(vaultManager.address);
       expect(await settlement.stablecoin()).to.be.equal(stablecoin.address);
       expect(await settlement.collateral()).to.be.equal(collateral.address);
+      expect(await settlement.OVER_COLLATERALIZED_CLAIM_DURATION()).to.be.equal(settlementDuration);
     });
   });
   describe('activateSettlement', () => {
     it('reverts - nonGovernor', async () => {
-      await expect(settlement.activateSettlement(0)).to.be.revertedWith('1');
-    });
-    it('reverts - invalid settlement value', async () => {
-      await expect(settlement.connect(alice).activateSettlement(0)).to.be.revertedWith('18');
+      await expect(settlement.activateSettlement()).to.be.revertedWith('1');
     });
     it('success - correctly initialized', async () => {
-      const receipt = await (await settlement.connect(alice).activateSettlement(settlementDuration)).wait();
-      expect(await settlement.overCollateralizedClaimsDuration()).to.be.equal(settlementDuration);
+      const receipt = await (await settlement.connect(alice).activateSettlement()).wait();
       expect(await settlement.oracleValue()).to.be.equal(parseEther('1'));
       expect(await settlement.interestAccumulator()).to.be.equal(interestAccumulator);
       expect(await settlement.collateralFactor()).to.be.equal(parseAmount.gwei('0.5'));
-      inReceipt(receipt, 'SettlementActivated', {
-        _overCollateralizedClaimsDuration: settlementDuration,
-      });
+      inReceipt(receipt, 'SettlementActivated', {});
     });
   });
   describe('claimOverCollateralizedVault', () => {
     it('reverts - not activated', async () => {
-      await expect(settlement.claimOverCollateralizedVault(1, bob.address)).to.be.revertedWith('41');
+      await expect(settlement.claimOverCollateralizedVault(1, bob.address, bob.address, '0x')).to.be.revertedWith('41');
     });
     it('reverts - activated but time passed', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
-      await expect(settlement.claimOverCollateralizedVault(1, bob.address)).to.be.revertedWith('41');
+      await expect(settlement.claimOverCollateralizedVault(1, bob.address, bob.address, '0x')).to.be.revertedWith('41');
     });
     it('reverts - non owner', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
-      await expect(settlement.claimOverCollateralizedVault(1, bob.address)).to.be.revertedWith('42');
+      await settlement.connect(alice).activateSettlement();
+      await expect(settlement.claimOverCollateralizedVault(1, bob.address, bob.address, '0x')).to.be.revertedWith('42');
     });
     it('reverts - vault to be liquidated', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await vaultManager.connect(alice).setOwner(1, alice.address);
       await vaultManager.connect(alice).setVaultData(parseEther('1'), parseUnits('1', 5), 1);
-      await expect(settlement.connect(alice).claimOverCollateralizedVault(1, bob.address)).to.be.revertedWith('21');
+      await expect(
+        settlement.connect(alice).claimOverCollateralizedVault(1, bob.address, bob.address, '0x'),
+      ).to.be.revertedWith('21');
     });
     it('reverts - vault claimed but no collateral available', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await vaultManager.connect(alice).setOwner(1, alice.address);
       await vaultManager.connect(alice).setVaultData(parseEther('1'), parseUnits('3', 6), 1);
-      await expect(settlement.connect(alice).claimOverCollateralizedVault(1, bob.address)).to.be.revertedWith(
-        'ERC20: transfer amount exceeds balance',
-      );
+      await expect(
+        settlement.connect(alice).claimOverCollateralizedVault(1, bob.address, bob.address, '0x'),
+      ).to.be.revertedWith('ERC20: transfer amount exceeds balance');
     });
     it('success - vault claimed but no collateral available', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await vaultManager.connect(alice).setOwner(1, alice.address);
       await vaultManager.connect(alice).setVaultData(parseEther('1'), parseUnits('3', 6), 1);
       await collateral.mint(settlement.address, parseUnits('1', 10));
-      const receipt = await (await settlement.connect(alice).claimOverCollateralizedVault(1, bob.address)).wait();
+      const receipt = await (
+        await settlement.connect(alice).claimOverCollateralizedVault(1, bob.address, bob.address, '0x')
+      ).wait();
       inReceipt(receipt, 'VaultClaimed', {
         vaultID: 1,
         stablecoinAmount: parseEther('1'),
@@ -121,13 +122,34 @@ contract('Settlement', () => {
       expect(await stablecoin.balanceOf(settlement.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('3', 6));
     });
-    it('reverts - vault already claimed', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+    it('success - vault claimed but no collateral available and other address involved in repayment', async () => {
+      await settlement.connect(alice).activateSettlement();
       await vaultManager.connect(alice).setOwner(1, alice.address);
       await vaultManager.connect(alice).setVaultData(parseEther('1'), parseUnits('3', 6), 1);
       await collateral.mint(settlement.address, parseUnits('1', 10));
-      await settlement.connect(alice).claimOverCollateralizedVault(1, bob.address);
-      await expect(settlement.claimOverCollateralizedVault(1, bob.address)).to.be.revertedWith('43');
+      const mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
+      const receipt = await (
+        await settlement
+          .connect(alice)
+          .claimOverCollateralizedVault(1, bob.address, mockRepayCallee.address, web3.utils.keccak256('test'))
+      ).wait();
+      inReceipt(receipt, 'VaultClaimed', {
+        vaultID: 1,
+        stablecoinAmount: parseEther('1'),
+        collateralAmount: parseUnits('3', 6),
+      });
+      expect(await settlement.vaultCheck(1)).to.be.true;
+      expect(await stablecoin.balanceOf(settlement.address)).to.be.equal(parseEther('1'));
+      expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('3', 6));
+      expect(await mockRepayCallee.counter()).to.be.equal(1);
+    });
+    it('reverts - vault already claimed', async () => {
+      await settlement.connect(alice).activateSettlement();
+      await vaultManager.connect(alice).setOwner(1, alice.address);
+      await vaultManager.connect(alice).setVaultData(parseEther('1'), parseUnits('3', 6), 1);
+      await collateral.mint(settlement.address, parseUnits('1', 10));
+      await settlement.connect(alice).claimOverCollateralizedVault(1, bob.address, bob.address, '0x');
+      await expect(settlement.claimOverCollateralizedVault(1, bob.address, bob.address, '0x')).to.be.revertedWith('43');
     });
   });
   describe('activateGlobalClaimPeriod', () => {
@@ -138,11 +160,11 @@ contract('Settlement', () => {
       await expect(settlement.connect(alice).activateGlobalClaimPeriod()).to.be.revertedWith('44');
     });
     it('reverts - time not elapsed', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await expect(settlement.connect(alice).activateGlobalClaimPeriod()).to.be.revertedWith('44');
     });
     it('success - with no debt', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('3'));
       const receipt = await (await settlement.connect(alice).activateGlobalClaimPeriod()).wait();
@@ -154,7 +176,7 @@ contract('Settlement', () => {
       expect(await settlement.leftOverCollateral()).to.be.equal(0);
     });
     it('success - with a null collateral balance', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('2'));
       const receipt = await (await settlement.connect(alice).activateGlobalClaimPeriod()).wait();
@@ -166,7 +188,7 @@ contract('Settlement', () => {
       expect(await settlement.leftOverCollateral()).to.be.equal(0);
     });
     it('success - with a collateral balance not sufficient to cover for the stablecoins', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('1'));
       // Normalized debt will be 2 and we have only 1 of collateral: meaning 50% won't be covered
@@ -180,7 +202,7 @@ contract('Settlement', () => {
       expect(await settlement.leftOverCollateral()).to.be.equal(0);
     });
     it('success - with a collateral balance larger than the amount of stablecoins', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('2'));
       // Normalized debt will be 1 and we have 2 of collateral: meaning we'll have some leftover debt
@@ -197,27 +219,46 @@ contract('Settlement', () => {
   describe('claimCollateralFromStablecoins', () => {
     it('reverts - exchange rate not computed', async () => {
       await expect(
-        settlement.connect(alice).claimCollateralFromStablecoins(parseEther('1'), bob.address),
+        settlement.connect(alice).claimCollateralFromStablecoins(parseEther('1'), bob.address, bob.address, '0x'),
       ).to.be.revertedWith('45');
     });
     it('success - when exchange rate is inferior to 1', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('1'));
       // Normalized debt will be 2 and we have only 1 of collateral: meaning 50% won't be covered
       await collateral.mint(settlement.address, parseUnits('1', 6));
       await settlement.connect(alice).activateGlobalClaimPeriod();
-      await settlement.connect(alice).claimCollateralFromStablecoins(parseEther('0.5'), bob.address);
+      await settlement.connect(alice).claimCollateralFromStablecoins(parseEther('0.5'), bob.address, bob.address, '0x');
       expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('0.25', 6));
     });
+    it('success - when exchange rate is inferior to 1 and uses external contract to proceed to the call', async () => {
+      await settlement.connect(alice).activateSettlement();
+      await time.increase(settlementDurationExceeded);
+      await stablecoin.mint(settlement.address, parseEther('1'));
+      // Normalized debt will be 2 and we have only 1 of collateral: meaning 50% won't be covered
+      await collateral.mint(settlement.address, parseUnits('1', 6));
+      await settlement.connect(alice).activateGlobalClaimPeriod();
+      const mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
+      await settlement
+        .connect(alice)
+        .claimCollateralFromStablecoins(
+          parseEther('0.5'),
+          bob.address,
+          mockRepayCallee.address,
+          web3.utils.keccak256('test'),
+        );
+      expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('0.25', 6));
+      expect(await mockRepayCallee.counter()).to.be.equal(1);
+    });
     it('success - when exchange rate is greater than 1', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('2'));
       // Normalized debt will be 1 and we have 2 of collateral: meaning we'll have some leftover debt
       await collateral.mint(settlement.address, parseUnits('2.5', 6));
       await settlement.connect(alice).activateGlobalClaimPeriod();
-      await settlement.connect(alice).claimCollateralFromStablecoins(parseEther('0.5'), bob.address);
+      await settlement.connect(alice).claimCollateralFromStablecoins(parseEther('0.5'), bob.address, bob.address, '0x');
       expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('0.5', 6));
     });
   });
@@ -241,7 +282,7 @@ contract('Settlement', () => {
       await expect(settlement.connect(alice).recoverERC20(collateral.address, bob.address, 1)).to.be.revertedWith('45');
     });
     it('reverts - collateral token, exchange rate computed but to big amount to recover', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('2'));
       await collateral.mint(settlement.address, parseUnits('2.5', 6));
@@ -250,7 +291,7 @@ contract('Settlement', () => {
         .reverted;
     });
     it('success - collateral token, exchange rate computed and correct amount to recover', async () => {
-      await settlement.connect(alice).activateSettlement(settlementDuration);
+      await settlement.connect(alice).activateSettlement();
       await time.increase(settlementDurationExceeded);
       await stablecoin.mint(settlement.address, parseEther('2'));
       await collateral.mint(settlement.address, parseUnits('2.5', 6));

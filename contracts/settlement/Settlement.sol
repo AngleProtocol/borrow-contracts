@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../interfaces/IAgToken.sol";
+import "../interfaces/IRepayCallee.sol";
 import "../interfaces/IVaultManager.sol";
-import "hardhat/console.sol";
 
 /// @title Settlement
 /// @author Angle Core Team
@@ -26,6 +26,8 @@ contract Settlement {
     /// @notice Base used for exchange rate computation. It is assumed
     /// that stablecoins have this base
     uint256 public constant BASE_STABLECOIN = 10**18;
+    /// @notice Duration of the claim period for over-collateralized vaults
+    uint256 public constant OVER_COLLATERALIZED_CLAIM_DURATION = 3 * 24 * 3600;
 
     // =============== Immutable references set in the constructor =================
 
@@ -40,8 +42,6 @@ contract Settlement {
 
     // ================ Variables frozen at settlement activation ==================
 
-    /// @notice Length of the claim period for owners of over-collateralized vaults
-    uint256 public overCollateralizedClaimsDuration;
     /// @notice Value of the oracle for the collateral/stablecoin pair
     uint256 public oracleValue;
     /// @notice Value of the interest accumulator at settlement activation
@@ -66,7 +66,7 @@ contract Settlement {
 
     event GlobalClaimPeriodActivated(uint256 _collateralStablecoinExchangeRate);
     event Recovered(address indexed tokenAddress, address indexed to, uint256 amount);
-    event SettlementActivated(uint256 _overCollateralizedClaimsDuration, uint256 startTimestamp);
+    event SettlementActivated(uint256 startTimestamp);
     event VaultClaimed(uint256 vaultID, uint256 stablecoinAmount, uint256 collateralAmount);
 
     /// @notice Constructor of the contract
@@ -86,34 +86,38 @@ contract Settlement {
     }
 
     /// @notice Activates the settlement contract
-    /// @param _overCollateralizedClaimsDuration Duration of the period for owners of over-collateralized vaults
-    /// to claim it
     /// @dev When calling this function governance should make sure to have:
     /// 1. Accrued the interest rate on the contract
     /// 2. Paused the contract
     /// 3. Recovered all the collateral available in the `VaultManager` contract either
     /// by doing a contract upgrade or by calling a `recoverERC20` method if supported
-    function activateSettlement(uint256 _overCollateralizedClaimsDuration) external onlyGovernor {
-        require(_overCollateralizedClaimsDuration > 0, "18");
-        overCollateralizedClaimsDuration = _overCollateralizedClaimsDuration;
+    function activateSettlement() external onlyGovernor {
         oracleValue = (vaultManager.oracle()).read();
         interestAccumulator = vaultManager.interestAccumulator();
         activationTimestamp = block.timestamp;
         collateralFactor = vaultManager.collateralFactor();
-        emit SettlementActivated(_overCollateralizedClaimsDuration, block.timestamp);
+        emit SettlementActivated(block.timestamp);
     }
 
     /// @notice Allows the owner of an over-collateralized vault to claim its collateral upon bringing back all owed stablecoins
     /// @param vaultID ID of the vault to claim
     /// @param to Address to which collateral should be sent
-    /// @return Amount of stablecoins sent to the contract
+    /// @param who Address which should be notified if needed of the transfer of stablecoins and collateral
+    /// @param data Data to pass to the `who` contract for it to successfully give the correct amount of stablecoins
+    /// to the `msg.sender` address
     /// @return Amount of collateral sent to the `to` address
+    /// @return Amount of stablecoins sent to the contract
     /// @dev Claiming can only happen short after settlement activation
     /// @dev A vault cannot be claimed twice and only the owner of the vault can claim it (regardless of the approval logic)
     /// @dev Only over-collateralized vaults can be claimed from this medium
-    function claimOverCollateralizedVault(uint256 vaultID, address to) external returns (uint256, uint256) {
+    function claimOverCollateralizedVault(
+        uint256 vaultID,
+        address to,
+        address who,
+        bytes memory data
+    ) external returns (uint256, uint256) {
         require(
-            activationTimestamp != 0 && block.timestamp <= activationTimestamp + overCollateralizedClaimsDuration,
+            activationTimestamp != 0 && block.timestamp <= activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION,
             "41"
         );
         require(!vaultCheck[vaultID], "43");
@@ -123,7 +127,7 @@ contract Settlement {
         require(collateralAmount * oracleValue * collateralFactor >= vaultDebt * BASE_PARAMS * _collatBase, "21");
         vaultCheck[vaultID] = true;
         emit VaultClaimed(vaultID, vaultDebt, collateralAmount);
-        return _handleTransfer(vaultDebt, collateralAmount, to);
+        return _handleRepay(collateralAmount, vaultDebt, to, who, data);
     }
 
     /// @notice Activates the global claim period by setting the `collateralStablecoinExchangeRate` which is going to
@@ -133,7 +137,7 @@ contract Settlement {
     /// a similar value of collateral can be obtained against a similar value of stablecoins
     function activateGlobalClaimPeriod() external onlyGovernor {
         require(
-            activationTimestamp != 0 && block.timestamp > activationTimestamp + overCollateralizedClaimsDuration,
+            activationTimestamp != 0 && block.timestamp > activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION,
             "44"
         );
         uint256 collateralBalance = collateral.balanceOf(address(this));
@@ -165,35 +169,51 @@ contract Settlement {
 
     /// @notice Allows to claim collateral from stablecoins
     /// @param to Address to which collateral should be sent
-    /// @return Amount of stablecoins sent to the contract
+    /// @param who Address which should be notified if needed of the transfer of stablecoins and collateral
+    /// @param data Data to pass to the `who` contract for it to successfully give the correct amount of stablecoins
+    /// to the `msg.sender` address
     /// @return Amount of collateral sent to the `to` address
+    /// @return Amount of stablecoins sent to the contract
     /// @dev This function reverts if the `collateralStablecoinExchangeRate` is null and hence if the global claim period has
     /// not been activated
-    function claimCollateralFromStablecoins(uint256 stablecoinAmount, address to) external returns (uint256, uint256) {
+    function claimCollateralFromStablecoins(
+        uint256 stablecoinAmount,
+        address to,
+        address who,
+        bytes memory data
+    ) external returns (uint256, uint256) {
         require(exchangeRateComputed, "45");
         return
-            _handleTransfer(
-                stablecoinAmount,
+            _handleRepay(
                 (stablecoinAmount * collateralStablecoinExchangeRate) / BASE_STABLECOIN,
-                to
+                stablecoinAmount,
+                to,
+                who,
+                data
             );
     }
 
-    /// @notice Handles the transfer of stablecoins from the `msg.sender` to the protocol and of
-    /// collateral from the protocol to the `msg.sender`
-    /// @param stablecoinAmount Amount of stablecoins to transfer to the protocol
-    /// @param collateralAmount Amount of collateral to transfer to the `to` address
-    /// @param to Address to which collateral should be sent
-    /// @return Amount of stablecoins sent to the contract
-    /// @return Amount of collateral sent to the `to` address
-    function _handleTransfer(
-        uint256 stablecoinAmount,
-        uint256 collateralAmount,
-        address to
+    /// @notice Handles the simultaneous repayment of stablecoins with a transfer of collateral
+    /// @param collateralAmountToGive Amount of collateral the contract should give
+    /// @param stableAmountToRepay Amount of stablecoins the contract should burn from the call
+    /// @param to Address to which stablecoins should be sent
+    /// @param who Address which should be notified if needed of the transfer
+    /// @param data Data to pass to the `who` contract for it to successfully give the correct amount of stablecoins
+    /// to the `msg.sender` address
+    /// @dev This function allows for capital-efficient claims of collateral from stablecoins
+    function _handleRepay(
+        uint256 collateralAmountToGive,
+        uint256 stableAmountToRepay,
+        address to,
+        address who,
+        bytes memory data
     ) internal returns (uint256, uint256) {
-        stablecoin.transferFrom(msg.sender, address(this), stablecoinAmount);
-        collateral.safeTransfer(to, collateralAmount);
-        return (stablecoinAmount, collateralAmount);
+        collateral.safeTransfer(to, collateralAmountToGive);
+        if (data.length > 0) {
+            IRepayCallee(who).repayCallStablecoin(msg.sender, stableAmountToRepay, collateralAmountToGive, data);
+        }
+        stablecoin.transferFrom(msg.sender, address(this), stableAmountToRepay);
+        return (collateralAmountToGive, stableAmountToRepay);
     }
 
     /// @notice Recovers leftover tokens from the contract or tokens that were mistakenly sent to the contract
