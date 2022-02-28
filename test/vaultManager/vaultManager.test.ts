@@ -264,6 +264,8 @@ contract('VaultManager', () => {
     });
   });
 
+  describe('removeCollateral', () => {});
+
   describe('borrow', () => {
     it('reverts - limit CF', async () => {
       // Collat amount in stable should be 4

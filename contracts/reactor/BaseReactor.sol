@@ -459,6 +459,8 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         oracle = vaultManager.oracle();
     }
 
+    // ======================== Governance Functions ===============================
+
     /// @notice Changes the treasury contract
     /// @dev Like the function above, this permissionless function just adjusts the treasury to
     /// the address of the treasury contract from the `vaultManager` in case it has been modified

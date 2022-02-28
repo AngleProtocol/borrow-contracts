@@ -396,7 +396,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         _burn(vaultID);
         return (currentDebt, vault.collateralAmount, oracleValue, newInterestRateAccumulator);
     }
-
+    
     /// @notice Increases the collateral balance of a vault
     /// @param vaultID ID of the vault to increase the collateral balance of
     /// @param collateralAmount Amount by which increasing the collateral balance of
@@ -768,7 +768,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // The quantity below tends to be rounded in the above direction, which means that governance should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + dust) {
+            if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + _dust) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
                 // We're rounding up the max amount to repay to make sure all the debt ends up being paid
                 // and we're computing again the real value of the debt to avoid propagation of rounding errors
