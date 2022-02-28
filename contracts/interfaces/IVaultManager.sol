@@ -214,16 +214,8 @@ interface IVaultManagerStorage {
     /// @notice Reference to the collateral handled by this `VaultManager`
     function collateral() external view returns (IERC20);
 
-    /// @notice Stablecoin handled by this contract. Another `VaultManager` contract could have
-    /// the same rights as this `VaultManager` on the stablecoin contract
-    function stablecoin() external view returns (IAgToken);
-
     /// @notice Total normalized amount of stablecoins borrowed
     function totalNormalizedDebt() external view returns (uint256);
-
-    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
-    /// determines the minimum collateral ratio of a position
-    function collateralFactor() external view returns (uint64);
 
     /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
     function vaultData(uint256 vaultID) external view returns (uint256 collateralAmount, uint256 normalizedDebt);

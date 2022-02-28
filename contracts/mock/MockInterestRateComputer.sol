@@ -8,7 +8,7 @@ contract MockInterestRateComputer {
     uint256 public immutable baseInterest;
     uint256 public immutable halfBase;
 
-    uint256 constant week = 7 * 86400;
+    uint256 public constant WEEK = 7 * 86400;
 
     constructor(uint256 _baseInterest, uint256 _interestRate) {
         interestAccumulator = _baseInterest;
@@ -116,7 +116,7 @@ contract MockInterestRateComputer {
     function calculateAngle1Year() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
         for (uint256 i = 0; i < 52; i++) {
-            _interestAccumulator = _calculateAngle(week, _interestAccumulator);
+            _interestAccumulator = _calculateAngle(WEEK, _interestAccumulator);
         }
         return _interestAccumulator;
     }
@@ -124,7 +124,7 @@ contract MockInterestRateComputer {
     function calculateAave1Year() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
         for (uint256 i = 0; i < 52; i++) {
-            _interestAccumulator = _calculateAave(week, _interestAccumulator);
+            _interestAccumulator = _calculateAave(WEEK, _interestAccumulator);
         }
         return _interestAccumulator;
     }
@@ -132,28 +132,28 @@ contract MockInterestRateComputer {
     function calculateMaker1Year() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
         for (uint256 i = 0; i < 52; i++) {
-            _interestAccumulator = _calculateMaker(week, _interestAccumulator);
+            _interestAccumulator = _calculateMaker(WEEK, _interestAccumulator);
         }
         return _interestAccumulator;
     }
 
     function calculateAngle1YearDirect() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
-        _interestAccumulator = _calculateAngle(52 * week, _interestAccumulator);
+        _interestAccumulator = _calculateAngle(52 * WEEK, _interestAccumulator);
 
         return _interestAccumulator;
     }
 
     function calculateAave1YearDirect() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
-        _interestAccumulator = _calculateAave(52 * week, _interestAccumulator);
+        _interestAccumulator = _calculateAave(52 * WEEK, _interestAccumulator);
 
         return _interestAccumulator;
     }
 
     function calculateMaker1YearDirect() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
-        _interestAccumulator = _calculateMaker(52 * week, _interestAccumulator);
+        _interestAccumulator = _calculateMaker(52 * WEEK, _interestAccumulator);
 
         return _interestAccumulator;
     }

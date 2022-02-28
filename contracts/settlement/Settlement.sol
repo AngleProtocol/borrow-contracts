@@ -118,10 +118,10 @@ contract Settlement {
     ) external returns (uint256, uint256) {
         require(
             activationTimestamp != 0 && block.timestamp <= activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION,
-            "41"
+            "46"
         );
-        require(!vaultCheck[vaultID], "43");
-        require(vaultManager.ownerOf(vaultID) == msg.sender, "42");
+        require(!vaultCheck[vaultID], "48");
+        require(vaultManager.ownerOf(vaultID) == msg.sender, "47");
         (uint256 collateralAmount, uint256 normalizedDebt) = vaultManager.vaultData(vaultID);
         uint256 vaultDebt = (normalizedDebt * interestAccumulator) / BASE_INTEREST;
         require(collateralAmount * oracleValue * collateralFactor >= vaultDebt * BASE_PARAMS * _collatBase, "21");
@@ -138,7 +138,7 @@ contract Settlement {
     function activateGlobalClaimPeriod() external onlyGovernor {
         require(
             activationTimestamp != 0 && block.timestamp > activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION,
-            "44"
+            "49"
         );
         uint256 collateralBalance = collateral.balanceOf(address(this));
         uint256 leftOverDebt = (vaultManager.totalNormalizedDebt() * interestAccumulator) / BASE_INTEREST;
@@ -182,7 +182,7 @@ contract Settlement {
         address who,
         bytes memory data
     ) external returns (uint256, uint256) {
-        require(exchangeRateComputed, "45");
+        require(exchangeRateComputed, "50");
         return
             _handleRepay(
                 (stablecoinAmount * collateralStablecoinExchangeRate) / BASE_STABLECOIN,
@@ -230,7 +230,7 @@ contract Settlement {
         uint256 amountToRecover
     ) external onlyGovernor {
         if (tokenAddress == address(collateral)) {
-            require(exchangeRateComputed, "45");
+            require(exchangeRateComputed, "50");
             leftOverCollateral -= amountToRecover;
             collateral.safeTransfer(to, amountToRecover);
         } else {
