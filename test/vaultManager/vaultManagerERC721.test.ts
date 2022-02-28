@@ -105,8 +105,6 @@ contract('VaultManager', () => {
     });
 
     it('success - setters', async () => {
-      expect(await vaultManager.dust()).to.be.equal(0.1e9);
-      expect(await vaultManager.dustCollateral()).to.be.equal(0.1e9);
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
       expect(await vaultManager.oracle()).to.be.equal(oracle.address);
       expect(await vaultManager.treasury()).to.be.equal(treasury.address);

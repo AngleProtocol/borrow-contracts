@@ -111,14 +111,14 @@ contract('VaultManager', () => {
     await vaultManager.connect(guardian).togglePause();
   });
 
-  describe.skip('oracle', () => {
+  describe('oracle', () => {
     it('success - read', async () => {
       const oracle = (await ethers.getContractAt(Oracle__factory.abi, await vaultManager.oracle())) as Oracle;
       expect(await oracle.read()).to.be.equal(parseUnits('2', 18));
     });
   });
 
-  describe.skip('createVault', () => {
+  describe('createVault', () => {
     it('revert - paused', async () => {
       await vaultManager.connect(guardian).togglePause();
       await expect(vaultManager.createVault(alice.address)).to.be.revertedWith('42');
@@ -131,7 +131,7 @@ contract('VaultManager', () => {
     });
   });
 
-  describe.skip('angle', () => {
+  describe('angle', () => {
     it('revert - paused', async () => {
       await vaultManager.connect(guardian).togglePause();
       await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('42');
@@ -159,7 +159,7 @@ contract('VaultManager', () => {
     });
   });
 
-  describe.skip('addCollateral', () => {
+  describe('addCollateral', () => {
     it('success', async () => {
       const amount = parseUnits('1', collatBase);
       await collateral.connect(alice).mint(alice.address, amount);
@@ -194,7 +194,7 @@ contract('VaultManager', () => {
     });
   });
 
-  describe.skip('borrow', () => {
+  describe('borrow', () => {
     it('revert - limit CF', async () => {
       // Collat amount in stable should be 4
       // So max borrowable amount is 2
@@ -230,7 +230,7 @@ contract('VaultManager', () => {
     });
   });
 
-  describe.skip('discount', () => {
+  describe('discount', () => {
     beforeEach(async () => {
       // Collat amount in stable should be 4
       // So max borrowable amount is 2
@@ -279,8 +279,10 @@ contract('VaultManager', () => {
 
       // Health factor should be
       // `collateralAmountInStable * collateralFactor) / currentDebt`
-      expect((await vaultManager.checkLiquidation(2, bob.address)).discount).to.be.equal(
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).discount,
         (1 - (1 - 2 * 0.9 * 0.5) * 0.5) * 1e9,
+        0.0001,
       );
     });
   });
@@ -336,6 +338,10 @@ contract('VaultManager', () => {
           bob.address,
           bob.address,
         );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - case 2', async () => {
@@ -359,6 +365,19 @@ contract('VaultManager', () => {
         parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - max discount', async () => {
@@ -381,6 +400,19 @@ contract('VaultManager', () => {
         parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - vault has to be emptied', async () => {
@@ -406,6 +438,19 @@ contract('VaultManager', () => {
         collatAmount,
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - dust collateral limit', async () => {
@@ -430,6 +475,19 @@ contract('VaultManager', () => {
         collatAmount,
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
 
     it('success - dust collateral amount from start', async () => {
@@ -459,6 +517,19 @@ contract('VaultManager', () => {
         collatAmount,
         0.0001,
       );
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [(await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay],
+          bob.address,
+          bob.address,
+        );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
   });
 
@@ -481,7 +552,6 @@ contract('VaultManager', () => {
     it('success - one year', async () => {
       const debt = await vaultManager.getTotalDebt();
 
-      console.log('Rate per year is: ', (1 + ratePerSecond) ** (365 * 24 * 3600));
       await displayVaultState(vaultManager, 1, log, collatBase);
 
       await increaseTime(24 * 3600 * 365);

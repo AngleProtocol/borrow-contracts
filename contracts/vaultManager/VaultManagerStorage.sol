@@ -38,8 +38,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     ITreasury public treasury;
     /// @notice Reference to the collateral handled by this `VaultManager`
     IERC20 public collateral;
-    /// @notice Stablecoin handled by this contract. Another `VaultManager` contract could have
-    /// the same rights as this `VaultManager` on the stablecoin contract
+    /// @inheritdoc IVaultManagerStorage
     IAgToken public stablecoin;
     /// @notice Oracle contract to get access to the price of the collateral with respect to the stablecoin
     IOracle public oracle;
@@ -62,8 +61,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     uint256[] public xLiquidationBoost;
     /// @notice Values of the liquidation boost at the threshold values of x
     uint256[] public yLiquidationBoost;
-    /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
-    /// determines the minimum collateral ratio of a position
+    /// @inheritdoc IVaultManagerStorage
     uint64 public collateralFactor;
     /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)
     uint64 public targetHealthFactor;
