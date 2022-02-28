@@ -36,11 +36,11 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     /// @inheritdoc IVaultManagerStorage
     ITreasury public treasury;
-    /// @notice Reference to the collateral handled by this `VaultManager`
+    /// @inheritdoc IVaultManagerStorage
     IERC20 public collateral;
     /// @inheritdoc IVaultManagerStorage
     IAgToken public stablecoin;
-    /// @notice Oracle contract to get access to the price of the collateral with respect to the stablecoin
+    /// @inheritdoc IVaultManagerStorage
     IOracle public oracle;
     /// @notice Reference to the contract which computes adjusted veANGLE balances for liquidators boosts
     IVeBoostProxy public veBoostProxy;
@@ -79,11 +79,9 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     /// @notice Timestamp at which the `interestAccumulator` was updated
     uint256 public lastInterestAccumulatorUpdated;
-    /// @notice Keeps track of the interest that should accrue to the protocol. The stored value
-    /// is not necessarily the true value: this one is recomputed every time an action takes place
-    /// within the protocol
+    /// @inheritdoc IVaultManagerStorage
     uint256 public interestAccumulator;
-    /// @notice Total normalized amount of stablecoins borrowed
+    /// @inheritdoc IVaultManagerStorage
     uint256 public totalNormalizedDebt;
     /// @notice Surplus accumulated by the contract: surplus is always in stablecoins, and is then reset
     /// when the value is communicated to the treasury contract

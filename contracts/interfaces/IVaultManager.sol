@@ -10,7 +10,7 @@ import "./IOracle.sol";
 // ========================= Key Structs and Enums =============================
 
 /// @notice Parameters associated to a given `VaultManager` contract: these all correspond
-/// to parameters which signification is detailed below
+/// to parameters which signification is detailed in the `VaultManagerStorage` file
 struct VaultParameters {
     uint256 debtCeiling;
     uint64 collateralFactor;
@@ -202,6 +202,20 @@ interface IVaultManagerStorage {
 
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury);
+
+    /// @notice Oracle contract to get access to the price of the collateral with respect to the stablecoin
+    function oracle() external view returns (IOracle);
+
+    /// @notice The `interestAccumulator` variable keeps track of the interest that should accrue to the protocol.
+    /// The stored value is not necessarily the true value: this one is recomputed every time an action takes place
+    /// within the protocol
+    function interestAccumulator() external view returns (uint256);
+
+    /// @notice Reference to the collateral handled by this `VaultManager`
+    function collateral() external view returns (IERC20);
+
+    /// @notice Total normalized amount of stablecoins borrowed
+    function totalNormalizedDebt() external view returns (uint256);
 
     /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
     function vaultData(uint256 vaultID) external view returns (uint256 collateralAmount, uint256 normalizedDebt);

@@ -18,7 +18,6 @@
   "16": "caller not approved",
   "17": "too small parameter value",
   "18": "invalid parameter",
-  "19": "invalid treasury contract",
   "20": "not whitelisted",
   "21": "insolvent vault",
   "22": "invalid vaultManager contract",
@@ -31,7 +30,6 @@
   "29": "non ERC721Receiver",
   "30": "incorrect caller",
   "31": "transfer to the zero address",
-  "32": "incorrect Chainlink circuit length",
   "33": "not plugged to the same treasury contract",
   "34": "treasury already initialized",
   "35": "sender is not minter",
@@ -44,5 +42,10 @@
   "42": "contract paused",
   "43": "incorrect parameter",
   "44": "vault is healthy",
-  "45": "exceed debt ceiling"
+  "45": "exceed debt ceiling",
+  "46": "settlement not initialized",
+  "47": "sender is not owner",
+  "48": "vault already claimed",
+  "49": "claim period for over-collateralized vaults has not ended",
+  "50": "claim period of collateral against stablecoins has not started"
 }

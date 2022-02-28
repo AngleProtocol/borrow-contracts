@@ -260,7 +260,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param minter Minter address to remove
     function removeMinter(address minter) external onlyGovernor {
         // To remove the minter role to a `vaultManager` you have to go through the `removeVaultManager` function
-        require(!vaultManagerMap[minter], "40");
+        require(!vaultManagerMap[minter], "36");
         stablecoin.removeMinter(minter);
     }
 
@@ -316,7 +316,7 @@ contract Treasury is ITreasury, Initializable {
     /// @dev This function is basically a way to remove rights to this contract and grant them to a new one
     /// @dev It could be used to set a new core contract
     function setTreasury(address _treasury) external onlyGovernor {
-        require(ITreasury(_treasury).stablecoin() == stablecoin, "19");
+        require(ITreasury(_treasury).stablecoin() == stablecoin, "6");
         // Flash loan role should be removed before calling this function
         require(!core.isFlashLoanerTreasury(address(this)), "7");
         emit NewTreasurySet(_treasury);

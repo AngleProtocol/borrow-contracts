@@ -21,7 +21,7 @@ contract('Interest Rates', () => {
       parseUnits('1', 27),
       parseUnits('0.000000001243680714', 27),
     )) as MockInterestRateComputer;
-    delta = BigNumber.from(86400 * 52);
+    delta = BigNumber.from(86400 * 52 * 7);
   });
 
   describe('calculate delta', () => {
