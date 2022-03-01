@@ -396,7 +396,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         _burn(vaultID);
         return (currentDebt, vault.collateralAmount, oracleValue, newInterestRateAccumulator);
     }
-    
+
     /// @notice Increases the collateral balance of a vault
     /// @param vaultID ID of the vault to increase the collateral balance of
     /// @param collateralAmount Amount by which increasing the collateral balance of
