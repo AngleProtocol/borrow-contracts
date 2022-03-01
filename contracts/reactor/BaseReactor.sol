@@ -42,7 +42,12 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
         vaultID = _vaultManager.createVault(address(this));
 
-        require(0 < _lowerCF && _lowerCF <= _targetCF && _targetCF <= _upperCF && _upperCF <= _vaultManager.collateralFactor());
+        require(
+            0 < _lowerCF &&
+                _lowerCF <= _targetCF &&
+                _targetCF <= _upperCF &&
+                _upperCF <= _vaultManager.collateralFactor()
+        );
         lowerCF = _lowerCF;
         targetCF = _targetCF;
         upperCF = _upperCF;
@@ -222,7 +227,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @notice Handles the new value of the debt: propagates a loss to the claimable rewards
     /// or a gain depending on the evolution of this debt
     /// @param currentDebt Current value of the debt
-    /// @notice In the case where you get liquidated, you actually record a gain in stablecoin, 
+    /// @notice In the case where you get liquidated, you actually record a gain in stablecoin,
     /// which is normal to compensate for the decrease of the collateral in the vault
     function _handleCurrentDebt(uint256 currentDebt) internal {
         if (lastDebt >= currentDebt) {
@@ -414,7 +419,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     // ======================== Governance Functions ===============================
 
     /// @notice Changes the reference to the `oracle` contract
-    /// @dev This is a permissionless function anyone can call to make sure that the oracle 
+    /// @dev This is a permissionless function anyone can call to make sure that the oracle
     /// contract of the `VaultManager` is the same as the oracle contract of this contract
     function setOracle() external {
         oracle = vaultManager.oracle();

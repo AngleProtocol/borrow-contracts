@@ -100,12 +100,12 @@ contract('VaultManager - ERC721', () => {
   describe('initializer', () => {
     it('reverts - oracle treasury differs', async () => {
       oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, collatBase, ZERO_ADDRESS);
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('33');
     });
 
     it('success - setters', async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
       expect(await vaultManager.oracle()).to.be.equal(oracle.address);
       expect(await vaultManager.treasury()).to.be.equal(treasury.address);
       expect(await vaultManager.collateral()).to.be.equal(collateral.address);
@@ -117,7 +117,7 @@ contract('VaultManager - ERC721', () => {
     });
 
     it('success - access control', async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
       await expect(vaultManager.connect(alice).togglePause()).to.be.reverted;
       await expect(vaultManager.connect(deployer).togglePause()).to.be.reverted;
       await expect(vaultManager.connect(proxyAdmin).togglePause()).to.be.reverted;
@@ -131,50 +131,50 @@ contract('VaultManager - ERC721', () => {
     });
 
     it('reverts - already initialized', async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
       await expect(tx).to.be.reverted;
     });
 
     it('reverts - collateral factor > liquidation surcharge', async () => {
       const auxPar = { ...params };
       auxPar.collateralFactor = 0.95e9;
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('reverts - targetHealthFactor < 1', async () => {
       const auxPar = { ...params };
       auxPar.targetHealthFactor = 0.999e9;
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('reverts - liquidationSurcharge > 1', async () => {
       const auxPar = { ...params };
       auxPar.liquidationSurcharge = 1.0001e9;
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('reverts - borrowFee > 1', async () => {
       const auxPar = { ...params };
       auxPar.borrowFee = 1.0001e9;
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('15');
     });
 
     it('reverts - maxLiquidationDiscount > 1', async () => {
       const auxPar = { ...params };
       auxPar.maxLiquidationDiscount = 1.0001e9;
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar);
+      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('15');
     });
   });
 
   describe('ERC721', () => {
     beforeEach(async () => {
-      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
+      await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
       await vaultManager.connect(guardian).togglePause();
     });
     describe('getControlledVaults', () => {

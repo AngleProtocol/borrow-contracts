@@ -91,7 +91,7 @@ contract('VaultManager - Setters', () => {
     await treasury.addMinter(agToken.address, vaultManager.address);
 
     oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
-    await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params);
+    await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
   });
 
@@ -272,13 +272,24 @@ contract('VaultManager - Setters', () => {
     });
     it('success - governor', async () => {
       await vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [22, 23], [100, 101]);
+      expect(await vaultManager.veBoostProxy()).to.be.equal(agToken.address);
     });
-    it('reverts - invalid entry', async () => {
-      await expect(vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [22], [])).to.be.reverted;
+    it('reverts - zero yBoost', async () => {
+      await expect(
+        vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [22], [0]),
+      ).to.be.revertedWith('15');
     });
-    it('reverts - invalid entry', async () => {
-      await expect(vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [22], [23])).to.be
-        .reverted;
+    it('reverts - wrong xBoost and yBoost', async () => {
+      await expect(
+        vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [22, 21], [1, 2]),
+      ).to.be.revertedWith('15');
+      await expect(
+        vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [21, 22], [2, 1]),
+      ).to.be.revertedWith('15');
+    });
+    it('success - zero address', async () => {
+      await vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [0], [100, 101]);
+      expect(await vaultManager.veBoostProxy()).to.be.equal(ZERO_ADDRESS);
     });
   });
 });

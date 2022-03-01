@@ -102,6 +102,8 @@
     "dayjs": "^1.10.7",
     "eslint-plugin-mocha": "^10.0.3",
     "eslint-plugin-simple-import-sort": "^7.0.0",
+    "eth-sig-util": "^3.0.1",
+    "ethereumjs-util": "^7.1.4",
     "fs-extra": "^10.0.0",
     "solc": "0.8.12"
   }

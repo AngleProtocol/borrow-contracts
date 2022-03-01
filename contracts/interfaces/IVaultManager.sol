@@ -175,7 +175,7 @@ interface IVaultManagerFunctions {
     /// @param _treasury Treasury address handling the contract
     /// @param _collateral Collateral supported by this contract
     /// @param _oracle Oracle contract used
-    /// @param symbol Symbol used to define the `VaultManager` name and symbol
+    /// @param _symbol Symbol used to define the `VaultManager` name and symbol
     /// @dev The parameters and the oracle are the only elements which could be modified once the
     /// contract has been initialized
     /// @dev For the contract to be fully initialized, governance needs to set the parameters for the liquidation
@@ -185,7 +185,7 @@ interface IVaultManagerFunctions {
         IERC20 _collateral,
         IOracle _oracle,
         VaultParameters calldata params,
-        string memory symbol
+        string memory _symbol
     ) external;
 }
 

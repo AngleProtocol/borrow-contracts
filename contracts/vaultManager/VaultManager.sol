@@ -20,7 +20,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         IERC20 _collateral,
         IOracle _oracle,
         VaultParameters calldata params,
-        string memory symbol
+        string memory _symbol
     ) public initializer {
         require(_oracle.treasury() == _treasury, "33");
         treasury = _treasury;
@@ -29,8 +29,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
 
-        name = string.concat("Angle Protocol ", symbol, " Vault");
-        symbol = string.concat(symbol, "-vault");
+        name = string.concat("Angle Protocol ", _symbol, " Vault");
+        symbol = string.concat(_symbol, "-vault");
 
         interestAccumulator = BASE_INTEREST;
         lastInterestAccumulatorUpdated = block.timestamp;
@@ -91,7 +91,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     // ========================= External Access Functions =========================
 
     /// @inheritdoc IVaultManagerFunctions
-    function createVault(address toVault) external returns (uint256) {
+    function createVault(address toVault) external whenNotPaused returns (uint256) {
         return _mint(toVault);
     }
 
@@ -273,6 +273,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param vaultID ID of the vault to check
     /// @param liquidator Address of the liquidator which will be performing the liquidation
     /// @return liqOpp Description of the opportunity of liquidation
+    /// @dev This function will revert if it's called on a vault that does not exist
     function checkLiquidation(uint256 vaultID, address liquidator)
         external
         view
@@ -383,7 +384,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         _burn(vaultID);
         return (currentDebt, vault.collateralAmount, oracleValue, newInterestRateAccumulator);
     }
-    
+
     /// @notice Increases the collateral balance of a vault
     /// @param vaultID ID of the vault to increase the collateral balance of
     /// @param collateralAmount Amount by which increasing the collateral balance of
@@ -517,7 +518,11 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     ) internal returns (uint256) {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
-        uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt - changeAmount;
+        uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt;
+        // In some situations (e.g. liquidations), the `stablecoinAmount` is rounded above and we want to make
+        // sure to avoid underflows in all situations
+        if (changeAmount == newVaultNormalizedDebt + 1) changeAmount = newVaultNormalizedDebt;
+        newVaultNormalizedDebt -= changeAmount;
         totalNormalizedDebt -= changeAmount;
         require(
             newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestRateAccumulator >= _dust * BASE_INTEREST,
@@ -612,7 +617,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param to Address to which discounted collateral should be sent
     /// @param who Address of the contract to handle repayment of stablecoins from received collateral
     /// @param data Data to pass to the repayment contract in case of
-    /// @dev This function will not revert if it's called on a vault that cannot be liquidated
+    /// @dev This function will revert if it's called on a vault that cannot be liquidated or that does not exist
     function liquidate(
         uint256[] memory vaultIDs,
         uint256[] memory amounts,
@@ -635,25 +640,20 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 liqData.newInterestRateAccumulator
             );
 
-            require(
-                liqOpp.maxStablecoinAmountToRepay > 0 && amounts[i] <= liqOpp.maxStablecoinAmountToRepay,
-                // Vault should be liquidable and liquidator should not reimburse more than what can be reimbursed
-                "41"
-            );
             // Makes sure not to leave a dusty amount in the vault by either not liquidating too much
             // or everything
-            if (liqOpp.thresholdRepayAmount > 0 && amounts[i] > liqOpp.thresholdRepayAmount)
-                amounts[i] = liqOpp.maxStablecoinAmountToRepay;
+            if (
+                (liqOpp.thresholdRepayAmount > 0 && amounts[i] > liqOpp.thresholdRepayAmount) ||
+                amounts[i] > liqOpp.maxStablecoinAmountToRepay
+            ) amounts[i] = liqOpp.maxStablecoinAmountToRepay;
 
             // liqOpp.discount stores in fact `1-discount`
             uint256 collateralReleased = (amounts[i] * BASE_PARAMS * _collatBase) /
                 (liqOpp.discount * liqData.oracleValue);
-            liqData.collateralAmountToGive += collateralReleased;
-            liqData.stablecoinAmountToReceive += amounts[i];
-
-            // `collateralReleased` cannot be greater than the `collateralAmount` of the vault if the amount provided
-            // by the liquidator is inferior to the `maxStablecoinAmountToRepay`
-            if (vault.collateralAmount == collateralReleased) {
+            // Because we're rounding up in some divisions, `collateralReleased` can be greater than the `collateralAmount` of the vault
+            // In this case, `stablecoinAmountToReceive` is still rounded up
+            if (vault.collateralAmount <= collateralReleased) {
+                collateralReleased = vault.collateralAmount;
                 // Reinitializing the `vaultID`: we're not burning the vault in this case for integration purposes
                 delete vaultData[vaultIDs[i]];
                 liqData.badDebtFromLiquidation +=
@@ -668,6 +668,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     liqData.newInterestRateAccumulator
                 );
             }
+            liqData.collateralAmountToGive += collateralReleased;
+            liqData.stablecoinAmountToReceive += amounts[i];
         }
         // Normalization of good and bad debt is already handled in the `_accrue` function
         surplus += (liqData.stablecoinAmountToReceive * (BASE_PARAMS - liquidationSurcharge)) / BASE_PARAMS;
@@ -690,6 +692,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             oracleValue,
             newInterestRateAccumulator
         );
+        // Health factor of a vault that does not exist is `type(uint256).max`
         require(healthFactor < BASE_PARAMS, "44");
 
         uint256 liquidationDiscount = (_computeLiquidationBoost(liquidator) * (BASE_PARAMS - healthFactor)) /
@@ -717,7 +720,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
             if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + _dust) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
-                maxAmountToRepay = (currentDebt * BASE_PARAMS) / surcharge;
+                // We're rounding up the max amount to repay to make sure all the debt ends up being paid
+                maxAmountToRepay = (currentDebt * BASE_PARAMS) / surcharge + 1;
                 // In this case the threshold amount is such that it leaves just enough dust
                 // This line cannot underflow as long as the  `_dust` parameter is constant: it is always checked that
                 // the debt is greater than the  `_dust`. If the  `_dust` was to increase due to an implementation upgrade
@@ -727,7 +731,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         } else {
             // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
             // in the liquidated vault
-            maxAmountToRepay = (collateralAmountInStable * liquidationDiscount) / BASE_PARAMS;
+            // Rounding up to make sure all gets liquidated in this case: the liquidator will never get more than the collateral
+            // amount in the vault however
+            maxAmountToRepay = (collateralAmountInStable * liquidationDiscount) / BASE_PARAMS + 1;
             // It should however make sure not to leave a dusty amount of collateral (in stablecoin value) in the vault
             if (collateralAmountInStable > _dustCollateral)
                 thresholdRepayAmount =
@@ -811,7 +817,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param yBoost Values of the liquidation boost at the threshold values of x
     /// @dev There are 2 modes:
     /// When boost is enabled, `xBoost` and `yBoost` should have a length of 2, but if they have a
-    /// higher length contract will still work as expected
+    /// higher length contract will still work as expected. Contract will also work as expected if their
+    /// length differ
     /// When boost is disabled, `_veBoostProxy` needs to be zero address and `yBoost[0]` is the base boost
     function setLiquidationBoostParameters(
         address _veBoostProxy,
@@ -819,8 +826,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256[] memory yBoost
     ) external onlyGovernorOrGuardian {
         require(
-            (_veBoostProxy == address(0) && yBoost[0] > 0) ||
-                (yBoost.length == xBoost.length && yBoost[0] > 0 && xBoost[1] > xBoost[0] && yBoost[1] >= yBoost[0]),
+            (yBoost[0] > 0) && ((_veBoostProxy == address(0)) || (xBoost[1] > xBoost[0] && yBoost[1] >= yBoost[0])),
             "15"
         );
         veBoostProxy = IVeBoostProxy(_veBoostProxy);

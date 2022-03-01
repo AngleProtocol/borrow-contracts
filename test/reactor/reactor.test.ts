@@ -108,15 +108,13 @@ contract('Reactor', () => {
     await reactor.initialize(
       'ANGLE/agEUR Mock Reactor',
       'ANGLE/agEUR Mock Reactor',
-      angle.address,
       vaultManager.address,
-      treasury.address,
-      oracle.address,
       lowerCF,
       targetCF,
       upperCF,
-      params,
     );
+
+    // TODO fix tests here with correct vaultManager and with a base and an abstract contract built on top of it
 
     await vaultManager.connect(guardian).togglePause();
   });
