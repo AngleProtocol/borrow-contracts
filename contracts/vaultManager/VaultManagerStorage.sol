@@ -49,13 +49,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     // =============================== Parameters ==================================
 
-<<<<<<< HEAD
     /// @inheritdoc IVaultManagerStorage
     uint256 public immutable dust;
-=======
-    /// @notice Minimum amount of debt a vault can have
-    uint256 internal immutable _dust;
->>>>>>> 7476725 (first tests for vaultManager)
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
     uint256 internal immutable _dustCollateral;

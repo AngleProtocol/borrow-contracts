@@ -11,12 +11,9 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "../interfaces/IERC4626.sol";
 import "../interfaces/IVaultManager.sol";
 
-<<<<<<< HEAD
 /// @title BaseReactorStorage
 /// @author Angle Core Team
 /// @dev Variables, references, parameters and events needed in the `BaseReactor` contract
-=======
->>>>>>> 7476725 (first tests for vaultManager)
 // solhint-disable-next-line max-states-count
 contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     /// @notice Base used for parameter computation
