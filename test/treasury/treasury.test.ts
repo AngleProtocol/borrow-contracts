@@ -288,7 +288,6 @@ contract('Treasury', () => {
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await stablecoin.balanceOf(treasury.address)).to.be.equal(parseEther('9'));
     });
-    // TODO test with correct balance
   });
   describe('setTreasury', () => {
     it('reverts - nonGovernor', async () => {
