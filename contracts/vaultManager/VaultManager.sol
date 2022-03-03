@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerERC721.sol";
+import "hardhat/console.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -768,7 +769,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // The quantity below tends to be rounded in the above direction, which means that governance should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + _dust) {
+            if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + dust) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
                 // We're rounding up the max amount to repay to make sure all the debt ends up being paid
                 // and we're computing again the real value of the debt to avoid propagation of rounding errors
