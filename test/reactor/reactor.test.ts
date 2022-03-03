@@ -130,6 +130,7 @@ contract('Reactor', () => {
     );
   });
 
+  /*
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -975,5 +976,135 @@ contract('Reactor', () => {
       expect(await reactor.lastDebt()).to.be.equal(0);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(gains.add(balancePre));
     });
+    it('success - from approved by msg.sender and reduced allowance', async () => {
+      await reactor.connect(alice).approve(bob.address, sharesAmount);
+      const receipt = await (await reactor.connect(bob).withdraw(assetsAmount, alice.address, alice.address)).wait();
+      inReceipt(receipt, 'Withdraw', {
+        from: alice.address,
+        to: alice.address,
+        amount: assetsAmount,
+        shares: sharesAmount,
+      });
+      inIndirectReceipt(
+        receipt,
+        new utils.Interface(['event Transfer(address indexed from, address indexed to, uint256 value)']),
+        'Transfer',
+        {
+          from: reactor.address,
+          to: alice.address,
+          value: assetsAmount,
+        },
+      );
+      expect(await reactor.balanceOf(alice.address)).to.be.equal(parseUnits('0.2', collatBase));
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect(await ANGLE.balanceOf(vaultManager.address)).to.be.equal(totalAsset.sub(assetsAmount));
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(assetsAmount);
+      expect(await reactor.allowance(alice.address, bob.address)).to.be.equal(0);
+      expectApprox(await vaultManager.getVaultDebt(1), totalAsset.sub(assetsAmount).mul(2).mul(targetCF), 0.00001);
+    });
+    it('success - from approved by msg.sender and different to address', async () => {
+      await reactor.connect(alice).approve(bob.address, sharesAmount);
+      const receipt = await (await reactor.connect(bob).withdraw(assetsAmount, bob.address, alice.address)).wait();
+      inReceipt(receipt, 'Withdraw', {
+        from: alice.address,
+        to: bob.address,
+        amount: assetsAmount,
+        shares: sharesAmount,
+      });
+      inIndirectReceipt(
+        receipt,
+        new utils.Interface(['event Transfer(address indexed from, address indexed to, uint256 value)']),
+        'Transfer',
+        {
+          from: reactor.address,
+          to: bob.address,
+          value: assetsAmount,
+        },
+      );
+      expect(await reactor.balanceOf(alice.address)).to.be.equal(parseUnits('0.2', collatBase));
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect(await ANGLE.balanceOf(vaultManager.address)).to.be.equal(totalAsset.sub(assetsAmount));
+      expect(await ANGLE.balanceOf(bob.address)).to.be.equal(assetsAmount);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(0);
+      expect(await reactor.allowance(alice.address, bob.address)).to.be.equal(0);
+      expectApprox(await vaultManager.getVaultDebt(1), totalAsset.sub(assetsAmount).mul(2).mul(targetCF), 0.00001);
+    });
+    it('success - from approved by msg.sender and different to address with a max approval', async () => {
+      await reactor.connect(alice).approve(bob.address, MAX_UINT256);
+      await reactor.connect(bob).withdraw(assetsAmount, bob.address, alice.address);
+      expect(await reactor.balanceOf(alice.address)).to.be.equal(parseUnits('0.2', collatBase));
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect(await ANGLE.balanceOf(vaultManager.address)).to.be.equal(totalAsset.sub(assetsAmount));
+      expect(await ANGLE.balanceOf(bob.address)).to.be.equal(assetsAmount);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(0);
+      expect(await reactor.allowance(alice.address, bob.address)).to.be.equal(MAX_UINT256);
+      expectApprox(await vaultManager.getVaultDebt(1), totalAsset.sub(assetsAmount).mul(2).mul(targetCF), 0.00001);
+    });
   });
+  describe('claim', () => {
+    it('reverts - when nothing in the reactor because division by zero', async () => {
+      await expect(reactor.connect(alice).claim(alice.address)).to.be.reverted;
+    });
+    it('reverts - when 0 claimable rewards', async () => {
+      await expect(reactor.connect(alice).claim(alice.address)).to.be.reverted;
+    });
+    it('success - when there are claimable rewards', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      // Shares amount is consumed
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
+      expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
+      await treasury.addMinter(agEUR.address, bob.address);
+      await agEUR.connect(bob).mint(bob.address, parseEther('1'));
+      // To make a gain we need to repay debt on behalf of the vault
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('0.8'))]);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
+      expect(await reactor.lastDebt()).to.be.equal(parseEther('1.6'));
+      expect(await reactor.currentLoss()).to.be.equal(parseEther('0'));
+      const claimable = await reactor.claimableRewards();
+      expectApprox(claimable, parseEther('0.8'), 0.00001);
+      await reactor.claim(alice.address);
+      // In this implementation, `pull` just returns 0
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);
+      expect(await reactor.claimableRewards()).to.be.equal(0);
+      expect(await reactor.rewardsAccumulatorOf(alice.address)).to.be.equal(0);
+      expect(await reactor.lastTimeOf(alice.address)).to.be.equal(await latestTime());
+      expect(await reactor.claimedRewardsAccumulator()).to.be.equal(await reactor.rewardsAccumulator());
+    });
+    it('success - when there are claimable rewards but that a small loss decreased it', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      // Shares amount is consumed
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
+      expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
+      await treasury.addMinter(agEUR.address, bob.address);
+      await agEUR.connect(bob).mint(bob.address, parseEther('1'));
+      // To make a gain we need to repay debt on behalf of the vault
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('0.8'))]);
+      // Here we record a gain
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
+      // But here we record a loss since interest have been taken in the meantime
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(97));
+      expectApprox(await reactor.lastDebt(), parseEther('1.6'), 0.0001);
+      expect(await reactor.currentLoss()).to.be.equal(parseEther('0'));
+      // There are still claimable rewards
+      const claimable = await reactor.claimableRewards();
+      expectApprox(claimable, parseEther('0.8'), 0.00001);
+      await reactor.claim(alice.address);
+      // In this implementation, `pull` just returns 0
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);
+      expect(await reactor.claimableRewards()).to.be.equal(0);
+      expect(await reactor.rewardsAccumulatorOf(alice.address)).to.be.equal(0);
+      expect(await reactor.lastTimeOf(alice.address)).to.be.equal(await latestTime());
+      expect(await reactor.claimedRewardsAccumulator()).to.be.equal(await reactor.rewardsAccumulator());
+    });
+  });
+  */
 });
