@@ -58,6 +58,7 @@ contract('VaultManager', () => {
   let stableMaster: MockStableMaster;
   let agToken: AgToken;
   let vaultManager: VaultManager;
+  let mockRepayCallee: MockRepayCallee;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -546,7 +547,7 @@ contract('VaultManager', () => {
     });
   });
   describe('permit', () => {
-    it('success - allowance given', async () => {
+    beforeEach(async () => {
       // Need to have agToken as a collateral here
       stableMaster = await new MockStableMaster__factory(deployer).deploy();
       agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
@@ -565,7 +566,8 @@ contract('VaultManager', () => {
       oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
       await vaultManager.initialize(treasury.address, agToken.address, oracle.address, params, 'USDC/agEUR');
       await vaultManager.connect(guardian).togglePause();
-
+    });
+    it('success - allowance given', async () => {
       const permitData = await signPermit(
         bob,
         0,
@@ -579,25 +581,6 @@ contract('VaultManager', () => {
       expect(await agToken.allowance(bob.address, vaultManager.address)).to.be.equal(parseEther('1'));
     });
     it('reverts - invalid signature', async () => {
-      // Need to have agToken as a collateral here
-      stableMaster = await new MockStableMaster__factory(deployer).deploy();
-      agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
-      await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
-      vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
-      treasury = await new MockTreasury__factory(deployer).deploy(
-        agToken.address,
-        governor.address,
-        guardian.address,
-        vaultManager.address,
-        ZERO_ADDRESS,
-        ZERO_ADDRESS,
-      );
-      await agToken.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
-      await treasury.addMinter(agToken.address, vaultManager.address);
-      oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
-      await vaultManager.initialize(treasury.address, agToken.address, oracle.address, params, 'USDC/agEUR');
-      await vaultManager.connect(guardian).togglePause();
-
       const permitData = await signPermit(
         bob,
         0,
@@ -611,52 +594,62 @@ contract('VaultManager', () => {
     });
   });
   describe('composed actions', () => {
-    it('success - stablecoin and collateral to receive by the protocol', async () => {
-      const collatAmount = parseUnits('2', collatBase);
-      const borrowAmount = parseEther('1.999');
+    const collatAmount = parseUnits('2', collatBase);
+    const borrowAmount = parseEther('1.999');
+    beforeEach(async () => {
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
+      await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount.mul(1000));
       await angle(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
-        addCollateral(2, collatAmount),
+        addCollateral(2, collatAmount.mul(2)),
         borrow(2, borrowAmount),
       ]);
-      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+    });
+    it('success - stablecoin and collateral to receive by the protocol', async () => {
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(2));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       await angle(vaultManager, alice, [addCollateral(2, collatAmount), repayDebt(2, parseEther('1'))]);
-      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(2));
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
     });
+    it('success - stablecoin and collateral to receive by the protocol with a different from address', async () => {
+      await agToken.connect(bob).approve(alice.address, parseEther('10'));
+      await angle(
+        vaultManager,
+        alice,
+        [addCollateral(2, collatAmount), repayDebt(2, parseEther('1'))],
+        bob.address,
+        alice.address,
+        ZERO_ADDRESS,
+        web3.utils.keccak256('test'),
+      );
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
+    });
+    it('reverts - stablecoin and collateral to receive by the protocol but from address has not approved', async () => {
+      await expect(
+        angle(
+          vaultManager,
+          alice,
+          [addCollateral(2, collatAmount), repayDebt(2, parseEther('1'))],
+          bob.address,
+          alice.address,
+          ZERO_ADDRESS,
+          web3.utils.keccak256('test'),
+        ),
+      ).to.be.revertedWith('23');
+    });
     it('success - stablecoin and collateral to be paid by the protocol', async () => {
-      const collatAmount = parseUnits('2', collatBase);
-      const borrowAmount = parseEther('1.999');
-      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
-      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
-        createVault(alice.address),
-        createVault(alice.address),
-        addCollateral(2, collatAmount.mul(2)),
-      ]);
-      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(2));
-      await angle(vaultManager, alice, [removeCollateral(2, collatAmount), borrow(2, borrowAmount)]);
-      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
-      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+      await angle(vaultManager, alice, [createVault(alice.address), addCollateral(3, collatAmount.mul(2))]);
+      expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount.mul(2));
+      await angle(vaultManager, alice, [removeCollateral(3, collatAmount), borrow(3, borrowAmount)]);
+      expectApprox(await vaultManager.getVaultDebt(3), parseEther('1.9989'), 0.1);
+      expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount);
     });
     it('success - handle repay with repay callee', async () => {
-      const collatAmount = parseUnits('2', collatBase);
-      const borrowAmount = parseEther('1.999');
-      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
-      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
-        createVault(alice.address),
-        createVault(alice.address),
-        addCollateral(2, collatAmount.mul(2)),
-        borrow(2, borrowAmount),
-      ]);
-      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(2));
-      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
-      const mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
       await angle(
         vaultManager,
         alice,
@@ -671,18 +664,6 @@ contract('VaultManager', () => {
       expect(await mockRepayCallee.counter()).to.be.equal(1);
     });
     it('success - handle repay with repay callee and null stablecoin amount to repay', async () => {
-      const collatAmount = parseUnits('2', collatBase);
-      const borrowAmount = parseEther('1.999');
-      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
-      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
-        createVault(alice.address),
-        createVault(alice.address),
-        addCollateral(2, collatAmount.mul(2)),
-        borrow(2, borrowAmount),
-      ]);
-      const mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
-
       await angle(
         vaultManager,
         alice,
@@ -696,18 +677,80 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(0);
     });
+    it('success - handle repay with repay callee, null stablecoin amount to repay and a different to address', async () => {
+      await angle(
+        vaultManager,
+        alice,
+        [removeCollateral(2, collatAmount)],
+        alice.address,
+        bob.address,
+        mockRepayCallee.address,
+        web3.utils.keccak256('test'),
+      );
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
+      expect(await mockRepayCallee.counter()).to.be.equal(0);
+      expect(await collateral.balanceOf(bob.address)).to.be.equal(collatAmount);
+    });
+    it('reverts - from address not approved', async () => {
+      await expect(
+        angle(
+          vaultManager,
+          alice,
+          [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
+          bob.address,
+          bob.address,
+          mockRepayCallee.address,
+          web3.utils.keccak256('test'),
+        ),
+      ).to.be.revertedWith('23');
+    });
+    it('reverts - when the who address is invalid', async () => {
+      await expect(
+        angle(
+          vaultManager,
+          alice,
+          [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
+          bob.address,
+          bob.address,
+          ZERO_ADDRESS,
+          web3.utils.keccak256('test'),
+        ),
+      ).to.be.reverted;
+    });
+    it('success - with an approved address', async () => {
+      await agToken.connect(bob).approve(alice.address, parseEther('10'));
+      await angle(
+        vaultManager,
+        alice,
+        [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
+        bob.address,
+        bob.address,
+        mockRepayCallee.address,
+        web3.utils.keccak256('test'),
+      );
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+      expect(await mockRepayCallee.counter()).to.be.equal(1);
+      expect(await collateral.balanceOf(bob.address)).to.be.equal(collatAmount);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
+    });
+    it('success - with an approved address but no who contract', async () => {
+      await agToken.connect(bob).approve(alice.address, parseEther('10'));
+      await angle(
+        vaultManager,
+        alice,
+        [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
+        bob.address,
+        bob.address,
+        ZERO_ADDRESS,
+        '0x',
+      );
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+      expect(await mockRepayCallee.counter()).to.be.equal(0);
+      expect(await collateral.balanceOf(bob.address)).to.be.equal(collatAmount);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
+    });
     it('success - repayCallCollateral', async () => {
-      const collatAmount = parseUnits('2', collatBase);
-      const borrowAmount = parseEther('1.999');
-      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
-      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
-        createVault(alice.address),
-        createVault(alice.address),
-        addCollateral(2, collatAmount.mul(2)),
-        borrow(2, borrowAmount),
-      ]);
-      const mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
       await angle(
         vaultManager,
         alice,

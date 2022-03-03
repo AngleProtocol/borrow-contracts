@@ -37,7 +37,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         treasury = _vaultManager.treasury();
         oracle = _vaultManager.oracle();
         asset = _asset;
-        _assetBase = IERC20Metadata(address(_asset)).decimals();
+        _assetBase = 10**(IERC20Metadata(address(_asset)).decimals());
         lastTime = block.timestamp;
 
         vaultID = _vaultManager.createVault(address(this));
@@ -46,7 +46,8 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
             0 < _lowerCF &&
                 _lowerCF <= _targetCF &&
                 _targetCF <= _upperCF &&
-                _upperCF <= _vaultManager.collateralFactor()
+                _upperCF <= _vaultManager.collateralFactor(),
+            "15"
         );
         lowerCF = _lowerCF;
         targetCF = _targetCF;
@@ -62,13 +63,13 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        require(treasury.isGovernor(msg.sender));
+        require(treasury.isGovernor(msg.sender), "1");
         _;
     }
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
-        require(treasury.isGovernorOrGuardian(msg.sender));
+        require(treasury.isGovernorOrGuardian(msg.sender), "2");
         _;
     }
 
@@ -138,9 +139,10 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     /// @notice Claims earned rewards
     /// @param from Address to claim for
-    function claim(address from) public nonReentrant returns (uint256 amount) {
+    /// @return Amount claimed
+    function claim(address from) public nonReentrant returns (uint256) {
         _updateAccumulator(from);
-        amount = _claim(from);
+        return _claim(from);
     }
 
     // ============================= View Functions ================================
@@ -218,7 +220,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         uint256,
         bytes memory
     ) external view returns (bytes4) {
-        require(msg.sender == address(vaultManager));
+        require(msg.sender == address(vaultManager), "3");
         return this.onERC721Received.selector;
     }
 
@@ -229,6 +231,9 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @param currentDebt Current value of the debt
     /// @notice In the case where you get liquidated, you actually record a gain in stablecoin,
     /// which is normal to compensate for the decrease of the collateral in the vault
+    /// @dev In case where a loss (like from interest taken by the `vaultManager`) is planned, then stakeholders
+    /// are incentivized to front run it and claim their rewards in advance. In normal times, this reactor therefore
+    /// works well mostly with `vaultManager` on which there are no interest taken (and no borrowing fees)
     function _handleCurrentDebt(uint256 currentDebt) internal {
         if (lastDebt >= currentDebt) {
             // This happens if you have been liquidated or if debt has been paid on your behalf
@@ -238,7 +243,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
             if (claimableRewards >= loss) {
                 claimableRewards -= loss;
             } else {
-                currentLoss = loss - claimableRewards;
+                currentLoss += loss - claimableRewards;
                 claimableRewards = 0;
             }
         }
@@ -247,10 +252,11 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @notice Propagates a gain to the claimable rewards
     /// @param gain Gain to propagate
     function _handleGain(uint256 gain) internal {
-        if (currentLoss >= gain) {
+        uint256 currentLossVariable = currentLoss;
+        if (currentLossVariable >= gain) {
             currentLoss -= gain;
         } else {
-            claimableRewards += gain - currentLoss;
+            claimableRewards += gain - currentLossVariable;
             currentLoss = 0;
         }
     }
@@ -352,6 +358,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     /// @notice Claims rewards earned by a user
     /// @param from Address to claim rewards from
+    /// @dev Function will revert if there has been no mint
     function _claim(address from) internal returns (uint256 amount) {
         amount = (claimableRewards * rewardsAccumulatorOf[from]) / (rewardsAccumulator - claimedRewardsAccumulator);
 
@@ -426,12 +433,10 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     }
 
     /// @notice Changes the treasury contract
-    /// @param _treasury Address of the new treasury contract
-    /// @dev To propagate the changes to the oracle, governance should make sure
-    /// to call the oracle contract as well
-    function setTreasury(address _treasury) external {
-        require(treasury.isVaultManager(msg.sender), "3");
-        treasury = ITreasury(_treasury);
+    /// @dev Like the function above, this permissionless function just adjusts the treasury to
+    /// the address of the treasury contract from the `vaultManager` in case it has been modified
+    function setTreasury() external {
+        treasury = vaultManager.treasury();
     }
 
     /// @notice Sets parameters encoded as uint64
@@ -440,13 +445,13 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     /// @dev This function performs the required checks when updating a parameter
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "lowerCF") {
-            require(0 < param && param <= targetCF);
+            require(0 < param && param <= targetCF, "18");
             lowerCF = param;
         } else if (what == "targetCF") {
-            require(lowerCF <= param && param <= upperCF);
+            require(lowerCF <= param && param <= upperCF, "18");
             targetCF = param;
         } else if (what == "upperCF") {
-            require(targetCF <= param && param <= vaultManager.collateralFactor());
+            require(targetCF <= param && param <= vaultManager.collateralFactor(), "18");
             upperCF = param;
         } else {
             revert("43");
