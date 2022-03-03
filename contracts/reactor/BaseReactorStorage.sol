@@ -35,6 +35,7 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     uint64 public lowerCF;
     uint64 public targetCF;
     uint64 public upperCF;
+    uint256 public vaultManagerDust;
 
     /// @notice Last known stable debt to the vaultManager
     uint256 public lastDebt;

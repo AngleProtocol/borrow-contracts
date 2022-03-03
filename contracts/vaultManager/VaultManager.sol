@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerERC721.sol";
+import "hardhat/console.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -146,7 +147,11 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.collateralAmountToGive += collateralAmount;
             } else if (action == ActionType.repayDebt) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
-                newInterestRateAccumulator = _repayDebt(vaultID, stablecoinAmount, newInterestRateAccumulator);
+                (stablecoinAmount, newInterestRateAccumulator) = _repayDebt(
+                    vaultID,
+                    stablecoinAmount,
+                    newInterestRateAccumulator
+                );
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.borrow) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
@@ -441,7 +446,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             uint256 interestRateAccumulator
         )
     {
-        (oracleValue, interestRateAccumulator) = _increaseDebt(
+        (stablecoinAmount, oracleValue, interestRateAccumulator) = _increaseDebt(
             vaultID,
             stablecoinAmount,
             oracleValueStart,
@@ -463,13 +468,15 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 oracleValue,
         uint256 newInterestRateAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
+        // The `stablecoinAmount` needs to be rounded down in the `_increaseDebt` function to reduce the room for exploits
+        (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
         if (address(vaultManager) == address(this)) {
             _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
             require(treasury.isVaultManager(address(vaultManager)), "22");
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
         }
-        return _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
+        return (oracleValue, newInterestRateAccumulator);
     }
 
     /// @notice Increases the debt of a given vault and verifies that this vault is still solvent
@@ -479,17 +486,19 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param oracleValueStart Oracle value at the start of the call (given here to avoid double computations)
     /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
+    /// @return Amount of stablecoins to issue from this debt increase
     /// @return Computed value of the oracle
     /// @return Computed value of the interest rate accumulator
+    /// @dev The `stablecoinAmount` outputted need to be rounded down with respect to the change amount
     function _increaseDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 oracleValueStart,
         uint256 newInterestRateAccumulator
-    ) internal returns (uint256, uint256) {
+    ) internal returns (uint256, uint256, uint256) {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator; // TODO Rounding imprecision in favor of borrower: one could borrow 1
-        if (vaultData[vaultID].normalizedDebt == 0) require(stablecoinAmount > _dust, "24");
+        uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
+        if (vaultData[vaultID].normalizedDebt == 0) require(changeAmount * BASE_INTEREST > dust * newInterestRateAccumulator, "24");
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
         require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "45");
@@ -500,7 +509,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         );
         require(healthFactor > BASE_PARAMS, "21");
         emit InternalDebtUpdated(vaultID, changeAmount, 1);
-        return (oracleValue, newInterestRateAccumulator);
+        return (changeAmount * BASE_INTEREST / newInterestRateAccumulator, oracleValue, newInterestRateAccumulator);
     }
 
     /// @notice Decreases the debt of a given vault and verifies that this vault still has an amount of debt superior
@@ -510,27 +519,35 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// normalized debt using the pre-computed (or not) `newInterestRateAccumulator` value
     /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
+    /// @return Amount of stablecoins to be burnt to correctly repay the debt
     /// @return Computed value of the interest rate accumulator
     function _repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 newInterestRateAccumulator
-    ) internal returns (uint256) {
+    ) internal returns (uint256, uint256) {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
         uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt;
+        // To save one variable declaration, `changeAmount` is first expressed in stablecoin amount before being converted
+        // to a normalized amount. Here we first store the maximum amount that can be repaid given the current debt
+        uint256 changeAmount = (newVaultNormalizedDebt * newInterestRateAccumulator) / BASE_INTEREST;
         // In some situations (e.g. liquidations), the `stablecoinAmount` is rounded above and we want to make
         // sure to avoid underflows in all situations
-        if (changeAmount == newVaultNormalizedDebt + 1) changeAmount = newVaultNormalizedDebt;
+        if (stablecoinAmount >= changeAmount) {
+            stablecoinAmount = changeAmount;
+            changeAmount = newVaultNormalizedDebt;
+        } else {
+            changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
+        }
         newVaultNormalizedDebt -= changeAmount;
         totalNormalizedDebt -= changeAmount;
         require(
-            newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestRateAccumulator >= _dust * BASE_INTEREST,
+            newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestRateAccumulator > dust * BASE_INTEREST,
             "24"
         );
         vaultData[vaultID].normalizedDebt = newVaultNormalizedDebt;
         emit InternalDebtUpdated(vaultID, changeAmount, 0);
-        return newInterestRateAccumulator;
+        return (stablecoinAmount, newInterestRateAccumulator);
     }
 
     /// @notice Handles the simultaneous repayment of stablecoins with a transfer of collateral
@@ -660,8 +677,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     liqOpp.currentDebt -
                     (amounts[i] * liquidationSurcharge) /
                     BASE_PARAMS;
+                // There may be an edge case in which: `amounts[i] = (currentDebt * BASE_PARAMS) / surcharge + 1`
+                // In this case, as long as `surcharge < BASE_PARAMS`, there cannot be any underflow in the operation
+                // above
             } else {
                 vaultData[vaultIDs[i]].collateralAmount -= collateralReleased;
+                // In the case where the full debt is being repaid, `amounts[i]` must be rounded above
                 _repayDebt(
                     vaultIDs[i],
                     (amounts[i] * liquidationSurcharge) / BASE_PARAMS,
@@ -707,35 +728,48 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Checking if we're in a situation where the health factor is an increasing or a decreasing function of the
         // amount repaid
         uint256 maxAmountToRepay;
-        uint256 thresholdRepayAmount = 0;
+        uint256 thresholdRepayAmount;
         // In the first case, the health factor is an increasing function of the stablecoin amount to repay,
         // this means that the liquidator can bring the vault to the target health ratio
         if (healthFactor * liquidationDiscount * surcharge >= collateralFactor * BASE_PARAMS**2) {
             // This is the max amount to repay that will bring the person to the target health factor
             // Denom is always positive when a vault gets liquidated in this case and when the health factor
             // is an increasing function of the amount of stablecoins repaid
-            maxAmountToRepay = // TODO somehow rounding in the wrong direction
-                ((targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) * BASE_PARAMS) /
-                (surcharge * targetHealthFactor - ((BASE_PARAMS**2) * collateralFactor) / liquidationDiscount);
+            maxAmountToRepay =
+                (targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) /
+                (surcharge * targetHealthFactor / BASE_PARAMS - BASE_PARAMS * collateralFactor / liquidationDiscount);
+            // The quantity below tends to be rounded in the above direction, which means that governance should
+            // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + _dust) {
+            if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + dust) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
                 // We're rounding up the max amount to repay to make sure all the debt ends up being paid
-                maxAmountToRepay = (currentDebt * BASE_PARAMS) / surcharge + 1;
+                // and we're computing again the real value of the debt to avoid propagation of rounding errors
+                maxAmountToRepay =
+                    (vault.normalizedDebt * newInterestRateAccumulator * BASE_PARAMS) /
+                    (surcharge * BASE_INTEREST) +
+                    1;
                 // In this case the threshold amount is such that it leaves just enough dust
-                // This line cannot underflow as long as the  `_dust` parameter is constant: it is always checked that
-                // the debt is greater than the  `_dust`. If the  `_dust` was to increase due to an implementation upgrade
+                // This line cannot underflow as long as the  `dust` parameter is constant: it is always checked that
+                // the debt is greater than the  `dust`. If the  `dust` was to increase due to an implementation upgrade
                 // we would need to add some extra checks to avoid underflows
-                thresholdRepayAmount = ((currentDebt - _dust) * BASE_PARAMS) / surcharge;
+                // Here the `thresholdRepayAmount` is also rounded down: which means that if a liquidator repays this amount
+                // then there would be more than `dust` left in the vault
+                thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
             }
         } else {
             // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
             // in the liquidated vault
             // Rounding up to make sure all gets liquidated in this case: the liquidator will never get more than the collateral
-            // amount in the vault however
-            maxAmountToRepay = (collateralAmountInStable * liquidationDiscount) / BASE_PARAMS + 1;
+            // amount in the vault however: we're performing the computation of the `collateralAmountInStable` again to avoid
+            // propagation of rounding errors
+            maxAmountToRepay =
+                (vault.collateralAmount * liquidationDiscount * oracleValue) /
+                (BASE_PARAMS * _collatBase) +
+                1;
             // It should however make sure not to leave a dusty amount of collateral (in stablecoin value) in the vault
             if (collateralAmountInStable > _dustCollateral)
+                // There's no issue with this amount being rounded down
                 thresholdRepayAmount =
                     ((collateralAmountInStable - _dustCollateral) * liquidationDiscount) /
                     BASE_PARAMS;
@@ -826,7 +860,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256[] memory yBoost
     ) external onlyGovernorOrGuardian {
         require(
-            (yBoost[0] > 0) && ((_veBoostProxy == address(0)) || (xBoost[1] > xBoost[0] && yBoost[1] >= yBoost[0])),
+            (xBoost.length == yBoost.length) &&
+                (yBoost[0] > 0) &&
+                ((_veBoostProxy == address(0)) || (xBoost[1] > xBoost[0] && yBoost[1] >= yBoost[0])),
             "15"
         );
         veBoostProxy = IVeBoostProxy(_veBoostProxy);

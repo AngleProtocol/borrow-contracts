@@ -36,6 +36,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         IERC20 _asset = _vaultManager.collateral();
         treasury = _vaultManager.treasury();
         oracle = _vaultManager.oracle();
+        vaultManagerDust = _vaultManager.dust();
         asset = _asset;
         _assetBase = 10**(IERC20Metadata(address(_asset)).decimals());
         lastTime = block.timestamp;
@@ -305,8 +306,9 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
             len += 1;
         }
 
-        // Dust is fully handled by the `VaultManager`: any action that will lead to a dusty amount
-        // in the vault will revert
+        // Dust is also handled here to avoid reverting calls: if repaying the debt would leave a dusty
+        // amount then all the debt is repaid
+        // If borrowing would only create a dusty debt amount, then nothing happens
         if (collateralFactor >= upperCF) {
             // If the `collateralFactor` is too high, then too much has been borrowed
             // and stablecoins should be repaid
@@ -316,10 +318,13 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
                     debt -
                     (((usedAssets + looseAssets - toWithdraw) * _oracleRate) * targetCF) /
                     (_assetBase * BASE_PARAMS);
+                lastDebt -= toRepay;
             }
-            // In the other case, we have `toRepay > debt`
+            if (debt - toRepay <= vaultManagerDust) {
+                toRepay = type(uint256).max;
+                lastDebt = 0;
+            }
             datas[len] = abi.encodePacked(vaultID, toRepay);
-            lastDebt -= toRepay;
             len += 1;
         } else if (collateralFactor <= lowerCF) {
             // If the `collateralFactor` is too low, then stablecoins can be borrowed and later
@@ -329,9 +334,13 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
                 (((usedAssets + looseAssets - toWithdraw) * _oracleRate) * targetCF) /
                 (_assetBase * BASE_PARAMS) -
                 debt;
-            datas[len] = abi.encodePacked(vaultID, toBorrow);
-            lastDebt += toBorrow;
-            len += 1;
+            if (debt + toBorrow > vaultManagerDust) {
+                datas[len] = abi.encodePacked(vaultID, toBorrow);
+                lastDebt += toBorrow;
+                len += 1;
+            } else {
+                toBorrow = 0;
+            }
         }
 
         if (toWithdraw > looseAssets) {

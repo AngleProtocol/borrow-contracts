@@ -40,6 +40,7 @@ import {
   closeVault,
   permit,
   latestTime,
+  MAX_UINT256,
 } from '../utils/helpers';
 import { signPermit } from '../utils/sigUtils';
 
@@ -580,6 +581,20 @@ contract('VaultManager', () => {
       await angle(vaultManager, bob, [permit(permitData)]);
       expect(await agToken.allowance(bob.address, vaultManager.address)).to.be.equal(parseEther('1'));
     });
+    it('reverts - overflow on v', async () => {
+      const permitData = await signPermit(
+        bob,
+        0,
+        agToken.address,
+        (await latestTime()) + 1000,
+        vaultManager.address,
+        parseEther('1'),
+        'agEUR',
+      );
+      // Max value for a uint8 is 255
+      permitData.v = 10000000;
+      await expect(angle(vaultManager, bob, [permit(permitData)])).to.be.reverted;
+    });
     it('reverts - invalid signature', async () => {
       const permitData = await signPermit(
         bob,
@@ -803,7 +818,7 @@ contract('VaultManager', () => {
     });
 
     it('success - modified base boost', async () => {
-      await vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [], [0.5e9]);
+      await vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [1e9], [0.5e9]);
       await oracle.update(parseEther('0.9'));
       expectApprox(
         (await vaultManager.checkLiquidation(2, bob.address)).discount,

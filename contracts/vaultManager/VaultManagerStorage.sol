@@ -45,13 +45,13 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     IOracle public oracle;
     /// @notice Reference to the contract which computes adjusted veANGLE balances for liquidators boosts
     IVeBoostProxy public veBoostProxy;
-    // Base of the collateral
+    /// @notice Base of the collateral
     uint256 internal _collatBase;
 
     // =============================== Parameters ==================================
 
-    /// @notice Minimum amount of debt a vault can have
-    uint256 internal immutable _dust;
+    /// @inheritdoc IVaultManagerStorage
+    uint256 public immutable dust;
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
     uint256 internal immutable _dustCollateral;
@@ -108,11 +108,11 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     // ================================ ERC721 Data ================================
 
-    // URI
+    /// @notice URI
     string internal _baseURI;
 
-    // Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
-    // contracts
+    /// @notice Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
+    /// contracts
     CountersUpgradeable.Counter internal _vaultIDCount;
 
     // Mapping from `vaultID` to owner address
@@ -141,12 +141,12 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event OracleUpdated(address indexed _oracle);
     event ToggledWhitelisting(bool);
 
-    /// @param dust_ Minimum amount of debt a vault from this implementation can have
+    /// @param _dust Minimum amount of debt a vault from this implementation can have
     /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
     /// @dev Run only at the implementation level
-    constructor(uint256 dust_, uint256 dustCollateral_) initializer {
-        _dust = dust_;
+    constructor(uint256 _dust, uint256 dustCollateral_) initializer {
+        dust = _dust;
         _dustCollateral = dustCollateral_;
     }
 }

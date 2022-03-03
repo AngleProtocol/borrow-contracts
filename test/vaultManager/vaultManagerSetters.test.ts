@@ -290,8 +290,13 @@ contract('VaultManager - Setters', () => {
         .reverted;
     });
     it('success - zero address', async () => {
-      await vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [0], [100, 101]);
+      await vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [0, 1], [100, 101]);
       expect(await vaultManager.veBoostProxy()).to.be.equal(ZERO_ADDRESS);
+    });
+    it('reverts - invalid address', async () => {
+      await expect(
+        vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [0, 1], [100]),
+      ).to.be.revertedWith('15');
     });
   });
 });
