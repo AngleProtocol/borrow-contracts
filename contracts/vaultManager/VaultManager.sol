@@ -180,7 +180,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 address owner;
                 bytes32 r;
                 bytes32 s;
-                // `vaultID` is used in place of the `deadline` parameter to save some space and reduce the stack size
+                // Watch out naming conventions for permit are not respected to save some space and reduce the stack size
+                // `vaultID` is used in place of the `deadline` parameter
                 // Same for `collateralAmount` used in place of `value`
                 // `stablecoinAmount` is used in place of the `v`
                 (owner, collateralAmount, vaultID, stablecoinAmount, r, s) = abi.decode(
