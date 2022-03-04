@@ -24,6 +24,7 @@ import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import {
   deployUpgradeable,
   displayReactorState,
+  displayVaultState,
   expectApprox,
   latestTime,
   MAX_UINT256,
@@ -97,7 +98,7 @@ contract('Reactor', () => {
 
     ANGLE = await new MockToken__factory(deployer).deploy('ANGLE', 'ANGLE', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e15, 0.1e15)) as VaultManager;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agEUR.address,
@@ -109,6 +110,7 @@ contract('Reactor', () => {
     );
     await agEUR.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
     await treasury.addMinter(agEUR.address, vaultManager.address);
+    await treasury.addMinter(agEUR.address, bob.address);
 
     oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
 
@@ -128,54 +130,6 @@ contract('Reactor', () => {
     );
   });
 
-  /*
-  describe('scenari', () => {
-    it('liquidation', async () => {
-      const sharesAmount = parseUnits('1', collatBase);
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
-      // Shares amount is consumed
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      const rate = 0.5;
-      await oracle.update(parseEther(rate.toString()));
-
-      // In this case, vault cannot be brought in a healthy pos
-      // Limit is `healthFactor * liquidationDiscount * surcharge >= collateralFactor`
-
-      await displayVaultState(vaultManager, 2, log, collatBase);
-
-      const discount = Math.max((2 * rate * 0.5) / 1, 0.9);
-      const maxStablecoinAmountToRepay = rate * 2 * discount;
-
-      expect((await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount).gt(0);
-      expectApprox(
-        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
-        parseEther(maxStablecoinAmountToRepay.toString()),
-        0.0001,
-      );
-      expectApprox(
-        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
-        collatAmount,
-        0.0001,
-      );
-
-      await vaultManager
-        .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address)'](
-          [2],
-          [parseEther(maxStablecoinAmountToRepay.toString())],
-          bob.address,
-          bob.address,
-        );
-
-      await displayVaultState(vaultManager, 2, log, collatBase);
-
-      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
-    });
-  });
-  */
-
-  /*
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -233,15 +187,25 @@ contract('Reactor', () => {
     });
   });
   describe('maxMint', () => {
-    it('success - correct value', async () => {
-      expect(await reactor.maxMint(alice.address)).to.be.equal(MAX_UINT256);
-      expect(await reactor.maxMint(ZERO_ADDRESS)).to.be.equal(MAX_UINT256);
+    it('success - correct value when zero balance', async () => {
+      expect(await reactor.maxMint(alice.address)).to.be.equal(0);
+      expect(await reactor.maxMint(ZERO_ADDRESS)).to.be.equal(0);
+    });
+    it('success - correct value when non-null balance', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      expect(await reactor.maxMint(alice.address)).to.be.equal(sharesAmount);
     });
   });
   describe('maxDeposit', () => {
-    it('success - correct value', async () => {
-      expect(await reactor.maxDeposit(alice.address)).to.be.equal(MAX_UINT256);
-      expect(await reactor.maxDeposit(ZERO_ADDRESS)).to.be.equal(MAX_UINT256);
+    it('success - correct value when zero balance', async () => {
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(0);
+      expect(await reactor.maxDeposit(ZERO_ADDRESS)).to.be.equal(0);
+    });
+    it('success - correct value when non-null balance', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(sharesAmount);
     });
   });
   describe('previewDeposit', () => {
@@ -504,15 +468,13 @@ contract('Reactor', () => {
       await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
       // Shares amount is consumed
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
       expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
-      await angle(vaultManager, bob, [repayDebt(1, parseEther('0.8'))]);
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
       expect(await reactor.lastDebt()).to.be.equal(parseEther('1.6'));
       expect(await reactor.currentLoss()).to.be.equal(parseEther('0'));
       const claimable = await reactor.claimableRewards();
@@ -682,6 +644,10 @@ contract('Reactor', () => {
         'ERC20: transfer amount exceeds allowance',
       );
     });
+    it('reverts - redeems more shares', async () => {
+      await expect(reactor.connect(alice).withdraw(assetsAmount.mul(1000), alice.address, alice.address)).to.be
+        .reverted;
+    });
     it('reverts - zero assets', async () => {
       await expect(reactor.connect(bob).redeem(0, alice.address, alice.address)).to.be.revertedWith('ZERO_ASSETS');
     });
@@ -777,6 +743,10 @@ contract('Reactor', () => {
         'ERC20: transfer amount exceeds allowance',
       );
     });
+    it('reverts - withdraw more than what is in the reactor', async () => {
+      await expect(reactor.connect(alice).withdraw(assetsAmount.mul(1000), alice.address, alice.address)).to.be
+        .reverted;
+    });
     it('success - from approved by msg.sender and reduced allowance', async () => {
       await reactor.connect(alice).approve(bob.address, sharesAmount);
       const receipt = await (await reactor.connect(bob).withdraw(assetsAmount, alice.address, alice.address)).wait();
@@ -860,7 +830,7 @@ contract('Reactor', () => {
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
-      await angle(vaultManager, bob, [repayDebt(1, parseEther('0.8'))]);
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
       expect(await reactor.lastDebt()).to.be.equal(parseEther('1.6'));
@@ -886,7 +856,7 @@ contract('Reactor', () => {
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
-      await angle(vaultManager, bob, [repayDebt(1, parseEther('0.8'))]);
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       // Here we record a gain
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
@@ -907,5 +877,105 @@ contract('Reactor', () => {
       expect(await reactor.claimedRewardsAccumulator()).to.be.equal(await reactor.rewardsAccumulator());
     });
   });
-  */
+  describe('scenari', () => {
+    it('success - nothing borrowed because dusty amount', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      await agEUR.connect(bob).mint(bob.address, parseEther('1000'));
+      // Shares amount is consumed
+      await reactor.connect(alice).mint(100, alice.address);
+      expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(100);
+    });
+    it('reverts - everything repaid because dusty amount but not enough stablecoins in balance', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      await agEUR.connect(bob).mint(bob.address, parseEther('1000'));
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('0.8'), 0.00001);
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(sharesAmount);
+      // Here the strategy cannot reimburse it all
+      await expect(reactor.connect(alice).withdraw(parseUnits('0.999999', collatBase), alice.address, alice.address)).to
+        .be.reverted;
+    });
+    it('reverts - everything repaid because dusty amount but not enough stablecoins in balance', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      await agEUR.connect(bob).mint(bob.address, parseEther('1000'));
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('0.8'), 0.00001);
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(sharesAmount);
+      // Here the strategy cannot reimburse it all
+      await agEUR.connect(bob).mint(reactor.address, parseEther('0.1'));
+      await reactor.connect(alice).withdraw(parseUnits('0.999999', collatBase), alice.address, alice.address);
+      expect(await vaultManager.getVaultDebt(1)).to.be.equal(parseEther('0'));
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.gt(0);
+    });
+
+    it('reverts - liquidation and no asset left in the reactor', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      await agEUR.connect(bob).mint(bob.address, parseEther('1000'));
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      const rate = 0.5;
+      await oracle.update(parseEther(rate.toString()));
+      // In this case, vault cannot be brought in a healthy pos
+      // Limit is `healthFactor * liquidationDiscount * surcharge >= collateralFactor`
+      await displayVaultState(vaultManager, 1, log, collatBase);
+      const discount = Math.max((2 * rate * 0.5) / 1, 0.9);
+      const maxStablecoinAmountToRepay = rate * 2 * discount;
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [1],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+      await displayVaultState(vaultManager, 1, log, collatBase);
+      await expect(vaultManager.checkLiquidation(1, bob.address)).to.be.reverted;
+      expect(await vaultManager.badDebt()).to.be.gt(0);
+      await expect(reactor.connect(alice).withdraw(sharesAmount, alice.address, alice.address)).to.be.reverted;
+    });
+    it('success - liquidation and withdraw all asset left in the reactor', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      await agEUR.connect(bob).mint(bob.address, parseEther('1000'));
+      // Shares amount is consumed
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      const rate = 0.5;
+      await oracle.update(parseEther(rate.toString()));
+      const discount = Math.max((2 * rate * 0.5) / 1, 0.9);
+      const maxStablecoinAmountToRepay = rate * 2 * discount;
+
+      await vaultManager
+        .connect(bob)
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [1],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
+
+      expect(await vaultManager.badDebt()).to.be.gt(0);
+      const gains = parseUnits('0.05', collatBase);
+      await ANGLE.mint(reactor.address, gains);
+      const balancePre = await ANGLE.balanceOf(alice.address);
+      await reactor.connect(alice).redeem(sharesAmount, alice.address, alice.address);
+      expect(await reactor.claimableRewards()).to.be.equal(0);
+      // Null balance because pull function is not yet implemented
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(parseEther('0'));
+      expect(await reactor.lastDebt()).to.be.equal(0);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(gains.add(balancePre));
+    });
+  });
 });

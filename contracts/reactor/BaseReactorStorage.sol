@@ -4,47 +4,81 @@ pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import "../interfaces/IERC4626.sol";
 import "../interfaces/IVaultManager.sol";
 
+/// @title BaseReactorStorage
+/// @author Angle Core Team
+/// @dev Variables, references, parameters and events needed in the `BaseReactor` contract
 // solhint-disable-next-line max-states-count
 contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
+    /// @notice Base used for parameter computation
     uint256 public constant BASE_PARAMS = 10**9;
 
+    // =============================== References ==================================
+
+    /// @notice Reference to the asset controlled by this reactor
     IERC20 public asset;
+    /// @notice Reference to the stablecoin this reactor handles
     IAgToken public stablecoin;
+    /// @notice Oracle giving the price of the asset with respect to the stablecoin
     IOracle public oracle;
+    /// @notice Treasury contract handling access control
     ITreasury public treasury;
+    /// @notice VaultManager contract on which this contract has a vault. All references should
+    /// be fetched from here
     IVaultManager public vaultManager;
+    /// @notice ID of the vault handled by this contract
     uint256 public vaultID;
-
-    uint256 public claimableRewards;
-    uint256 public currentLoss;
-
-    uint256 public rewardsAccumulator;
-    uint256 public claimedRewardsAccumulator;
-    uint256 public lastTime;
-
-    mapping(address => uint256) public lastTimeOf;
-    mapping(address => uint256) public lastShareOf;
-    mapping(address => uint256) public rewardsAccumulatorOf;
-
-    uint64 public lowerCF;
-    uint64 public targetCF;
-    uint64 public upperCF;
+    /// @notice Dust parameter for the stablecoins in a vault in `VaultManager`
     uint256 public vaultManagerDust;
-
-    /// @notice Last known stable debt to the vaultManager
-    uint256 public lastDebt;
-
-    bool internal _oracleRateCached;
-    uint256 internal _oracleRate;
+    /// @notice Base of the `asset`. It is assumed in this contract that the base of the stablecoin is 18
     uint256 internal _assetBase;
 
+    // =============================== Parameters ==================================
+
+    /// @notice Lower value of the collateral factor: below this the reactor can borrow stablecoins
+    uint64 public lowerCF;
+    /// @notice Value of the collateral factor targeted by this vault
+    uint64 public targetCF;
+    /// @notice Value of the collateral factor above which stablecoins should be repaid to avoid liquidations
+    uint64 public upperCF;
+
+    // =============================== Variables ===================================
+
+    /// @notice Rewards (in stablecoin) claimable by depositors of the reactor
+    uint256 public claimableRewards;
+    /// @notice Loss (in stablecoin) accumulated by the reactor: it's going to prevent the reactor from
+    /// repaying its debt
+    uint256 public currentLoss;
+
+    /// @notice Used to track rewards accumulated by all depositors of the reactor
+    uint256 public rewardsAccumulator;
+    /// @notice Tracks rewards already claimed by all depositors
+    uint256 public claimedRewardsAccumulator;
+    /// @notice Last time rewards were claimed in the reactor
+    uint256 public lastTime;
+    /// @notice Last known stable debt to the `vaultManager`
+    uint256 public lastDebt;
+
+    /// @notice Maps an address to the last time it claimed its rewards
+    mapping(address => uint256) public lastTimeOf;
+    /// @notice Maps an address to a quantity depending on time and shares of the reactors used
+    /// to compute the rewards an address can claim
+    mapping(address => uint256) public rewardsAccumulatorOf;
+
+    /// @notice Whether the value of the oracle has been cached in the transaction
+    bool internal _oracleRateCached;
+    /// @notice Cached value of the oracle
+    uint256 internal _oracleRate;
+
     uint256[50] private __gap;
+
+    // =============================== Events ======================================
 
     event FiledUint64(uint64 param, bytes32 what);
     event Recovered(address indexed token, address indexed to, uint256 amount);

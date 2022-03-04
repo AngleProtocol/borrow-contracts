@@ -21,9 +21,9 @@ import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVeBoostProxy.sol";
 
-/// @title VaultManagerERC721
+/// @title VaultManagerStorage
 /// @author Angle Core Team
-/// @dev Base ERC721 Implementation of VaultManager
+/// @dev Variables, references, parameters and events needed in the `VaultManager` contract
 // solhint-disable-next-line max-states-count
 contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Base used for parameter computation

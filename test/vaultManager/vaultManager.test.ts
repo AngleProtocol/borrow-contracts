@@ -534,14 +534,15 @@ contract('VaultManager', () => {
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
       ]);
-      const surplusPre = await vaultManager.surplus();
+      const surplusPre = await vaultManager2.surplus();
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.999'), 0.1);
       await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
-      expect(await vaultManager2.surplus()).to.be.equal(surplusPre.add(parseEther('0.1')));
+      expectApprox(await vaultManager2.surplus(), surplusPre.add(parseEther('0.1')), 0.1);
     });
   });
+
   describe('getDebtOut', () => {
     it('reverts - invalid sender', async () => {
       await expect(vaultManager.getDebtOut(1, 0, 0)).to.be.revertedWith('3');

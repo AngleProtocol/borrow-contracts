@@ -2,16 +2,14 @@
 
 pragma solidity 0.8.12;
 
-import "hardhat/console.sol";
 import "./BaseReactorStorage.sol";
 
+/// @title BaseReactor
 /// @notice Reactor for using a token as collateral for agTokens. ERC4646 tokenized Vault implementation.
 /// @author Angle Core Team, based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
-/// @dev WARNING - Built with an "internal" `VaultManager`
-/// @dev WARNING - Built on the assumption that the underlying VaultManager does not take fees
 /// @dev A token used as an asset built to exploit this reactor could perform reentrancy attacks if not enough checks
-/// are performed: as such the protocol
-contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
+/// are performed: as such the protocol implements reentrancy checks on all external entry point
+contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpgradeable, IERC4626 {
     using SafeERC20 for IERC20;
 
     /// @notice Initializes the `BaseReactor` contract and
@@ -85,57 +83,43 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     // ========================= External Access Functions =========================
 
-    /// @notice Transfers a given amount of asset to the reactor and mint shares accordingly
-    /// @param assets Given amount of asset
-    /// @param to Address to mint shares to
+    /// @inheritdoc IERC4626
     function deposit(uint256 assets, address to) public nonReentrant returns (uint256 shares) {
-        // Check for rounding error since we round down in convertToShares.
-        shares = convertToShares(assets);
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        shares = _convertToShares(assets, usedAssets + looseAssets);
         require(shares != 0, "ZERO_SHARES");
-
-        // Need to transfer before minting or ERC777s could reenter.
-        asset.safeTransferFrom(msg.sender, address(this), assets);
-        _deposit(assets, shares, to);
+        _deposit(assets, shares, to, usedAssets, looseAssets + assets);
     }
 
-    /// @notice Mints a given amount of shares to the reactor and transfer assets accordingly
-    /// @param shares Given amount of shares
-    /// @param to Address to mint shares to
+    /// @inheritdoc IERC4626
     function mint(uint256 shares, address to) public nonReentrant returns (uint256 assets) {
-        assets = previewMint(shares); // No need to check for rounding error, previewMint rounds up.
-
-        // Need to transfer before minting or ERC777s could reenter.
-        asset.safeTransferFrom(msg.sender, address(this), assets);
-        _deposit(assets, shares, to);
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        assets = _convertToAssets(shares, usedAssets + looseAssets);
+        _deposit(assets, shares, to, usedAssets, looseAssets + assets);
     }
 
-    /// @notice Transfers a given amount of asset from the reactor and burn shares accordingly
-    /// @param assets Given amount of asset
-    /// @param from Address to burn shares from
-    /// @param to Address to transfer assets to
+    /// @inheritdoc IERC4626
+    /// @dev The amount of assets specified should be smaller than the amount of assets controlled by the
+    /// reactor
     function withdraw(
         uint256 assets,
         address to,
         address from
     ) public nonReentrant returns (uint256 shares) {
-        shares = previewWithdraw(assets); // No need to check for rounding error, previewWithdraw rounds up.
-        _withdraw(assets, shares, to, from);
-        asset.safeTransfer(to, assets);
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        shares = _convertToShares(assets, usedAssets + looseAssets);
+        _withdraw(assets, shares, to, from, usedAssets, looseAssets);
     }
 
-    /// @notice Burns a given amount of shares to the reactor and transfer assets accordingly
-    /// @param shares Given amount of shares
-    /// @param from Address to burn shares from
-    /// @param to Address to transfer assets to
+    /// @inheritdoc IERC4626
     function redeem(
         uint256 shares,
         address to,
         address from
     ) public nonReentrant returns (uint256 assets) {
-        // Check for rounding error since we round down in convertToAssets.
-        require((assets = convertToAssets(shares)) != 0, "ZERO_ASSETS");
-        _withdraw(assets, shares, to, from);
-        asset.safeTransfer(to, assets);
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        require((assets = _convertToAssets(shares, usedAssets + looseAssets)) != 0, "ZERO_ASSETS");
+        _withdraw(assets, shares, to, from, usedAssets, looseAssets);
     }
 
     /// @notice Claims earned rewards
@@ -148,73 +132,69 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     // ============================= View Functions ================================
 
-    /// @notice Returns the total assets managed by this reactor
+    /// @inheritdoc IERC4626
     function totalAssets() public view returns (uint256 assets) {
-        (assets, ) = vaultManager.vaultData(vaultID);
-        assets = asset.balanceOf(address(this)) + assets;
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        assets = usedAssets + looseAssets;
     }
 
-    /// @notice Converts an amount of assets to the corresponding amount of reactor shares
-    /// @param assets Amount of asset to convert
+    /// @inheritdoc IERC4626
     function convertToShares(uint256 assets) public view returns (uint256) {
-        uint256 supply = totalSupply();
-
-        return supply == 0 ? assets : (assets * supply) / totalAssets();
+        return _convertToShares(assets, totalAssets());
     }
 
-    /// @notice Converts an amount of shares to its current value in asset
-    /// @param shares Amount of shares to convert
+    /// @inheritdoc IERC4626
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        uint256 supply = totalSupply();
-
-        return supply == 0 ? shares : (shares * totalAssets()) / supply;
+        return _convertToAssets(shares, totalAssets());
     }
 
-    /// @notice Computes how many shares one would get by depositing `assets`
-    /// @param assets Amount of asset to convert
+    /// @inheritdoc IERC4626
     function previewDeposit(uint256 assets) public view returns (uint256) {
         return convertToShares(assets);
     }
 
-    /// @notice Computes how many assets one would need to mint `shares`
-    /// @param shares Amount of shares required
+    /// @inheritdoc IERC4626
     function previewMint(uint256 shares) public view returns (uint256) {
         return convertToAssets(shares);
     }
 
     /// @notice Computes how many shares one would need to withdraw assets
     /// @param assets Amount of asset to withdraw
+    /// @inheritdoc IERC4626
     function previewWithdraw(uint256 assets) public view returns (uint256) {
         return convertToShares(assets);
     }
 
     /// @notice Computes how many assets one would get by burning shares
     /// @param shares Amount of shares to burn
+    /// @inheritdoc IERC4626
     function previewRedeem(uint256 shares) public view returns (uint256) {
         return convertToAssets(shares);
     }
 
-    /// @notice Max deposit allowed
-    function maxDeposit(address) public pure returns (uint256) {
-        return type(uint256).max;
+    /// @inheritdoc IERC4626
+    function maxDeposit(address user) public view returns (uint256) {
+        return asset.balanceOf(user);
     }
 
-    /// @notice Max mint allowed
-    function maxMint(address) public pure returns (uint256) {
-        return type(uint256).max;
+    /// @inheritdoc IERC4626
+    function maxMint(address user) public view returns (uint256) {
+        return convertToShares(asset.balanceOf(user));
     }
 
+    /// @inheritdoc IERC4626
     // TODO worth completing with restrictions based on current harvest
     function maxWithdraw(address user) public view virtual returns (uint256) {
         return convertToShares(balanceOf(user));
     }
 
+    /// @inheritdoc IERC4626
     // TODO worth completing with restrictions based on current harvest
     function maxRedeem(address user) public view virtual returns (uint256) {
         return balanceOf(user);
     }
 
-    /// @notice Enables management of vaults by the reactor
+    /// @inheritdoc IERC721ReceiverUpgradeable
     function onERC721Received(
         address,
         address,
@@ -226,6 +206,35 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     }
 
     // =========================== Internal Functions ==============================
+
+    /// @notice Gets the assets controlled by the reactor: those in the associated vaultManager
+    /// as well as those in the contract
+    /// @return usedAssets Amount of the `asset` in the associated `vaultManager`
+    /// @return looseAssets Amount of the `asset` in the contract
+    function _getAssets() internal view returns (uint256 usedAssets, uint256 looseAssets) {
+        (usedAssets, ) = vaultManager.vaultData(vaultID);
+        looseAssets = asset.balanceOf(address(this));
+    }
+
+    /// @notice Converts an amount of assets to shares of the reactor from an amount of assets controlled by the vault
+    /// @param assets Amount of assets to convert
+    /// @param totalAssetAmount Total amount of asset controlled by the vault
+    /// @return Corresponding amount of shares
+    function _convertToShares(uint256 assets, uint256 totalAssetAmount) internal view returns (uint256) {
+        uint256 supply = totalSupply();
+        return supply == 0 ? assets : (assets * supply) / totalAssetAmount;
+    }
+
+    /// @notice Converts an amount of shares of the reactor to assets
+    /// @param shares Amount of shares to convert
+    /// @param totalAssetAmount Total amount of asset controlled by the vault
+    /// @return Corresponding amount of assets
+    /// @dev It is at the level of this function that losses from liquidations are taken into account, because this
+    /// reduces the totalAssetAmount and hence the amount of assets you are entitled to get from your shares
+    function _convertToAssets(uint256 shares, uint256 totalAssetAmount) internal view returns (uint256) {
+        uint256 supply = totalSupply();
+        return supply == 0 ? shares : (shares * totalAssetAmount) / supply;
+    }
 
     /// @notice Handles the new value of the debt: propagates a loss to the claimable rewards
     /// or a gain depending on the evolution of this debt
@@ -264,35 +273,42 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     /// @notice Rebalances the underlying vault
     /// @param toWithdraw Amount of assets to withdraw
-    /// @dev `toWithdraw` needs to be always lower than managed assets
-    function _rebalance(uint256 toWithdraw) internal needOracle {
+    /// @param usedAssets Amount of assets in the vault
+    /// @param looseAssets Amount of assets already in the contract
+    /// @dev `toWithdraw` is always lower than managed assets (`= usedAssets+looseAssets`): indeed if it was superior
+    /// it would mean either
+    /// - that the `withdraw` function was called with an amount of assets greater than the amount of asset controlled
+    /// by the reactor
+    /// - or that the `redeem` function was called with an amount of shares greater than the total supply
+    /// @dev `usedAssets` and `looseAssets` are passed as parameters here to avoid performing the same calculation twice
+    function _rebalance(
+        uint256 toWithdraw,
+        uint256 usedAssets,
+        uint256 looseAssets
+    ) internal needOracle {
         uint256 debt = vaultManager.getVaultDebt(vaultID);
         _handleCurrentDebt(debt);
         lastDebt = debt;
 
-        uint256 looseAssets = asset.balanceOf(address(this));
-        uint256 usedAssets;
         uint256 collateralFactor;
         uint256 toRepay;
         uint256 toBorrow;
 
-        if (debt > 0) {
-            (usedAssets, ) = vaultManager.vaultData(vaultID);
-        }
+        // We're first using as an intermediate in this variable something that does not correspond
+        // to the future amount of stablecoins borrowed in the vault
+        uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * _oracleRate;
+        // The function will revert above if `toWithdraw` is too big
 
-        if (usedAssets + looseAssets > toWithdraw) {
-            // This is what the collateral factor is going to look like at the end of the call
-            collateralFactor =
-                (BASE_PARAMS * _assetBase * debt) /
-                ((usedAssets + looseAssets - toWithdraw) * _oracleRate);
-        } else {
-            collateralFactor = type(uint256).max;
-            toRepay = debt;
+        if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
+        else {
+            collateralFactor = (BASE_PARAMS * _assetBase * debt) / futureStablecoinsInVault;
         }
-
+        // This is the expected value of the collateral in the vault in stablecoin value at the end of the call
+        // (unless there is dust or the collateral factor is not moved enough)
+        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (_assetBase * BASE_PARAMS);
         uint16 len = 1;
         (collateralFactor >= upperCF) ? len += 1 : 0; // Needs to repay
-        (collateralFactor <= lowerCF) ? len += 1 : 0; // Needs to borrow
+        (collateralFactor <= lowerCF && futureStablecoinsInVault > vaultManagerDust) ? len += 1 : 0; // Needs to borrow
 
         ActionType[] memory actions = new ActionType[](len);
         bytes[] memory datas = new bytes[](len);
@@ -313,34 +329,24 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
             // If the `collateralFactor` is too high, then too much has been borrowed
             // and stablecoins should be repaid
             actions[len] = ActionType.repayDebt;
-            if (usedAssets + looseAssets > toWithdraw) {
-                toRepay =
-                    debt -
-                    (((usedAssets + looseAssets - toWithdraw) * _oracleRate) * targetCF) /
-                    (_assetBase * BASE_PARAMS);
-                lastDebt -= toRepay;
-            }
-            if (debt - toRepay <= vaultManagerDust) {
+            toRepay = debt - futureStablecoinsInVault;
+            lastDebt -= toRepay;
+            if (futureStablecoinsInVault <= vaultManagerDust) {
+                // If this happens in a moment at which the reactor has a loss, then it will not be able
+                // to repay it all, and the function will revert
                 toRepay = type(uint256).max;
                 lastDebt = 0;
             }
             datas[len] = abi.encodePacked(vaultID, toRepay);
             len += 1;
-        } else if (collateralFactor <= lowerCF) {
+        } else if (collateralFactor <= lowerCF && futureStablecoinsInVault > vaultManagerDust) {
             // If the `collateralFactor` is too low, then stablecoins can be borrowed and later
             // invested in strategies
+            toBorrow = futureStablecoinsInVault - debt;
             actions[len] = ActionType.borrow;
-            toBorrow =
-                (((usedAssets + looseAssets - toWithdraw) * _oracleRate) * targetCF) /
-                (_assetBase * BASE_PARAMS) -
-                debt;
-            if (debt + toBorrow > vaultManagerDust) {
-                datas[len] = abi.encodePacked(vaultID, toBorrow);
-                lastDebt += toBorrow;
-                len += 1;
-            } else {
-                toBorrow = 0;
-            }
+            datas[len] = abi.encodePacked(vaultID, toBorrow);
+            lastDebt += toBorrow;
+            len += 1;
         }
 
         if (toWithdraw > looseAssets) {
@@ -356,17 +362,22 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
 
     /// @notice Virtual function to invest stablecoins
     /// @param amount Amount of new stablecoins managed
-    /// @dev Eventually actually triggers smthg depending on a threshold
+    /// @return amountInvested Amount invested in the strategy
+    /// @dev Calling this function should eventually trigger something regarding strategies depending
+    /// on a threshold
     function _push(uint256 amount) internal virtual returns (uint256 amountInvested) {}
 
     /// @notice Virtual function to withdraw stablecoins
     /// @param amount Amount needed at the end of the call
+    /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
     /// @dev Eventually actually triggers smthg depending on a threshold
-    /// @dev Must make sure that amount is available
+    /// @dev Calling this function should eventually trigger something regarding strategies depending
+    /// on a threshold
     function _pull(uint256 amount) internal virtual returns (uint256 amountAvailable) {}
 
     /// @notice Claims rewards earned by a user
     /// @param from Address to claim rewards from
+    /// @return amount Amount claimed by the user
     /// @dev Function will revert if there has been no mint
     function _claim(address from) internal returns (uint256 amount) {
         amount = (claimableRewards * rewardsAccumulatorOf[from]) / (rewardsAccumulator - claimedRewardsAccumulator);
@@ -392,25 +403,33 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
     }
 
     /// @notice Internal function for `deposit` and `mint`
+    /// @dev This function takes `usedAssets` and `looseAssets` as parameters to avoid repeated external calls
     function _deposit(
         uint256 assets,
         uint256 shares,
-        address to
+        address to,
+        uint256 usedAssets,
+        uint256 looseAssets
     ) internal {
+        // Need to transfer before minting or ERC777s could reenter.
+        asset.safeTransferFrom(msg.sender, address(this), assets);
         _updateAccumulator(to);
         _mint(to, shares);
 
         emit Deposit(msg.sender, to, assets, shares);
 
-        _rebalance(0);
+        _rebalance(0, usedAssets, looseAssets);
     }
 
     /// @notice Internal function for `redeem` and `withdraw`
+    /// @dev This function takes `usedAssets` and `looseAssets` as parameters to avoid repeated external calls
     function _withdraw(
         uint256 assets,
         uint256 shares,
         address to,
-        address from
+        address from,
+        uint256 usedAssets,
+        uint256 looseAssets
     ) internal {
         if (msg.sender != from) {
             uint256 currentAllowance = allowance(from, msg.sender);
@@ -423,13 +442,14 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC4626 {
         }
 
         _updateAccumulator(from);
-        _rebalance(assets);
+        _rebalance(assets, usedAssets, looseAssets);
 
         _claim(from);
 
         _burn(from, shares);
 
         emit Withdraw(from, to, assets, shares);
+        asset.safeTransfer(to, assets);
     }
 
     // ======================== Governance Functions ===============================

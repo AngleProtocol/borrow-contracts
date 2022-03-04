@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerERC721.sol";
-import "hardhat/console.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -469,7 +468,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestRateAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
         // The `stablecoinAmount` needs to be rounded down in the `_increaseDebt` function to reduce the room for exploits
-        (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestRateAccumulator);
+        (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _increaseDebt(
+            srcVaultID,
+            stablecoinAmount,
+            oracleValue,
+            newInterestRateAccumulator
+        );
         if (address(vaultManager) == address(this)) {
             _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
@@ -495,10 +499,18 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 stablecoinAmount,
         uint256 oracleValueStart,
         uint256 newInterestRateAccumulator
-    ) internal returns (uint256, uint256, uint256) {
+    )
+        internal
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
-        if (vaultData[vaultID].normalizedDebt == 0) require(changeAmount * BASE_INTEREST > dust * newInterestRateAccumulator, "24");
+        if (vaultData[vaultID].normalizedDebt == 0)
+            require(changeAmount * BASE_INTEREST > dust * newInterestRateAccumulator, "24");
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
         require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "45");
@@ -509,7 +521,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         );
         require(healthFactor > BASE_PARAMS, "21");
         emit InternalDebtUpdated(vaultID, changeAmount, 1);
-        return (changeAmount * BASE_INTEREST / newInterestRateAccumulator, oracleValue, newInterestRateAccumulator);
+        return ((changeAmount * BASE_INTEREST) / newInterestRateAccumulator, oracleValue, newInterestRateAccumulator);
     }
 
     /// @notice Decreases the debt of a given vault and verifies that this vault still has an amount of debt superior
@@ -737,7 +749,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // is an increasing function of the amount of stablecoins repaid
             maxAmountToRepay =
                 (targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) /
-                (surcharge * targetHealthFactor / BASE_PARAMS - BASE_PARAMS * collateralFactor / liquidationDiscount);
+                ((surcharge * targetHealthFactor) /
+                    BASE_PARAMS -
+                    (BASE_PARAMS * collateralFactor) /
+                    liquidationDiscount);
             // The quantity below tends to be rounded in the above direction, which means that governance should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
