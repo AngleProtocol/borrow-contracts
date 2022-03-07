@@ -528,12 +528,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @notice Decreases the debt of a given vault and verifies that this vault still has an amount of debt superior
     /// to a dusty amount or no debt at all
     /// @param vaultID ID of the vault to decrease the debt of
-    /// @param stablecoinAmount Amount of stablecoin to increase the debt of: this amount is converted in
+    /// @param stablecoinAmount Amount of stablecoin to decrease the debt of: this amount is converted in
     /// normalized debt using the pre-computed (or not) `newInterestRateAccumulator` value
     /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @return Amount of stablecoins to be burnt to correctly repay the debt
     /// @return Computed value of the interest rate accumulator
+    /// @dev If `stablecoinAmount` is `type(uint256).max`, this function will repay all the debt of the vault
     function _repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -748,12 +749,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // This is the max amount to repay that will bring the person to the target health factor
             // Denom is always positive when a vault gets liquidated in this case and when the health factor
             // is an increasing function of the amount of stablecoins repaid
+            // And given that most parameters are in base 9, the numerator can very hardly overflow here
             maxAmountToRepay =
-                (targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) /
-                ((surcharge * targetHealthFactor) /
-                    BASE_PARAMS -
-                    (BASE_PARAMS * collateralFactor) /
-                    liquidationDiscount);
+                (targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) * BASE_PARAMS * liquidationDiscount /
+                (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
             // The quantity below tends to be rounded in the above direction, which means that governance should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault

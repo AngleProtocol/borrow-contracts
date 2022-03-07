@@ -72,13 +72,6 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
         _;
     }
 
-    /// @notice Reads the oracle and store it in cache during the function call
-    modifier needOracle() {
-        _oracleRate = oracle.read();
-        _;
-        _oracleRate = 0;
-    }
-
     // ========================= External Access Functions =========================
 
     /// @inheritdoc IERC4626
@@ -171,16 +164,16 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
     }
 
     /// @inheritdoc IERC4626
-    /// @dev Technically, the maximum deposit could be less than the balance of the user
+    /// @dev Technically, the maximum deposit could be less than the max uint256
     /// if there is a `debtCeiling` in the associated `vaultManager`. This implementation
     /// assumes that the `vaultManager` does not have any debt ceiling
-    function maxDeposit(address user) public view returns (uint256) {
-        return asset.balanceOf(user);
+    function maxDeposit(address) public pure returns (uint256) {
+        return type(uint256).max;
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address user) public view returns (uint256) {
-        return convertToShares(asset.balanceOf(user));
+    function maxMint(address) public pure returns (uint256) {
+        return type(uint256).max;
     }
 
     /// @inheritdoc IERC4626
@@ -286,7 +279,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
         uint256 toWithdraw,
         uint256 usedAssets,
         uint256 looseAssets
-    ) internal needOracle {
+    ) internal {
         uint256 debt = vaultManager.getVaultDebt(vaultID);
         _handleCurrentDebt(debt);
         lastDebt = debt;
@@ -297,16 +290,16 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
 
         // We're first using as an intermediate in this variable something that does not correspond
         // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in 
-        // the vault expressed in stablecoin value
-        uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * _oracleRate;
+        // the vault expressed in stablecoin value and in a custom base
+        uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracle.read();
         // The function will revert above if `toWithdraw` is too big
 
         if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
         else {
             collateralFactor = (BASE_PARAMS * _assetBase * debt) / futureStablecoinsInVault;
         }
-        // This is the expected value of the collateral in the vault in stablecoin value at the end of the call
-        // (unless there is dust or the collateral factor is not moved enough)
+        // This is the targeted debt at the end of the call, which might not be reached if the collateral
+        // factor is not moved enough 
         futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (_assetBase * BASE_PARAMS);
         uint16 len = 1;
         (collateralFactor >= upperCF) ? len += 1 : 0; // Needs to repay

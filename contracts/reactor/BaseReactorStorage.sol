@@ -72,9 +72,6 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     /// to compute the rewards an address can claim
     mapping(address => uint256) public rewardsAccumulatorOf;
 
-    /// @notice Cached value of the oracle
-    uint256 internal _oracleRate;
-
     uint256[50] private __gap;
 
     // =============================== Events ======================================
