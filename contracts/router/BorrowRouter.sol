@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../interfaces/IAgToken.sol";
+import "../interfaces/IAngleRouter.sol";
 import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/IRepayCallee.sol";
 import "../interfaces/IFlashAngle.sol";
@@ -39,14 +40,16 @@ contract BorrowRouter is Initializable, IRepayCallee {
 
     /// @notice Reference to the Core contract of the module which handles all AccessControl logic
     ICoreBorrow public core;
-    address public angleRouter;
-    /// @notice Flash Loan Module with a minter right on the stablecoin
+    IAngleRouter public angleRouter;
+    
     mapping(IVaultManager => IERC20) public supportedVaultManagers;
 
     /// @notice Whether the token was already approved on Uniswap router
     mapping(IERC20 => bool) public uniAllowedToken;
     /// @notice Whether the token was already approved on 1Inch
     mapping(IERC20 => bool) public oneInchAllowedToken;
+    /// @notice Whether the token was already approved on AngleRouter
+    mapping(IERC20 => bool) public angleRouterAllowedToken;
 
     // =========================== Structs and Enums ===============================
 
@@ -54,8 +57,7 @@ contract BorrowRouter is Initializable, IRepayCallee {
     enum SwapType {
         UniswapV3,
         oneINCH,
-        Wrap,
-        Mint
+        Wrap
     }
 
     /// @notice Params for swaps
@@ -99,9 +101,10 @@ contract BorrowRouter is Initializable, IRepayCallee {
     }
 
 
-    function initialize(ICoreBorrow _core, address _angleRouter, IVaultManager[] memory vaultManagers) external initializer {
-        require(address(_core) != address(0) && _angleRouter!=address(0), "0");
+    function initialize(ICoreBorrow _core, IAngleRouter _angleRouter, IVaultManager[] memory vaultManagers) external initializer {
+        require(address(_core) != address(0), "0");
         core = _core;
+        angleRouter = _angleRouter;
         _toggleVaultManagers(vaultManagers);
     }
 
@@ -126,6 +129,10 @@ contract BorrowRouter is Initializable, IRepayCallee {
             }
             supportedVaultManagers[vaultManagers[i]] = collateral;
         }
+    }
+
+    function setAngleRouter(IAngleRouter _angleRouter) external onlyGovernor {
+        angleRouter = _angleRouter;
     }
 
     /// @notice Changes allowance of this contract for a given token
@@ -185,7 +192,7 @@ contract BorrowRouter is Initializable, IRepayCallee {
         (stablecoin, to, swapType, minAmountOut, collateral, swapData) = abi.decode(data, (address, address, uint256, uint256, address, bytes));
         uint256 amountOut = _swap(inToken, collateralObtained, minAmountOut, SwapType(swapType), swapData);
         if(collateral!=address(0) && address(angleRouter)!=address(0)) {
-            angleRouter.mint(address(this), amountOut, stablecoinOwed, stablecoin, collateral);
+            _mintFromProtocol(inToken, amountOut, stablecoinOwed, stablecoin, collateral);
         }
         IERC20(stablecoin).safeTransfer(stablecoinRecipient, stablecoinOwed);
         IERC20(stablecoin).safeTransfer(to, IERC20(stablecoin).balanceOf(address(this)));
@@ -284,6 +291,14 @@ contract BorrowRouter is Initializable, IRepayCallee {
         else if (swapType == SwapType.Wrap) amountOut = _wrapStETH(amount, minAmountOut);
         else require(false, "3");
         return amountOut;
+    }
+
+    function _mintFromProtocol(IERC20 inToken, uint256 amount, uint256 minAmountOut, address stablecoin, address collateral) internal {
+        if (!angleRouterAllowedToken[inToken]) {
+                inToken.safeIncreaseAllowance(address(angleRouter), type(uint256).max);
+                angleRouterAllowedToken[inToken] = true;
+        }
+        angleRouter.mint(address(this), amount, minAmountOut, stablecoin, collateral);
     }
 
     function _swapOnUniswapV3(
