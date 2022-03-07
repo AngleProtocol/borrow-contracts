@@ -36,7 +36,8 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     uint256 public vaultID;
     /// @notice Dust parameter for the stablecoins in a vault in `VaultManager`
     uint256 public vaultManagerDust;
-    /// @notice Base of the `asset`. It is assumed in this contract that the base of the stablecoin is 18
+    /// @notice Base of the `asset`. While it is assumed in this contract that the base of the stablecoin is 18,
+    /// the base of the `asset` may not be 18
     uint256 internal _assetBase;
 
     // =============================== Parameters ==================================
@@ -71,8 +72,6 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     /// to compute the rewards an address can claim
     mapping(address => uint256) public rewardsAccumulatorOf;
 
-    /// @notice Whether the value of the oracle has been cached in the transaction
-    bool internal _oracleRateCached;
     /// @notice Cached value of the oracle
     uint256 internal _oracleRate;
 

@@ -360,6 +360,13 @@ contract('Reactor', () => {
     });
   });
 
+  describe('setDust', () => {
+    it('success - when value has not changed', async () => {
+      await reactor.setDust();
+      expect(await reactor.vaultManagerDust()).to.be.equal(0.1e15);
+    });
+  });
+
   describe('setUint64', () => {
     it('reverts - access control', async () => {
       await expect(reactor.connect(alice).setUint64(lowerCF, formatBytes32String('lowerCF'))).to.be.revertedWith('2');
@@ -426,19 +433,10 @@ contract('Reactor', () => {
       expect(await ANGLE.balanceOf(bob.address)).to.be.equal(gains);
       expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
     });
-    it('success - when token is stablecoin', async () => {
+    it('reverts - when token is stablecoin', async () => {
       await treasury.addMinter(agEUR.address, alice.address);
       await agEUR.connect(alice).mint(reactor.address, parseEther('1'));
-      const receipt = await (
-        await reactor.connect(governor).recoverERC20(agEUR.address, bob.address, parseEther('1'))
-      ).wait();
-      inReceipt(receipt, 'Recovered', {
-        token: agEUR.address,
-        to: bob.address,
-        amount: parseEther('1'),
-      });
-      expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('1'));
-      expect(await agEUR.balanceOf(reactor.address)).to.be.equal(0);
+      await expect(reactor.connect(governor).recoverERC20(agEUR.address, bob.address, 1)).to.be.revertedWith('51');
     });
   });
 

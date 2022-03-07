@@ -47,5 +47,6 @@
   "47": "sender is not owner",
   "48": "vault already claimed",
   "49": "claim period for over-collateralized vaults has not ended",
-  "50": "claim period of collateral against stablecoins has not started"
+  "50": "claim period of collateral against stablecoins has not started",
+  "51": "invalid token"
 }

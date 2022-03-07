@@ -75,10 +75,8 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
     /// @notice Reads the oracle and store it in cache during the function call
     modifier needOracle() {
         _oracleRate = oracle.read();
-        _oracleRateCached = true;
         _;
         _oracleRate = 0;
-        _oracleRateCached = false;
     }
 
     // ========================= External Access Functions =========================
@@ -173,6 +171,9 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
     }
 
     /// @inheritdoc IERC4626
+    /// @dev Technically, the maximum deposit could be less than the balance of the user
+    /// if there is a `debtCeiling` in the associated `vaultManager`. This implementation
+    /// assumes that the `vaultManager` does not have any debt ceiling
     function maxDeposit(address user) public view returns (uint256) {
         return asset.balanceOf(user);
     }
@@ -295,7 +296,8 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
         uint256 toBorrow;
 
         // We're first using as an intermediate in this variable something that does not correspond
-        // to the future amount of stablecoins borrowed in the vault
+        // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in 
+        // the vault expressed in stablecoin value
         uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * _oracleRate;
         // The function will revert above if `toWithdraw` is too big
 
@@ -468,6 +470,11 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
         treasury = vaultManager.treasury();
     }
 
+    /// @notice Changes the dust parameter by querying the `vaultManager`
+    function setDust() external {
+        vaultManagerDust = vaultManager.dust();
+    }
+
     /// @notice Sets parameters encoded as uint64
     /// @param param Value for the parameter
     /// @param what Parameter to change
@@ -492,12 +499,14 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
     /// @param tokenAddress Address of the token to recover
     /// @param to Address of the contract to send collateral to
     /// @param amountToRecover Amount of collateral to transfer
-    /// @dev Can be used to handle partial liquidation and debt repayment in case it is needed
+    /// @dev Can be used to handle partial liquidation and debt repayment in case it is needed: in this
+    /// case governance can withdraw assets, swap in stablecoins to repay debt
     function recoverERC20(
         address tokenAddress,
         address to,
         uint256 amountToRecover
     ) external onlyGovernor {
+        require(tokenAddress!=address(stablecoin), "51");
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }

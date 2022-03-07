@@ -27,6 +27,7 @@ interface IERC4626 {
     /// @param amount Given amount of asset
     /// @param to Address to transfer assets to
     /// @param from Address to burn shares from
+    /// @return shares Amount of shares burnt in the operation
     function withdraw(
         uint256 amount,
         address to,
@@ -37,6 +38,7 @@ interface IERC4626 {
     /// @param shares Given amount of shares
     /// @param to Address to transfer assets to
     /// @param from Address to burn shares from
+    /// @return amount Amount of assets redeemed in the operation
     function redeem(
         uint256 shares,
         address to,
