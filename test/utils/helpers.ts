@@ -11,6 +11,7 @@ import {
   VaultManager,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
+import { TypePermit } from '../utils/sigUtils';
 
 const BASE_PARAMS = parseUnits('1', 'gwei');
 
@@ -189,6 +190,16 @@ function getDebtIn(vaultID: number, vaultManager: string, dstVaultID: number, st
   };
 }
 
+function permit(permitData: TypePermit): Call {
+  return {
+    action: 7,
+    data: ethers.utils.defaultAbiCoder.encode(
+      ['address', 'uint256', 'uint256', 'uint256', 'bytes32', 'bytes32'],
+      [permitData.owner, permitData.value, permitData.deadline, permitData.v, permitData.r, permitData.s],
+    ),
+  };
+}
+
 async function displayReactorState(reactor: BaseReactor, log: boolean): Promise<void> {
   if (log) {
     const vaultManager = (await ethers.getContractAt('VaultManager', await reactor.vaultManager())) as VaultManager;
@@ -264,8 +275,9 @@ async function angle(
     await vaultManager
       .connect(signer)
       ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
+  } else {
+    await vaultManager.connect(signer)['angle(uint8[],bytes[],address,address)'](actions, datas, from, to);
   }
-  await vaultManager.connect(signer)['angle(uint8[],bytes[],address,address)'](actions, datas, from, to);
 }
 
 export {
@@ -286,6 +298,7 @@ export {
   latestTime,
   MAX_UINT256,
   mine,
+  permit,
   removeCollateral,
   repayDebt,
   resetFork,

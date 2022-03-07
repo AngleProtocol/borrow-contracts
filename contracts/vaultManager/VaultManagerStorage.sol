@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC721MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
@@ -20,9 +21,9 @@ import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVeBoostProxy.sol";
 
-/// @title VaultManagerERC721
+/// @title VaultManagerStorage
 /// @author Angle Core Team
-/// @dev Base ERC721 Implementation of VaultManager
+/// @dev Variables, references, parameters and events needed in the `VaultManager` contract
 // solhint-disable-next-line max-states-count
 contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Base used for parameter computation
@@ -44,16 +45,16 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     IOracle public oracle;
     /// @notice Reference to the contract which computes adjusted veANGLE balances for liquidators boosts
     IVeBoostProxy public veBoostProxy;
-    // Base of the collateral
+    /// @notice Base of the collateral
     uint256 internal _collatBase;
 
     // =============================== Parameters ==================================
 
-    /// @notice Minimum amount of debt a vault can have
-    uint256 internal immutable dust;
+    /// @inheritdoc IVaultManagerStorage
+    uint256 public immutable dust;
     /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
-    uint256 internal immutable dustCollateral;
+    uint256 internal immutable _dustCollateral;
     /// @notice Maximum amount of stablecoins that can be issued with this contract
     uint256 public debtCeiling;
     /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
@@ -107,11 +108,11 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     // ================================ ERC721 Data ================================
 
-    // URI
+    /// @notice URI
     string internal _baseURI;
 
-    // Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
-    // contracts
+    /// @notice Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
+    /// contracts
     CountersUpgradeable.Counter internal _vaultIDCount;
 
     // Mapping from `vaultID` to owner address
@@ -126,6 +127,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     // Mapping from owner to operator approvals
     mapping(address => mapping(address => bool)) internal _operatorApprovals;
 
+    uint256[50] private __gap;
+
     // =============================== Events ======================================
 
     event AccruedToTreasury(uint256 surplusEndValue, uint256 badDebtEndValue);
@@ -139,11 +142,11 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event ToggledWhitelisting(bool);
 
     /// @param _dust Minimum amount of debt a vault from this implementation can have
-    /// @param _dustCollateral Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
+    /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing
     /// @dev Run only at the implementation level
-    constructor(uint256 _dust, uint256 _dustCollateral) initializer {
+    constructor(uint256 _dust, uint256 dustCollateral_) initializer {
         dust = _dust;
-        dustCollateral = _dustCollateral;
+        _dustCollateral = dustCollateral_;
     }
 }

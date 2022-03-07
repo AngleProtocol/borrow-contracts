@@ -86,7 +86,8 @@ enum ActionType {
     removeCollateral,
     repayDebt,
     borrow,
-    getDebtIn
+    getDebtIn,
+    permit
 }
 
 // ========================= Interfaces =============================
@@ -174,6 +175,7 @@ interface IVaultManagerFunctions {
     /// @param _treasury Treasury address handling the contract
     /// @param _collateral Collateral supported by this contract
     /// @param _oracle Oracle contract used
+    /// @param _symbol Symbol used to define the `VaultManager` name and symbol
     /// @dev The parameters and the oracle are the only elements which could be modified once the
     /// contract has been initialized
     /// @dev For the contract to be fully initialized, governance needs to set the parameters for the liquidation
@@ -182,7 +184,8 @@ interface IVaultManagerFunctions {
         ITreasury _treasury,
         IERC20 _collateral,
         IOracle _oracle,
-        VaultParameters calldata params
+        VaultParameters calldata params,
+        string memory _symbol
     ) external;
 }
 
@@ -192,6 +195,9 @@ interface IVaultManagerFunctions {
 /// @dev This interface contains getters of the contract's public variables used by other contracts
 /// of this module
 interface IVaultManagerStorage {
+    /// @notice Minimum amount of debt a vault can have
+    function dust() external view returns (uint256);
+
     /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     function collateralFactor() external view returns (uint64);

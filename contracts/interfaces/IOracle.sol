@@ -19,8 +19,10 @@ interface IOracle {
 
     /// @notice Changes the treasury contract
     /// @param _treasury Address of the new treasury contract
-    /// @dev This function can only be called by an approved `vaultManager` contract which can call
+    /// @dev This function can be called by an approved `vaultManager` contract which can call
     /// this function after being requested to do so by a `treasury` contract
+    /// @dev In some situations (like reactor contracts), the `vaultManager` may not directly be linked
+    /// to the `oracle` contract and as such we may need governors to be able to call this function as well
     function setTreasury(address _treasury) external;
 
     /// @notice Reference to the `treasury` contract handling this `VaultManager`

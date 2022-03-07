@@ -4,6 +4,7 @@ pragma solidity 0.8.12;
 
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IFlashAngle.sol";
+import "../interfaces/IVaultManager.sol";
 
 contract MockTreasury is ITreasury {
     IAgToken public override stablecoin;
@@ -53,6 +54,10 @@ contract MockTreasury is ITreasury {
         vaultManager1 = _vaultManager;
     }
 
+    function setVaultManager2(address _vaultManager) external {
+        vaultManager2 = _vaultManager;
+    }
+
     function setTreasury(address _agTokenOrVaultManager, address _treasury) external {
         IAgToken(_agTokenOrVaultManager).setTreasury(_treasury);
     }
@@ -67,5 +72,9 @@ contract MockTreasury is ITreasury {
 
     function accrueInterestToTreasury(IFlashAngle flashAngle) external returns (uint256 balance) {
         balance = flashAngle.accrueInterestToTreasury(stablecoin);
+    }
+
+    function accrueInterestToTreasuryVaultManager(IVaultManager _vaultManager) external returns (uint256, uint256) {
+        return _vaultManager.accrueInterestToTreasury();
     }
 }

@@ -72,7 +72,7 @@ abstract contract BaseOracleChainlinkMulti is IOracle {
 
     /// @inheritdoc IOracle
     function setTreasury(address _treasury) external override {
-        require(treasury.isVaultManager(msg.sender), "3");
+        require(treasury.isVaultManager(msg.sender) || treasury.isGovernor(msg.sender), "3");
         treasury = ITreasury(_treasury);
     }
 }
