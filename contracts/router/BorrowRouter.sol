@@ -24,26 +24,31 @@ import "../interfaces/external/uniswap/IUniswapRouter.sol";
 contract BorrowRouter is Initializable, IRepayCallee {
     using SafeERC20 for IERC20;
 
+    // =============================== Constants ===================================
+
     /// @notice Base used for parameter computation
     uint256 public constant BASE_PARAMS = 10**9;
-
     /// @notice Wrapped ETH contract
     IWETH9 public constant WETH9 = IWETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    /// @notice Wrapped StETH contract
     IWStETH public constant WSTETH = IWStETH(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+    /// @notice Uniswap Router contract
     IUniswapV3Router public constant UNIV3ROUTER = IUniswapV3Router(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    /// @notice 1Inch Router
     address public constant ONEINCH = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
-
-
-    receive() external payable {}
 
     // =============================== References ==================================
 
     /// @notice Reference to the Core contract of the module which handles all AccessControl logic
     ICoreBorrow public core;
+    /// @notice Reference to the `AngleRouter` contract
     IAngleRouter public angleRouter;
-    
-    mapping(IVaultManager => IERC20) public supportedVaultManagers;
 
+    // =============================== Mappings ====================================
+
+    /// @notice Maps a `vaultManager` contract to its associated collateral. This mapping is used to check whether
+    /// a `vaultManager` is supported within this router contract
+    mapping(IVaultManager => IERC20) public supportedVaultManagers;
     /// @notice Whether the token was already approved on Uniswap router
     mapping(IERC20 => bool) public uniAllowedToken;
     /// @notice Whether the token was already approved on 1Inch
@@ -100,8 +105,11 @@ contract BorrowRouter is Initializable, IRepayCallee {
         _;
     }
 
-
-    function initialize(ICoreBorrow _core, IAngleRouter _angleRouter, IVaultManager[] memory vaultManagers) external initializer {
+    function initialize(
+        ICoreBorrow _core,
+        IAngleRouter _angleRouter,
+        IVaultManager[] memory vaultManagers
+    ) external initializer {
         require(address(_core) != address(0), "0");
         core = _core;
         angleRouter = _angleRouter;
@@ -111,70 +119,49 @@ contract BorrowRouter is Initializable, IRepayCallee {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {}
 
-    function toggleVaultManagers(IVaultManager[] memory vaultManagers) external onlyGovernorOrGuardian {
-       _toggleVaultManagers(vaultManagers);
-    }
+    receive() external payable {}
 
-    function _toggleVaultManagers(IVaultManager[] memory vaultManagers) internal {
-        for(uint256 i=0;i<vaultManagers.length;i++) {
-            IERC20 collateral = supportedVaultManagers[vaultManagers[i]];
-            if (address(collateral) == address(0)) {
-                collateral = vaultManagers[i].collateral();
-                ITreasury treasury = vaultManagers[i].treasury();
-                require(treasury.isVaultManager(address(vaultManagers[i])));
-                _changeAllowance(collateral, address(vaultManagers[i]), type(uint256).max);
-            } else {
-                _changeAllowance(collateral, address(vaultManagers[i]), 0);
-                collateral = IERC20(address(0));
-            }
-            supportedVaultManagers[vaultManagers[i]] = collateral;
+    function mixer(
+        PermitType[] memory paramsPermit,
+        ParamsSwapType[] memory paramsSwap,
+        IVaultManager vaultManager,
+        ActionType[] memory actions,
+        bytes[] memory datas,
+        bytes memory addressData,
+        bytes memory repayData
+    ) external payable {
+        for (uint256 i = 0; i < paramsPermit.length; i++) {
+            IERC20PermitUpgradeable(paramsPermit[i].token).permit(
+                paramsPermit[i].owner,
+                address(this),
+                paramsPermit[i].value,
+                paramsPermit[i].deadline,
+                paramsPermit[i].v,
+                paramsPermit[i].r,
+                paramsPermit[i].s
+            );
+        }
+
+        for (uint256 i = 0; i < paramsSwap.length; i++) {
+            _transferAndSwap(
+                paramsSwap[i].inToken,
+                paramsSwap[i].amountIn,
+                paramsSwap[i].minAmountOut,
+                paramsSwap[i].swapType,
+                paramsSwap[i].args
+            );
+        }
+
+        {
+            (address to, address who) = abi.decode(addressData,(address,address));
+            vaultManager.angle(actions, datas, msg.sender, to, who, repayData);
+            IERC20 collateral = supportedVaultManagers[vaultManager];
+            require(address(collateral) != address(0));
+            collateral.safeTransfer(to, collateral.balanceOf(address(this)));
         }
     }
 
-    function setAngleRouter(IAngleRouter _angleRouter) external onlyGovernor {
-        angleRouter = _angleRouter;
-    }
-
-    /// @notice Changes allowance of this contract for a given token
-    /// @param token Address of the token to change allowance
-    /// @param spender Address to change the allowance of
-    /// @param amount Amount allowed
-    function _changeAllowance(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
-        uint256 currentAllowance = token.allowance(address(this), spender);
-        if (currentAllowance < amount) {
-            token.safeIncreaseAllowance(spender, amount - currentAllowance);
-        } else if (currentAllowance > amount) {
-            token.safeDecreaseAllowance(spender, currentAllowance - amount);
-        }
-    }
-
-    /// @notice Change allowance for a contract.
-    /// @param tokens Addresses of the tokens to allow
-    /// @param spenders Addresses to allow transfer
-    /// @param amounts Amounts to allow
-    /// @dev Approvals are normally given in the `addGauges` method, in the initializer and in
-    /// the internal functions to process swaps with Uniswap and 1Inch
-    function changeAllowance(
-        IERC20[] calldata tokens,
-        address[] calldata spenders,
-        uint256[] calldata amounts
-    ) external onlyGovernorOrGuardian {
-        require(tokens.length == spenders.length && tokens.length == amounts.length, "104");
-        for (uint256 i = 0; i < tokens.length; i++) {
-            _changeAllowance(tokens[i], spenders[i], amounts[i]);
-        }
-    }
-
-    /// @notice Notifies a contract that an address should be given stablecoins
-    /// @param stablecoinRecipient Address to which stablecoins should be sent
-    /// @param stablecoinOwed Amount of stablecoins owed to the address
-    /// @param collateralObtained Amount of collateral obtained by a related address prior
-    /// to the call to this function
-    /// @param data Extra data needed (to encode Uniswap swaps for instance)
+    /// @inheritdoc IRepayCallee
     function repayCallStablecoin(
         address stablecoinRecipient,
         uint256 stablecoinOwed,
@@ -189,20 +176,19 @@ contract BorrowRouter is Initializable, IRepayCallee {
         uint256 minAmountOut;
         address collateral;
         bytes memory swapData;
-        (stablecoin, to, swapType, minAmountOut, collateral, swapData) = abi.decode(data, (address, address, uint256, uint256, address, bytes));
+        (stablecoin, to, swapType, minAmountOut, collateral, swapData) = abi.decode(
+            data,
+            (address, address, uint256, uint256, address, bytes)
+        );
         uint256 amountOut = _swap(inToken, collateralObtained, minAmountOut, SwapType(swapType), swapData);
-        if(collateral!=address(0) && address(angleRouter)!=address(0)) {
+        if (collateral != address(0) && address(angleRouter) != address(0)) {
             _mintFromProtocol(inToken, amountOut, stablecoinOwed, stablecoin, collateral);
         }
         IERC20(stablecoin).safeTransfer(stablecoinRecipient, stablecoinOwed);
         IERC20(stablecoin).safeTransfer(to, IERC20(stablecoin).balanceOf(address(this)));
     }
 
-    /// @notice Notifies a contract that an address should be given collateral
-    /// @param collateralRecipient Address to which collateral should be sent
-    /// @param stablecoinObtained Amount of stablecoins received by the related address prior to this call
-    /// @param collateralOwed Amount of collateral owed by the address
-    /// @param data Extra data needed (to encode Uniswap swaps for instance)
+    /// @inheritdoc IRepayCallee
     function repayCallCollateral(
         address collateralRecipient,
         uint256 stablecoinObtained,
@@ -217,8 +203,11 @@ contract BorrowRouter is Initializable, IRepayCallee {
         uint256 minAmountOut;
         address collateral;
         bytes memory swapData;
-        (stablecoin, to, swapType, minAmountOut, collateral, swapData) = abi.decode(data, (address, address, uint256, uint256, address, bytes));
-        if(collateral!=stablecoin && address(angleRouter) !=address(0)) {
+        (stablecoin, to, swapType, minAmountOut, collateral, swapData) = abi.decode(
+            data,
+            (address, address, uint256, uint256, address, bytes)
+        );
+        if (collateral != stablecoin && address(angleRouter) != address(0)) {
             angleRouter.burn(address(this), stablecoinObtained, minAmountOut, stablecoin, collateral);
             // Reusing the `stablecoinObtained` variable in this case
             stablecoinObtained = IERC20(collateral).balanceOf(address(this));
@@ -228,40 +217,29 @@ contract BorrowRouter is Initializable, IRepayCallee {
         outToken.safeTransfer(to, outToken.balanceOf(address(this)));
     }
 
-    function mixer(
-        PermitType[] memory paramsPermit,
-        ParamsSwapType[] memory paramsSwap,
-        IVaultManager vaultManager,
-        ActionType[] memory actions,
-        bytes[] memory datas,
-        address to,
-        address who,
-        bytes memory repayData
-    ) external payable {
-        IERC20 collateral = supportedVaultManagers[vaultManager];
-        require(address(collateral)!= address(0));
-        for (uint256 i = 0; i < paramsPermit.length; i++) {
-            IERC20PermitUpgradeable(paramsPermit[i].token).permit(
-                paramsPermit[i].owner,
-                address(this),
-                paramsPermit[i].value,
-                paramsPermit[i].deadline,
-                paramsPermit[i].v,
-                paramsPermit[i].r,
-                paramsPermit[i].s
-            );
+    function toggleVaultManagers(IVaultManager[] memory vaultManagers) external onlyGovernorOrGuardian {
+        _toggleVaultManagers(vaultManagers);
+    }
+
+    /// @notice Changes allowance for a contract
+    /// @param tokens Addresses of the tokens to allow
+    /// @param spenders Addresses to allow transfer
+    /// @param amounts Amounts to allow
+    /// @dev This function should be called prior to setting a new router contract to revoke old allowances
+    /// and grant new ones
+    function changeAllowance(
+        IERC20[] calldata tokens,
+        address[] calldata spenders,
+        uint256[] calldata amounts
+    ) external onlyGovernorOrGuardian {
+        require(tokens.length == spenders.length && tokens.length == amounts.length, "104");
+        for (uint256 i = 0; i < tokens.length; i++) {
+            _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
-        for (uint256 i = 0; i < paramsSwap.length; i++) {
-            _transferAndSwap(
-                paramsSwap[i].inToken,
-                paramsSwap[i].amountIn,
-                paramsSwap[i].minAmountOut,
-                paramsSwap[i].swapType,
-                paramsSwap[i].args
-            );
-        }
-        vaultManager.angle(actions,datas,msg.sender,to,who,repayData);
-        collateral.safeTransfer(to, collateral.balanceOf(address(this)));
+    }
+
+    function setAngleRouter(IAngleRouter _angleRouter) external onlyGovernor {
+        angleRouter = _angleRouter;
     }
 
     function _transferAndSwap(
@@ -276,7 +254,7 @@ contract BorrowRouter is Initializable, IRepayCallee {
                 WETH9.deposit{ value: amount }();
             } else if (address(inToken) == address(WSTETH)) {
                 //solhint-disable-next-line
-                (bool success, bytes memory result) = address(WSTETH).call{value:amount}("");
+                (bool success, bytes memory result) = address(WSTETH).call{ value: amount }("");
                 if (!success) _revertBytes(result);
             }
         } else {
@@ -285,7 +263,13 @@ contract BorrowRouter is Initializable, IRepayCallee {
         return _swap(inToken, amount, minAmountOut, swapType, args);
     }
 
-    function _swap(IERC20 inToken, uint256 amount, uint256 minAmountOut, SwapType swapType, bytes memory args) internal returns (uint256 amountOut) {
+    function _swap(
+        IERC20 inToken,
+        uint256 amount,
+        uint256 minAmountOut,
+        SwapType swapType,
+        bytes memory args
+    ) internal returns (uint256 amountOut) {
         if (swapType == SwapType.UniswapV3) amountOut = _swapOnUniswapV3(inToken, amount, minAmountOut, args);
         else if (swapType == SwapType.oneINCH) amountOut = _swapOn1Inch(inToken, minAmountOut, args);
         else if (swapType == SwapType.Wrap) amountOut = _wrapStETH(amount, minAmountOut);
@@ -293,10 +277,17 @@ contract BorrowRouter is Initializable, IRepayCallee {
         return amountOut;
     }
 
-    function _mintFromProtocol(IERC20 inToken, uint256 amount, uint256 minAmountOut, address stablecoin, address collateral) internal {
+    function _mintFromProtocol(
+        IERC20 inToken,
+        uint256 amount,
+        uint256 minAmountOut,
+        address stablecoin,
+        address collateral
+    ) internal {
         if (!angleRouterAllowedToken[inToken]) {
-                inToken.safeIncreaseAllowance(address(angleRouter), type(uint256).max);
-                angleRouterAllowedToken[inToken] = true;
+            // TODO: should we just give a limited allowance to the router and avoid all these scenari
+            inToken.safeIncreaseAllowance(address(angleRouter), type(uint256).max);
+            angleRouterAllowedToken[inToken] = true;
         }
         angleRouter.mint(address(this), amount, minAmountOut, stablecoin, collateral);
     }
@@ -317,11 +308,7 @@ contract BorrowRouter is Initializable, IRepayCallee {
         );
     }
 
-
-    function _wrapStETH(
-        uint256 amount,
-        uint256 minAmountOut
-    ) internal returns (uint256 amountOut) {
+    function _wrapStETH(uint256 amount, uint256 minAmountOut) internal returns (uint256 amountOut) {
         amountOut = WSTETH.wrap(amount);
         require(amountOut >= minAmountOut, "15");
     }
@@ -357,5 +344,38 @@ contract BorrowRouter is Initializable, IRepayCallee {
             }
         }
         revert("117");
+    }
+
+    /// @notice Changes allowance of this contract for a given token
+    /// @param token Address of the token to change allowance
+    /// @param spender Address to change the allowance of
+    /// @param amount Amount allowed
+    function _changeAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(address(this), spender);
+        if (currentAllowance < amount) {
+            token.safeIncreaseAllowance(spender, amount - currentAllowance);
+        } else if (currentAllowance > amount) {
+            token.safeDecreaseAllowance(spender, currentAllowance - amount);
+        }
+    }
+
+    function _toggleVaultManagers(IVaultManager[] memory vaultManagers) internal {
+        for (uint256 i = 0; i < vaultManagers.length; i++) {
+            IERC20 collateral = supportedVaultManagers[vaultManagers[i]];
+            if (address(collateral) == address(0)) {
+                collateral = vaultManagers[i].collateral();
+                ITreasury treasury = vaultManagers[i].treasury();
+                require(treasury.isVaultManager(address(vaultManagers[i])));
+                _changeAllowance(collateral, address(vaultManagers[i]), type(uint256).max);
+            } else {
+                _changeAllowance(collateral, address(vaultManagers[i]), 0);
+                collateral = IERC20(address(0));
+            }
+            supportedVaultManagers[vaultManagers[i]] = collateral;
+        }
     }
 }
