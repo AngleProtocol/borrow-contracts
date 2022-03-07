@@ -130,10 +130,6 @@ contract('Reactor', () => {
     );
   });
 
-<<<<<<< HEAD
-  /*
-=======
->>>>>>> 5160ef1 (adding final tests for the reactor)
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -192,18 +188,8 @@ contract('Reactor', () => {
   });
   describe('maxMint', () => {
     it('success - correct value when zero balance', async () => {
-<<<<<<< HEAD
       expect(await reactor.maxMint(alice.address)).to.be.equal(MAX_UINT256);
       expect(await reactor.maxMint(ZERO_ADDRESS)).to.be.equal(MAX_UINT256);
-=======
-      expect(await reactor.maxMint(alice.address)).to.be.equal(0);
-      expect(await reactor.maxMint(ZERO_ADDRESS)).to.be.equal(0);
-    });
-    it('success - correct value when non-null balance', async () => {
-      const sharesAmount = parseUnits('1', collatBase);
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      expect(await reactor.maxMint(alice.address)).to.be.equal(sharesAmount);
->>>>>>> 5160ef1 (adding final tests for the reactor)
     });
     it('success - correct value when non-null balance', async () => {
       const sharesAmount = parseUnits('1', collatBase);
@@ -213,18 +199,8 @@ contract('Reactor', () => {
   });
   describe('maxDeposit', () => {
     it('success - correct value when zero balance', async () => {
-<<<<<<< HEAD
       expect(await reactor.maxDeposit(alice.address)).to.be.equal(MAX_UINT256);
       expect(await reactor.maxDeposit(ZERO_ADDRESS)).to.be.equal(MAX_UINT256);
-=======
-      expect(await reactor.maxDeposit(alice.address)).to.be.equal(0);
-      expect(await reactor.maxDeposit(ZERO_ADDRESS)).to.be.equal(0);
-    });
-    it('success - correct value when non-null balance', async () => {
-      const sharesAmount = parseUnits('1', collatBase);
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      expect(await reactor.maxDeposit(alice.address)).to.be.equal(sharesAmount);
->>>>>>> 5160ef1 (adding final tests for the reactor)
     });
     it('success - correct value when non-null balance', async () => {
       const sharesAmount = parseUnits('1', collatBase);
@@ -769,7 +745,6 @@ contract('Reactor', () => {
       await expect(reactor.connect(alice).withdraw(assetsAmount.mul(1000), alice.address, alice.address)).to.be
         .reverted;
     });
-<<<<<<< HEAD
     it('success - from approved by msg.sender and reduced allowance', async () => {
       await reactor.connect(alice).approve(bob.address, sharesAmount);
       const receipt = await (await reactor.connect(bob).withdraw(assetsAmount, alice.address, alice.address)).wait();
@@ -1000,8 +975,6 @@ contract('Reactor', () => {
       expect(await reactor.lastDebt()).to.be.equal(0);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(gains.add(balancePre));
     });
-=======
->>>>>>> 5160ef1 (adding final tests for the reactor)
     it('success - from approved by msg.sender and reduced allowance', async () => {
       await reactor.connect(alice).approve(bob.address, sharesAmount);
       const receipt = await (await reactor.connect(bob).withdraw(assetsAmount, alice.address, alice.address)).wait();
