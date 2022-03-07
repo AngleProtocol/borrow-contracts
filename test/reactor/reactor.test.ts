@@ -188,24 +188,24 @@ contract('Reactor', () => {
   });
   describe('maxMint', () => {
     it('success - correct value when zero balance', async () => {
-      expect(await reactor.maxMint(alice.address)).to.be.equal(0);
-      expect(await reactor.maxMint(ZERO_ADDRESS)).to.be.equal(0);
+      expect(await reactor.maxMint(alice.address)).to.be.equal(MAX_UINT256);
+      expect(await reactor.maxMint(ZERO_ADDRESS)).to.be.equal(MAX_UINT256);
     });
     it('success - correct value when non-null balance', async () => {
       const sharesAmount = parseUnits('1', collatBase);
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      expect(await reactor.maxMint(alice.address)).to.be.equal(sharesAmount);
+      expect(await reactor.maxMint(alice.address)).to.be.equal(MAX_UINT256);
     });
   });
   describe('maxDeposit', () => {
     it('success - correct value when zero balance', async () => {
-      expect(await reactor.maxDeposit(alice.address)).to.be.equal(0);
-      expect(await reactor.maxDeposit(ZERO_ADDRESS)).to.be.equal(0);
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(MAX_UINT256);
+      expect(await reactor.maxDeposit(ZERO_ADDRESS)).to.be.equal(MAX_UINT256);
     });
     it('success - correct value when non-null balance', async () => {
       const sharesAmount = parseUnits('1', collatBase);
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      expect(await reactor.maxDeposit(alice.address)).to.be.equal(sharesAmount);
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(MAX_UINT256);
     });
   });
   describe('previewDeposit', () => {
