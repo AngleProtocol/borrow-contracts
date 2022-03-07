@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "../BaseOracleChainlinkMulti.sol";
-import "../../interfaces/IStETH.sol";
+import "../../interfaces/external/lido/IStETH.sol";
 
 /// @title OracleWSTETHEURChainlink
 /// @author Angle Core Team
