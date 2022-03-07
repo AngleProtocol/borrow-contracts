@@ -174,22 +174,21 @@ contract BorrowRouter is Initializable, IRepayCallee {
         uint256 collateralObtained,
         bytes calldata data
     ) external {
+        IERC20 inToken = supportedVaultManagers[IVaultManager(msg.sender)];
+        require(address(inToken) != address(0));
         address stablecoin;
-        address collateral;
         address to;
         uint256 swapType;
         uint256 minAmountOut;
+        address collateral;
         bytes memory swapData;
-        (stablecoin, collateral, to, swapType, minAmountOut, swapData) = abi.decode(data, (address, address, address, uint256, uint256, bytes));
-        // TODO: to be incorporated in the list -> mint from StableMaster
-        if(SwapType(swapType) == SwapType.Mint) {
-
+        (stablecoin, to, swapType, minAmountOut, collateral, swapData) = abi.decode(data, (address, address, uint256, uint256, address, bytes));
+        uint256 amountOut = _swap(inToken, collateralObtained, minAmountOut, SwapType(swapType), swapData);
+        if(collateral!=address(0) && address(angleRouter)!=address(0)) {
+            angleRouter.mint(address(this), amountOut, stablecoinOwed, stablecoin, collateral);
         }
-
-
-
-
-
+        IERC20(stablecoin).safeTransfer(stablecoinRecipient, stablecoinOwed);
+        IERC20(stablecoin).safeTransfer(to, IERC20(stablecoin).balanceOf(address(this)));
     }
 
     /// @notice Notifies a contract that an address should be given collateral
@@ -203,7 +202,23 @@ contract BorrowRouter is Initializable, IRepayCallee {
         uint256 collateralOwed,
         bytes calldata data
     ) external {
-
+        IERC20 outToken = supportedVaultManagers[IVaultManager(msg.sender)];
+        require(address(outToken) != address(0));
+        address stablecoin;
+        address to;
+        uint256 swapType;
+        uint256 minAmountOut;
+        address collateral;
+        bytes memory swapData;
+        (stablecoin, to, swapType, minAmountOut, collateral, swapData) = abi.decode(data, (address, address, uint256, uint256, address, bytes));
+        if(collateral!=stablecoin && address(angleRouter) !=address(0)) {
+            angleRouter.burn(address(this), stablecoinObtained, minAmountOut, stablecoin, collateral);
+            // Reusing the `stablecoinObtained` variable in this case
+            stablecoinObtained = IERC20(collateral).balanceOf(address(this));
+        }
+        _swap(IERC20(collateral), stablecoinObtained, collateralOwed, SwapType(swapType), swapData);
+        outToken.safeTransfer(collateralRecipient, collateralOwed);
+        outToken.safeTransfer(to, outToken.balanceOf(address(this)));
     }
 
     function mixer(
@@ -242,10 +257,6 @@ contract BorrowRouter is Initializable, IRepayCallee {
         collateral.safeTransfer(to, collateral.balanceOf(address(this)));
     }
 
-    function liquidate(IVaultManager vaultManager, uint256[] memory vaultIDs, uint256[] memory amounts, address to, address who, bytes memory data) external {
-        
-    }
-
     function _transferAndSwap(
         IERC20 inToken,
         uint256 amount,
@@ -270,12 +281,9 @@ contract BorrowRouter is Initializable, IRepayCallee {
     function _swap(IERC20 inToken, uint256 amount, uint256 minAmountOut, SwapType swapType, bytes memory args) internal returns (uint256 amountOut) {
         if (swapType == SwapType.UniswapV3) amountOut = _swapOnUniswapV3(inToken, amount, minAmountOut, args);
         else if (swapType == SwapType.oneINCH) amountOut = _swapOn1Inch(inToken, minAmountOut, args);
-        else if (swapType == SwapType.Wrap) _wrapStETH(amount, minAmountOut);
-        else if (swapType == SwapType.Mint) _mint(amount, minAmountOut, args);
+        else if (swapType == SwapType.Wrap) amountOut = _wrapStETH(amount, minAmountOut);
         else require(false, "3");
         return amountOut;
-
-
     }
 
     function _swapOnUniswapV3(
@@ -293,11 +301,6 @@ contract BorrowRouter is Initializable, IRepayCallee {
             ExactInputParams(path, address(this), block.timestamp, amount, minAmountOut)
         );
     }
-
-    function _mint(uint256 amount, uint256 minStableAmount, bytes memory args) internal returns (uint256 amountOut) {
-
-    }
-
 
 
     function _wrapStETH(
