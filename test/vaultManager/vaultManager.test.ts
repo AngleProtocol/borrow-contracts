@@ -264,38 +264,6 @@ contract('VaultManager', () => {
     });
   });
 
-  describe('removeCollateral', () => {
-    it('success - collateral removed', async () => {
-      const amount = parseUnits('1', collatBase);
-      await collateral.connect(alice).mint(alice.address, amount);
-      await collateral.connect(alice).approve(vaultManager.address, amount);
-      await angle(vaultManager, alice, [
-        createVault(alice.address),
-        createVault(alice.address),
-        addCollateral(2, amount),
-      ]);
-      expect(await collateral.balanceOf(alice.address)).to.be.equal(0);
-      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(amount);
-      await angle(vaultManager, alice, [removeCollateral(2, amount)]);
-      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
-    });
-    it('reverts - insolvent vault', async () => {
-      const amount = parseUnits('1', collatBase);
-      const borrowAmount = parseEther('0.999');
-      await collateral.connect(alice).mint(alice.address, amount);
-      await collateral.connect(alice).approve(vaultManager.address, amount);
-      await angle(vaultManager, alice, [
-        createVault(alice.address),
-        createVault(alice.address),
-        addCollateral(2, amount),
-        borrow(2, borrowAmount),
-      ]);
-      await expect(angle(vaultManager, alice, [removeCollateral(2, parseUnits('0.5', collatBase))])).to.be.revertedWith(
-        '21',
-      );
-    });
-  });
-
   describe('borrow', () => {
     it('reverts - limit CF', async () => {
       // Collat amount in stable should be 4
