@@ -9,7 +9,6 @@ import "./VaultManagerStorage.sol";
 /// @dev Base ERC721 Implementation of VaultManager
 abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     using SafeERC20 for IERC20;
-    using CountersUpgradeable for CountersUpgradeable.Counter;
     using Address for address;
 
     /// @inheritdoc IERC721MetadataUpgradeable
@@ -35,11 +34,11 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @dev This function is never to be called on-chain since it iterates over all addresses and is here
     /// to reduce dependency on an external graph to link an ID to its owner
     function getControlledVaults(address spender) external view returns (uint256[] memory, uint256) {
-        uint256 arraySize = _vaultIDCount.current();
+        uint256 arraySize = _vaultIDCount;
         uint256[] memory vaultsControlled = new uint256[](arraySize);
         address owner;
         uint256 count;
-        for (uint256 i = 1; i <= _vaultIDCount.current(); i++) {
+        for (uint256 i = 1; i <= arraySize; i++) {
             owner = _owners[i];
             if (spender == owner || _getApproved(i) == spender || _operatorApprovals[owner][spender]) {
                 vaultsControlled[count] = i;
@@ -198,9 +197,11 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @dev Emits a {Transfer} event
     function _mint(address to) internal returns (uint256 vaultID) {
         require(!whitelistingActivated || (isWhitelisted[to] && isWhitelisted[msg.sender]), "20");
-        _vaultIDCount.increment();
-        vaultID = _vaultIDCount.current();
-        _balances[to] += 1;
+        unchecked {
+            _vaultIDCount += 1;
+            _balances[to] += 1;
+        }
+        vaultID = _vaultIDCount;
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
         require(_checkOnERC721Received(address(0), to, vaultID, ""), "29");
@@ -214,8 +215,11 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
 
         // Clear approvals
         _approve(address(0), vaultID);
-
-        _balances[owner] -= 1;
+        // The following line cannot underflow as the owner's balance is necessarily
+        // greater than 1
+        unchecked {
+            _balances[owner] -= 1;
+        }
         delete _owners[vaultID];
         delete vaultData[vaultID];
 
@@ -237,9 +241,10 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         require(!whitelistingActivated || isWhitelisted[to], "20");
         // Clear approvals from the previous owner
         _approve(address(0), vaultID);
-
-        _balances[from] -= 1;
-        _balances[to] += 1;
+        unchecked {
+            _balances[from] -= 1;
+            _balances[to] += 1;
+        }
         _owners[vaultID] = to;
 
         emit Transfer(from, to, vaultID);
