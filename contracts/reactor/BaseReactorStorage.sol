@@ -78,4 +78,7 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
 
     event FiledUint64(uint64 param, bytes32 what);
     event Recovered(address indexed token, address indexed to, uint256 amount);
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 }

@@ -55,9 +55,6 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         asset.approve(address(vaultManager), type(uint256).max);
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {}
-
     // ============================== Modifiers ====================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
@@ -360,7 +357,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             datas[len] = abi.encodePacked(vaultID, toWithdraw - looseAssets);
         }
 
-        if (toRepay > 0) _pull(toRepay, looseAssets);
+        if (toRepay > 0) _pull(toRepay);
         vaultManager.angle(actions, datas, address(this), address(this), address(this), "");
         if (toBorrow > 0) _push(toBorrow);
     }
@@ -374,12 +371,11 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @notice Virtual function to withdraw stablecoins
     /// @param amount Amount needed at the end of the call
-    /// @param looseAssets Current balance of stablecoin of the contract
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
     /// @dev Eventually actually triggers smthg depending on a threshold
     /// @dev Calling this function should eventually trigger something regarding strategies depending
     /// on a threshold
-    function _pull(uint256 amount, uint256 looseAssets) internal virtual returns (uint256 amountAvailable) {}
+    function _pull(uint256 amount) internal virtual returns (uint256 amountAvailable) {}
 
     /// @notice Claims rewards earned by a user
     /// @param from Address to claim rewards from
@@ -394,7 +390,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
         claimableRewards -= amount;
 
-        amount = _pull(amount, stablecoin.balanceOf(address(this)));
+        amount = _pull(amount);
         stablecoin.transfer(from, amount);
     }
 
