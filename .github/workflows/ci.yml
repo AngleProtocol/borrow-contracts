@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      workflow_to_run:
+        type: choice
+        description: Which workflow to run?
+        required: true
+        options:
+          - all
+          - unit_tests
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  run-linters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 14
+      - uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-
+      - name: Install dependencies
+        run: |
+          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
+          yarn install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Run solhint
+        run: yarn lint:sol
+      - name: Run eslint
+        run: yarn lint:js:fix
+
+      # - name: Discord notification
+      #   if: failure()
+      #   uses: Ilshidur/action-discord@master
+      #   env:
+      #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      #   with:
+      #     args: '⛔️ Error in project {{EVENT_PAYLOAD.repository.full_name}}. See here: https://github.com/AngleProtocol/angle-borrow/actions'
+
+  unit-tests:
+    if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.workflow_to_run == 'all' || github.event.inputs.workflow_to_run == 'unit_tests' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 14
+      - uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-
+      - name: Install dependencies
+        run: |
+          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
+          yarn install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # This is required separately from yarn test because it generates the typechain definitions
+      - name: Compile
+        run: yarn compile
+      - name: Typechain
+        run: yarn generate-types-from-abis
+      - run: export NODE_OPTIONS=--max_old_space_size=4096
+      - name: Run unit tests
+        run: yarn test:all
+        env:
+          ENABLE_GAS_REPORT: true
+          CI: true
+      - name: Print gas report
+        run: cat gas-report.txt
+      # - name: Discord notification
+      #   if: failure()
+      #   uses: Ilshidur/action-discord@master
+      #   env:
+      #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      #   with:
+      #     args: '⛔️ Error in project {{EVENT_PAYLOAD.repository.full_name}}. See here: https://github.com/AngleProtocol/angle-borrow/actions'
