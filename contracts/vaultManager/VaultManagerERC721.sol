@@ -215,6 +215,8 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
 
         // Clear approvals
         _approve(address(0), vaultID);
+        // The following line cannot underflow as the owner's balance is necessarily
+        // greater than 1
         unchecked {
             _balances[owner] -= 1;
         }
