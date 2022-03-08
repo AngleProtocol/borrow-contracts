@@ -752,7 +752,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // is an increasing function of the amount of stablecoins repaid
             // And given that most parameters are in base 9, the numerator can very hardly overflow here
             maxAmountToRepay =
-                (targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) * BASE_PARAMS * liquidationDiscount /
+                ((targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) *
+                    BASE_PARAMS *
+                    liquidationDiscount) /
                 (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
             // The quantity below tends to be rounded in the above direction, which means that governance should
             // set the `targetHealthFactor` accordingly

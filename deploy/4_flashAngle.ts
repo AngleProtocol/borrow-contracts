@@ -1,7 +1,7 @@
-import yargs from 'yargs';
+import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
+import yargs from 'yargs';
 
-import { CONTRACTS_ADDRESSES, ChainId } from '@angleprotocol/sdk';
 import { FlashAngle__factory } from '../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -53,5 +53,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['flashAngle'];
-func.dependencies = ['treasury'];
+func.dependencies = ['oracle'];
 export default func;

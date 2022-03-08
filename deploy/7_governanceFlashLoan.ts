@@ -8,9 +8,12 @@ import {
   AgToken__factory,
   CoreBorrow,
   CoreBorrow__factory,
+  FlashAngle,
+  FlashAngle__factory,
   ProxyAdmin,
   ProxyAdmin__factory,
 } from '../typechain';
+import params from './networks';
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
@@ -22,6 +25,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   let signer: SignerWithAddress;
   let agToken: AgToken;
   let coreBorrow: CoreBorrow;
+  let flashAngle: FlashAngle;
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -58,17 +62,43 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   await (await agToken.connect(signer).setUpTreasury(treasury.address)).wait();
   console.log('Success');
   console.log('');
-  console.log('Setting up the treasury on the flashAngle');
-  await (await coreBorrow.connect(signer).addFlashLoanerTreasuryRole(treasury.address)).wait();
-  console.log('Success');
-  console.log('');
 
   /* TODO after this:
     - vaultManagers deployed and linked to the treasury
     - parameters in the FlashAngle contracts (for the flash loan) -> SDK
   */
+  if (params.stablesParameters.EUR.flashloan) {
+    const flashLoanParams = params.stablesParameters.EUR.flashloan;
+    const flashAngleAddress = await deployments.get('FlashAngle');
+    flashAngle = (await new ethers.Contract(
+      flashAngleAddress.address,
+      FlashAngle__factory.createInterface(),
+      signer,
+    )) as FlashAngle;
+
+    console.log('Setting up the flashAngle on the coreBorrow');
+    await (await coreBorrow.setFlashLoanModule(flashAngle.address)).wait();
+    console.log('Success');
+    console.log('');
+
+    console.log('Setting up the treasury on the flashAngle');
+    await (await coreBorrow.connect(signer).addFlashLoanerTreasuryRole(treasury.address)).wait();
+    console.log('Success');
+    console.log('');
+
+    console.log('Setting up flash loan parameters');
+    await (
+      await flashAngle.setFlashLoanParameters(
+        agToken.address,
+        flashLoanParams.flashLoanFee,
+        flashLoanParams.maxBorrowable,
+      )
+    ).wait();
+    console.log('Success');
+    console.log('');
+  }
 };
 
-func.tags = ['governanceTx'];
+func.tags = ['governanceFlashLoan'];
 func.dependencies = ['agTokenImplementation'];
 export default func;

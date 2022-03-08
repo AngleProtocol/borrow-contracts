@@ -49,11 +49,6 @@ const config: HardhatUserConfig = {
       },
     ],
   },
-  /*
-  vyper: {
-    version: '0.2.16',
-  },
-  */
   defaultNetwork: 'hardhat',
   networks: {
     hardhat: {
@@ -74,14 +69,6 @@ const config: HardhatUserConfig = {
           }
         : { auto: true },
       chainId: 1337,
-    },
-    kovan: {
-      live: false,
-      url: nodeUrl('kovan'),
-      accounts: accounts('kovan'),
-      gas: 12e6,
-      gasPrice: 1e9,
-      chainId: 42,
     },
     rinkeby: {
       live: true,
