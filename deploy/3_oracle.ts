@@ -1,15 +1,14 @@
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { FlashAngle__factory } from '../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 
-const func: DeployFunction = async ({ deployments, ethers, network }) => {
+const func: DeployFunction = async ({ deployments, ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const treasury = (await deployments.get('Treasury')).address;
 
+  // TODO Work needed here for rinkeby
   console.log('Now deploying the Oracle ETH/EUR');
   await deploy('Oracle_ETH_EUR', {
     contract: 'OracleChainlinkMultiTemplate',

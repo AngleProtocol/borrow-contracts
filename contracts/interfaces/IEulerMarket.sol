@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0;
+// Forked from https://github.com/euler-xyz/euler-interfaces
+pragma solidity >=0.8.12;
 
 /// @notice Main storage contract for the Euler system
 interface IEuler {

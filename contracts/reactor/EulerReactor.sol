@@ -50,8 +50,8 @@ contract EulerReactor is BaseReactor {
     /// @dev Calling this function should eventually trigger something regarding strategies depending
     /// on a threshold
     function _pull(uint256 amount) internal virtual override returns (uint256 amountAvailable) {
-        uint256 looseAssets = stablecoin.balanceOf(address(this));
-        if (amount <= looseAssets) return looseAssets;
-        euler.withdraw(0, looseAssets - amount);
+        uint256 looseStablecoins = stablecoin.balanceOf(address(this));
+        if (amount <= looseStablecoins) return looseStablecoins;
+        euler.withdraw(0, looseStablecoins - amount);
     }
 }

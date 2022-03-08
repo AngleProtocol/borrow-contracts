@@ -100,11 +100,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @notice Rebalances the underlying vault
-    function rebalance(
-        uint256 toWithdraw,
-        uint256 usedAssets,
-        uint256 looseAssets
-    ) external nonReentrant {
+    function rebalance() external nonReentrant {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         _rebalance(0, usedAssets, looseAssets);
     }
