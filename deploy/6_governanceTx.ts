@@ -1,16 +1,16 @@
-import { DeployFunction } from 'hardhat-deploy/types';
+import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import hre from 'hardhat';
+import { DeployFunction } from 'hardhat-deploy/types';
 
-import { CONTRACTS_ADDRESSES, ChainId } from '@angleprotocol/sdk';
 import {
   AgToken,
-  ProxyAdmin,
-  ProxyAdmin__factory,
   AgToken__factory,
   CoreBorrow,
   CoreBorrow__factory,
+  ProxyAdmin,
+  ProxyAdmin__factory,
 } from '../typechain';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();

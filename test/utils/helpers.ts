@@ -3,13 +3,7 @@ import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Signer }
 import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
-import {
-  BaseReactor,
-  IERC20Metadata,
-  IOracle,
-  TransparentUpgradeableProxy__factory,
-  VaultManager,
-} from '../../typechain';
+import { IERC20Metadata, IOracle, Reactor, TransparentUpgradeableProxy__factory, VaultManager } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { TypePermit } from '../utils/sigUtils';
 
@@ -200,7 +194,7 @@ function permit(permitData: TypePermit): Call {
   };
 }
 
-async function displayReactorState(reactor: BaseReactor, log: boolean): Promise<void> {
+async function displayReactorState(reactor: Reactor, log: boolean): Promise<void> {
   if (log) {
     const vaultManager = (await ethers.getContractAt('VaultManager', await reactor.vaultManager())) as VaultManager;
     const asset = (await ethers.getContractAt('IERC20Metadata', await reactor.asset())) as IERC20Metadata;
