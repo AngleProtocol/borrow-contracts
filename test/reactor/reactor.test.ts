@@ -1,13 +1,11 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Signer, BigNumber, utils } from 'ethers';
-import { parseEther, parseUnits, formatBytes32String } from 'ethers/lib/utils';
+import { BigNumber, Signer, utils } from 'ethers';
+import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
   AgToken,
   AgToken__factory,
-  BaseReactor,
-  BaseReactor__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
@@ -16,12 +14,15 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
+  Reactor,
+  Reactor__factory,
   VaultManager,
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import {
+  angle,
   deployUpgradeable,
   displayReactorState,
   displayVaultState,
@@ -29,7 +30,6 @@ import {
   latestTime,
   MAX_UINT256,
   repayDebt,
-  angle,
   ZERO_ADDRESS,
 } from '../utils/helpers';
 
@@ -42,7 +42,7 @@ contract('Reactor', () => {
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
 
-  let reactor: BaseReactor;
+  let reactor: Reactor;
   let treasury: MockTreasury;
   let ANGLE: MockToken;
   let oracle: MockOracle;
@@ -119,7 +119,7 @@ contract('Reactor', () => {
     await vaultManager.initialize(treasury.address, ANGLE.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
 
-    reactor = (await deployUpgradeable(new BaseReactor__factory(deployer))) as BaseReactor;
+    reactor = (await deployUpgradeable(new Reactor__factory(deployer))) as Reactor;
     await reactor.initialize(
       'ANGLE/agEUR Reactor',
       'ANGLE/agEUR Reactor',
@@ -147,7 +147,7 @@ contract('Reactor', () => {
       expect(await agEUR.isMinter(vaultManager.address)).to.be.equal(true);
     });
     it('reverts - invalid collateral factor values', async () => {
-      reactor = (await deployUpgradeable(new BaseReactor__factory(deployer))) as BaseReactor;
+      reactor = (await deployUpgradeable(new Reactor__factory(deployer))) as Reactor;
       await expect(
         reactor.initialize('ANGLE/agEUR Reactor', 'ANGLE/agEUR Reactor', vaultManager.address, 0, targetCF, upperCF),
       ).to.be.revertedWith('15');

@@ -2,18 +2,18 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 import { contract, ethers, web3 } from 'hardhat';
-import { deployUpgradeable, latestTime, ZERO_ADDRESS } from '../utils/helpers';
 
 import {
-  OracleChainlinkMulti,
-  OracleChainlinkMulti__factory,
   MockChainlinkOracle,
   MockChainlinkOracle__factory,
   MockTreasury,
   MockTreasury__factory,
+  OracleChainlinkMulti,
+  OracleChainlinkMulti__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inReceipt } from '../utils/expectEvent';
+import { deployUpgradeable, latestTime, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('OracleChainlinkMulti', () => {
   let deployer: SignerWithAddress;

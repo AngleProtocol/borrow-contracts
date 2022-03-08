@@ -23,24 +23,23 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
+import { inIndirectReceipt } from '../utils/expectEvent';
 import {
   addCollateral,
   angle,
   borrow,
+  closeVault,
   createVault,
   deployUpgradeable,
   displayVaultState,
   expectApprox,
+  getDebtIn,
   increaseTime,
+  latestTime,
+  permit,
   removeCollateral,
   repayDebt,
-  getDebtIn,
   ZERO_ADDRESS,
-  closeVault,
-  permit,
-  latestTime,
-  MAX_UINT256,
 } from '../utils/helpers';
 import { signPermit } from '../utils/sigUtils';
 

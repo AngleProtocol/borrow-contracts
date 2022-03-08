@@ -9,7 +9,7 @@ import "./BaseReactorStorage.sol";
 /// @author Angle Core Team, based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
 /// @dev A token used as an asset built to exploit this reactor could perform reentrancy attacks if not enough checks
 /// are performed: as such the protocol implements reentrancy checks on all external entry point
-contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpgradeable, IERC4626 {
+abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpgradeable, IERC4626 {
     using SafeERC20 for IERC20;
 
     /// @notice Initializes the `BaseReactor` contract and
@@ -20,14 +20,14 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
     /// @param _lowerCF Lower Collateral Factor accepted without rebalancing
     /// @param _targetCF Target Collateral Factor
     /// @param _upperCF Upper Collateral Factor accepted without rebalancing
-    function initialize(
+    function _initialize(
         string memory _name,
         string memory _symbol,
         IVaultManager _vaultManager,
         uint64 _lowerCF,
         uint64 _targetCF,
         uint64 _upperCF
-    ) external initializer {
+    ) internal initializer {
         __ERC20_init(_name, _symbol);
         vaultManager = _vaultManager;
         stablecoin = _vaultManager.stablecoin();
@@ -54,9 +54,6 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
 
         asset.approve(address(vaultManager), type(uint256).max);
     }
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {}
 
     // ============================== Modifiers ====================================
 
@@ -100,6 +97,12 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         shares = _convertToShares(assets, usedAssets + looseAssets);
         _withdraw(assets, shares, to, from, usedAssets, looseAssets);
+    }
+
+    /// @notice Rebalances the underlying vault
+    function rebalance() external nonReentrant {
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        _rebalance(0, usedAssets, looseAssets);
     }
 
     /// @inheritdoc IERC4626
@@ -289,7 +292,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
         uint256 toBorrow;
 
         // We're first using as an intermediate in this variable something that does not correspond
-        // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in 
+        // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in
         // the vault expressed in stablecoin value and in a custom base
         uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracle.read();
         // The function will revert above if `toWithdraw` is too big
@@ -299,7 +302,7 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
             collateralFactor = (BASE_PARAMS * _assetBase * debt) / futureStablecoinsInVault;
         }
         // This is the targeted debt at the end of the call, which might not be reached if the collateral
-        // factor is not moved enough 
+        // factor is not moved enough
         futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (_assetBase * BASE_PARAMS);
         uint16 len = 1;
         (collateralFactor >= upperCF) ? len += 1 : 0; // Needs to repay
@@ -499,8 +502,21 @@ contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpg
         address to,
         uint256 amountToRecover
     ) external onlyGovernor {
-        require(tokenAddress!=address(stablecoin), "51");
+        require(tokenAddress != address(stablecoin), "51");
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
+    }
+}
+
+contract Reactor is BaseReactor {
+    function initialize(
+        string memory _name,
+        string memory _symbol,
+        IVaultManager _vaultManager,
+        uint64 _lowerCF,
+        uint64 _targetCF,
+        uint64 _upperCF
+    ) external {
+        _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF);
     }
 }

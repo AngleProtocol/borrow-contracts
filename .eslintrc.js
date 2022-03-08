@@ -28,7 +28,7 @@ module.exports = {
     'prettier/prettier': 'error',
     // Code style
     'array-bracket-spacing': ['off'],
-    camelcase: ['error', { properties: 'always', allow: ['*__factory'] }],
+    camelcase: ['error', { properties: 'always', allow: ['(.*?)__factory'] }],
     'comma-dangle': ['error', 'always-multiline'],
     'comma-spacing': ['error', { before: false, after: true }],
     'dot-notation': ['error', { allowKeywords: true, allowPattern: '' }],

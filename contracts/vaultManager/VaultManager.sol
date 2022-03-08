@@ -21,7 +21,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         IOracle _oracle,
         VaultParameters calldata params,
         string memory _symbol
-    ) public initializer {
+    ) external initializer {
         require(_oracle.treasury() == _treasury, "33");
         treasury = _treasury;
         collateral = _collateral;
@@ -530,6 +530,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param vaultID ID of the vault to decrease the debt of
     /// @param stablecoinAmount Amount of stablecoin to decrease the debt of: this amount is converted in
     /// normalized debt using the pre-computed (or not) `newInterestRateAccumulator` value
+    /// To repay the whole debt, one can pass `type(uint256).max`
     /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @return Amount of stablecoins to be burnt to correctly repay the debt
@@ -751,7 +752,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // is an increasing function of the amount of stablecoins repaid
             // And given that most parameters are in base 9, the numerator can very hardly overflow here
             maxAmountToRepay =
-                (targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) * BASE_PARAMS * liquidationDiscount /
+                ((targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) *
+                    BASE_PARAMS *
+                    liquidationDiscount) /
                 (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
             // The quantity below tends to be rounded in the above direction, which means that governance should
             // set the `targetHealthFactor` accordingly
