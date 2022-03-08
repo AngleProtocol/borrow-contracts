@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradea
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC721MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -113,7 +112,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     /// @notice Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
     /// contracts
-    CountersUpgradeable.Counter internal _vaultIDCount;
+    uint256 internal _vaultIDCount;
 
     // Mapping from `vaultID` to owner address
     mapping(uint256 => address) internal _owners;
