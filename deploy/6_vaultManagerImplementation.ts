@@ -21,5 +21,5 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
 };
 
 func.tags = ['vaultManagerImplementation'];
-// func.dependencies = ['flashAngle'];
+func.dependencies = ['agTokenImplementation'];
 export default func;
