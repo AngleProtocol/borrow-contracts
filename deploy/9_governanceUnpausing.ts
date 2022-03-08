@@ -4,18 +4,7 @@ import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import {
-  AgToken,
-  AgToken__factory,
-  CoreBorrow,
-  CoreBorrow__factory,
-  FlashAngle,
-  FlashAngle__factory,
-  ProxyAdmin,
-  ProxyAdmin__factory,
-  VaultManager,
-  VaultManager__factory,
-} from '../typechain';
+import { VaultManager, VaultManager__factory } from '../typechain';
 import params from './networks';
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -24,7 +13,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   const json = await import('./networks/' + network.name + '.json');
   const governor = json.governor;
-  let proxyAdminAddress: string;
   let agTokenAddress: string;
   let signer: SignerWithAddress;
   const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
@@ -32,7 +20,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
-    proxyAdminAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [governor],
@@ -42,7 +29,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     agTokenAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].agEUR?.AgToken!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    proxyAdminAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
     signer = deployer;
     agTokenAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].agEUR?.AgToken!;
   }
@@ -52,26 +38,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       const collat = vaultManagerParams.symbol.split('/')[0];
       const stable = vaultManagerParams.symbol.split('/')[1];
       const name = `VaultManager_${collat}_${stable}`;
-      const oracle = (await ethers.getContract(`Oracle_${vaultManagerParams.oracle}`)).address;
-
-      console.log('Now deploying the Proxy for ', name);
-      const callData = new ethers.Contract(
-        implementation,
-        VaultManager__factory.createInterface(),
-      ).interface.encodeFunctionData('initialize', [
-        treasury,
-        vaultManagerParams.collateral,
-        oracle,
-        vaultManagerParams.params,
-        vaultManagerParams.symbol,
-      ]);
-
-      await deploy(name, {
-        contract: 'TransparentUpgradeableProxy',
-        from: deployer.address,
-        args: [implementation, proxyAdminAddress, callData],
-        log: !argv.ci,
-      });
 
       const vaultManagerAddress = (await deployments.get(name)).address;
       console.log(`Successfully deployed ${name} at the address ${vaultManagerAddress}`);
@@ -90,6 +56,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   }
 };
 
-func.tags = ['governanceVaultManager'];
-func.dependencies = ['governanceFlashLoan', 'vaultManagerImplementation'];
+func.tags = ['unpausing'];
+func.dependencies = ['vaultManagerProxy'];
 export default func;

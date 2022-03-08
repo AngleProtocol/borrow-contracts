@@ -45,12 +45,12 @@ contract EulerReactor is BaseReactor {
 
     /// @notice Virtual function to withdraw stablecoins
     /// @param amount Amount needed at the end of the call
-    /// @param looseAssets Current balance of stablecoin of the contract
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
     /// @dev Eventually actually triggers smthg depending on a threshold
     /// @dev Calling this function should eventually trigger something regarding strategies depending
     /// on a threshold
-    function _pull(uint256 amount, uint256 looseAssets) internal virtual override returns (uint256 amountAvailable) {
+    function _pull(uint256 amount) internal virtual override returns (uint256 amountAvailable) {
+        uint256 looseAssets = stablecoin.balanceOf(address(this));
         if (amount <= looseAssets) return looseAssets;
         euler.withdraw(0, looseAssets - amount);
     }

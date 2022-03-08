@@ -4,19 +4,19 @@ import { parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
 import {
-  Settlement,
-  Settlement__factory,
-  MockVaultManager,
-  MockVaultManager__factory,
-  MockToken,
-  MockToken__factory,
   MockRepayCallee,
   MockRepayCallee__factory,
+  MockToken,
+  MockToken__factory,
+  MockVaultManager,
+  MockVaultManager__factory,
+  Settlement,
+  Settlement__factory,
 } from '../../typechain';
 import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
-import { deployUpgradeable, ZERO_ADDRESS, time } from '../utils/helpers';
+import { deployUpgradeable, time, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('Settlement', () => {
   let deployer: SignerWithAddress;
