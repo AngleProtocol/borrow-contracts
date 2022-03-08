@@ -91,7 +91,9 @@ contract BorrowRouter is Initializable, IRepayCallee {
         bytes32 s;
     }
 
-    // =============================== Modifier ====================================
+    // TODO: add events
+
+    // =============================== Modifiers ===================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
@@ -309,6 +311,7 @@ contract BorrowRouter is Initializable, IRepayCallee {
     }
 
     function _wrapStETH(uint256 amount, uint256 minAmountOut) internal returns (uint256 amountOut) {
+        // TODO should add approval here as well somewhere
         amountOut = WSTETH.wrap(amount);
         require(amountOut >= minAmountOut, "15");
     }
