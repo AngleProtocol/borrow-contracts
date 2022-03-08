@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, Signer, utils } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
-import hre, { contract, ethers, web3 } from 'hardhat';
+import { contract, ethers, web3 } from 'hardhat';
 
 import {
   MockRepayCallee,
@@ -15,8 +15,8 @@ import {
 } from '../../typechain';
 import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
-import { deployUpgradeable, time, ZERO_ADDRESS } from '../utils/helpers';
+import { inReceipt } from '../utils/expectEvent';
+import { time } from '../utils/helpers';
 
 contract('Settlement', () => {
   let deployer: SignerWithAddress;
@@ -30,8 +30,6 @@ contract('Settlement', () => {
   let interestAccumulator: BigNumberish;
   let settlementDuration: BigNumberish;
   let settlementDurationExceeded: BigNumberish;
-
-  const impersonatedSigners: { [key: string]: Signer } = {};
 
   beforeEach(async () => {
     [deployer, alice, bob] = await ethers.getSigners();
