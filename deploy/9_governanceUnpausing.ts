@@ -57,7 +57,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     }
   }
 
-  console.log('Unpausing of vaultManager contracts done');
+  console.log('Success: all desired vaultManager contracts have been unpaused');
 };
 
 func.tags = ['unpausing'];

@@ -24,6 +24,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   }
 
   console.log('Deploying proxies for vaultManager');
+  console.log(network.name);
+  console.log(params);
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
