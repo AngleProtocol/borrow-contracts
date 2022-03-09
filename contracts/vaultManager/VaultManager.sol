@@ -236,11 +236,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 collateral.safeTransfer(to, paymentData.collateralAmountToGive - paymentData.collateralAmountToReceive);
             } else {
                 uint256 collateralPayment = paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive;
-                if (repayData.length > 0 && collateralPayment > 0) {
-                    IRepayCallee(who).repayCallCollateral(msg.sender, stablecoinPayment, collateralPayment, repayData);
+                if (collateralPayment > 0) {
+                    if(repayData.length > 0) {
+                        IRepayCallee(who).repayCallCollateral(msg.sender, stablecoinPayment, collateralPayment, repayData);
+                    }
                     collateral.safeTransferFrom(msg.sender, address(this), collateralPayment);
-                } else if (collateralPayment > 0)
-                    collateral.safeTransferFrom(msg.sender, address(this), collateralPayment);
+                }
             }
         }
     }
@@ -585,10 +586,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         bytes memory data
     ) internal {
         if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
-        if (data.length > 0 && stableAmountToRepay > 0) {
-            IRepayCallee(who).repayCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
+        if (stableAmountToRepay > 0) {
+            if (data.length > 0) {
+                IRepayCallee(who).repayCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
+            }
             stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
-        } else if (stableAmountToRepay > 0) stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
+        }
     }
 
     // =================== Treasury Relationship Functions =========================
