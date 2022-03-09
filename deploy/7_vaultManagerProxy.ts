@@ -10,7 +10,6 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const json = await import('./networks/' + network.name + '.json');
   let proxyAdminAddress: string;
   const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
   const treasury = (await ethers.getContract('Treasury')).address;
@@ -24,8 +23,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   }
 
   console.log('Deploying proxies for vaultManager');
-  console.log(network.name);
-  console.log(params);
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
@@ -34,7 +31,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       const name = `VaultManager_${collat}_${stable}`;
       const oracle = (await ethers.getContract(`Oracle_${vaultManagerParams.oracle}`)).address;
 
-      console.log('Now deploying the Proxy for ', name);
+      console.log('Now deploying the Proxy for:', name);
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),

@@ -57,7 +57,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('');
   if (network.config.chainId != 1 && network.live) {
     console.log(
-      "Now initializing the agToken contract because we're in a specific network (not mainnet or mainnet fork)",
+      "Because we're in a specific network (not mainnet or mainnet fork) and now that treasury is ready, initializing the agToken contract",
     );
     const agToken = new ethers.Contract(
       agTokenAddress,

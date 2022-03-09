@@ -69,10 +69,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     signer,
   ) as CoreBorrow;
 
-  /* TODO after this:
-    - vaultManagers deployed and linked to the treasury
-    - parameters in the FlashAngle contracts (for the flash loan) -> SDK
-  */
   console.log('Setting up the flash loan module parameter');
   if (params.stablesParameters.EUR.flashloan) {
     const flashLoanParams = params.stablesParameters.EUR.flashloan;

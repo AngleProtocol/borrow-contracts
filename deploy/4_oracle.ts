@@ -5,7 +5,7 @@ import { parseEther } from 'ethers/lib/utils';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
-const func: DeployFunction = async ({ deployments, ethers, network }) => {
+const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const treasury = (await deployments.get('Treasury')).address;
@@ -41,7 +41,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       log: !argv.ci,
     });
     const oracle3 = (await deployments.get('Oracle_WSTETH_EUR')).address;
-    console.log(`Successfully deployed Oracle WSTETH/EUR at the address ${oracle3}`);
+    console.log(`Successfully deployed Oracle wStETH/EUR at the address ${oracle3}`);
     console.log('');
   } else if (network.config.chainId === ChainId.RINKEBY) {
     const json = await import('./networks/' + network.name + '.json');
@@ -55,7 +55,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         parseEther('1'),
         3600 * 48,
         treasury,
-        'OracleBTCEUR',
+        web3.utils.soliditySha3('OracleBTCEUR'),
       ],
       log: !argv.ci,
     });
@@ -72,7 +72,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         parseEther('1'),
         3600 * 48,
         treasury,
-        'OracleLINKEUR',
+        web3.utils.soliditySha3('OracleLINKEUR'),
       ],
       log: !argv.ci,
     });
@@ -89,7 +89,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         parseEther('1'),
         3600 * 48,
         treasury,
-        'OracleETHEUR',
+        web3.utils.soliditySha3('OracleETHEUR'),
       ],
       log: !argv.ci,
     });
@@ -100,5 +100,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['oracle'];
-func.dependencies = ['treasury'];
+// func.dependencies = ['treasury'];
 export default func;

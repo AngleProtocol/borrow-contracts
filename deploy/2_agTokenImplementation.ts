@@ -15,7 +15,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // If we're in mainnet fork or on mainnet, we're using the agToken implementation address for mainnet
     implementationName = 'AgToken';
   } else {
-    implementationName = 'AgTokenSidechain';
+    implementationName = 'AgTokenSideChain';
   }
 
   console.log('Now deploying the implementation for AgToken');
@@ -41,6 +41,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       args: [agTokenImplementation, proxyAdmin, '0x'],
       log: !argv.ci,
     });
+    console.log('Success');
   }
 };
 
