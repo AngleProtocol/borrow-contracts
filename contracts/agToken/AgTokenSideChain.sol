@@ -5,17 +5,14 @@ pragma solidity 0.8.12;
 import "../interfaces/IAgToken.sol";
 import "../interfaces/IStableMaster.sol";
 import "../interfaces/ITreasury.sol";
-// OpenZeppelin may update its version of the ERC20PermitUpgradeable token
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
-/// @title AgToken
+/// @title AgTokenSideChain
 /// @author Angle Core Team
-/// @notice Base contract for agToken, that is to say Angle's stablecoins
+/// @notice Contract for Angle agTokens to be deployed on any other chain than Ethereum mainnet
 /// @dev This contract is used to create and handle the stablecoins of Angle protocol
 /// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange
-/// @dev This contract is the upgraded version of the AgToken that was first deployed on Ethereum mainnet
 contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
-
     // ======================= Parameters and Variables ============================
 
     /// @inheritdoc IAgToken
@@ -65,7 +62,6 @@ contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     }
 
     // =========================== External Function ===============================
-
 
     /// @notice Allows anyone to burn agToken without redeeming collateral back
     /// @param amount Amount of stablecoins to burn

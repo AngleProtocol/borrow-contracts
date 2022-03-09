@@ -17,7 +17,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20Pe
 contract AgToken is IAgToken, ERC20PermitUpgradeable {
     // ========================= References to other contracts =====================
 
-    /// @inheritdoc IAgToken
+    /// @notice Reference to the `StableMaster` contract associated to this `AgToken`
     address public stableMaster;
 
     // ============================= Constructor ===================================
