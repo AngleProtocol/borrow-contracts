@@ -19,7 +19,6 @@ struct VaultParameters {
     uint64 interestRate;
     uint64 liquidationSurcharge;
     uint64 maxLiquidationDiscount;
-    uint64 liquidationBooster;
     bool whitelistingActivated;
     uint256 baseBoost;
 }
