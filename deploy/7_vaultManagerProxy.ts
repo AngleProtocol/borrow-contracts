@@ -23,6 +23,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdminAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
   }
 
+  console.log('Deploying proxies for vaultManager');
+
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
       const collat = vaultManagerParams.symbol.split('/')[0];
@@ -54,8 +56,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       console.log('');
     }
   }
+
+  console.log('Proxy deployments done');
 };
 
 func.tags = ['vaultManagerProxy'];
-func.dependencies = ['vaultManagerImplementation', 'treasury'];
+func.dependencies = ['vaultManagerImplementation'];
 export default func;

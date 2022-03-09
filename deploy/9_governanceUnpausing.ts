@@ -33,6 +33,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     agTokenAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].agEUR?.AgToken!;
   }
 
+  console.log('Unpausing vaultManager contracts');
+
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
       const collat = vaultManagerParams.symbol.split('/')[0];
@@ -54,8 +56,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       console.log('');
     }
   }
+
+  console.log('Unpausing of vaultManager contracts done');
 };
 
 func.tags = ['unpausing'];
-func.dependencies = ['vaultManagerProxy'];
+func.dependencies = ['governanceFlashLoan'];
 export default func;

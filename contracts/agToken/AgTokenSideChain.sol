@@ -20,6 +20,11 @@ contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     /// @notice Reference to the treasury contract which can grant minting rights
     ITreasury public treasury;
 
+    // ================================== Events ===================================
+
+    event TreasuryUpdated(address indexed _treasury);
+    event MinterToggled(address indexed minter);
+
     // ============================= Constructor ===================================
 
     /// @notice Initializes the `AgToken` contract
@@ -40,11 +45,6 @@ contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
-
-    // =============================== Added Events ================================
-
-    event TreasuryUpdated(address indexed _treasury);
-    event MinterToggled(address indexed minter);
 
     // =============================== Modifiers ===================================
 
