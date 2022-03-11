@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
-import { parseEther, parseUnits } from 'ethers/lib/utils';
+import { parseEther } from 'ethers/lib/utils';
 import { contract, ethers, web3 } from 'hardhat';
 
 import {
@@ -13,7 +13,7 @@ import {
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inReceipt } from '../utils/expectEvent';
-import { deployUpgradeable, latestTime, ZERO_ADDRESS } from '../utils/helpers';
+import { latestTime, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('OracleChainlinkMulti', () => {
   let deployer: SignerWithAddress;
@@ -104,7 +104,6 @@ contract('OracleChainlinkMulti', () => {
       await expect(oracle.read()).to.be.reverted;
     });
     it('reverts - stale period', async () => {
-      const timestamp = await latestTime();
       await chainlink.setLatestAnswerRevert(parseEther('1'), await latestTime());
       await expect(oracle.read()).to.be.revertedWith('37');
     });

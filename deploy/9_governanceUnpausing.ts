@@ -6,17 +6,14 @@ import yargs from 'yargs';
 
 import { VaultManager, VaultManager__factory } from '../typechain';
 import params from './networks';
-const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
-  const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const json = await import('./networks/' + network.name + '.json');
   const governor = json.governor;
   let agTokenAddress: string;
   let signer: SignerWithAddress;
-  const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
-  const treasury = (await ethers.getContract('Treasury')).address;
+  const symbols = ['wETH/EUR', 'wBTC/EUR', 'LINK/EUR'];
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -33,17 +30,20 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     agTokenAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].agEUR?.AgToken!;
   }
 
+  console.log('Unpausing vaultManager contracts');
+
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
+      if (vaultManagerParams.symbol in symbols) {
+        console.log('Supported VaultManager');
+        // This is an example to show that we can filter vaultManager contracts by their symbol
+      }
       const collat = vaultManagerParams.symbol.split('/')[0];
       const stable = vaultManagerParams.symbol.split('/')[1];
       const name = `VaultManager_${collat}_${stable}`;
 
       const vaultManagerAddress = (await deployments.get(name)).address;
-      console.log(`Successfully deployed ${name} at the address ${vaultManagerAddress}`);
-      console.log('');
-
-      console.log('Now unpausing ', name);
+      console.log('Now unpausing:', name);
       const vaultManager = (await new ethers.Contract(
         vaultManagerAddress,
         VaultManager__factory.createInterface(),
@@ -54,8 +54,9 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       console.log('');
     }
   }
+  console.log('Success, all desired vaultManager contracts have been unpaused');
 };
 
 func.tags = ['unpausing'];
-func.dependencies = ['vaultManagerProxy'];
+func.dependencies = ['governanceFlashLoan'];
 export default func;

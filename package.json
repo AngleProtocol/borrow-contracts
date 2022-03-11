@@ -6,6 +6,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
+    "deploy:rinkeby": "hardhat deploy --network rinkeby --tags unpausing",
     "etherscan:mainnet": "hardhat --network mainnet etherscan-verify",
     "etherscan:rinkeby": "hardhat --network rinkeby etherscan-verify",
     "license": "hardhat prepend-spdx-license",
@@ -34,7 +35,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "^1.0.55",
+    "@angleprotocol/sdk": "^1.0.57",
     "@chainlink/contracts": "0.2.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-solhint": "2.0.0",

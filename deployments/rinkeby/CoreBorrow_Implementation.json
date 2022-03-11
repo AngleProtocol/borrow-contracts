@@ -1,0 +1,863 @@
+{
+  "address": "0xdE542B283f20cf89270835D49055A34323418903",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_core",
+          "type": "address"
+        }
+      ],
+      "name": "CoreUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_flashloanModule",
+          "type": "address"
+        }
+      ],
+      "name": "FlashLoanModuleUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "previousAdminRole",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "newAdminRole",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RoleAdminChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleGranted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "RoleRevoked",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "DEFAULT_ADMIN_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "FLASHLOANER_TREASURY_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "GOVERNOR_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "GUARDIAN_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "treasury",
+          "type": "address"
+        }
+      ],
+      "name": "addFlashLoanerTreasuryRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "governor",
+          "type": "address"
+        }
+      ],
+      "name": "addGovernor",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "flashLoanModule",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleAdmin",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRoleMember",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMemberCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "grantRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "governor",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "guardian",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "treasury",
+          "type": "address"
+        }
+      ],
+      "name": "isFlashLoanerTreasury",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        }
+      ],
+      "name": "isGovernor",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        }
+      ],
+      "name": "isGovernorOrGuardian",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "treasury",
+          "type": "address"
+        }
+      ],
+      "name": "removeFlashLoanerTreasuryRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "governor",
+          "type": "address"
+        }
+      ],
+      "name": "removeGovernor",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "renounceRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "revokeRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract ICoreBorrow",
+          "name": "_core",
+          "type": "address"
+        }
+      ],
+      "name": "setCore",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_flashLoanModule",
+          "type": "address"
+        }
+      ],
+      "name": "setFlashLoanModule",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "interfaceId",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x6f9f735897d7f2007ec4bee5076d0066dbc218a1a5a40dc86d6ff013af2de1e6",
+  "receipt": {
+    "to": null,
+    "from": "0x8A97FBD532A5C1eD67fd67c11dD76013abAc840e",
+    "contractAddress": "0xdE542B283f20cf89270835D49055A34323418903",
+    "transactionIndex": 22,
+    "gasUsed": "1266842",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x16a6d10610ca2c3d717872cc7454e702781a05bbb9b9df3826f3f2a18f2ca7cf",
+    "transactionHash": "0x6f9f735897d7f2007ec4bee5076d0066dbc218a1a5a40dc86d6ff013af2de1e6",
+    "logs": [],
+    "blockNumber": 10299402,
+    "cumulativeGasUsed": "5907966",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "889158584004053240c8dc2a15a012d3",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.12+commit.f00d7308\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_core\",\"type\":\"address\"}],\"name\":\"CoreUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_flashloanModule\",\"type\":\"address\"}],\"name\":\"FlashLoanModuleUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"FLASHLOANER_TREASURY_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"GOVERNOR_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"GUARDIAN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"treasury\",\"type\":\"address\"}],\"name\":\"addFlashLoanerTreasuryRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"governor\",\"type\":\"address\"}],\"name\":\"addGovernor\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"flashLoanModule\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"governor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"guardian\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"treasury\",\"type\":\"address\"}],\"name\":\"isFlashLoanerTreasury\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"admin\",\"type\":\"address\"}],\"name\":\"isGovernor\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"admin\",\"type\":\"address\"}],\"name\":\"isGovernorOrGuardian\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"treasury\",\"type\":\"address\"}],\"name\":\"removeFlashLoanerTreasuryRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"governor\",\"type\":\"address\"}],\"name\":\"removeGovernor\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"contract ICoreBorrow\",\"name\":\"_core\",\"type\":\"address\"}],\"name\":\"setCore\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_flashLoanModule\",\"type\":\"address\"}],\"name\":\"setFlashLoanModule\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Angle Core Team\",\"kind\":\"dev\",\"methods\":{\"addFlashLoanerTreasuryRole(address)\":{\"details\":\"This function can be used to allow flash loans on a stablecoin of the protocol\",\"params\":{\"treasury\":\"Contract to grant the role to\"}},\"addGovernor(address)\":{\"details\":\"It is necessary to call this function to grant a governor role to make sure all governors also have the guardian role\",\"params\":{\"governor\":\"Address to grant the role to\"}},\"constructor\":{\"custom:oz-upgrades-unsafe-allow\":\"constructor\"},\"getRoleAdmin(bytes32)\":{\"details\":\"Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role's admin, use {_setRoleAdmin}.\"},\"getRoleMember(bytes32,uint256)\":{\"details\":\"Returns one of the accounts that have `role`. `index` must be a value between 0 and {getRoleMemberCount}, non-inclusive. Role bearers are not sorted in any particular way, and their ordering may change at any point. WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure you perform all queries on the same block. See the following https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post] for more information.\"},\"getRoleMemberCount(bytes32)\":{\"details\":\"Returns the number of accounts that have `role`. Can be used together with {getRoleMember} to enumerate all bearers of a role.\"},\"grantRole(bytes32,address)\":{\"details\":\"Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``'s admin role.\"},\"hasRole(bytes32,address)\":{\"details\":\"Returns `true` if `account` has been granted `role`.\"},\"initialize(address,address)\":{\"params\":{\"governor\":\"Address of the governor of the Angle Protocol\",\"guardian\":\"Guardian address of the protocol\"}},\"isFlashLoanerTreasury(address)\":{\"params\":{\"treasury\":\"Address to check\"},\"returns\":{\"_0\":\"Whether the address has the `FLASHLOANER_TREASURY_ROLE` or not\"}},\"isGovernor(address)\":{\"params\":{\"admin\":\"Address to check\"},\"returns\":{\"_0\":\"Whether the address has the `GOVERNOR_ROLE` or not\"}},\"isGovernorOrGuardian(address)\":{\"details\":\"Governance should make sure when adding a governor to also give this governor the guardian role by calling the `addGovernor` function\",\"params\":{\"admin\":\"Address to check\"},\"returns\":{\"_0\":\"Whether the address has the `GUARDIAN_ROLE` or not\"}},\"removeFlashLoanerTreasuryRole(address)\":{\"params\":{\"treasury\":\"Treasury address associated with the stablecoin for which flash loans should no longer be available\"}},\"removeGovernor(address)\":{\"details\":\"It is necessary to call this function to remove a governor role to make sure the address also loses its guardian role\",\"params\":{\"governor\":\"Address to remove the role to\"}},\"renounceRole(bytes32,address)\":{\"details\":\"Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function's purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been revoked `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`.\"},\"revokeRole(bytes32,address)\":{\"details\":\"Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``'s admin role.\"},\"setCore(address)\":{\"details\":\"This function verifies that the governors of the new core contract are exactly the same as those of this one. It also notifies the `flashLoanModule` of the changeGovernance wishing to change the core contract should also make sure to call `setCore` in the different treasury contracts\",\"params\":{\"_core\":\"New core contract\"}},\"setFlashLoanModule(address)\":{\"params\":{\"_flashLoanModule\":\"Address of the new flash loan module\"}},\"supportsInterface(bytes4)\":{\"details\":\"See {IERC165-supportsInterface}.\"}},\"title\":\"CoreBorrow\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"FLASHLOANER_TREASURY_ROLE()\":{\"notice\":\"Role for treasury contract\"},\"GOVERNOR_ROLE()\":{\"notice\":\"Role for governors\"},\"GUARDIAN_ROLE()\":{\"notice\":\"Role for guardians\"},\"addFlashLoanerTreasuryRole(address)\":{\"notice\":\"Grants the `FLASHLOANER_TREASURY_ROLE` to a `treasury` contract\"},\"addGovernor(address)\":{\"notice\":\"Adds a governor in the protocol\"},\"flashLoanModule()\":{\"notice\":\"Reference to the `flashLoanModule` with minting rights over the different stablecoins of the protocol\"},\"initialize(address,address)\":{\"notice\":\"Initializes the `CoreBorrow` contract and the access control of the borrowing module\"},\"isFlashLoanerTreasury(address)\":{\"notice\":\"Checks if an address corresponds to a treasury of a stablecoin with a flash loan module initialized on it\"},\"isGovernor(address)\":{\"notice\":\"Checks whether an address is governor of the Angle Protocol or not\"},\"isGovernorOrGuardian(address)\":{\"notice\":\"Checks whether an address is governor or a guardian of the Angle Protocol or not\"},\"removeFlashLoanerTreasuryRole(address)\":{\"notice\":\"Revokes the flash loan ability for a stablecoin\"},\"removeGovernor(address)\":{\"notice\":\"Revokes a governor from the protocol\"},\"setCore(address)\":{\"notice\":\"Changes the core contract of the protocol\"},\"setFlashLoanModule(address)\":{\"notice\":\"Changes the `flashLoanModule` of the protocol\"}},\"notice\":\"Core contract of the borrowing module. This contract handles the access control across all contracts (it is read by all treasury contracts), and manages the `flashLoanModule`. It has no minting rights over the stablecoin contracts\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/coreBorrow/CoreBorrow.sol\":\"CoreBorrow\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":1},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (access/AccessControlEnumerable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IAccessControlEnumerableUpgradeable.sol\\\";\\nimport \\\"./AccessControlUpgradeable.sol\\\";\\nimport \\\"../utils/structs/EnumerableSetUpgradeable.sol\\\";\\nimport \\\"../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Extension of {AccessControl} that allows enumerating the members of each role.\\n */\\nabstract contract AccessControlEnumerableUpgradeable is Initializable, IAccessControlEnumerableUpgradeable, AccessControlUpgradeable {\\n    function __AccessControlEnumerable_init() internal onlyInitializing {\\n        __Context_init_unchained();\\n        __ERC165_init_unchained();\\n        __AccessControl_init_unchained();\\n        __AccessControlEnumerable_init_unchained();\\n    }\\n\\n    function __AccessControlEnumerable_init_unchained() internal onlyInitializing {\\n    }\\n    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;\\n\\n    mapping(bytes32 => EnumerableSetUpgradeable.AddressSet) private _roleMembers;\\n\\n    /**\\n     * @dev See {IERC165-supportsInterface}.\\n     */\\n    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {\\n        return interfaceId == type(IAccessControlEnumerableUpgradeable).interfaceId || super.supportsInterface(interfaceId);\\n    }\\n\\n    /**\\n     * @dev Returns one of the accounts that have `role`. `index` must be a\\n     * value between 0 and {getRoleMemberCount}, non-inclusive.\\n     *\\n     * Role bearers are not sorted in any particular way, and their ordering may\\n     * change at any point.\\n     *\\n     * WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure\\n     * you perform all queries on the same block. See the following\\n     * https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post]\\n     * for more information.\\n     */\\n    function getRoleMember(bytes32 role, uint256 index) public view override returns (address) {\\n        return _roleMembers[role].at(index);\\n    }\\n\\n    /**\\n     * @dev Returns the number of accounts that have `role`. Can be used\\n     * together with {getRoleMember} to enumerate all bearers of a role.\\n     */\\n    function getRoleMemberCount(bytes32 role) public view override returns (uint256) {\\n        return _roleMembers[role].length();\\n    }\\n\\n    /**\\n     * @dev Overload {_grantRole} to track enumerable memberships\\n     */\\n    function _grantRole(bytes32 role, address account) internal virtual override {\\n        super._grantRole(role, account);\\n        _roleMembers[role].add(account);\\n    }\\n\\n    /**\\n     * @dev Overload {_revokeRole} to track enumerable memberships\\n     */\\n    function _revokeRole(bytes32 role, address account) internal virtual override {\\n        super._revokeRole(role, account);\\n        _roleMembers[role].remove(account);\\n    }\\n    uint256[49] private __gap;\\n}\\n\",\"keccak256\":\"0x639cf7eec29296042e3b06c9f8739d0c87fe84d8bc8c2d0be49af9ce057db009\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (access/AccessControl.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IAccessControlUpgradeable.sol\\\";\\nimport \\\"../utils/ContextUpgradeable.sol\\\";\\nimport \\\"../utils/StringsUpgradeable.sol\\\";\\nimport \\\"../utils/introspection/ERC165Upgradeable.sol\\\";\\nimport \\\"../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Contract module that allows children to implement role-based access\\n * control mechanisms. This is a lightweight version that doesn't allow enumerating role\\n * members except through off-chain means by accessing the contract event logs. Some\\n * applications may benefit from on-chain enumerability, for those cases see\\n * {AccessControlEnumerable}.\\n *\\n * Roles are referred to by their `bytes32` identifier. These should be exposed\\n * in the external API and be unique. The best way to achieve this is by\\n * using `public constant` hash digests:\\n *\\n * ```\\n * bytes32 public constant MY_ROLE = keccak256(\\\"MY_ROLE\\\");\\n * ```\\n *\\n * Roles can be used to represent a set of permissions. To restrict access to a\\n * function call, use {hasRole}:\\n *\\n * ```\\n * function foo() public {\\n *     require(hasRole(MY_ROLE, msg.sender));\\n *     ...\\n * }\\n * ```\\n *\\n * Roles can be granted and revoked dynamically via the {grantRole} and\\n * {revokeRole} functions. Each role has an associated admin role, and only\\n * accounts that have a role's admin role can call {grantRole} and {revokeRole}.\\n *\\n * By default, the admin role for all roles is `DEFAULT_ADMIN_ROLE`, which means\\n * that only accounts with this role will be able to grant or revoke other\\n * roles. More complex role relationships can be created by using\\n * {_setRoleAdmin}.\\n *\\n * WARNING: The `DEFAULT_ADMIN_ROLE` is also its own admin: it has permission to\\n * grant and revoke this role. Extra precautions should be taken to secure\\n * accounts that have been granted it.\\n */\\nabstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable, IAccessControlUpgradeable, ERC165Upgradeable {\\n    function __AccessControl_init() internal onlyInitializing {\\n        __Context_init_unchained();\\n        __ERC165_init_unchained();\\n        __AccessControl_init_unchained();\\n    }\\n\\n    function __AccessControl_init_unchained() internal onlyInitializing {\\n    }\\n    struct RoleData {\\n        mapping(address => bool) members;\\n        bytes32 adminRole;\\n    }\\n\\n    mapping(bytes32 => RoleData) private _roles;\\n\\n    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;\\n\\n    /**\\n     * @dev Modifier that checks that an account has a specific role. Reverts\\n     * with a standardized message including the required role.\\n     *\\n     * The format of the revert reason is given by the following regular expression:\\n     *\\n     *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/\\n     *\\n     * _Available since v4.1._\\n     */\\n    modifier onlyRole(bytes32 role) {\\n        _checkRole(role, _msgSender());\\n        _;\\n    }\\n\\n    /**\\n     * @dev See {IERC165-supportsInterface}.\\n     */\\n    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {\\n        return interfaceId == type(IAccessControlUpgradeable).interfaceId || super.supportsInterface(interfaceId);\\n    }\\n\\n    /**\\n     * @dev Returns `true` if `account` has been granted `role`.\\n     */\\n    function hasRole(bytes32 role, address account) public view override returns (bool) {\\n        return _roles[role].members[account];\\n    }\\n\\n    /**\\n     * @dev Revert with a standard message if `account` is missing `role`.\\n     *\\n     * The format of the revert reason is given by the following regular expression:\\n     *\\n     *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/\\n     */\\n    function _checkRole(bytes32 role, address account) internal view {\\n        if (!hasRole(role, account)) {\\n            revert(\\n                string(\\n                    abi.encodePacked(\\n                        \\\"AccessControl: account \\\",\\n                        StringsUpgradeable.toHexString(uint160(account), 20),\\n                        \\\" is missing role \\\",\\n                        StringsUpgradeable.toHexString(uint256(role), 32)\\n                    )\\n                )\\n            );\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the admin role that controls `role`. See {grantRole} and\\n     * {revokeRole}.\\n     *\\n     * To change a role's admin, use {_setRoleAdmin}.\\n     */\\n    function getRoleAdmin(bytes32 role) public view override returns (bytes32) {\\n        return _roles[role].adminRole;\\n    }\\n\\n    /**\\n     * @dev Grants `role` to `account`.\\n     *\\n     * If `account` had not been already granted `role`, emits a {RoleGranted}\\n     * event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must have ``role``'s admin role.\\n     */\\n    function grantRole(bytes32 role, address account) public virtual override onlyRole(getRoleAdmin(role)) {\\n        _grantRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Revokes `role` from `account`.\\n     *\\n     * If `account` had been granted `role`, emits a {RoleRevoked} event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must have ``role``'s admin role.\\n     */\\n    function revokeRole(bytes32 role, address account) public virtual override onlyRole(getRoleAdmin(role)) {\\n        _revokeRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Revokes `role` from the calling account.\\n     *\\n     * Roles are often managed via {grantRole} and {revokeRole}: this function's\\n     * purpose is to provide a mechanism for accounts to lose their privileges\\n     * if they are compromised (such as when a trusted device is misplaced).\\n     *\\n     * If the calling account had been revoked `role`, emits a {RoleRevoked}\\n     * event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must be `account`.\\n     */\\n    function renounceRole(bytes32 role, address account) public virtual override {\\n        require(account == _msgSender(), \\\"AccessControl: can only renounce roles for self\\\");\\n\\n        _revokeRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Grants `role` to `account`.\\n     *\\n     * If `account` had not been already granted `role`, emits a {RoleGranted}\\n     * event. Note that unlike {grantRole}, this function doesn't perform any\\n     * checks on the calling account.\\n     *\\n     * [WARNING]\\n     * ====\\n     * This function should only be called from the constructor when setting\\n     * up the initial roles for the system.\\n     *\\n     * Using this function in any other way is effectively circumventing the admin\\n     * system imposed by {AccessControl}.\\n     * ====\\n     *\\n     * NOTE: This function is deprecated in favor of {_grantRole}.\\n     */\\n    function _setupRole(bytes32 role, address account) internal virtual {\\n        _grantRole(role, account);\\n    }\\n\\n    /**\\n     * @dev Sets `adminRole` as ``role``'s admin role.\\n     *\\n     * Emits a {RoleAdminChanged} event.\\n     */\\n    function _setRoleAdmin(bytes32 role, bytes32 adminRole) internal virtual {\\n        bytes32 previousAdminRole = getRoleAdmin(role);\\n        _roles[role].adminRole = adminRole;\\n        emit RoleAdminChanged(role, previousAdminRole, adminRole);\\n    }\\n\\n    /**\\n     * @dev Grants `role` to `account`.\\n     *\\n     * Internal function without access restriction.\\n     */\\n    function _grantRole(bytes32 role, address account) internal virtual {\\n        if (!hasRole(role, account)) {\\n            _roles[role].members[account] = true;\\n            emit RoleGranted(role, account, _msgSender());\\n        }\\n    }\\n\\n    /**\\n     * @dev Revokes `role` from `account`.\\n     *\\n     * Internal function without access restriction.\\n     */\\n    function _revokeRole(bytes32 role, address account) internal virtual {\\n        if (hasRole(role, account)) {\\n            _roles[role].members[account] = false;\\n            emit RoleRevoked(role, account, _msgSender());\\n        }\\n    }\\n    uint256[49] private __gap;\\n}\\n\",\"keccak256\":\"0x64bb2dbe7ec4fcadb2f163f41edf6f2e1cd8f16162f7a56c2581894e6ba0747c\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/access/IAccessControlEnumerableUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (access/IAccessControlEnumerable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IAccessControlUpgradeable.sol\\\";\\n\\n/**\\n * @dev External interface of AccessControlEnumerable declared to support ERC165 detection.\\n */\\ninterface IAccessControlEnumerableUpgradeable is IAccessControlUpgradeable {\\n    /**\\n     * @dev Returns one of the accounts that have `role`. `index` must be a\\n     * value between 0 and {getRoleMemberCount}, non-inclusive.\\n     *\\n     * Role bearers are not sorted in any particular way, and their ordering may\\n     * change at any point.\\n     *\\n     * WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure\\n     * you perform all queries on the same block. See the following\\n     * https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post]\\n     * for more information.\\n     */\\n    function getRoleMember(bytes32 role, uint256 index) external view returns (address);\\n\\n    /**\\n     * @dev Returns the number of accounts that have `role`. Can be used\\n     * together with {getRoleMember} to enumerate all bearers of a role.\\n     */\\n    function getRoleMemberCount(bytes32 role) external view returns (uint256);\\n}\\n\",\"keccak256\":\"0x7acbc538aad6eb4614e26612a8c5c0149bb8808db95e2638d245a8365f63e572\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (access/IAccessControl.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev External interface of AccessControl declared to support ERC165 detection.\\n */\\ninterface IAccessControlUpgradeable {\\n    /**\\n     * @dev Emitted when `newAdminRole` is set as ``role``'s admin role, replacing `previousAdminRole`\\n     *\\n     * `DEFAULT_ADMIN_ROLE` is the starting admin for all roles, despite\\n     * {RoleAdminChanged} not being emitted signaling this.\\n     *\\n     * _Available since v3.1._\\n     */\\n    event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);\\n\\n    /**\\n     * @dev Emitted when `account` is granted `role`.\\n     *\\n     * `sender` is the account that originated the contract call, an admin role\\n     * bearer except when using {AccessControl-_setupRole}.\\n     */\\n    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);\\n\\n    /**\\n     * @dev Emitted when `account` is revoked `role`.\\n     *\\n     * `sender` is the account that originated the contract call:\\n     *   - if using `revokeRole`, it is the admin role bearer\\n     *   - if using `renounceRole`, it is the role bearer (i.e. `account`)\\n     */\\n    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);\\n\\n    /**\\n     * @dev Returns `true` if `account` has been granted `role`.\\n     */\\n    function hasRole(bytes32 role, address account) external view returns (bool);\\n\\n    /**\\n     * @dev Returns the admin role that controls `role`. See {grantRole} and\\n     * {revokeRole}.\\n     *\\n     * To change a role's admin, use {AccessControl-_setRoleAdmin}.\\n     */\\n    function getRoleAdmin(bytes32 role) external view returns (bytes32);\\n\\n    /**\\n     * @dev Grants `role` to `account`.\\n     *\\n     * If `account` had not been already granted `role`, emits a {RoleGranted}\\n     * event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must have ``role``'s admin role.\\n     */\\n    function grantRole(bytes32 role, address account) external;\\n\\n    /**\\n     * @dev Revokes `role` from `account`.\\n     *\\n     * If `account` had been granted `role`, emits a {RoleRevoked} event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must have ``role``'s admin role.\\n     */\\n    function revokeRole(bytes32 role, address account) external;\\n\\n    /**\\n     * @dev Revokes `role` from the calling account.\\n     *\\n     * Roles are often managed via {grantRole} and {revokeRole}: this function's\\n     * purpose is to provide a mechanism for accounts to lose their privileges\\n     * if they are compromised (such as when a trusted device is misplaced).\\n     *\\n     * If the calling account had been granted `role`, emits a {RoleRevoked}\\n     * event.\\n     *\\n     * Requirements:\\n     *\\n     * - the caller must be `account`.\\n     */\\n    function renounceRole(bytes32 role, address account) external;\\n}\\n\",\"keccak256\":\"0xb8f5302f12138c5561362e88a78d061573e6298b7a1a5afe84a1e2c8d4d5aeaa\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (proxy/utils/Initializable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../../utils/AddressUpgradeable.sol\\\";\\n\\n/**\\n * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed\\n * behind a proxy. Since a proxied contract can't have a constructor, it's common to move constructor logic to an\\n * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer\\n * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.\\n *\\n * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as\\n * possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}.\\n *\\n * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure\\n * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.\\n *\\n * [CAUTION]\\n * ====\\n * Avoid leaving a contract uninitialized.\\n *\\n * An uninitialized contract can be taken over by an attacker. This applies to both a proxy and its implementation\\n * contract, which may impact the proxy. To initialize the implementation contract, you can either invoke the\\n * initializer manually, or you can include a constructor to automatically mark it as initialized when it is deployed:\\n *\\n * [.hljs-theme-light.nopadding]\\n * ```\\n * /// @custom:oz-upgrades-unsafe-allow constructor\\n * constructor() initializer {}\\n * ```\\n * ====\\n */\\nabstract contract Initializable {\\n    /**\\n     * @dev Indicates that the contract has been initialized.\\n     */\\n    bool private _initialized;\\n\\n    /**\\n     * @dev Indicates that the contract is in the process of being initialized.\\n     */\\n    bool private _initializing;\\n\\n    /**\\n     * @dev Modifier to protect an initializer function from being invoked twice.\\n     */\\n    modifier initializer() {\\n        // If the contract is initializing we ignore whether _initialized is set in order to support multiple\\n        // inheritance patterns, but we only do this in the context of a constructor, because in other contexts the\\n        // contract may have been reentered.\\n        require(_initializing ? _isConstructor() : !_initialized, \\\"Initializable: contract is already initialized\\\");\\n\\n        bool isTopLevelCall = !_initializing;\\n        if (isTopLevelCall) {\\n            _initializing = true;\\n            _initialized = true;\\n        }\\n\\n        _;\\n\\n        if (isTopLevelCall) {\\n            _initializing = false;\\n        }\\n    }\\n\\n    /**\\n     * @dev Modifier to protect an initialization function so that it can only be invoked by functions with the\\n     * {initializer} modifier, directly or indirectly.\\n     */\\n    modifier onlyInitializing() {\\n        require(_initializing, \\\"Initializable: contract is not initializing\\\");\\n        _;\\n    }\\n\\n    function _isConstructor() private view returns (bool) {\\n        return !AddressUpgradeable.isContract(address(this));\\n    }\\n}\\n\",\"keccak256\":\"0x68861bcc80cacbd498efde75aab6c74a486cc48262660d326c8d7530d9752097\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (token/ERC20/IERC20.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP.\\n */\\ninterface IERC20Upgradeable {\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `recipient`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transfer(address recipient, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through {transferFrom}. This is\\n     * zero by default.\\n     *\\n     * This value changes when {approve} or {transferFrom} are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * IMPORTANT: Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an {Approval} event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `sender` to `recipient` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transferFrom(\\n        address sender,\\n        address recipient,\\n        uint256 amount\\n    ) external returns (bool);\\n\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to {approve}. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n}\\n\",\"keccak256\":\"0x5ca0eb1120133a6d0799752532d4638048391823a2b623c4fe9ff46e262266fb\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Address.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Collection of functions related to the address type\\n */\\nlibrary AddressUpgradeable {\\n    /**\\n     * @dev Returns true if `account` is a contract.\\n     *\\n     * [IMPORTANT]\\n     * ====\\n     * It is unsafe to assume that an address for which this function returns\\n     * false is an externally-owned account (EOA) and not a contract.\\n     *\\n     * Among others, `isContract` will return false for the following\\n     * types of addresses:\\n     *\\n     *  - an externally-owned account\\n     *  - a contract in construction\\n     *  - an address where a contract will be created\\n     *  - an address where a contract lived, but was destroyed\\n     * ====\\n     */\\n    function isContract(address account) internal view returns (bool) {\\n        // This method relies on extcodesize, which returns 0 for contracts in\\n        // construction, since the code is only stored at the end of the\\n        // constructor execution.\\n\\n        uint256 size;\\n        assembly {\\n            size := extcodesize(account)\\n        }\\n        return size > 0;\\n    }\\n\\n    /**\\n     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to\\n     * `recipient`, forwarding all available gas and reverting on errors.\\n     *\\n     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost\\n     * of certain opcodes, possibly making contracts go over the 2300 gas limit\\n     * imposed by `transfer`, making them unable to receive funds via\\n     * `transfer`. {sendValue} removes this limitation.\\n     *\\n     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].\\n     *\\n     * IMPORTANT: because control is transferred to `recipient`, care must be\\n     * taken to not create reentrancy vulnerabilities. Consider using\\n     * {ReentrancyGuard} or the\\n     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].\\n     */\\n    function sendValue(address payable recipient, uint256 amount) internal {\\n        require(address(this).balance >= amount, \\\"Address: insufficient balance\\\");\\n\\n        (bool success, ) = recipient.call{value: amount}(\\\"\\\");\\n        require(success, \\\"Address: unable to send value, recipient may have reverted\\\");\\n    }\\n\\n    /**\\n     * @dev Performs a Solidity function call using a low level `call`. A\\n     * plain `call` is an unsafe replacement for a function call: use this\\n     * function instead.\\n     *\\n     * If `target` reverts with a revert reason, it is bubbled up by this\\n     * function (like regular Solidity function calls).\\n     *\\n     * Returns the raw returned data. To convert to the expected return value,\\n     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].\\n     *\\n     * Requirements:\\n     *\\n     * - `target` must be a contract.\\n     * - calling `target` with `data` must not revert.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCall(address target, bytes memory data) internal returns (bytes memory) {\\n        return functionCall(target, data, \\\"Address: low-level call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with\\n     * `errorMessage` as a fallback revert reason when `target` reverts.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCall(\\n        address target,\\n        bytes memory data,\\n        string memory errorMessage\\n    ) internal returns (bytes memory) {\\n        return functionCallWithValue(target, data, 0, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but also transferring `value` wei to `target`.\\n     *\\n     * Requirements:\\n     *\\n     * - the calling contract must have an ETH balance of at least `value`.\\n     * - the called Solidity function must be `payable`.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCallWithValue(\\n        address target,\\n        bytes memory data,\\n        uint256 value\\n    ) internal returns (bytes memory) {\\n        return functionCallWithValue(target, data, value, \\\"Address: low-level call with value failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but\\n     * with `errorMessage` as a fallback revert reason when `target` reverts.\\n     *\\n     * _Available since v3.1._\\n     */\\n    function functionCallWithValue(\\n        address target,\\n        bytes memory data,\\n        uint256 value,\\n        string memory errorMessage\\n    ) internal returns (bytes memory) {\\n        require(address(this).balance >= value, \\\"Address: insufficient balance for call\\\");\\n        require(isContract(target), \\\"Address: call to non-contract\\\");\\n\\n        (bool success, bytes memory returndata) = target.call{value: value}(data);\\n        return verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],\\n     * but performing a static call.\\n     *\\n     * _Available since v3.3._\\n     */\\n    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {\\n        return functionStaticCall(target, data, \\\"Address: low-level static call failed\\\");\\n    }\\n\\n    /**\\n     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],\\n     * but performing a static call.\\n     *\\n     * _Available since v3.3._\\n     */\\n    function functionStaticCall(\\n        address target,\\n        bytes memory data,\\n        string memory errorMessage\\n    ) internal view returns (bytes memory) {\\n        require(isContract(target), \\\"Address: static call to non-contract\\\");\\n\\n        (bool success, bytes memory returndata) = target.staticcall(data);\\n        return verifyCallResult(success, returndata, errorMessage);\\n    }\\n\\n    /**\\n     * @dev Tool to verifies that a low level call was successful, and revert if it wasn't, either by bubbling the\\n     * revert reason using the provided one.\\n     *\\n     * _Available since v4.3._\\n     */\\n    function verifyCallResult(\\n        bool success,\\n        bytes memory returndata,\\n        string memory errorMessage\\n    ) internal pure returns (bytes memory) {\\n        if (success) {\\n            return returndata;\\n        } else {\\n            // Look for revert reason and bubble it up if present\\n            if (returndata.length > 0) {\\n                // The easiest way to bubble the revert reason is using memory via assembly\\n\\n                assembly {\\n                    let returndata_size := mload(returndata)\\n                    revert(add(32, returndata), returndata_size)\\n                }\\n            } else {\\n                revert(errorMessage);\\n            }\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x3f0f878c796dfc7feba6d3c4e3e526c14c7deae8b7bfc71088e3f38fab0d77b3\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\nimport \\\"../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract ContextUpgradeable is Initializable {\\n    function __Context_init() internal onlyInitializing {\\n        __Context_init_unchained();\\n    }\\n\\n    function __Context_init_unchained() internal onlyInitializing {\\n    }\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n    uint256[50] private __gap;\\n}\\n\",\"keccak256\":\"0x0b0d548f6381370d394f7a434f994dc678b3ef3e755de106109d61343a685ea7\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/Strings.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev String operations.\\n */\\nlibrary StringsUpgradeable {\\n    bytes16 private constant _HEX_SYMBOLS = \\\"0123456789abcdef\\\";\\n\\n    /**\\n     * @dev Converts a `uint256` to its ASCII `string` decimal representation.\\n     */\\n    function toString(uint256 value) internal pure returns (string memory) {\\n        // Inspired by OraclizeAPI's implementation - MIT licence\\n        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol\\n\\n        if (value == 0) {\\n            return \\\"0\\\";\\n        }\\n        uint256 temp = value;\\n        uint256 digits;\\n        while (temp != 0) {\\n            digits++;\\n            temp /= 10;\\n        }\\n        bytes memory buffer = new bytes(digits);\\n        while (value != 0) {\\n            digits -= 1;\\n            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));\\n            value /= 10;\\n        }\\n        return string(buffer);\\n    }\\n\\n    /**\\n     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation.\\n     */\\n    function toHexString(uint256 value) internal pure returns (string memory) {\\n        if (value == 0) {\\n            return \\\"0x00\\\";\\n        }\\n        uint256 temp = value;\\n        uint256 length = 0;\\n        while (temp != 0) {\\n            length++;\\n            temp >>= 8;\\n        }\\n        return toHexString(value, length);\\n    }\\n\\n    /**\\n     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.\\n     */\\n    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {\\n        bytes memory buffer = new bytes(2 * length + 2);\\n        buffer[0] = \\\"0\\\";\\n        buffer[1] = \\\"x\\\";\\n        for (uint256 i = 2 * length + 1; i > 1; --i) {\\n            buffer[i] = _HEX_SYMBOLS[value & 0xf];\\n            value >>= 4;\\n        }\\n        require(value == 0, \\\"Strings: hex length insufficient\\\");\\n        return string(buffer);\\n    }\\n}\\n\",\"keccak256\":\"0x398d3323c1932a5986bf36be7c57593e121e69d5db5b6574b4ee0d031443de37\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/introspection/ERC165.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"./IERC165Upgradeable.sol\\\";\\nimport \\\"../../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Implementation of the {IERC165} interface.\\n *\\n * Contracts that want to implement ERC165 should inherit from this contract and override {supportsInterface} to check\\n * for the additional interface id that will be supported. For example:\\n *\\n * ```solidity\\n * function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {\\n *     return interfaceId == type(MyInterface).interfaceId || super.supportsInterface(interfaceId);\\n * }\\n * ```\\n *\\n * Alternatively, {ERC165Storage} provides an easier to use but more expensive implementation.\\n */\\nabstract contract ERC165Upgradeable is Initializable, IERC165Upgradeable {\\n    function __ERC165_init() internal onlyInitializing {\\n        __ERC165_init_unchained();\\n    }\\n\\n    function __ERC165_init_unchained() internal onlyInitializing {\\n    }\\n    /**\\n     * @dev See {IERC165-supportsInterface}.\\n     */\\n    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {\\n        return interfaceId == type(IERC165Upgradeable).interfaceId;\\n    }\\n    uint256[50] private __gap;\\n}\\n\",\"keccak256\":\"0xcd98895383d51dc86669a76ae3ad4419fc5dc079d01faea23498e80c1cf9f78a\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/introspection/IERC165.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC165 standard, as defined in the\\n * https://eips.ethereum.org/EIPS/eip-165[EIP].\\n *\\n * Implementers can declare support of contract interfaces, which can then be\\n * queried by others ({ERC165Checker}).\\n *\\n * For an implementation, see {ERC165}.\\n */\\ninterface IERC165Upgradeable {\\n    /**\\n     * @dev Returns true if this contract implements the interface defined by\\n     * `interfaceId`. See the corresponding\\n     * https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[EIP section]\\n     * to learn more about how these ids are created.\\n     *\\n     * This function call must use less than 30 000 gas.\\n     */\\n    function supportsInterface(bytes4 interfaceId) external view returns (bool);\\n}\\n\",\"keccak256\":\"0xc6cef87559d0aeffdf0a99803de655938a7779ec0a3cd5d4383483ad85565a09\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (utils/structs/EnumerableSet.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Library for managing\\n * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive\\n * types.\\n *\\n * Sets have the following properties:\\n *\\n * - Elements are added, removed, and checked for existence in constant time\\n * (O(1)).\\n * - Elements are enumerated in O(n). No guarantees are made on the ordering.\\n *\\n * ```\\n * contract Example {\\n *     // Add the library methods\\n *     using EnumerableSet for EnumerableSet.AddressSet;\\n *\\n *     // Declare a set state variable\\n *     EnumerableSet.AddressSet private mySet;\\n * }\\n * ```\\n *\\n * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)\\n * and `uint256` (`UintSet`) are supported.\\n */\\nlibrary EnumerableSetUpgradeable {\\n    // To implement this library for multiple types with as little code\\n    // repetition as possible, we write it in terms of a generic Set type with\\n    // bytes32 values.\\n    // The Set implementation uses private functions, and user-facing\\n    // implementations (such as AddressSet) are just wrappers around the\\n    // underlying Set.\\n    // This means that we can only create new EnumerableSets for types that fit\\n    // in bytes32.\\n\\n    struct Set {\\n        // Storage of set values\\n        bytes32[] _values;\\n        // Position of the value in the `values` array, plus 1 because index 0\\n        // means a value is not in the set.\\n        mapping(bytes32 => uint256) _indexes;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function _add(Set storage set, bytes32 value) private returns (bool) {\\n        if (!_contains(set, value)) {\\n            set._values.push(value);\\n            // The value is stored at length-1, but we add 1 to all indexes\\n            // and use 0 as a sentinel value\\n            set._indexes[value] = set._values.length;\\n            return true;\\n        } else {\\n            return false;\\n        }\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function _remove(Set storage set, bytes32 value) private returns (bool) {\\n        // We read and store the value's index to prevent multiple reads from the same storage slot\\n        uint256 valueIndex = set._indexes[value];\\n\\n        if (valueIndex != 0) {\\n            // Equivalent to contains(set, value)\\n            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in\\n            // the array, and then remove the last element (sometimes called as 'swap and pop').\\n            // This modifies the order of the array, as noted in {at}.\\n\\n            uint256 toDeleteIndex = valueIndex - 1;\\n            uint256 lastIndex = set._values.length - 1;\\n\\n            if (lastIndex != toDeleteIndex) {\\n                bytes32 lastvalue = set._values[lastIndex];\\n\\n                // Move the last value to the index where the value to delete is\\n                set._values[toDeleteIndex] = lastvalue;\\n                // Update the index for the moved value\\n                set._indexes[lastvalue] = valueIndex; // Replace lastvalue's index to valueIndex\\n            }\\n\\n            // Delete the slot where the moved value was stored\\n            set._values.pop();\\n\\n            // Delete the index for the deleted slot\\n            delete set._indexes[value];\\n\\n            return true;\\n        } else {\\n            return false;\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function _contains(Set storage set, bytes32 value) private view returns (bool) {\\n        return set._indexes[value] != 0;\\n    }\\n\\n    /**\\n     * @dev Returns the number of values on the set. O(1).\\n     */\\n    function _length(Set storage set) private view returns (uint256) {\\n        return set._values.length;\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function _at(Set storage set, uint256 index) private view returns (bytes32) {\\n        return set._values[index];\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function _values(Set storage set) private view returns (bytes32[] memory) {\\n        return set._values;\\n    }\\n\\n    // Bytes32Set\\n\\n    struct Bytes32Set {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {\\n        return _add(set._inner, value);\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {\\n        return _remove(set._inner, value);\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {\\n        return _contains(set._inner, value);\\n    }\\n\\n    /**\\n     * @dev Returns the number of values in the set. O(1).\\n     */\\n    function length(Bytes32Set storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {\\n        return _at(set._inner, index);\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function values(Bytes32Set storage set) internal view returns (bytes32[] memory) {\\n        return _values(set._inner);\\n    }\\n\\n    // AddressSet\\n\\n    struct AddressSet {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(AddressSet storage set, address value) internal returns (bool) {\\n        return _add(set._inner, bytes32(uint256(uint160(value))));\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(AddressSet storage set, address value) internal returns (bool) {\\n        return _remove(set._inner, bytes32(uint256(uint160(value))));\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(AddressSet storage set, address value) internal view returns (bool) {\\n        return _contains(set._inner, bytes32(uint256(uint160(value))));\\n    }\\n\\n    /**\\n     * @dev Returns the number of values in the set. O(1).\\n     */\\n    function length(AddressSet storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function at(AddressSet storage set, uint256 index) internal view returns (address) {\\n        return address(uint160(uint256(_at(set._inner, index))));\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function values(AddressSet storage set) internal view returns (address[] memory) {\\n        bytes32[] memory store = _values(set._inner);\\n        address[] memory result;\\n\\n        assembly {\\n            result := store\\n        }\\n\\n        return result;\\n    }\\n\\n    // UintSet\\n\\n    struct UintSet {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(UintSet storage set, uint256 value) internal returns (bool) {\\n        return _add(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(UintSet storage set, uint256 value) internal returns (bool) {\\n        return _remove(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(UintSet storage set, uint256 value) internal view returns (bool) {\\n        return _contains(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Returns the number of values on the set. O(1).\\n     */\\n    function length(UintSet storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function at(UintSet storage set, uint256 index) internal view returns (uint256) {\\n        return uint256(_at(set._inner, index));\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function values(UintSet storage set) internal view returns (uint256[] memory) {\\n        bytes32[] memory store = _values(set._inner);\\n        uint256[] memory result;\\n\\n        assembly {\\n            result := store\\n        }\\n\\n        return result;\\n    }\\n}\\n\",\"keccak256\":\"0x0004699ba89fa356eb0d58d815b42dcf52eccd2765e95256631b838bce2556bc\",\"license\":\"MIT\"},\"contracts/coreBorrow/CoreBorrow.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\n\\npragma solidity 0.8.12;\\n\\nimport \\\"@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol\\\";\\nimport \\\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\\\";\\n\\nimport \\\"../interfaces/ICoreBorrow.sol\\\";\\nimport \\\"../interfaces/IFlashAngle.sol\\\";\\nimport \\\"../interfaces/ITreasury.sol\\\";\\n\\n/// @title CoreBorrow\\n/// @author Angle Core Team\\n/// @notice Core contract of the borrowing module. This contract handles the access control across all contracts\\n/// (it is read by all treasury contracts), and manages the `flashLoanModule`. It has no minting rights over the\\n/// stablecoin contracts\\ncontract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgradeable {\\n    /// @notice Role for guardians\\n    bytes32 public constant GUARDIAN_ROLE = keccak256(\\\"GUARDIAN_ROLE\\\");\\n    /// @notice Role for governors\\n    bytes32 public constant GOVERNOR_ROLE = keccak256(\\\"GOVERNOR_ROLE\\\");\\n    /// @notice Role for treasury contract\\n    bytes32 public constant FLASHLOANER_TREASURY_ROLE = keccak256(\\\"FLASHLOANER_TREASURY_ROLE\\\");\\n\\n    // ============================= Reference =====================================\\n\\n    /// @notice Reference to the `flashLoanModule` with minting rights over the different stablecoins of the protocol\\n    address public flashLoanModule;\\n\\n    // =============================== Events ======================================\\n\\n    event FlashLoanModuleUpdated(address indexed _flashloanModule);\\n    event CoreUpdated(address indexed _core);\\n\\n    /// @notice Initializes the `CoreBorrow` contract and the access control of the borrowing module\\n    /// @param governor Address of the governor of the Angle Protocol\\n    /// @param guardian Guardian address of the protocol\\n    function initialize(address governor, address guardian) public initializer {\\n        require(governor != address(0) && guardian != address(0), \\\"O\\\");\\n        require(governor != guardian, \\\"12\\\");\\n        _setupRole(GOVERNOR_ROLE, governor);\\n        _setupRole(GUARDIAN_ROLE, guardian);\\n        _setupRole(GUARDIAN_ROLE, governor);\\n        _setRoleAdmin(GUARDIAN_ROLE, GUARDIAN_ROLE);\\n        _setRoleAdmin(GOVERNOR_ROLE, GOVERNOR_ROLE);\\n        _setRoleAdmin(FLASHLOANER_TREASURY_ROLE, GOVERNOR_ROLE);\\n    }\\n\\n    /// @custom:oz-upgrades-unsafe-allow constructor\\n    constructor() initializer {}\\n\\n    // =========================== View Functions ==================================\\n\\n    /// @inheritdoc ICoreBorrow\\n    function isFlashLoanerTreasury(address treasury) external view returns (bool) {\\n        return hasRole(FLASHLOANER_TREASURY_ROLE, treasury);\\n    }\\n\\n    /// @inheritdoc ICoreBorrow\\n    function isGovernor(address admin) external view returns (bool) {\\n        return hasRole(GOVERNOR_ROLE, admin);\\n    }\\n\\n    /// @inheritdoc ICoreBorrow\\n    function isGovernorOrGuardian(address admin) external view returns (bool) {\\n        return hasRole(GUARDIAN_ROLE, admin);\\n    }\\n\\n    // =========================== Governor Functions ==============================\\n\\n    /// @notice Grants the `FLASHLOANER_TREASURY_ROLE` to a `treasury` contract\\n    /// @param treasury Contract to grant the role to\\n    /// @dev This function can be used to allow flash loans on a stablecoin of the protocol\\n    function addFlashLoanerTreasuryRole(address treasury) external {\\n        address _flashLoanModule = flashLoanModule;\\n        grantRole(FLASHLOANER_TREASURY_ROLE, treasury);\\n        if (_flashLoanModule != address(0)) {\\n            // This call will revert if `treasury` is the zero address or if it is not linked\\n            // to this `CoreBorrow` contract\\n            ITreasury(treasury).setFlashLoanModule(_flashLoanModule);\\n            IFlashAngle(_flashLoanModule).addStablecoinSupport(treasury);\\n        }\\n    }\\n\\n    /// @notice Adds a governor in the protocol\\n    /// @param governor Address to grant the role to\\n    /// @dev It is necessary to call this function to grant a governor role to make sure\\n    /// all governors also have the guardian role\\n    function addGovernor(address governor) external {\\n        grantRole(GOVERNOR_ROLE, governor);\\n        grantRole(GUARDIAN_ROLE, governor);\\n    }\\n\\n    /// @notice Revokes the flash loan ability for a stablecoin\\n    /// @param treasury Treasury address associated with the stablecoin for which flash loans\\n    /// should no longer be available\\n    function removeFlashLoanerTreasuryRole(address treasury) external {\\n        revokeRole(FLASHLOANER_TREASURY_ROLE, treasury);\\n        ITreasury(treasury).setFlashLoanModule(address(0));\\n        address _flashLoanModule = flashLoanModule;\\n        if (_flashLoanModule != address(0)) {\\n            IFlashAngle(flashLoanModule).removeStablecoinSupport(treasury);\\n        }\\n    }\\n\\n    /// @notice Revokes a governor from the protocol\\n    /// @param governor Address to remove the role to\\n    /// @dev It is necessary to call this function to remove a governor role to make sure\\n    /// the address also loses its guardian role\\n    function removeGovernor(address governor) external {\\n        require(getRoleMemberCount(GOVERNOR_ROLE) > 1, \\\"38\\\");\\n        revokeRole(GOVERNOR_ROLE, governor);\\n        revokeRole(GUARDIAN_ROLE, governor);\\n    }\\n\\n    /// @notice Changes the `flashLoanModule` of the protocol\\n    /// @param _flashLoanModule Address of the new flash loan module\\n    function setFlashLoanModule(address _flashLoanModule) external onlyRole(GOVERNOR_ROLE) {\\n        if (_flashLoanModule != address(0)) {\\n            require(address(IFlashAngle(_flashLoanModule).core()) == address(this), \\\"11\\\");\\n        }\\n        uint256 count = getRoleMemberCount(FLASHLOANER_TREASURY_ROLE);\\n        for (uint256 i = 0; i < count; i++) {\\n            ITreasury(getRoleMember(FLASHLOANER_TREASURY_ROLE, i)).setFlashLoanModule(_flashLoanModule);\\n        }\\n        flashLoanModule = _flashLoanModule;\\n        emit FlashLoanModuleUpdated(_flashLoanModule);\\n    }\\n\\n    /// @notice Changes the core contract of the protocol\\n    /// @param _core New core contract\\n    /// @dev This function verifies that the governors of the new core contract are exactly\\n    /// the same as those of this one. It also notifies the `flashLoanModule` of the change\\n    /// @dev Governance wishing to change the core contract should also make sure to call `setCore`\\n    /// in the different treasury contracts\\n    function setCore(ICoreBorrow _core) external onlyRole(GOVERNOR_ROLE) {\\n        uint256 count = getRoleMemberCount(GOVERNOR_ROLE);\\n        bool success;\\n        for (uint256 i = 0; i < count; i++) {\\n            success = _core.isGovernor(getRoleMember(GOVERNOR_ROLE, i));\\n            if (!success) break;\\n        }\\n        require(success, \\\"11\\\");\\n        address _flashLoanModule = flashLoanModule;\\n        if (_flashLoanModule != address(0)) IFlashAngle(_flashLoanModule).setCore(address(_core));\\n        emit CoreUpdated(address(_core));\\n    }\\n}\\n\",\"keccak256\":\"0xd1b652d23b987e6296f704cdab5ddc8286f8766070d74d5c1e3cdcfe9536d84e\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/IAgToken.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\n\\npragma solidity 0.8.12;\\n\\nimport \\\"@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol\\\";\\n\\n/// @title IAgToken\\n/// @author Angle Core Team\\n/// @notice Interface for the stablecoins `AgToken` contracts\\n/// @dev This interface only contains functions of the `AgToken` contract which are called by other contracts\\n/// of this module or of the first module of the Angle Protocol\\ninterface IAgToken is IERC20Upgradeable {\\n    // ======================= Minter Role Only Functions ===========================\\n\\n    /// @notice Lets the `StableMaster` contract or another whitelisted contract mint agTokens\\n    /// @param account Address to mint to\\n    /// @param amount Amount to mint\\n    /// @dev The contracts allowed to issue agTokens are the `StableMaster` contract, `VaultManager` contracts\\n    /// associated to this stablecoin as well as the flash loan module (if activated) and potentially contracts\\n    /// whitelisted by governance\\n    function mint(address account, uint256 amount) external;\\n\\n    /// @notice Burns `amount` tokens from a `burner` address after being asked to by `sender`\\n    /// @param amount Amount of tokens to burn\\n    /// @param burner Address to burn from\\n    /// @param sender Address which requested the burn from `burner`\\n    /// @dev This method is to be called by a contract with the minter right after being requested\\n    /// to do so by a `sender` address willing to burn tokens from another `burner` address\\n    /// @dev The method checks the allowance between the `sender` and the `burner`\\n    function burnFrom(\\n        uint256 amount,\\n        address burner,\\n        address sender\\n    ) external;\\n\\n    /// @notice Burns `amount` tokens from a `burner` address\\n    /// @param amount Amount of tokens to burn\\n    /// @param burner Address to burn from\\n    /// @dev This method is to be called by a contract with a minter right on the AgToken after being\\n    /// requested to do so by an address willing to burn tokens from its address\\n    function burnSelf(uint256 amount, address burner) external;\\n\\n    // ========================= Treasury Only Functions ===========================\\n\\n    /// @notice Adds a minter in the contract\\n    /// @param minter Minter address to add\\n    /// @dev Zero address checks are performed directly in the `Treasury` contract\\n    function addMinter(address minter) external;\\n\\n    /// @notice Removes a minter from the contract\\n    /// @param minter Minter address to remove\\n    /// @dev This function can also be called by a minter wishing to revoke itself\\n    function removeMinter(address minter) external;\\n\\n    /// @notice Sets a new treasury contract\\n    /// @param _treasury New treasury address\\n    function setTreasury(address _treasury) external;\\n\\n    // ========================= External functions ================================\\n\\n    /// @notice Checks whether an address has the right to mint agTokens\\n    /// @param minter Address for which the minting right should be checked\\n    /// @return Whether the address has the right to mint agTokens or not\\n    function isMinter(address minter) external view returns (bool);\\n}\\n\",\"keccak256\":\"0xcd50d86128e457543483981ea6127cb8dac03584b919614352aa89d7e991405c\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/ICoreBorrow.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\n\\npragma solidity 0.8.12;\\n\\n/// @title ICoreBorrow\\n/// @author Angle Core Team\\n/// @notice Interface for the `CoreBorrow` contract\\n/// @dev This interface only contains functions of the `CoreBorrow` contract which are called by other contracts\\n/// of this module\\ninterface ICoreBorrow {\\n    /// @notice Checks if an address corresponds to a treasury of a stablecoin with a flash loan\\n    /// module initialized on it\\n    /// @param treasury Address to check\\n    /// @return Whether the address has the `FLASHLOANER_TREASURY_ROLE` or not\\n    function isFlashLoanerTreasury(address treasury) external view returns (bool);\\n\\n    /// @notice Checks whether an address is governor of the Angle Protocol or not\\n    /// @param admin Address to check\\n    /// @return Whether the address has the `GOVERNOR_ROLE` or not\\n    function isGovernor(address admin) external view returns (bool);\\n\\n    /// @notice Checks whether an address is governor or a guardian of the Angle Protocol or not\\n    /// @param admin Address to check\\n    /// @return Whether the address has the `GUARDIAN_ROLE` or not\\n    /// @dev Governance should make sure when adding a governor to also give this governor the guardian\\n    /// role by calling the `addGovernor` function\\n    function isGovernorOrGuardian(address admin) external view returns (bool);\\n}\\n\",\"keccak256\":\"0x25b65b3f506ca91745a444502a36f0556585d82d9d60f4bd32fbcaabc12840d4\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/IFlashAngle.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\n\\npragma solidity 0.8.12;\\n\\nimport \\\"./IAgToken.sol\\\";\\nimport \\\"./ICoreBorrow.sol\\\";\\n\\n/// @title IFlashAngle\\n/// @author Angle Core Team\\n/// @notice Interface for the `FlashAngle` contract\\n/// @dev This interface only contains functions of the contract which are called by other contracts\\n/// of this module\\ninterface IFlashAngle {\\n    /// @notice Reference to the `CoreBorrow` contract managing the FlashLoan module\\n    function core() external view returns (ICoreBorrow);\\n\\n    /// @notice Sends the fees taken from flash loans to the treasury contract associated to the stablecoin\\n    /// @param stablecoin Stablecoin from which profits should be sent\\n    /// @return balance Amount of profits sent\\n    /// @dev This function can only be called by the treasury contract\\n    function accrueInterestToTreasury(IAgToken stablecoin) external returns (uint256 balance);\\n\\n    /// @notice Adds support for a stablecoin\\n    /// @param _treasury Treasury associated to the stablecoin to add support for\\n    /// @dev This function can only be called by the `CoreBorrow` contract\\n    function addStablecoinSupport(address _treasury) external;\\n\\n    /// @notice Removes support for a stablecoin\\n    /// @param _treasury Treasury associated to the stablecoin to remove support for\\n    /// @dev This function can only be called by the `CoreBorrow` contract\\n    function removeStablecoinSupport(address _treasury) external;\\n\\n    /// @notice Sets a new core contract\\n    /// @param _core Core contract address to set\\n    /// @dev This function can only be called by the `CoreBorrow` contract\\n    function setCore(address _core) external;\\n}\\n\",\"keccak256\":\"0xc17654e512897efe41e3f1173c07dd4676e8c699a72b859d14b473d1e8300e45\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/ITreasury.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\n\\npragma solidity 0.8.12;\\n\\nimport \\\"./IAgToken.sol\\\";\\nimport \\\"./ICoreBorrow.sol\\\";\\nimport \\\"./IFlashAngle.sol\\\";\\n\\n/// @title ITreasury\\n/// @author Angle Core Team\\n/// @notice Interface for the `Treasury` contract\\n/// @dev This interface only contains functions of the `Treasury` which are called by other contracts\\n/// of this module\\ninterface ITreasury {\\n    /// @notice Stablecoin handled by this `treasury` contract\\n    function stablecoin() external view returns (IAgToken);\\n\\n    /// @notice Checks whether a given address has the  governor role\\n    /// @param admin Address to check\\n    /// @return Whether the address has the governor role\\n    /// @dev Access control is only kept in the `CoreBorrow` contract\\n    function isGovernor(address admin) external view returns (bool);\\n\\n    /// @notice Checks whether a given address has the guardian or the governor role\\n    /// @param admin Address to check\\n    /// @return Whether the address has the guardian or the governor role\\n    /// @dev Access control is only kept in the `CoreBorrow` contract which means that this function\\n    /// queries the `CoreBorrow` contract\\n    function isGovernorOrGuardian(address admin) external view returns (bool);\\n\\n    /// @notice Checks whether a given address has well been initialized in this contract\\n    /// as a `VaultManager``\\n    /// @param _vaultManager Address to check\\n    /// @return Whether the address has been initialized or not\\n    function isVaultManager(address _vaultManager) external view returns (bool);\\n\\n    /// @notice Sets a new flash loan module for this stablecoin\\n    /// @param _flashLoanModule Reference to the new flash loan module\\n    /// @dev This function removes the minting right to the old flash loan module and grants\\n    /// it to the new module\\n    function setFlashLoanModule(address _flashLoanModule) external;\\n}\\n\",\"keccak256\":\"0xced9b7256fcbedc75682037e11ce51fe9116e5604794b8545e00dea0607629cc\",\"license\":\"GPL-3.0\"}},\"version\":1}",
+  "bytecode": "0x60806040523480156200001157600080fd5b50600054610100900460ff166200002f5760005460ff161562000039565b62000039620000de565b620000a15760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b606482015260840160405180910390fd5b600054610100900460ff16158015620000c4576000805461ffff19166101011790555b8015620000d7576000805461ff00191690555b5062000102565b6000620000f630620000fc60201b62000c641760201c565b15905090565b3b151590565b61157c80620001126000396000f3fe608060405234801561001057600080fd5b506004361061011d5760003560e01c806301ffc9a71461012257806321c29f921461014a578063248a9ca31461015f57806324ea54f4146101805780632f2ff15d1461019557806336568abe146101a85780633c4a25d0146101bb578063449ba881146101ce578063485cc955146101e1578063521d4de9146101f45780635704cc4614610207578063800096301461021a5780639010d07c1461022d57806391d148541461024d578063959d5a0114610260578063a217fddf14610273578063ca15c8731461027b578063ccc574901461028e578063d547741f146102a3578063e43581b8146102b6578063eecdac88146102c9578063ef5f12c5146102dc578063f02dd8a2146102f1575b600080fd5b6101356101303660046111d8565b610304565b60405190151581526020015b60405180910390f35b61015d610158366004611217565b61032f565b005b61017261016d366004611234565b6104ed565b604051908152602001610141565b61017260008051602061152783398151915281565b61015d6101a336600461124d565b610502565b61015d6101b636600461124d565b610524565b61015d6101c9366004611217565b6105a2565b61015d6101dc366004611217565b6105d5565b61015d6101ef36600461127d565b6106c5565b610135610202366004611217565b6108b4565b61015d610215366004611217565b6108ce565b61015d610228366004611217565b61098b565b61024061023b3660046112ab565b610b37565b60405161014191906112cd565b61013561025b36600461124d565b610b56565b60c954610240906001600160a01b031681565b610172600081565b610172610289366004611234565b610b81565b6101726000805160206114e783398151915281565b61015d6102b136600461124d565b610b98565b6101356102c4366004611217565b610bb5565b61015d6102d7366004611217565b610bcf565b61017260008051602061150783398151915281565b6101356102ff366004611217565b610c4a565b60006001600160e01b03198216635a05180f60e01b1480610329575061032982610c6a565b92915050565b6000805160206114e78339815191526103488133610c9f565b6001600160a01b038216156103f257306001600160a01b0316826001600160a01b031663f2f4eb266040518163ffffffff1660e01b8152600401602060405180830381865afa15801561039f573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906103c391906112e1565b6001600160a01b0316146103f25760405162461bcd60e51b81526004016103e9906112fe565b60405180910390fd5b600061040b600080516020611507833981519152610b81565b905060005b818110156104a05761043060008051602061150783398151915282610b37565b6001600160a01b03166321c29f92856040518263ffffffff1660e01b815260040161045b91906112cd565b600060405180830381600087803b15801561047557600080fd5b505af1158015610489573d6000803e3d6000fd5b50505050808061049890611330565b915050610410565b5060c980546001600160a01b0319166001600160a01b0385169081179091556040517ffcbb758b478e66ede9f90baed6bef1a7563f6da23642cf16a274e18b66cd8baa90600090a2505050565b60009081526065602052604090206001015490565b61050b826104ed565b6105158133610c9f565b61051f8383610d03565b505050565b6001600160a01b03811633146105945760405162461bcd60e51b815260206004820152602f60248201527f416363657373436f6e74726f6c3a2063616e206f6e6c792072656e6f756e636560448201526e103937b632b9903337b91039b2b63360891b60648201526084016103e9565b61059e8282610d25565b5050565b6105ba6000805160206114e783398151915282610502565b6105d260008051602061152783398151915282610502565b50565b6105ed60008051602061150783398151915282610b98565b6040516310e14fc960e11b81526001600160a01b038216906321c29f929061061a906000906004016112cd565b600060405180830381600087803b15801561063457600080fd5b505af1158015610648573d6000803e3d6000fd5b505060c9546001600160a01b0316915050801561059e5760c95460405163543bd64760e01b81526001600160a01b039091169063543bd6479061068f9085906004016112cd565b600060405180830381600087803b1580156106a957600080fd5b505af11580156106bd573d6000803e3d6000fd5b505050505050565b600054610100900460ff166106e05760005460ff16156106e4565b303b155b6107475760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084016103e9565b600054610100900460ff16158015610769576000805461ffff19166101011790555b6001600160a01b0383161580159061078957506001600160a01b03821615155b6107b95760405162461bcd60e51b81526020600482015260016024820152604f60f81b60448201526064016103e9565b816001600160a01b0316836001600160a01b031614156108005760405162461bcd60e51b8152602060048201526002602482015261189960f11b60448201526064016103e9565b6108186000805160206114e783398151915284610d47565b61083060008051602061152783398151915283610d47565b61084860008051602061152783398151915284610d47565b61086060008051602061152783398151915280610d51565b6108786000805160206114e783398151915280610d51565b61089e6000805160206115078339815191526000805160206114e7833981519152610d51565b801561051f576000805461ff0019169055505050565b600061032960008051602061152783398151915283610b56565b60c9546001600160a01b03166108f260008051602061150783398151915283610502565b6001600160a01b0381161561059e576040516310e14fc960e11b81526001600160a01b038316906321c29f929061092d9084906004016112cd565b600060405180830381600087803b15801561094757600080fd5b505af115801561095b573d6000803e3d6000fd5b505060405163442320c160e01b81526001600160a01b038416925063442320c1915061068f9085906004016112cd565b6000805160206114e78339815191526109a48133610c9f565b60006109bd6000805160206114e7833981519152610b81565b90506000805b82811015610a6d57846001600160a01b031663e43581b86109f26000805160206114e783398151915284610b37565b6040518263ffffffff1660e01b8152600401610a0e91906112cd565b602060405180830381865afa158015610a2b573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610a4f919061134b565b915081610a5b57610a6d565b80610a6581611330565b9150506109c3565b5080610a8b5760405162461bcd60e51b81526004016103e9906112fe565b60c9546001600160a01b03168015610afc57604051630800096360e41b81526001600160a01b03821690638000963090610ac99088906004016112cd565b600060405180830381600087803b158015610ae357600080fd5b505af1158015610af7573d6000803e3d6000fd5b505050505b6040516001600160a01b038616907f0c9c0f914e121785e2cd2269d6698bc11f59a50b85ef9aa1197fb4ddb96c4e5690600090a25050505050565b6000828152609760205260408120610b4f9083610da4565b9392505050565b60009182526065602090815260408084206001600160a01b0393909316845291905290205460ff1690565b600081815260976020526040812061032990610db0565b610ba1826104ed565b610bab8133610c9f565b61051f8383610d25565b60006103296000805160206114e783398151915283610b56565b6001610be86000805160206114e7833981519152610b81565b11610c1a5760405162461bcd60e51b8152602060048201526002602482015261066760f31b60448201526064016103e9565b610c326000805160206114e783398151915282610b98565b6105d260008051602061152783398151915282610b98565b600061032960008051602061150783398151915283610b56565b3b151590565b60006001600160e01b03198216637965db0b60e01b148061032957506301ffc9a760e01b6001600160e01b0319831614610329565b610ca98282610b56565b61059e57610cc1816001600160a01b03166014610dba565b610ccc836020610dba565b604051602001610cdd92919061139d565b60408051601f198184030181529082905262461bcd60e51b82526103e99160040161140c565b610d0d8282610f55565b600082815260976020526040902061051f9082610fdb565b610d2f8282610ff0565b600082815260976020526040902061051f9082611057565b61059e8282610d03565b6000610d5c836104ed565b600084815260656020526040808220600101859055519192508391839186917fbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff9190a4505050565b6000610b4f838361106c565b6000610329825490565b60606000610dc983600261143f565b610dd490600261145e565b6001600160401b03811115610deb57610deb611476565b6040519080825280601f01601f191660200182016040528015610e15576020820181803683370190505b509050600360fc1b81600081518110610e3057610e3061148c565b60200101906001600160f81b031916908160001a905350600f60fb1b81600181518110610e5f57610e5f61148c565b60200101906001600160f81b031916908160001a9053506000610e8384600261143f565b610e8e90600161145e565b90505b6001811115610f06576f181899199a1a9b1b9c1cb0b131b232b360811b85600f1660108110610ec257610ec261148c565b1a60f81b828281518110610ed857610ed861148c565b60200101906001600160f81b031916908160001a90535060049490941c93610eff816114a2565b9050610e91565b508315610b4f5760405162461bcd60e51b815260206004820181905260248201527f537472696e67733a20686578206c656e67746820696e73756666696369656e7460448201526064016103e9565b610f5f8282610b56565b61059e5760008281526065602090815260408083206001600160a01b03851684529091529020805460ff19166001179055610f973390565b6001600160a01b0316816001600160a01b0316837f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a45050565b6000610b4f836001600160a01b038416611096565b610ffa8282610b56565b1561059e5760008281526065602090815260408083206001600160a01b0385168085529252808320805460ff1916905551339285917ff6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b9190a45050565b6000610b4f836001600160a01b0384166110e5565b60008260000182815481106110835761108361148c565b9060005260206000200154905092915050565b60008181526001830160205260408120546110dd57508154600181810184556000848152602080822090930184905584548482528286019093526040902091909155610329565b506000610329565b600081815260018301602052604081205480156111ce5760006111096001836114b9565b855490915060009061111d906001906114b9565b905081811461118257600086600001828154811061113d5761113d61148c565b90600052602060002001549050808760000184815481106111605761116061148c565b6000918252602080832090910192909255918252600188019052604090208390555b8554869080611193576111936114d0565b600190038181906000526020600020016000905590558560010160008681526020019081526020016000206000905560019350505050610329565b6000915050610329565b6000602082840312156111ea57600080fd5b81356001600160e01b031981168114610b4f57600080fd5b6001600160a01b03811681146105d257600080fd5b60006020828403121561122957600080fd5b8135610b4f81611202565b60006020828403121561124657600080fd5b5035919050565b6000806040838503121561126057600080fd5b82359150602083013561127281611202565b809150509250929050565b6000806040838503121561129057600080fd5b823561129b81611202565b9150602083013561127281611202565b600080604083850312156112be57600080fd5b50508035926020909101359150565b6001600160a01b0391909116815260200190565b6000602082840312156112f357600080fd5b8151610b4f81611202565b602080825260029082015261313160f01b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b60006000198214156113445761134461131a565b5060010190565b60006020828403121561135d57600080fd5b81518015158114610b4f57600080fd5b60005b83811015611388578181015183820152602001611370565b83811115611397576000848401525b50505050565b76020b1b1b2b9b9a1b7b73a3937b61d1030b1b1b7bab73a1604d1b8152600083516113cf81601785016020880161136d565b7001034b99036b4b9b9b4b733903937b6329607d1b601791840191820152835161140081602884016020880161136d565b01602801949350505050565b602081526000825180602084015261142b81604085016020870161136d565b601f01601f19169190910160400192915050565b60008160001904831182151516156114595761145961131a565b500290565b600082198211156114715761147161131a565b500190565b634e487b7160e01b600052604160045260246000fd5b634e487b7160e01b600052603260045260246000fd5b6000816114b1576114b161131a565b506000190190565b6000828210156114cb576114cb61131a565b500390565b634e487b7160e01b600052603160045260246000fdfe7935bd0ae54bc31f548c14dba4d37c5c64b3f8ca900cb468fb8abd54d5894f550ae0130c6b34f32239dfe5e419a3fbd7546b44e99783257f2d93526d5a936d4655435dd261a4b9b3364963f7738a7a662ad9c84396d64be3365284bb7f0a5041a2646970667358221220f50e3a3d93e8d909b82da5020632060c491c9d67b7b34f3c01064b50a023297764736f6c634300080c0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061011d5760003560e01c806301ffc9a71461012257806321c29f921461014a578063248a9ca31461015f57806324ea54f4146101805780632f2ff15d1461019557806336568abe146101a85780633c4a25d0146101bb578063449ba881146101ce578063485cc955146101e1578063521d4de9146101f45780635704cc4614610207578063800096301461021a5780639010d07c1461022d57806391d148541461024d578063959d5a0114610260578063a217fddf14610273578063ca15c8731461027b578063ccc574901461028e578063d547741f146102a3578063e43581b8146102b6578063eecdac88146102c9578063ef5f12c5146102dc578063f02dd8a2146102f1575b600080fd5b6101356101303660046111d8565b610304565b60405190151581526020015b60405180910390f35b61015d610158366004611217565b61032f565b005b61017261016d366004611234565b6104ed565b604051908152602001610141565b61017260008051602061152783398151915281565b61015d6101a336600461124d565b610502565b61015d6101b636600461124d565b610524565b61015d6101c9366004611217565b6105a2565b61015d6101dc366004611217565b6105d5565b61015d6101ef36600461127d565b6106c5565b610135610202366004611217565b6108b4565b61015d610215366004611217565b6108ce565b61015d610228366004611217565b61098b565b61024061023b3660046112ab565b610b37565b60405161014191906112cd565b61013561025b36600461124d565b610b56565b60c954610240906001600160a01b031681565b610172600081565b610172610289366004611234565b610b81565b6101726000805160206114e783398151915281565b61015d6102b136600461124d565b610b98565b6101356102c4366004611217565b610bb5565b61015d6102d7366004611217565b610bcf565b61017260008051602061150783398151915281565b6101356102ff366004611217565b610c4a565b60006001600160e01b03198216635a05180f60e01b1480610329575061032982610c6a565b92915050565b6000805160206114e78339815191526103488133610c9f565b6001600160a01b038216156103f257306001600160a01b0316826001600160a01b031663f2f4eb266040518163ffffffff1660e01b8152600401602060405180830381865afa15801561039f573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906103c391906112e1565b6001600160a01b0316146103f25760405162461bcd60e51b81526004016103e9906112fe565b60405180910390fd5b600061040b600080516020611507833981519152610b81565b905060005b818110156104a05761043060008051602061150783398151915282610b37565b6001600160a01b03166321c29f92856040518263ffffffff1660e01b815260040161045b91906112cd565b600060405180830381600087803b15801561047557600080fd5b505af1158015610489573d6000803e3d6000fd5b50505050808061049890611330565b915050610410565b5060c980546001600160a01b0319166001600160a01b0385169081179091556040517ffcbb758b478e66ede9f90baed6bef1a7563f6da23642cf16a274e18b66cd8baa90600090a2505050565b60009081526065602052604090206001015490565b61050b826104ed565b6105158133610c9f565b61051f8383610d03565b505050565b6001600160a01b03811633146105945760405162461bcd60e51b815260206004820152602f60248201527f416363657373436f6e74726f6c3a2063616e206f6e6c792072656e6f756e636560448201526e103937b632b9903337b91039b2b63360891b60648201526084016103e9565b61059e8282610d25565b5050565b6105ba6000805160206114e783398151915282610502565b6105d260008051602061152783398151915282610502565b50565b6105ed60008051602061150783398151915282610b98565b6040516310e14fc960e11b81526001600160a01b038216906321c29f929061061a906000906004016112cd565b600060405180830381600087803b15801561063457600080fd5b505af1158015610648573d6000803e3d6000fd5b505060c9546001600160a01b0316915050801561059e5760c95460405163543bd64760e01b81526001600160a01b039091169063543bd6479061068f9085906004016112cd565b600060405180830381600087803b1580156106a957600080fd5b505af11580156106bd573d6000803e3d6000fd5b505050505050565b600054610100900460ff166106e05760005460ff16156106e4565b303b155b6107475760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084016103e9565b600054610100900460ff16158015610769576000805461ffff19166101011790555b6001600160a01b0383161580159061078957506001600160a01b03821615155b6107b95760405162461bcd60e51b81526020600482015260016024820152604f60f81b60448201526064016103e9565b816001600160a01b0316836001600160a01b031614156108005760405162461bcd60e51b8152602060048201526002602482015261189960f11b60448201526064016103e9565b6108186000805160206114e783398151915284610d47565b61083060008051602061152783398151915283610d47565b61084860008051602061152783398151915284610d47565b61086060008051602061152783398151915280610d51565b6108786000805160206114e783398151915280610d51565b61089e6000805160206115078339815191526000805160206114e7833981519152610d51565b801561051f576000805461ff0019169055505050565b600061032960008051602061152783398151915283610b56565b60c9546001600160a01b03166108f260008051602061150783398151915283610502565b6001600160a01b0381161561059e576040516310e14fc960e11b81526001600160a01b038316906321c29f929061092d9084906004016112cd565b600060405180830381600087803b15801561094757600080fd5b505af115801561095b573d6000803e3d6000fd5b505060405163442320c160e01b81526001600160a01b038416925063442320c1915061068f9085906004016112cd565b6000805160206114e78339815191526109a48133610c9f565b60006109bd6000805160206114e7833981519152610b81565b90506000805b82811015610a6d57846001600160a01b031663e43581b86109f26000805160206114e783398151915284610b37565b6040518263ffffffff1660e01b8152600401610a0e91906112cd565b602060405180830381865afa158015610a2b573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610a4f919061134b565b915081610a5b57610a6d565b80610a6581611330565b9150506109c3565b5080610a8b5760405162461bcd60e51b81526004016103e9906112fe565b60c9546001600160a01b03168015610afc57604051630800096360e41b81526001600160a01b03821690638000963090610ac99088906004016112cd565b600060405180830381600087803b158015610ae357600080fd5b505af1158015610af7573d6000803e3d6000fd5b505050505b6040516001600160a01b038616907f0c9c0f914e121785e2cd2269d6698bc11f59a50b85ef9aa1197fb4ddb96c4e5690600090a25050505050565b6000828152609760205260408120610b4f9083610da4565b9392505050565b60009182526065602090815260408084206001600160a01b0393909316845291905290205460ff1690565b600081815260976020526040812061032990610db0565b610ba1826104ed565b610bab8133610c9f565b61051f8383610d25565b60006103296000805160206114e783398151915283610b56565b6001610be86000805160206114e7833981519152610b81565b11610c1a5760405162461bcd60e51b8152602060048201526002602482015261066760f31b60448201526064016103e9565b610c326000805160206114e783398151915282610b98565b6105d260008051602061152783398151915282610b98565b600061032960008051602061150783398151915283610b56565b3b151590565b60006001600160e01b03198216637965db0b60e01b148061032957506301ffc9a760e01b6001600160e01b0319831614610329565b610ca98282610b56565b61059e57610cc1816001600160a01b03166014610dba565b610ccc836020610dba565b604051602001610cdd92919061139d565b60408051601f198184030181529082905262461bcd60e51b82526103e99160040161140c565b610d0d8282610f55565b600082815260976020526040902061051f9082610fdb565b610d2f8282610ff0565b600082815260976020526040902061051f9082611057565b61059e8282610d03565b6000610d5c836104ed565b600084815260656020526040808220600101859055519192508391839186917fbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff9190a4505050565b6000610b4f838361106c565b6000610329825490565b60606000610dc983600261143f565b610dd490600261145e565b6001600160401b03811115610deb57610deb611476565b6040519080825280601f01601f191660200182016040528015610e15576020820181803683370190505b509050600360fc1b81600081518110610e3057610e3061148c565b60200101906001600160f81b031916908160001a905350600f60fb1b81600181518110610e5f57610e5f61148c565b60200101906001600160f81b031916908160001a9053506000610e8384600261143f565b610e8e90600161145e565b90505b6001811115610f06576f181899199a1a9b1b9c1cb0b131b232b360811b85600f1660108110610ec257610ec261148c565b1a60f81b828281518110610ed857610ed861148c565b60200101906001600160f81b031916908160001a90535060049490941c93610eff816114a2565b9050610e91565b508315610b4f5760405162461bcd60e51b815260206004820181905260248201527f537472696e67733a20686578206c656e67746820696e73756666696369656e7460448201526064016103e9565b610f5f8282610b56565b61059e5760008281526065602090815260408083206001600160a01b03851684529091529020805460ff19166001179055610f973390565b6001600160a01b0316816001600160a01b0316837f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a45050565b6000610b4f836001600160a01b038416611096565b610ffa8282610b56565b1561059e5760008281526065602090815260408083206001600160a01b0385168085529252808320805460ff1916905551339285917ff6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b9190a45050565b6000610b4f836001600160a01b0384166110e5565b60008260000182815481106110835761108361148c565b9060005260206000200154905092915050565b60008181526001830160205260408120546110dd57508154600181810184556000848152602080822090930184905584548482528286019093526040902091909155610329565b506000610329565b600081815260018301602052604081205480156111ce5760006111096001836114b9565b855490915060009061111d906001906114b9565b905081811461118257600086600001828154811061113d5761113d61148c565b90600052602060002001549050808760000184815481106111605761116061148c565b6000918252602080832090910192909255918252600188019052604090208390555b8554869080611193576111936114d0565b600190038181906000526020600020016000905590558560010160008681526020019081526020016000206000905560019350505050610329565b6000915050610329565b6000602082840312156111ea57600080fd5b81356001600160e01b031981168114610b4f57600080fd5b6001600160a01b03811681146105d257600080fd5b60006020828403121561122957600080fd5b8135610b4f81611202565b60006020828403121561124657600080fd5b5035919050565b6000806040838503121561126057600080fd5b82359150602083013561127281611202565b809150509250929050565b6000806040838503121561129057600080fd5b823561129b81611202565b9150602083013561127281611202565b600080604083850312156112be57600080fd5b50508035926020909101359150565b6001600160a01b0391909116815260200190565b6000602082840312156112f357600080fd5b8151610b4f81611202565b602080825260029082015261313160f01b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b60006000198214156113445761134461131a565b5060010190565b60006020828403121561135d57600080fd5b81518015158114610b4f57600080fd5b60005b83811015611388578181015183820152602001611370565b83811115611397576000848401525b50505050565b76020b1b1b2b9b9a1b7b73a3937b61d1030b1b1b7bab73a1604d1b8152600083516113cf81601785016020880161136d565b7001034b99036b4b9b9b4b733903937b6329607d1b601791840191820152835161140081602884016020880161136d565b01602801949350505050565b602081526000825180602084015261142b81604085016020870161136d565b601f01601f19169190910160400192915050565b60008160001904831182151516156114595761145961131a565b500290565b600082198211156114715761147161131a565b500190565b634e487b7160e01b600052604160045260246000fd5b634e487b7160e01b600052603260045260246000fd5b6000816114b1576114b161131a565b506000190190565b6000828210156114cb576114cb61131a565b500390565b634e487b7160e01b600052603160045260246000fdfe7935bd0ae54bc31f548c14dba4d37c5c64b3f8ca900cb468fb8abd54d5894f550ae0130c6b34f32239dfe5e419a3fbd7546b44e99783257f2d93526d5a936d4655435dd261a4b9b3364963f7738a7a662ad9c84396d64be3365284bb7f0a5041a2646970667358221220f50e3a3d93e8d909b82da5020632060c491c9d67b7b34f3c01064b50a023297764736f6c634300080c0033",
+  "devdoc": {
+    "author": "Angle Core Team",
+    "kind": "dev",
+    "methods": {
+      "addFlashLoanerTreasuryRole(address)": {
+        "details": "This function can be used to allow flash loans on a stablecoin of the protocol",
+        "params": {
+          "treasury": "Contract to grant the role to"
+        }
+      },
+      "addGovernor(address)": {
+        "details": "It is necessary to call this function to grant a governor role to make sure all governors also have the guardian role",
+        "params": {
+          "governor": "Address to grant the role to"
+        }
+      },
+      "constructor": {
+        "custom:oz-upgrades-unsafe-allow": "constructor"
+      },
+      "getRoleAdmin(bytes32)": {
+        "details": "Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role's admin, use {_setRoleAdmin}."
+      },
+      "getRoleMember(bytes32,uint256)": {
+        "details": "Returns one of the accounts that have `role`. `index` must be a value between 0 and {getRoleMemberCount}, non-inclusive. Role bearers are not sorted in any particular way, and their ordering may change at any point. WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure you perform all queries on the same block. See the following https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post] for more information."
+      },
+      "getRoleMemberCount(bytes32)": {
+        "details": "Returns the number of accounts that have `role`. Can be used together with {getRoleMember} to enumerate all bearers of a role."
+      },
+      "grantRole(bytes32,address)": {
+        "details": "Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``'s admin role."
+      },
+      "hasRole(bytes32,address)": {
+        "details": "Returns `true` if `account` has been granted `role`."
+      },
+      "initialize(address,address)": {
+        "params": {
+          "governor": "Address of the governor of the Angle Protocol",
+          "guardian": "Guardian address of the protocol"
+        }
+      },
+      "isFlashLoanerTreasury(address)": {
+        "params": {
+          "treasury": "Address to check"
+        },
+        "returns": {
+          "_0": "Whether the address has the `FLASHLOANER_TREASURY_ROLE` or not"
+        }
+      },
+      "isGovernor(address)": {
+        "params": {
+          "admin": "Address to check"
+        },
+        "returns": {
+          "_0": "Whether the address has the `GOVERNOR_ROLE` or not"
+        }
+      },
+      "isGovernorOrGuardian(address)": {
+        "details": "Governance should make sure when adding a governor to also give this governor the guardian role by calling the `addGovernor` function",
+        "params": {
+          "admin": "Address to check"
+        },
+        "returns": {
+          "_0": "Whether the address has the `GUARDIAN_ROLE` or not"
+        }
+      },
+      "removeFlashLoanerTreasuryRole(address)": {
+        "params": {
+          "treasury": "Treasury address associated with the stablecoin for which flash loans should no longer be available"
+        }
+      },
+      "removeGovernor(address)": {
+        "details": "It is necessary to call this function to remove a governor role to make sure the address also loses its guardian role",
+        "params": {
+          "governor": "Address to remove the role to"
+        }
+      },
+      "renounceRole(bytes32,address)": {
+        "details": "Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function's purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been revoked `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`."
+      },
+      "revokeRole(bytes32,address)": {
+        "details": "Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``'s admin role."
+      },
+      "setCore(address)": {
+        "details": "This function verifies that the governors of the new core contract are exactly the same as those of this one. It also notifies the `flashLoanModule` of the changeGovernance wishing to change the core contract should also make sure to call `setCore` in the different treasury contracts",
+        "params": {
+          "_core": "New core contract"
+        }
+      },
+      "setFlashLoanModule(address)": {
+        "params": {
+          "_flashLoanModule": "Address of the new flash loan module"
+        }
+      },
+      "supportsInterface(bytes4)": {
+        "details": "See {IERC165-supportsInterface}."
+      }
+    },
+    "title": "CoreBorrow",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "FLASHLOANER_TREASURY_ROLE()": {
+        "notice": "Role for treasury contract"
+      },
+      "GOVERNOR_ROLE()": {
+        "notice": "Role for governors"
+      },
+      "GUARDIAN_ROLE()": {
+        "notice": "Role for guardians"
+      },
+      "addFlashLoanerTreasuryRole(address)": {
+        "notice": "Grants the `FLASHLOANER_TREASURY_ROLE` to a `treasury` contract"
+      },
+      "addGovernor(address)": {
+        "notice": "Adds a governor in the protocol"
+      },
+      "flashLoanModule()": {
+        "notice": "Reference to the `flashLoanModule` with minting rights over the different stablecoins of the protocol"
+      },
+      "initialize(address,address)": {
+        "notice": "Initializes the `CoreBorrow` contract and the access control of the borrowing module"
+      },
+      "isFlashLoanerTreasury(address)": {
+        "notice": "Checks if an address corresponds to a treasury of a stablecoin with a flash loan module initialized on it"
+      },
+      "isGovernor(address)": {
+        "notice": "Checks whether an address is governor of the Angle Protocol or not"
+      },
+      "isGovernorOrGuardian(address)": {
+        "notice": "Checks whether an address is governor or a guardian of the Angle Protocol or not"
+      },
+      "removeFlashLoanerTreasuryRole(address)": {
+        "notice": "Revokes the flash loan ability for a stablecoin"
+      },
+      "removeGovernor(address)": {
+        "notice": "Revokes a governor from the protocol"
+      },
+      "setCore(address)": {
+        "notice": "Changes the core contract of the protocol"
+      },
+      "setFlashLoanModule(address)": {
+        "notice": "Changes the `flashLoanModule` of the protocol"
+      }
+    },
+    "notice": "Core contract of the borrowing module. This contract handles the access control across all contracts (it is read by all treasury contracts), and manages the `flashLoanModule`. It has no minting rights over the stablecoin contracts",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 646,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "_initialized",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 649,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "_initializing",
+        "offset": 1,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 2353,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 3215,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "51",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 250,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "_roles",
+        "offset": 0,
+        "slot": "101",
+        "type": "t_mapping(t_bytes32,t_struct(RoleData)245_storage)"
+      },
+      {
+        "astId": 537,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "102",
+        "type": "t_array(t_uint256)49_storage"
+      },
+      {
+        "astId": 91,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "_roleMembers",
+        "offset": 0,
+        "slot": "151",
+        "type": "t_mapping(t_bytes32,t_struct(AddressSet)3628_storage)"
+      },
+      {
+        "astId": 200,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "152",
+        "type": "t_array(t_uint256)49_storage"
+      },
+      {
+        "astId": 7719,
+        "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+        "label": "flashLoanModule",
+        "offset": 0,
+        "slot": "201",
+        "type": "t_address"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_bytes32)dyn_storage": {
+        "base": "t_bytes32",
+        "encoding": "dynamic_array",
+        "label": "bytes32[]",
+        "numberOfBytes": "32"
+      },
+      "t_array(t_uint256)49_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[49]",
+        "numberOfBytes": "1568"
+      },
+      "t_array(t_uint256)50_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[50]",
+        "numberOfBytes": "1600"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_address,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      },
+      "t_mapping(t_bytes32,t_struct(AddressSet)3628_storage)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => struct EnumerableSetUpgradeable.AddressSet)",
+        "numberOfBytes": "32",
+        "value": "t_struct(AddressSet)3628_storage"
+      },
+      "t_mapping(t_bytes32,t_struct(RoleData)245_storage)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+        "numberOfBytes": "32",
+        "value": "t_struct(RoleData)245_storage"
+      },
+      "t_mapping(t_bytes32,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_struct(AddressSet)3628_storage": {
+        "encoding": "inplace",
+        "label": "struct EnumerableSetUpgradeable.AddressSet",
+        "members": [
+          {
+            "astId": 3627,
+            "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+            "label": "_inner",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(Set)3327_storage"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(RoleData)245_storage": {
+        "encoding": "inplace",
+        "label": "struct AccessControlUpgradeable.RoleData",
+        "members": [
+          {
+            "astId": 242,
+            "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+            "label": "members",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_address,t_bool)"
+          },
+          {
+            "astId": 244,
+            "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+            "label": "adminRole",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_bytes32"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(Set)3327_storage": {
+        "encoding": "inplace",
+        "label": "struct EnumerableSetUpgradeable.Set",
+        "members": [
+          {
+            "astId": 3322,
+            "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+            "label": "_values",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_array(t_bytes32)dyn_storage"
+          },
+          {
+            "astId": 3326,
+            "contract": "contracts/coreBorrow/CoreBorrow.sol:CoreBorrow",
+            "label": "_indexes",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_bytes32,t_uint256)"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

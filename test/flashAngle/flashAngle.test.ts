@@ -23,7 +23,6 @@ import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 contract('FlashAngle', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
-  let bob: SignerWithAddress;
 
   let flashAngle: FlashAngle;
   let coreBorrow: MockCoreBorrow;
@@ -36,7 +35,7 @@ contract('FlashAngle', () => {
   const impersonatedSigners: { [key: string]: Signer } = {};
 
   before(async () => {
-    [deployer, alice, bob] = await ethers.getSigners();
+    [deployer, alice] = await ethers.getSigners();
     // add any addresses you want to impersonate here
     governor = '0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8';
     guardian = '0x0C2553e4B9dFA9f83b1A6D3EAB96c4bAaB42d430';

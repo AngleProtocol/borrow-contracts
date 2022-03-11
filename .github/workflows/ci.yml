@@ -73,11 +73,9 @@ jobs:
       # This is required separately from yarn test because it generates the typechain definitions
       - name: Compile
         run: yarn compile
-      - name: Typechain
-        run: yarn generate-types-from-abis
       - run: export NODE_OPTIONS=--max_old_space_size=4096
       - name: Run unit tests
-        run: yarn test:all
+        run: yarn test
         env:
           ENABLE_GAS_REPORT: true
           CI: true

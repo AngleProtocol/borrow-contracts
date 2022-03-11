@@ -58,9 +58,6 @@ interface IAgToken is IERC20Upgradeable {
 
     // ========================= External functions ================================
 
-    /// @notice Reference to the `StableMaster` contract associated to this `AgToken`
-    function stableMaster() external view returns (address);
-
     /// @notice Checks whether an address has the right to mint agTokens
     /// @param minter Address for which the minting right should be checked
     /// @return Whether the address has the right to mint agTokens or not

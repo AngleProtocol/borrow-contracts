@@ -637,6 +637,7 @@ contract('VaultManager', () => {
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -652,6 +653,7 @@ contract('VaultManager', () => {
       expect(await collateral.balanceOf(bob.address)).to.be.equal(bobCollateralBalance);
       expect(await agToken.balanceOf(alice.address)).to.be.equal(aliceStablecoinBalance);
       expect(await collateral.balanceOf(alice.address)).to.be.equal(aliceCollateralBalance.sub(collatAmount));
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.add(collatAmount));
     });
     it('reverts - stablecoin and collateral to receive by the protocol but from address has not approved', async () => {
       await expect(
@@ -671,7 +673,9 @@ contract('VaultManager', () => {
       expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount.mul(2));
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(vaultManager, alice, [removeCollateral(3, collatAmount), borrow(3, borrowAmount)]);
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expectApprox(await vaultManager.getVaultDebt(3), parseEther('1.9989'), 0.1);
       expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount);
       expectApprox(await agToken.balanceOf(alice.address), aliceStablecoinBalance.add(adjustedBorrowAmount), 0.01);
@@ -684,6 +688,7 @@ contract('VaultManager', () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -693,6 +698,7 @@ contract('VaultManager', () => {
         ZERO_ADDRESS,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expectApprox(await vaultManager.getVaultDebt(3), parseEther('1.9989'), 0.1);
       expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount);
       expect(await collateral.balanceOf(alice.address)).to.be.equal(aliceCollateralBalance);
@@ -703,6 +709,7 @@ contract('VaultManager', () => {
     it('success - handle repay with repay callee', async () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -712,6 +719,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(1);
@@ -721,6 +729,7 @@ contract('VaultManager', () => {
     it('success - handle repay with repay callee and null stablecoin amount to repay', async () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -730,6 +739,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(0);
@@ -741,6 +751,7 @@ contract('VaultManager', () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -750,6 +761,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(0);
@@ -789,6 +801,7 @@ contract('VaultManager', () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await agToken.connect(bob).approve(alice.address, parseEther('10'));
       await angle(
         vaultManager,
@@ -799,6 +812,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
       expect(await mockRepayCallee.counter()).to.be.equal(1);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
@@ -826,6 +840,7 @@ contract('VaultManager', () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await agToken.connect(bob).approve(alice.address, parseEther('10'));
       await angle(
         vaultManager,
@@ -836,6 +851,7 @@ contract('VaultManager', () => {
         ZERO_ADDRESS,
         '0x',
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
       expect(await mockRepayCallee.counter()).to.be.equal(0);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
@@ -847,6 +863,7 @@ contract('VaultManager', () => {
     it('success - repayCallCollateral with the same from and to address', async () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -856,6 +873,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.add(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('3.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(1);
@@ -867,6 +885,7 @@ contract('VaultManager', () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -876,6 +895,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.add(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('3.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(1);
@@ -904,6 +924,7 @@ contract('VaultManager', () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -913,6 +934,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         web3.utils.keccak256('test'),
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.add(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('3.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(1);
@@ -938,6 +960,7 @@ contract('VaultManager', () => {
     it('success - repayCallCollateral situation with no repay callee', async () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await angle(
         vaultManager,
         alice,
@@ -947,6 +970,7 @@ contract('VaultManager', () => {
         mockRepayCallee.address,
         '0x',
       );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.add(collatAmount));
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('3.9989'), 0.1);
       expect(await mockRepayCallee.counter()).to.be.equal(0);

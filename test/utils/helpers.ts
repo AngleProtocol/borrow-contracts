@@ -119,6 +119,7 @@ const time = {
   },
 };
 
+// eslint-disable-next-line
 async function deployUpgradeable(factory: ContractFactory, ...args: any[]): Promise<Contract> {
   const { deployer, proxyAdmin, alice } = await ethers.getNamedSigners();
 

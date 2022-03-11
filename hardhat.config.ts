@@ -79,11 +79,13 @@ const config: HardhatUserConfig = {
       chainId: 4,
     },
     mumbai: {
+      live: true,
       url: nodeUrl('mumbai'),
       accounts: accounts('mumbai'),
       gas: 'auto',
     },
     polygon: {
+      live: true,
       url: nodeUrl('polygon'),
       accounts: accounts('polygon'),
       gas: 'auto',
