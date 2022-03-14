@@ -11,6 +11,8 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
+import "hardhat/console.sol";
+
 /// @title Swapper
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
@@ -129,17 +131,8 @@ contract Swapper is ISwapper {
     ) external {
         require(core.isGovernorOrGuardian(msg.sender), "2");
         require(tokens.length == spenders.length && tokens.length == amounts.length, "104");
-        uint256 currentAllowance;
         for (uint256 i = 0; i < tokens.length; i++) {
-            currentAllowance = tokens[i].allowance(address(this), spenders[i]);
-            if (currentAllowance < amounts[i]) {
-                tokens[i].safeIncreaseAllowance(spenders[i], amounts[i] - currentAllowance);
-            } else if (currentAllowance > amounts[i]) {
-                tokens[i].safeDecreaseAllowance(spenders[i], currentAllowance - amounts[i]);
-                if (spenders[i] == address(uniV3Router)) delete uniAllowedToken[tokens[i]];
-                else if (spenders[i] == oneInch) delete oneInchAllowedToken[tokens[i]];
-                else if (spenders[i] == address(angleRouter)) delete angleRouterAllowedToken[tokens[i]];
-            }
+            _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
     }
 
@@ -173,8 +166,10 @@ contract Swapper is ISwapper {
         if (swapType == SwapType.UniswapV3) amountOut = _swapOnUniswapV3(inToken, amount, minAmountOut, args);
         else if (swapType == SwapType.oneInch) amountOut = _swapOn1Inch(inToken, minAmountOut, args);
         else if (swapType == SwapType.Wrap) amountOut = _wrapStETH(amount, minAmountOut);
-        else require(swapType == SwapType.None, "3");
-        return amountOut;
+        else {
+            require(swapType == SwapType.None, "3");
+            amountOut = amount;
+        }
     }
 
     function _checkAngleRouterAllowance(IERC20 token) internal {

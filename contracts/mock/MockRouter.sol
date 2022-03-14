@@ -18,6 +18,7 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     uint256 public counterUni;
     uint256 public amountOutUni;
     uint256 public multiplierMintBurn;
+    uint256 public stETHMultiplier;
     address public inToken;
     address public outToken;
 
@@ -53,9 +54,9 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
         IERC20(collateral).safeTransfer(user, amount*multiplierMintBurn/10**9);
     }
 
-    function wrap(uint256 amount) external returns (uint256){
-        IERC20(stETH).safeTransferFrom(msg.sender, address(this), amount);
-        return(amount);
+    function wrap(uint256 amount) external returns (uint256 amountOut){
+        amountOut = amount*stETHMultiplier/10**9;
+        IERC20(stETH).safeTransferFrom(msg.sender, address(this), amountOut);
     }
 
     function oneInch() external {
@@ -73,6 +74,10 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     function setMultipliers(uint256 a, uint256 b) external {
         amountOutUni = a;
         multiplierMintBurn = b;
+    }
+
+    function setStETHMultiplier(uint256 value) external {
+        stETHMultiplier = value;
     }
 
     function setInOut(address _collateral, address _stablecoin) external {
