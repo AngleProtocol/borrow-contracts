@@ -11,8 +11,6 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
-import "hardhat/console.sol";
-
 /// @title Swapper
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
@@ -111,7 +109,7 @@ contract Swapper is ISwapper {
         }
         // Reusing the `inTokenObtained` variable
         inTokenObtained = _swap(inToken, inTokenObtained, minAmountOut, SwapType(swapType), data);
-
+    
         if (mintOrBurn == 2) {
             _checkAngleRouterAllowance(IERC20(intermediateToken));
             angleRouter.mint(address(this), inTokenObtained, outTokenOwed, address(outToken), intermediateToken);
@@ -130,7 +128,7 @@ contract Swapper is ISwapper {
         uint256[] calldata amounts
     ) external {
         require(core.isGovernorOrGuardian(msg.sender), "2");
-        require(tokens.length == spenders.length && tokens.length == amounts.length, "104");
+        require(tokens.length == spenders.length && tokens.length == amounts.length, "25");
         for (uint256 i = 0; i < tokens.length; i++) {
             _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
@@ -167,7 +165,7 @@ contract Swapper is ISwapper {
         else if (swapType == SwapType.oneInch) amountOut = _swapOn1Inch(inToken, minAmountOut, args);
         else if (swapType == SwapType.Wrap) amountOut = _wrapStETH(amount, minAmountOut);
         else {
-            require(swapType == SwapType.None, "3");
+            require(swapType == SwapType.None, "18");
             amountOut = amount;
         }
     }
@@ -197,7 +195,7 @@ contract Swapper is ISwapper {
 
     function _wrapStETH(uint256 amount, uint256 minAmountOut) internal returns (uint256 amountOut) {
         amountOut = wStETH.wrap(amount);
-        require(amountOut >= minAmountOut, "15");
+        require(amountOut >= minAmountOut, "52");
     }
 
     /// @notice Allows to swap any token to an accepted collateral via 1Inch API
@@ -219,7 +217,7 @@ contract Swapper is ISwapper {
         if (!success) _revertBytes(result);
 
         amountOut = abi.decode(result, (uint256));
-        require(amountOut >= minAmountOut, "15");
+        require(amountOut >= minAmountOut, "52");
     }
 
     /// @notice Internal function used for error handling
@@ -230,6 +228,6 @@ contract Swapper is ISwapper {
                 revert(add(32, errMsg), mload(errMsg))
             }
         }
-        revert("117");
+        revert("53");
     }
 }

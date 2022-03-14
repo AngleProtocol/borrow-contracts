@@ -9,6 +9,8 @@ import "../interfaces/IAngleRouter.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 
+import "hardhat/console.sol";
+
 contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     using SafeERC20 for IERC20;
 
@@ -16,6 +18,7 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     uint256 public counterAngleBurn;
     uint256 public counter1Inch;
     uint256 public counterUni;
+    uint256 public counterWrap;
     uint256 public amountOutUni;
     uint256 public multiplierMintBurn;
     uint256 public stETHMultiplier;
@@ -56,11 +59,26 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
 
     function wrap(uint256 amount) external returns (uint256 amountOut){
         amountOut = amount*stETHMultiplier/10**9;
-        IERC20(stETH).safeTransferFrom(msg.sender, address(this), amountOut);
+        counterWrap+=1;
+        IERC20(stETH).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(outToken).safeTransfer(msg.sender, amountOut);
     }
 
-    function oneInch() external {
+    function oneInch(uint256 amountIn) external returns (uint256 amountOut) {
         counter1Inch+=1;
+        amountOut = amountOutUni * amountIn / 10**9;
+        IERC20(inToken).safeTransferFrom(msg.sender, address(this), amountIn);
+        IERC20(outToken).safeTransfer(msg.sender, amountOut);
+    }
+
+    function oneInchReverts() external {
+        counter1Inch += 1;
+        revert("wrong swap");
+    }
+
+    function oneInchRevertsWithoutMessage() external {
+        counter1Inch += 1;
+        require(false);
     }
 
     function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut) {
