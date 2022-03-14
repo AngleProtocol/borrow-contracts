@@ -44,7 +44,6 @@ interface IAgToken is IERC20Upgradeable {
 
     /// @notice Adds a minter in the contract
     /// @param minter Minter address to add
-    /// @dev Zero address checks are performed directly in the `Treasury` contract
     function addMinter(address minter) external;
 
     /// @notice Removes a minter from the contract

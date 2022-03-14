@@ -236,7 +236,6 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Adds a new minter for the stablecoin
     /// @param minter Minter address to add
     function addMinter(address minter) external onlyGovernor {
-        require(minter != address(0), "0");
         stablecoin.addMinter(minter);
     }
 
