@@ -31,7 +31,7 @@ contract Swapper is ISwapper {
     IUniswapV3Router public immutable uniV3Router;
     /// @notice 1Inch Router
     address public immutable oneInch;
-    
+
     // =============================== Mappings ====================================
 
     /// @notice Whether the token was already approved on Uniswap router
@@ -109,7 +109,7 @@ contract Swapper is ISwapper {
         }
         // Reusing the `inTokenObtained` variable
         inTokenObtained = _swap(inToken, inTokenObtained, minAmountOut, SwapType(swapType), data);
-    
+
         if (mintOrBurn == 2) {
             _checkAngleRouterAllowance(IERC20(intermediateToken));
             angleRouter.mint(address(this), inTokenObtained, outTokenOwed, address(outToken), intermediateToken);

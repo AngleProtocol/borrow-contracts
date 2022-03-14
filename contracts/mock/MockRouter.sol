@@ -38,7 +38,7 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     ) external {
         counterAngleMint += 1;
         IERC20(collateral).safeTransferFrom(msg.sender, address(this), amount);
-        IERC20(stablecoin).safeTransfer(user, amount * 10**9/multiplierMintBurn);
+        IERC20(stablecoin).safeTransfer(user, (amount * 10**9) / multiplierMintBurn);
     }
 
     function setStETH(address _stETH) external {
@@ -53,20 +53,20 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
         address collateral
     ) external {
         counterAngleBurn += 1;
-        IERC20(stablecoin).safeTransferFrom(msg.sender, address(this),amount);
-        IERC20(collateral).safeTransfer(user, amount*multiplierMintBurn/10**9);
+        IERC20(stablecoin).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(collateral).safeTransfer(user, (amount * multiplierMintBurn) / 10**9);
     }
 
-    function wrap(uint256 amount) external returns (uint256 amountOut){
-        amountOut = amount*stETHMultiplier/10**9;
-        counterWrap+=1;
+    function wrap(uint256 amount) external returns (uint256 amountOut) {
+        amountOut = (amount * stETHMultiplier) / 10**9;
+        counterWrap += 1;
         IERC20(stETH).safeTransferFrom(msg.sender, address(this), amount);
         IERC20(outToken).safeTransfer(msg.sender, amountOut);
     }
 
     function oneInch(uint256 amountIn) external returns (uint256 amountOut) {
-        counter1Inch+=1;
-        amountOut = amountOutUni * amountIn / 10**9;
+        counter1Inch += 1;
+        amountOut = (amountOutUni * amountIn) / 10**9;
         IERC20(inToken).safeTransferFrom(msg.sender, address(this), amountIn);
         IERC20(outToken).safeTransfer(msg.sender, amountOut);
     }
@@ -83,8 +83,8 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
 
     function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut) {
         counterUni += 1;
-        amountOut = params.amountIn * amountOutUni/10**9;
-        IERC20(inToken).safeTransferFrom(msg.sender, address(this),params.amountIn);
+        amountOut = (params.amountIn * amountOutUni) / 10**9;
+        IERC20(inToken).safeTransferFrom(msg.sender, address(this), params.amountIn);
         IERC20(outToken).safeTransfer(params.recipient, amountOut);
         require(amountOut >= params.amountOutMinimum);
     }
@@ -102,5 +102,4 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
         inToken = _collateral;
         outToken = _stablecoin;
     }
-
 }

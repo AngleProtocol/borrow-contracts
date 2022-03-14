@@ -1,5 +1,4 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 import { contract, ethers, web3 } from 'hardhat';
 
@@ -13,10 +12,8 @@ import {
   MockToken,
   MockToken__factory,
 } from '../../typechain';
-import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
-import { inReceipt } from '../utils/expectEvent';
-import { expectApprox, MAX_UINT256, time, ZERO_ADDRESS } from '../utils/helpers';
+import { MAX_UINT256, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('Swapper', () => {
   let deployer: SignerWithAddress;
@@ -49,7 +46,6 @@ contract('Swapper', () => {
       router.address,
     )) as Swapper;
   });
-  /*
   describe('constructor', () => {
     it('success - contract initialized', async () => {
       expect(await swapper.core()).to.be.equal(core.address);
@@ -341,7 +337,7 @@ contract('Swapper', () => {
       ).to.be.reverted;
     });
   });
-  
+
   describe('swap - just mint', () => {
     it('reverts - invalid swap type', async () => {
       // The flow is to swap to stETH and then mint stablecoins from the protocol
@@ -441,7 +437,7 @@ contract('Swapper', () => {
       ).to.be.reverted;
     });
   });
-  
+
   describe('swap - wStETH', () => {
     it('reverts - not enough stETH available', async () => {
       await stETH.mint(swapper.address, parseEther('0.9'));
@@ -492,7 +488,7 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(bob.address)).to.be.equal(parseEther('0.1'));
     });
   });
-  */
+
   describe('swap - 1Inch', () => {
     it('reverts - nonexistent function', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -593,5 +589,98 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(bob.address)).to.be.equal(parseEther('1'));
     });
   });
-  describe('changeAllowance', () => {});
+  describe('changeAllowance', () => {
+    it('reverts - non governor nor guardian', async () => {
+      await expect(
+        swapper.connect(deployer).changeAllowance([collateral.address], [router.address], [MAX_UINT256]),
+      ).to.be.revertedWith('2');
+    });
+    it('reverts - incorrect length', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await expect(swapper.connect(alice).changeAllowance([], [router.address], [MAX_UINT256])).to.be.revertedWith(
+        '25',
+      );
+    });
+    it('success - allowance increased on random token', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await swapper.connect(alice).changeAllowance([collateral.address], [bob.address], [parseEther('3.33')]);
+      expect(await collateral.allowance(swapper.address, bob.address)).to.be.equal(parseEther('3.33'));
+    });
+    it('success - allowance decreased on random token', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await swapper.connect(alice).changeAllowance([collateral.address], [bob.address], [parseEther('3.33')]);
+      await swapper.connect(alice).changeAllowance([collateral.address], [bob.address], [parseEther('2.33')]);
+      expect(await collateral.allowance(swapper.address, bob.address)).to.be.equal(parseEther('2.33'));
+    });
+    it('success - allowance decreased and spender is uniV3', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await collateral.mint(swapper.address, parseEther('1'));
+      await stablecoin.mint(router.address, parseEther('1'));
+      const data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [ZERO_ADDRESS, bob.address, 0, 0, 0, '0x'],
+      );
+      await swapper.swap(collateral.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data);
+      expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(true);
+      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
+      await swapper.connect(alice).changeAllowance([collateral.address], [router.address], [parseEther('0.5')]);
+      expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(false);
+      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(parseEther('0.5'));
+    });
+    it('success - allowance decreased and spender is oneInch', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      const router2 = (await new MockRouter__factory(deployer).deploy()) as MockRouter;
+      swapper = (await new Swapper__factory(deployer).deploy(
+        core.address,
+        router.address,
+        router.address,
+        router2.address,
+        router.address,
+      )) as Swapper;
+      await swapper.connect(alice).changeAllowance([collateral.address], [router2.address], [parseEther('1')]);
+      expect(await collateral.allowance(swapper.address, router2.address)).to.be.equal(parseEther('1'));
+      await swapper.connect(alice).changeAllowance([collateral.address], [router2.address], [parseEther('0.5')]);
+      expect(await swapper.oneInchAllowedToken(collateral.address)).to.be.equal(false);
+      expect(await collateral.allowance(swapper.address, router2.address)).to.be.equal(parseEther('0.5'));
+    });
+    it('success - allowance decreased and spender is angleRouter', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      const router2 = (await new MockRouter__factory(deployer).deploy()) as MockRouter;
+      swapper = (await new Swapper__factory(deployer).deploy(
+        core.address,
+        router.address,
+        router.address,
+        router.address,
+        router2.address,
+      )) as Swapper;
+      await swapper.connect(alice).changeAllowance([collateral.address], [router2.address], [parseEther('1')]);
+      expect(await collateral.allowance(swapper.address, router2.address)).to.be.equal(parseEther('1'));
+      await swapper.connect(alice).changeAllowance([collateral.address], [router2.address], [parseEther('0.5')]);
+      expect(await swapper.oneInchAllowedToken(collateral.address)).to.be.equal(false);
+      expect(await collateral.allowance(swapper.address, router2.address)).to.be.equal(parseEther('0.5'));
+    });
+    it('success - allowance increased on some tokens and decreased on other', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await swapper
+        .connect(alice)
+        .changeAllowance(
+          [collateral.address, stablecoin.address, stETH.address],
+          [bob.address, alice.address, deployer.address],
+          [parseEther('1'), parseEther('1'), parseEther('1')],
+        );
+      expect(await collateral.allowance(swapper.address, bob.address)).to.be.equal(parseEther('1'));
+      expect(await stablecoin.allowance(swapper.address, alice.address)).to.be.equal(parseEther('1'));
+      expect(await stETH.allowance(swapper.address, deployer.address)).to.be.equal(parseEther('1'));
+      await swapper
+        .connect(alice)
+        .changeAllowance(
+          [collateral.address, stablecoin.address, stETH.address],
+          [bob.address, alice.address, deployer.address],
+          [parseEther('0.9'), parseEther('1'), parseEther('1.1')],
+        );
+      expect(await collateral.allowance(swapper.address, bob.address)).to.be.equal(parseEther('0.9'));
+      expect(await stablecoin.allowance(swapper.address, alice.address)).to.be.equal(parseEther('1'));
+      expect(await stETH.allowance(swapper.address, deployer.address)).to.be.equal(parseEther('1.1'));
+    });
+  });
 });
