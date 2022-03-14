@@ -561,6 +561,21 @@ contract('Swapper', () => {
       expect(await collateral.balanceOf(router.address)).to.be.equal(parseEther('1'));
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
     });
+    it('success - correct amount out twice', async () => {
+      await collateral.mint(swapper.address, parseEther('2'));
+      await stablecoin.mint(router.address, parseEther('2'));
+      const payload1inch = router.interface.encodeFunctionData('oneInch', [parseEther('1')]);
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
+      );
+      await swapper.swap(collateral.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data);
+      await swapper.swap(collateral.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data);
+      expect(await router.counter1Inch()).to.be.equal(2);
+      expect(await swapper.oneInchAllowedToken(collateral.address)).to.be.equal(true);
+      expect(await collateral.balanceOf(router.address)).to.be.equal(parseEther('2'));
+      expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('2'));
+    });
     it('reverts - too small amount out', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));

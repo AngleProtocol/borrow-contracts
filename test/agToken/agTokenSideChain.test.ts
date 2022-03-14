@@ -129,6 +129,10 @@ contract('AgToken', () => {
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('0.5'));
       expect(await agToken.allowance(alice.address, bob.address)).to.be.equal(parseEther('1.5'));
     });
+    it('success - without approval but burner is sender', async () => {
+      await agToken.connect(alice).burnFrom(parseEther('0.5'), alice.address, alice.address);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('0.5'));
+    });
   });
   describe('addMinter', () => {
     it('reverts - non treasury', async () => {
