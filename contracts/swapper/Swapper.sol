@@ -5,13 +5,9 @@ pragma solidity 0.8.12;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IAgToken.sol";
 import "../interfaces/IAngleRouter.sol";
 import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/ISwapper.sol";
-import "../interfaces/IFlashAngle.sol";
-import "../interfaces/ITreasury.sol";
-import "../interfaces/IVaultManager.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
@@ -51,7 +47,8 @@ contract Swapper is ISwapper {
     enum SwapType {
         UniswapV3,
         oneInch,
-        Wrap
+        Wrap,
+        None
     }
 
     // =============================== Modifiers ===================================
@@ -105,6 +102,7 @@ contract Swapper is ISwapper {
         if (mintOrBurn == 0) minAmountOut = outTokenOwed;
 
         if (mintOrBurn == 1) {
+            _checkAngleRouterAllowance(inToken);
             angleRouter.burn(address(this), inTokenObtained, minAmountOut, address(inToken), intermediateToken);
             inTokenObtained = IERC20(intermediateToken).balanceOf(address(this));
             inToken = IERC20(intermediateToken);
@@ -113,7 +111,8 @@ contract Swapper is ISwapper {
         inTokenObtained = _swap(inToken, inTokenObtained, minAmountOut, SwapType(swapType), data);
 
         if (mintOrBurn == 2) {
-            _mintFromProtocol(inToken, inTokenObtained, outTokenOwed, address(outToken), intermediateToken);
+            _checkAngleRouterAllowance(IERC20(intermediateToken));
+            angleRouter.mint(address(this), inTokenObtained, outTokenOwed, address(outToken), intermediateToken);
         }
         IERC20(outToken).safeTransfer(outTokenRecipient, outTokenOwed);
         IERC20(outToken).safeTransfer(to, outToken.balanceOf(address(this)));
@@ -144,6 +143,26 @@ contract Swapper is ISwapper {
         }
     }
 
+    /// @notice Changes allowance of this contract for a given token
+    /// @param token Address of the token to change allowance
+    /// @param spender Address to change the allowance of
+    /// @param amount Amount allowed
+    function _changeAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(address(this), spender);
+        if (currentAllowance < amount) {
+            token.safeIncreaseAllowance(spender, amount - currentAllowance);
+        } else if (currentAllowance > amount) {
+            token.safeDecreaseAllowance(spender, currentAllowance - amount);
+            if (spender == address(uniV3Router)) delete uniAllowedToken[token];
+            else if (spender == oneInch) delete oneInchAllowedToken[token];
+            else if (spender == address(angleRouter)) delete angleRouterAllowedToken[token];
+        }
+    }
+
     function _swap(
         IERC20 inToken,
         uint256 amount,
@@ -154,22 +173,15 @@ contract Swapper is ISwapper {
         if (swapType == SwapType.UniswapV3) amountOut = _swapOnUniswapV3(inToken, amount, minAmountOut, args);
         else if (swapType == SwapType.oneInch) amountOut = _swapOn1Inch(inToken, minAmountOut, args);
         else if (swapType == SwapType.Wrap) amountOut = _wrapStETH(amount, minAmountOut);
-        else require(false, "3");
+        else require(swapType == SwapType.None, "3");
         return amountOut;
     }
 
-    function _mintFromProtocol(
-        IERC20 inToken,
-        uint256 amount,
-        uint256 minAmountOut,
-        address stablecoin,
-        address collateral
-    ) internal {
-        if (!angleRouterAllowedToken[inToken]) {
-            inToken.safeIncreaseAllowance(address(angleRouter), type(uint256).max);
-            angleRouterAllowedToken[inToken] = true;
+    function _checkAngleRouterAllowance(IERC20 token) internal {
+        if (!angleRouterAllowedToken[token]) {
+            _changeAllowance(token, address(angleRouter), type(uint256).max);
+            angleRouterAllowedToken[token] = true;
         }
-        angleRouter.mint(address(this), amount, minAmountOut, stablecoin, collateral);
     }
 
     function _swapOnUniswapV3(
@@ -180,7 +192,7 @@ contract Swapper is ISwapper {
     ) internal returns (uint256 amountOut) {
         // Approve transfer to the `uniswapV3Router` if it is the first time that the token is used
         if (!uniAllowedToken[inToken]) {
-            inToken.safeIncreaseAllowance(address(uniV3Router), type(uint256).max);
+            _changeAllowance(inToken, address(uniV3Router), type(uint256).max);
             uniAllowedToken[inToken] = true;
         }
         amountOut = uniV3Router.exactInput(
@@ -203,7 +215,7 @@ contract Swapper is ISwapper {
     ) internal returns (uint256 amountOut) {
         // Approve transfer to the `oneInch` router if it is the first time the token is used
         if (!oneInchAllowedToken[inToken]) {
-            inToken.safeIncreaseAllowance(oneInch, type(uint256).max);
+            _changeAllowance(inToken, oneInch, type(uint256).max);
             oneInchAllowedToken[inToken] = true;
         }
 

@@ -12,9 +12,14 @@ import "../interfaces/external/lido/IWStETH.sol";
 contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     using SafeERC20 for IERC20;
 
-    uint256 public counter;
+    uint256 public counterAngleMint;
+    uint256 public counterAngleBurn;
+    uint256 public counter1Inch;
+    uint256 public counterUni;
     uint256 public amountOutUni;
     uint256 public multiplierMintBurn;
+    address public inToken;
+    address public outToken;
 
     address public stETH;
 
@@ -23,25 +28,29 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     function mint(
         address user,
         uint256 amount,
-        uint256 minStableAmount,
+        uint256,
         address stablecoin,
         address collateral
     ) external {
-        counter += 1;
+        counterAngleMint += 1;
         IERC20(collateral).safeTransferFrom(msg.sender, address(this), amount);
-        IERC20(stablecoin).safeTransfer(user, minStableAmount * 10**9/multiplierMintBurn);
+        IERC20(stablecoin).safeTransfer(user, amount * 10**9/multiplierMintBurn);
+    }
+
+    function setStETH(address _stETH) external {
+        stETH = _stETH;
     }
 
     function burn(
         address user,
         uint256 amount,
-        uint256 minAmountOut,
+        uint256,
         address stablecoin,
         address collateral
     ) external {
-        counter += 1;
+        counterAngleBurn += 1;
         IERC20(stablecoin).safeTransferFrom(msg.sender, address(this),amount);
-        IERC20(collateral).safeTransfer(user, minAmountOut*multiplierMintBurn/10**9);
+        IERC20(collateral).safeTransfer(user, amount*multiplierMintBurn/10**9);
     }
 
     function wrap(uint256 amount) external returns (uint256){
@@ -50,17 +59,25 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     }
 
     function oneInch() external {
-        counter+=1;
+        counter1Inch+=1;
     }
 
     function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut) {
-        counter += 1;
-        return params.amountIn * amountOutUni/10**9;
+        counterUni += 1;
+        amountOut = params.amountIn * amountOutUni/10**9;
+        IERC20(inToken).safeTransferFrom(msg.sender, address(this),params.amountIn);
+        IERC20(outToken).safeTransfer(params.recipient, amountOut);
+        require(amountOut >= params.amountOutMinimum);
     }
 
     function setMultipliers(uint256 a, uint256 b) external {
         amountOutUni = a;
         multiplierMintBurn = b;
+    }
+
+    function setInOut(address _collateral, address _stablecoin) external {
+        inToken = _collateral;
+        outToken = _stablecoin;
     }
 
 }
