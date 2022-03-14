@@ -9,4 +9,6 @@ pragma solidity 0.8.12;
 /// of this module
 interface IWStETH {
     function wrap(uint256 _stETHAmount) external returns (uint256);
+
+    function stETH() external view returns (address);
 }

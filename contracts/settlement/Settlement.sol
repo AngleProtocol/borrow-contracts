@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../interfaces/IAgToken.sol";
-import "../interfaces/IRepayCallee.sol";
+import "../interfaces/ISwapper.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title Settlement
@@ -210,7 +210,14 @@ contract Settlement {
     ) internal returns (uint256, uint256) {
         collateral.safeTransfer(to, collateralAmountToGive);
         if (data.length > 0) {
-            IRepayCallee(who).repayCallStablecoin(msg.sender, stableAmountToRepay, collateralAmountToGive, data);
+            ISwapper(who).swap(
+                collateral,
+                IERC20(address(stablecoin)),
+                msg.sender,
+                stableAmountToRepay,
+                collateralAmountToGive,
+                data
+            );
         }
         stablecoin.transferFrom(msg.sender, address(this), stableAmountToRepay);
         return (collateralAmountToGive, stableAmountToRepay);
