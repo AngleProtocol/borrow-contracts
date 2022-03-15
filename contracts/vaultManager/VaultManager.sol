@@ -498,7 +498,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         if (address(vaultManager) == address(this)) {
             _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
-            require(treasury.isVaultManager(address(vaultManager)), "22");
+            /* No need to check the integrity of `vaultManager` here because `_getDebtIn` can be entered only through the
+            `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as he
+            would get his debt increasing in the current vault without decreasing it in the remote vault.
+            */
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
         }
         return (oracleValue, newInterestRateAccumulator);

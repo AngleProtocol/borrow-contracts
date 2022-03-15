@@ -486,23 +486,6 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
     });
-    it('reverts - invalid vaultManager', async () => {
-      const collatAmount = parseUnits('2', collatBase);
-      const borrowAmount = parseEther('1.999');
-      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
-      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
-        createVault(alice.address),
-        createVault(alice.address),
-        addCollateral(2, collatAmount),
-        borrow(2, borrowAmount),
-        // Need to borrow from another vault
-        addCollateral(1, collatAmount),
-      ]);
-      await expect(angle(vaultManager, alice, [getDebtIn(1, alice.address, 2, parseEther('1'))])).to.be.revertedWith(
-        '22',
-      );
-    });
     it('success - different vaultManager contracts and similar borrow fee', async () => {
       const collatAmount = parseUnits('2', collatBase);
       const borrowAmount = parseEther('1.999');
