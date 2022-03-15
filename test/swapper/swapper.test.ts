@@ -389,6 +389,57 @@ contract('Swapper', () => {
       expect(await stETH.balanceOf(router.address)).to.be.equal(parseEther('1'));
     });
   });
+  describe('swap - with nothing', () => {
+    it('success - no swap and no mint/burn with leftover tokens', async () => {
+      await stETH.mint(swapper.address, parseEther('2'));
+      await stablecoin.mint(swapper.address, parseEther('3'));
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [stETH.address, bob.address, 0, 3, 0, '0x'],
+      );
+      await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('2'), data);
+      expect(await stablecoin.balanceOf(bob.address)).to.be.equal(parseEther('3'));
+      expect(await stETH.balanceOf(bob.address)).to.be.equal(parseEther('1'));
+      expect(await stETH.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+    });
+    it('success - no swap and no mint/burn with just one leftover token as the outToken 1/3', async () => {
+      await stETH.mint(swapper.address, parseEther('2'));
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [stETH.address, bob.address, 0, 3, 0, '0x'],
+      );
+      await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('0'), parseEther('0'), data);
+      expect(await stETH.balanceOf(bob.address)).to.be.equal(parseEther('2'));
+    });
+    it('success - no swap and no mint/burn with just one leftover token as the outToken 2/3', async () => {
+      await stETH.mint(swapper.address, parseEther('2'));
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [stETH.address, bob.address, 0, 3, 0, '0x'],
+      );
+      await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('0'), data);
+      expect(await stETH.balanceOf(bob.address)).to.be.equal(parseEther('1'));
+      expect(await stETH.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+    });
+    it('success - no swap and no mint/burn with just one leftover token as the outToken 3/3', async () => {
+      await stETH.mint(swapper.address, parseEther('2'));
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [stETH.address, bob.address, 0, 3, 0, '0x'],
+      );
+      await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('2'), parseEther('0'), data);
+      expect(await stETH.balanceOf(alice.address)).to.be.equal(parseEther('2'));
+    });
+    it('success - no swap and no mint/burn with just one leftover token as the inToken', async () => {
+      await stETH.mint(swapper.address, parseEther('2'));
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [stETH.address, bob.address, 0, 3, 0, '0x'],
+      );
+      await swapper.swap(stETH.address, stETH.address, alice.address, parseEther('0'), parseEther('0'), data);
+      expect(await stETH.balanceOf(bob.address)).to.be.equal(parseEther('2'));
+    });
+  });
   describe('swap - just burn', () => {
     it('success - no swap and just a burn', async () => {
       // The flow is to swap to stETH and then directly mint stablecoins

@@ -136,8 +136,13 @@ contract Swapper is ISwapper {
         // The function reverts anyway if the end balance is inferior to `outTokenOwed`
         uint256 outTokenBalance = outToken.balanceOf(address(this));
         require(outTokenBalance > minAmountOut, "52");
-        IERC20(outToken).safeTransfer(outTokenRecipient, outTokenOwed);
-        IERC20(outToken).safeTransfer(to, outTokenBalance - outTokenOwed);
+        outToken.safeTransfer(outTokenRecipient, outTokenOwed);
+        if (outTokenBalance > outTokenOwed) outToken.safeTransfer(to, outTokenBalance - outTokenOwed);
+        // Reusing the `outTokenBalance` variable for the `inToken` balance
+        // Sending back the remaining amount of inTokens to the `to` address: it is possible that not the full `inTokenObtained`
+        // is swapped to `outToken` if we're using the `1Inch` payload
+        outTokenBalance = inToken.balanceOf(address(this));
+        if (outTokenBalance > 0) inToken.safeTransfer(to, outTokenBalance);
     }
 
     // ========================= Governance Function ===============================
