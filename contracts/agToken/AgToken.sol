@@ -60,7 +60,9 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @notice Sets up the treasury contract in this AgToken contract
     /// @param _treasury Treasury contract to add
     /// @dev The address calling this function has to be hard-coded in the contract
+    /// @dev Can be called only once
     function setUpTreasury(address _treasury) external {
+        // Only governor
         require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8, "1");
         require(address(ITreasury(_treasury).stablecoin()) == address(this), "6");
         require(!treasuryInitialized, "34");

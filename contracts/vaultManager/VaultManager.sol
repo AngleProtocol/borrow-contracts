@@ -466,7 +466,18 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         toMint = stablecoinAmount - borrowFeePaid;
     }
 
-    /// @notice Internal version of the `getDebtIn` function
+    /// @notice Gets debt in a vault from another vault potentially in another `VaultManager` contract
+    /// @param srcVaultID ID of the vault from this contract for which growing debt
+    /// @param vaultManager Address of the `vaultManager` where the targeted vault is
+    /// @param dstVaultID ID of the vault in the target contract
+    /// @param stablecoinAmount Amount of stablecoins to grow the debt of. This amount will be converted
+    /// to a normalized value in both vaultManager contracts
+    /// @param oracleValue Oracle value at the start of the call (potentially zero if it has not been computed yet)
+    /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// computed yet)
+    /// @dev A solvency check is performed after the debt increase in the source `vaultID`
+    /// @dev Only approved addresses by the source vault owner can perform this action, however any vault
+    /// from any vaultManager contract can see its debt reduced by this means
     /// @return Computed value of the oracle
     /// @return Computed value of the interest rate accumulator
     function _getDebtIn(
@@ -519,7 +530,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         )
     {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+        /* We normalize the amount by dividing it by `newInterestRateAccumulator`. This makes accounting easier, since
+        it allows us to process all (past and future) debts like debts created at the inception of the contract. */
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
+        // if there was no previous debt, we have to check that the debt creation will be higher than `dust`
         if (vaultData[vaultID].normalizedDebt == 0)
             require(changeAmount * newInterestRateAccumulator > dust * BASE_INTEREST, "24");
         vaultData[vaultID].normalizedDebt += changeAmount;

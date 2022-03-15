@@ -109,6 +109,7 @@ interface IVaultManagerFunctions {
     /// internal debt amount
     /// @param senderBorrowFee Borrowing fees from the contract which requested this: this is to make sure that people are not
     /// arbitraging difference in minting fees
+    /// @dev This function can only be called from a vaultManager registered in the same Treasury
     function getDebtOut(
         uint256 vaultID,
         uint256 amountStablecoins,
