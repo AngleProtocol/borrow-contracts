@@ -51,10 +51,12 @@ contract Swapper is ISwapper {
         None
     }
 
-    // =============================== Modifiers ===================================
-
     /// @notice Constructor of the contract
     /// @param _core Core address
+    /// @param _wStETH wStETH Address
+    /// @param _uniV3Router UniswapV3 Router address
+    /// @param _oneInch 1Inch Router address
+    /// @param _angleRouter Address of the AngleRouter contract
     constructor(
         ICoreBorrow _core,
         IWStETH _wStETH,
@@ -80,7 +82,13 @@ contract Swapper is ISwapper {
 
     receive() external payable {}
 
+    // ======================= External Access Function ============================
+
     /// @inheritdoc ISwapper
+    /// @dev This function swaps the `inToken` to the `outToken` by either doing mint, or burn from the protocol
+    /// or/and combining it with a UniV3 or 1Inch swap
+    /// @dev No slippage checks are performed at the end of each operation, only one slippage check is performed
+    /// at the end of the call
     function swap(
         IERC20 inToken,
         IERC20 outToken,
@@ -89,34 +97,50 @@ contract Swapper is ISwapper {
         uint256 inTokenObtained,
         bytes memory data
     ) external {
+        // Optional address that can be given to specify in case of a burn the address of the collateral
+        // to get in exchange for the stablecoin or in case of a mint the collateral used to mint
         address intermediateToken;
+        // Address to receive the surplus amount of token at the end of the call
         address to;
+        // For slippage protection, it is checked at the end of the call
         uint256 minAmountOut;
+        // Type of the swap to execute: if `swapType == 3`, then it is optional to swap
         uint128 swapType;
+        // Whether a `mint` or `burn` operation should be performed beyond the swap: 1 corresponds
+        // to a burn and 2 to a mint. It is optional. If the value is set to 1 or 2 then the value of the
+        // `intermediateToken` should be made non null
         uint128 mintOrBurn;
-        // Reusing the `data` variable
+        // We're reusing the `data` variable (it's now either a `path` on UniswapV3 or a payload for 1Inch)
         (intermediateToken, to, minAmountOut, swapType, mintOrBurn, data) = abi.decode(
             data,
             (address, address, uint256, uint128, uint128, bytes)
         );
-        if (mintOrBurn == 0) minAmountOut = outTokenOwed;
-
+        
         if (mintOrBurn == 1) {
+            // First performing burn transactions as you may usually get stablecoins first
             _checkAngleRouterAllowance(inToken);
-            angleRouter.burn(address(this), inTokenObtained, minAmountOut, address(inToken), intermediateToken);
-            inTokenObtained = IERC20(intermediateToken).balanceOf(address(this));
+            angleRouter.burn(address(this), inTokenObtained, 0, address(inToken), intermediateToken);
             inToken = IERC20(intermediateToken);
+            inTokenObtained = inToken.balanceOf(address(this));
         }
         // Reusing the `inTokenObtained` variable
-        inTokenObtained = _swap(inToken, inTokenObtained, minAmountOut, SwapType(swapType), data);
+        inTokenObtained = _swap(inToken, inTokenObtained, SwapType(swapType), data);
 
         if (mintOrBurn == 2) {
+            // Mint transaction is performed last as if you're trying to get stablecoins, it should be the last operation
             _checkAngleRouterAllowance(IERC20(intermediateToken));
-            angleRouter.mint(address(this), inTokenObtained, outTokenOwed, address(outToken), intermediateToken);
+            angleRouter.mint(address(this), inTokenObtained, 0, address(outToken), intermediateToken);
         }
+
+        // A final slippage check is performed at the end of the call
+        // The function reverts anyway if the end balance is inferior to `outTokenOwed`
+        uint256 outTokenBalance = outToken.balanceOf(address(this));
+        require(outTokenBalance > minAmountOut, "52");
         IERC20(outToken).safeTransfer(outTokenRecipient, outTokenOwed);
-        IERC20(outToken).safeTransfer(to, outToken.balanceOf(address(this)));
+        IERC20(outToken).safeTransfer(to, outTokenBalance - outTokenOwed);
     }
+
+    // ========================= Governance Function ===============================
 
     /// @notice Changes allowance for a contract
     /// @param tokens Addresses of the tokens to allow
@@ -134,10 +158,9 @@ contract Swapper is ISwapper {
         }
     }
 
-    /// @notice Changes allowance of this contract for a given token
-    /// @param token Address of the token to change allowance
-    /// @param spender Address to change the allowance of
-    /// @param amount Amount allowed
+    // ======================= Internal Utility Functions ==========================
+
+    /// @notice Internal version of the `_changeAllowance` function
     function _changeAllowance(
         IERC20 token,
         address spender,
@@ -148,28 +171,36 @@ contract Swapper is ISwapper {
             token.safeIncreaseAllowance(spender, amount - currentAllowance);
         } else if (currentAllowance > amount) {
             token.safeDecreaseAllowance(spender, currentAllowance - amount);
+            // Clean mappings if allowance decreases for Uniswap, 1Inch or Angle routers
             if (spender == address(uniV3Router)) delete uniAllowedToken[token];
             else if (spender == oneInch) delete oneInchAllowedToken[token];
             else if (spender == address(angleRouter)) delete angleRouterAllowedToken[token];
         }
     }
 
+    /// @notice Performs a swap using either Uniswap, 1Inch. This function can also stake stETH to wstETH
+    /// @param inToken Token to swap
+    /// @param amount Amount of tokens to swap
+    /// @param swapType Type of the swap to perform
+    /// @param args Extra args for the swap: in the case of Uniswap it should be a path, for 1Inch it should be
+    /// a payload
+    /// @dev If `swapType` is a wrap, then the `inToken` should be `stETH` otherwise the function will revert
+    /// @dev This function does nothing if `swapType` is None and it simply passes on the `amount` it received
     function _swap(
         IERC20 inToken,
         uint256 amount,
-        uint256 minAmountOut,
         SwapType swapType,
         bytes memory args
     ) internal returns (uint256 amountOut) {
-        if (swapType == SwapType.UniswapV3) amountOut = _swapOnUniswapV3(inToken, amount, minAmountOut, args);
-        else if (swapType == SwapType.oneInch) amountOut = _swapOn1Inch(inToken, minAmountOut, args);
-        else if (swapType == SwapType.Wrap) amountOut = _wrapStETH(amount, minAmountOut);
-        else {
-            require(swapType == SwapType.None, "18");
-            amountOut = amount;
-        }
+        if (swapType == SwapType.UniswapV3) amountOut = _swapOnUniswapV3(inToken, amount, args);
+        else if (swapType == SwapType.oneInch) amountOut = _swapOn1Inch(inToken, args);
+        else if (swapType == SwapType.Wrap) amountOut = wStETH.wrap(amount);
+        else amountOut = amount;
     }
 
+    /// @notice Checks whether a the AngleRouter was given approval for a token and if yes approves
+    /// this token
+    /// @param token Token for which the approval to the `AngleRouter` should be checked
     function _checkAngleRouterAllowance(IERC20 token) internal {
         if (!angleRouterAllowedToken[token]) {
             _changeAllowance(token, address(angleRouter), type(uint256).max);
@@ -177,10 +208,17 @@ contract Swapper is ISwapper {
         }
     }
 
+    /// @notice Performs a UniswapV3 swap
+    /// @param inToken Token to swap
+    /// @param amount Amount of tokens to swap
+    /// @param path Path for the UniswapV3 swap: this encodes the out token that is going to be obtained
+    /// @dev We don't specify a slippage here as in the `swap` function a final slippage check
+    /// is performed at the end
+    /// @dev This function does not check the out token obtained here: if it is wrongly specified, either
+    /// the `swap` function could fail or these tokens could stay on the contract
     function _swapOnUniswapV3(
         IERC20 inToken,
         uint256 amount,
-        uint256 minAmountOut,
         bytes memory path
     ) internal returns (uint256 amountOut) {
         // Approve transfer to the `uniswapV3Router` if it is the first time that the token is used
@@ -189,21 +227,17 @@ contract Swapper is ISwapper {
             uniAllowedToken[inToken] = true;
         }
         amountOut = uniV3Router.exactInput(
-            ExactInputParams(path, address(this), block.timestamp, amount, minAmountOut)
+            ExactInputParams(path, address(this), block.timestamp, amount, 0)
         );
     }
 
-    function _wrapStETH(uint256 amount, uint256 minAmountOut) internal returns (uint256 amountOut) {
-        amountOut = wStETH.wrap(amount);
-        require(amountOut >= minAmountOut, "52");
-    }
-
     /// @notice Allows to swap any token to an accepted collateral via 1Inch API
-    /// @param minAmountOut Minimum amount accepted for the swap to happen
+    /// @param inToken Token received for the 1Inch swap
     /// @param payload Bytes needed for 1Inch API
+    /// @dev Here again, we don't specify a slippage here as in the `swap` function a final slippage check
+    /// is performed at the end
     function _swapOn1Inch(
         IERC20 inToken,
-        uint256 minAmountOut,
         bytes memory payload
     ) internal returns (uint256 amountOut) {
         // Approve transfer to the `oneInch` router if it is the first time the token is used
@@ -217,10 +251,10 @@ contract Swapper is ISwapper {
         if (!success) _revertBytes(result);
 
         amountOut = abi.decode(result, (uint256));
-        require(amountOut >= minAmountOut, "52");
     }
 
     /// @notice Internal function used for error handling
+    /// @param errMsg Error message received
     function _revertBytes(bytes memory errMsg) internal pure {
         if (errMsg.length > 0) {
             //solhint-disable-next-line

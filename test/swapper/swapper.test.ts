@@ -472,6 +472,18 @@ contract('Swapper', () => {
       await router.setStETHMultiplier(parseUnits('0.9', 9));
       await expect(
         swapper.swap(stETH.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data),
+      ).to.be.reverted;
+    });
+    it('reverts - too small amount but slippage check catches the minimum amount', async () => {
+      await stETH.mint(swapper.address, parseEther('1'));
+      await stablecoin.mint(router.address, parseEther('1'));
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [ZERO_ADDRESS, bob.address, parseEther('1'), 2, 0, '0x'],
+      );
+      await router.setStETHMultiplier(parseUnits('0.9', 9));
+      await expect(
+        swapper.swap(stETH.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data),
       ).to.be.revertedWith('52');
     });
     it('success - leftover amount', async () => {
@@ -583,6 +595,19 @@ contract('Swapper', () => {
       let data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
+      );
+      await router.setMultipliers(parseUnits('0.5', 9), parseUnits('1', 9));
+      await expect(
+        swapper.swap(collateral.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data),
+      ).to.be.reverted;
+    });
+    it('reverts - too small amount out and slippage check catches the failure', async () => {
+      await collateral.mint(swapper.address, parseEther('1'));
+      await stablecoin.mint(router.address, parseEther('1'));
+      const payload1inch = router.interface.encodeFunctionData('oneInch', [parseEther('1')]);
+      let data = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
+        [ZERO_ADDRESS, bob.address, parseEther('1'), 1, 0, payload1inch],
       );
       await router.setMultipliers(parseUnits('0.5', 9), parseUnits('1', 9));
       await expect(
