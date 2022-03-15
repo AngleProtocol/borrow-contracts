@@ -114,6 +114,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address who,
         bytes memory repayData
     ) public payable whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
+        /* `newInterestRateAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
+        only once inside the first action where they are necessary, then they are returned to the `angle` function
+        where they are passed forward to further actions */
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
         uint256 collateralAmount;
