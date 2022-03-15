@@ -1,6 +1,5 @@
 import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BN } from 'ethereumjs-util/node_modules/@types/bn.js';
 import { BigNumber, Signer, utils } from 'ethers';
 import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
