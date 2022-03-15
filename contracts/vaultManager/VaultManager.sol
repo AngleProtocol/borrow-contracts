@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerERC721.sol";
+import "hardhat/console.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -459,6 +460,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             oracleValueStart,
             newInterestRateAccumulatorStart
         );
+        console.log(stablecoinAmount, "stablecoinAmountBorrow");
         uint256 borrowFeePaid = (borrowFee * stablecoinAmount) / BASE_PARAMS;
         surplus += borrowFeePaid;
         toMint = stablecoinAmount - borrowFeePaid;
@@ -501,7 +503,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @return Amount of stablecoins to issue from this debt increase
     /// @return Computed value of the oracle
     /// @return Computed value of the interest rate accumulator
-    /// @dev The `stablecoinAmount` outputted need to be rounded down with respect to the change amount
+    /// @dev The `stablecoinAmount` outputted need to be rounded down with respect to the change amount so that
+    /// amount of stablecoins minted is smaller than the debt increase
     function _increaseDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -515,10 +518,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             uint256
         )
     {
+        console.log(stablecoinAmount, "stableAmount");
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
         if (vaultData[vaultID].normalizedDebt == 0)
             require(changeAmount * newInterestRateAccumulator > dust * BASE_INTEREST, "24");
+        console.log(changeAmount, "changeAmount");
+        console.log((changeAmount * newInterestRateAccumulator) / BASE_INTEREST, "modified stableamoun");
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
         require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "45");
