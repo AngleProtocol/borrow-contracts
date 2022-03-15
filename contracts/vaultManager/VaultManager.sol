@@ -518,7 +518,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
         if (vaultData[vaultID].normalizedDebt == 0)
-            require(changeAmount * BASE_INTEREST > dust * newInterestRateAccumulator, "24");
+            require(changeAmount * newInterestRateAccumulator > dust * BASE_INTEREST, "24");
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
         require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "45");
