@@ -529,7 +529,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         );
         require(healthFactor > BASE_PARAMS, "21");
         emit InternalDebtUpdated(vaultID, changeAmount, 1);
-        return ((changeAmount * BASE_INTEREST) / newInterestRateAccumulator, oracleValue, newInterestRateAccumulator);
+        return ((changeAmount * newInterestRateAccumulator) / BASE_INTEREST, oracleValue, newInterestRateAccumulator);
     }
 
     /// @notice Decreases the debt of a given vault and verifies that this vault still has an amount of debt superior
