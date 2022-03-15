@@ -125,7 +125,6 @@ contract('VaultManager', () => {
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
   });
-  /*
   describe('oracle', () => {
     it('success - read', async () => {
       const oracle = (await ethers.getContractAt(Oracle__factory.abi, await vaultManager.oracle())) as Oracle;
@@ -1349,14 +1348,13 @@ contract('VaultManager', () => {
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
   });
-  */
   describe('getTotalDebt', () => {
     const collatAmount = parseUnits('2', collatBase);
     const borrowAmount = parseEther('1');
 
     beforeEach(async () => {
       // Collat amount in stable should be 4
-      // So max borrowable amount is 2
+      // So max borrowable amount is 1
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
       await angle(vaultManager, alice, [
@@ -1385,8 +1383,43 @@ contract('VaultManager', () => {
 
       expectApprox(await vaultManager.getTotalDebt(), debt, 0.001);
     });
+    it('success - one year and interest rate accrue', async () => {
+      const debt = await vaultManager.getTotalDebt();
+
+      await displayVaultState(vaultManager, 1, log, collatBase);
+
+      await increaseTime(24 * 3600 * 365);
+      await vaultManager
+        .connect(governor)
+        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
+      // 15% of borrow amount after a year
+      expectApprox(await vaultManager.surplus(), parseEther('0.15'), 0.01);
+      expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.05', 27), 0.001);
+
+      await displayVaultState(vaultManager, 1, log, collatBase);
+
+      expectApprox(await vaultManager.getTotalDebt(), debt.mul(yearlyRate * 100).div(100), 0.001);
+    });
+    it('success - 10 years and interest rate accrue', async () => {
+      const debt = await vaultManager.getTotalDebt();
+
+      await displayVaultState(vaultManager, 1, log, collatBase);
+
+      await increaseTime(24 * 3600 * 365 * 10);
+      await vaultManager
+        .connect(governor)
+        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
+      // 10% of borrow amount after a year + 5% compounded for 10 years which makes 0.1 + 0.628
+
+      expectApprox(await vaultManager.surplus(), parseEther('0.7278'), 0.01);
+      expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.6278', 27), 0.01);
+
+      await displayVaultState(vaultManager, 1, log, collatBase);
+
+      expectApprox(await vaultManager.getTotalDebt(), debt.mul(162789 * 100).div(10000000), 0.01);
+    });
   });
-  /*
+
   describe('liquidation with dust', () => {
     const collatAmount = parseUnits('2', collatBase);
     const borrowAmount = parseEther('1');
@@ -1520,9 +1553,8 @@ contract('VaultManager', () => {
         0.001,
       );
     });
-  
   });
-  
+
   describe('accrueInterestToTreasury', () => {
     it('reverts - non treasury', async () => {
       await expect(vaultManager.accrueInterestToTreasury()).to.be.revertedWith('14');
@@ -1631,5 +1663,4 @@ contract('VaultManager', () => {
       expect(await vaultManager.badDebt()).to.be.equal(0);
     });
   });
-  */
 });
