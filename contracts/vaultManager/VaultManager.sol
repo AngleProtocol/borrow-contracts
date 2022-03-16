@@ -670,7 +670,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param from Address from which the stablecoins for the liquidation should be taken: this address should be the `msg.sender`
     /// or have received an approval
     /// @param to Address to which discounted collateral should be sent
-    /// @dev This function will not revert if it's called on a vault that cannot be liquidated
+    /// @dev This function will revert if it's called on a vault that cannot be liquidated or that does not exist
     function liquidate(
         uint256[] memory vaultIDs,
         uint256[] memory amounts,
