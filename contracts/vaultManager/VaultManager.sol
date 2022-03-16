@@ -503,7 +503,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @return Amount of stablecoins to issue from this debt increase
     /// @return Computed value of the oracle
     /// @return Computed value of the interest rate accumulator
-    /// @dev The `stablecoinAmount` outputted need to be rounded down with respect to the change amount
+    /// @dev The `stablecoinAmount` outputted need to be rounded down with respect to the change amount so that
+    /// amount of stablecoins minted is smaller than the debt increase
     function _increaseDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -531,7 +532,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         );
         require(healthFactor > BASE_PARAMS, "21");
         emit InternalDebtUpdated(vaultID, changeAmount, 1);
-        return ((changeAmount * BASE_INTEREST) / newInterestRateAccumulator, oracleValue, newInterestRateAccumulator);
+        return ((changeAmount * newInterestRateAccumulator) / BASE_INTEREST, oracleValue, newInterestRateAccumulator);
     }
 
     /// @notice Decreases the debt of a given vault and verifies that this vault still has an amount of debt superior
