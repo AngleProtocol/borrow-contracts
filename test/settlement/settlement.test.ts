@@ -4,8 +4,8 @@ import { parseEther, parseUnits } from 'ethers/lib/utils';
 import { contract, ethers, web3 } from 'hardhat';
 
 import {
-  MockRepayCallee,
-  MockRepayCallee__factory,
+  MockSwapper,
+  MockSwapper__factory,
   MockToken,
   MockToken__factory,
   MockVaultManager,
@@ -125,11 +125,11 @@ contract('Settlement', () => {
       await vaultManager.connect(alice).setOwner(1, alice.address);
       await vaultManager.connect(alice).setVaultData(parseEther('1'), parseUnits('3', 6), 1);
       await collateral.mint(settlement.address, parseUnits('1', 10));
-      const mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
+      const mockSwapper = (await new MockSwapper__factory(deployer).deploy()) as MockSwapper;
       const receipt = await (
         await settlement
           .connect(alice)
-          .claimOverCollateralizedVault(1, bob.address, mockRepayCallee.address, web3.utils.keccak256('test'))
+          .claimOverCollateralizedVault(1, bob.address, mockSwapper.address, web3.utils.keccak256('test'))
       ).wait();
       inReceipt(receipt, 'VaultClaimed', {
         vaultID: 1,
@@ -139,7 +139,7 @@ contract('Settlement', () => {
       expect(await settlement.vaultCheck(1)).to.be.true;
       expect(await stablecoin.balanceOf(settlement.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('3', 6));
-      expect(await mockRepayCallee.counter()).to.be.equal(1);
+      expect(await mockSwapper.counter()).to.be.equal(1);
     });
     it('reverts - vault already claimed', async () => {
       await settlement.connect(alice).activateSettlement();
@@ -237,17 +237,17 @@ contract('Settlement', () => {
       // Normalized debt will be 2 and we have only 1 of collateral: meaning 50% won't be covered
       await collateral.mint(settlement.address, parseUnits('1', 6));
       await settlement.connect(alice).activateGlobalClaimPeriod();
-      const mockRepayCallee = (await new MockRepayCallee__factory(deployer).deploy()) as MockRepayCallee;
+      const mockSwapper = (await new MockSwapper__factory(deployer).deploy()) as MockSwapper;
       await settlement
         .connect(alice)
         .claimCollateralFromStablecoins(
           parseEther('0.5'),
           bob.address,
-          mockRepayCallee.address,
+          mockSwapper.address,
           web3.utils.keccak256('test'),
         );
       expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('0.25', 6));
-      expect(await mockRepayCallee.counter()).to.be.equal(1);
+      expect(await mockSwapper.counter()).to.be.equal(1);
     });
     it('success - when exchange rate is greater than 1', async () => {
       await settlement.connect(alice).activateSettlement();

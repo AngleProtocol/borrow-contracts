@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/IOracle.sol";
-import "../interfaces/IRepayCallee.sol";
+import "../interfaces/ISwapper.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 import "../interfaces/IVeBoostProxy.sol";

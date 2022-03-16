@@ -238,7 +238,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 uint256 collateralPayment = paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive;
                 if (collateralPayment > 0) {
                     if (repayData.length > 0) {
-                        IRepayCallee(who).repayCallCollateral(
+                        ISwapper(who).swap(
+                            IERC20(address(stablecoin)),
+                            collateral,
                             msg.sender,
                             stablecoinPayment,
                             collateralPayment,
@@ -594,7 +596,14 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
         if (stableAmountToRepay > 0) {
             if (data.length > 0) {
-                IRepayCallee(who).repayCallStablecoin(from, stableAmountToRepay, collateralAmountToGive, data);
+                ISwapper(who).swap(
+                    collateral,
+                    IERC20(address(stablecoin)),
+                    from,
+                    stableAmountToRepay,
+                    collateralAmountToGive,
+                    data
+                );
             }
             stablecoin.burnFrom(stableAmountToRepay, from, msg.sender);
         }

@@ -129,7 +129,6 @@ contract('Reactor', () => {
       upperCF,
     );
   });
-
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -592,6 +591,44 @@ contract('Reactor', () => {
         sharesAmount.add(secondAssetAmount).add(gains).mul(2).mul(targetCF),
         0.00001,
       );
+    });
+  });
+
+  describe('rebalance', () => {
+    const sharesAmount = parseUnits('1', collatBase);
+    beforeEach(async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      lastTime = await latestTime();
+    });
+    it('success - correctly rebalances after a gain in collateral', async () => {
+      await ANGLE.connect(alice).mint(reactor.address, sharesAmount);
+      await reactor.rebalance();
+      await displayReactorState(reactor, log);
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect(await ANGLE.balanceOf(vaultManager.address)).to.be.equal(sharesAmount.mul(2));
+      expect(await reactor.balanceOf(alice.address)).to.be.equal(sharesAmount);
+      // Last time should remain unchanged
+      expect(await reactor.lastTime()).to.be.equal(lastTime);
+      expect(await reactor.lastTimeOf(alice.address)).to.be.equal(lastTime);
+      expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(4).mul(targetCF), 0.00001);
+    });
+    it('success - correctly rebalances after a gain in stablecoin', async () => {
+      await treasury.addMinter(agEUR.address, bob.address);
+      await agEUR.connect(bob).mint(bob.address, parseEther('1'));
+      // To make a gain we need to repay debt on behalf of the vault
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      await reactor.rebalance();
+      expect(await reactor.claimableRewards()).to.be.equal(parseEther('0.8'));
+      // State of the reactor should not change otherwise
+      expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
+      expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
+      expect(await ANGLE.balanceOf(vaultManager.address)).to.be.equal(sharesAmount.mul(1));
+      expect(await reactor.balanceOf(alice.address)).to.be.equal(sharesAmount);
+      // Last time should remain unchanged
+      expect(await reactor.lastTime()).to.be.equal(lastTime);
+      expect(await reactor.lastTimeOf(alice.address)).to.be.equal(lastTime);
     });
   });
 
