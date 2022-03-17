@@ -86,13 +86,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         _;
     }
 
-    /// @notice If `vaultID` is 0, use the latest created vault
-    /// @param vaultID targeted vault
-    modifier useLatestVault(uint256 vaultID) {
-        if (vaultID == 0) vaultID = _vaultIDCount;
-        _;
-    }
-
     // =========================== Vault Functions =================================
 
     // ========================= External Access Functions =========================
@@ -134,8 +127,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             if (action == ActionType.createVault) {
                 _mint(abi.decode(datas[i], (address)));
             } else if (action == ActionType.closeVault) {
+                vaultID = abi.decode(datas[i], (uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (stablecoinAmount, collateralAmount, oracleValue, newInterestRateAccumulator) = _closeVault(
-                    abi.decode(datas[i], (uint256)),
+                    vaultID,
                     oracleValue,
                     newInterestRateAccumulator
                 );
@@ -143,10 +138,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.addCollateral) {
                 (vaultID, collateralAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 _addCollateral(vaultID, collateralAmount);
                 paymentData.collateralAmountToReceive += collateralAmount;
             } else if (action == ActionType.removeCollateral) {
                 (vaultID, collateralAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (oracleValue, newInterestRateAccumulator) = _removeCollateral(
                     vaultID,
                     collateralAmount,
@@ -156,6 +153,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.collateralAmountToGive += collateralAmount;
             } else if (action == ActionType.repayDebt) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (stablecoinAmount, newInterestRateAccumulator) = _repayDebt(
                     vaultID,
                     stablecoinAmount,
@@ -164,6 +162,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.borrow) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _borrow(
                     vaultID,
                     stablecoinAmount,
@@ -178,6 +177,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     datas[i],
                     (uint256, address, uint256, uint256)
                 );
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (oracleValue, newInterestRateAccumulator) = _getDebtIn(
                     vaultID,
                     IVaultManager(vaultManager),
@@ -387,7 +387,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestRateAccumulatorStart
     )
         internal
-        useLatestVault(vaultID)
         onlyApprovedOrOwner(msg.sender, vaultID)
         returns (
             uint256,
@@ -413,7 +412,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @notice Increases the collateral balance of a vault
     /// @param vaultID ID of the vault to increase the collateral balance of
     /// @param collateralAmount Amount by which increasing the collateral balance of
-    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal useLatestVault(vaultID) {
+    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
     }
@@ -431,7 +430,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 collateralAmount,
         uint256 oracleValueStart,
         uint256 interestRateAccumulatorStart
-    ) internal useLatestVault(vaultID) onlyApprovedOrOwner(msg.sender, vaultID) returns (uint256, uint256) {
+    ) internal onlyApprovedOrOwner(msg.sender, vaultID) returns (uint256, uint256) {
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , , uint256 oracleValue, uint256 newInterestRateAccumulator) = _isSolvent(
             vaultData[vaultID],
@@ -459,7 +458,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestRateAccumulatorStart
     )
         internal
-        useLatestVault(vaultID)
         onlyApprovedOrOwner(msg.sender, vaultID)
         returns (
             uint256 toMint,
@@ -499,7 +497,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 stablecoinAmount,
         uint256 oracleValue,
         uint256 newInterestRateAccumulator
-    ) internal useLatestVault(srcVaultID) onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
+    ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
         // The `stablecoinAmount` needs to be rounded down in the `_increaseDebt` function to reduce the room for exploits
         (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _increaseDebt(
             srcVaultID,
@@ -537,7 +535,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestRateAccumulator
     )
         internal
-        useLatestVault(vaultID)
         returns (
             uint256,
             uint256,
@@ -579,7 +576,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 newInterestRateAccumulator
-    ) internal useLatestVault(vaultID) returns (uint256, uint256) {
+    ) internal returns (uint256, uint256) {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
         uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt;
         // To save one variable declaration, `changeAmount` is first expressed in stablecoin amount before being converted
