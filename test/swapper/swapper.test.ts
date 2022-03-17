@@ -5,12 +5,12 @@ import { contract, ethers, web3 } from 'hardhat';
 import {
   MockCoreBorrow,
   MockCoreBorrow__factory,
-  Swapper,
-  Swapper__factory,
   MockRouter,
   MockRouter__factory,
   MockToken,
   MockToken__factory,
+  Swapper,
+  Swapper__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { MAX_UINT256, ZERO_ADDRESS } from '../utils/helpers';
@@ -140,7 +140,7 @@ contract('Swapper', () => {
     it('success - simple data but with an allowance already given and more collateral obtained', async () => {
       await collateral.mint(swapper.address, parseEther('2'));
       await stablecoin.mint(router.address, parseEther('3'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 0, 0, '0x'],
       );
@@ -161,7 +161,7 @@ contract('Swapper', () => {
     it('reverts - too small amount obtained from Uniswap', async () => {
       await collateral.mint(swapper.address, parseEther('2'));
       await stablecoin.mint(router.address, parseEther('3'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 0, 0, '0x'],
       );
@@ -177,7 +177,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stETH.mint(router.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stablecoin.address, bob.address, 0, 0, 2, '0x'],
       );
@@ -196,7 +196,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stETH.mint(router.address, parseEther('2'));
       await stablecoin.mint(router.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stablecoin.address, bob.address, 0, 0, 2, '0x'],
       );
@@ -214,7 +214,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('2'));
       await stETH.mint(router.address, parseEther('3'));
       await stablecoin.mint(router.address, parseEther('3'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stablecoin.address, bob.address, 0, 0, 2, '0x'],
       );
@@ -232,7 +232,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('2'));
       await stETH.mint(router.address, parseEther('3'));
       await stablecoin.mint(router.address, parseEther('3'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stablecoin.address, bob.address, 0, 0, 2, '0x'],
       );
@@ -249,7 +249,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('2'));
       await stETH.mint(router.address, parseEther('3'));
       await stablecoin.mint(router.address, parseEther('3'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stablecoin.address, bob.address, 0, 0, 2, '0x'],
       );
@@ -269,7 +269,7 @@ contract('Swapper', () => {
       await stETH.mint(swapper.address, parseEther('1'));
       await collateral.mint(router.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [collateral.address, bob.address, 0, 0, 1, '0x'],
       );
@@ -289,7 +289,7 @@ contract('Swapper', () => {
       await stETH.mint(swapper.address, parseEther('1'));
       await collateral.mint(router.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [collateral.address, bob.address, 0, 0, 1, '0x'],
       );
@@ -308,7 +308,7 @@ contract('Swapper', () => {
       await stETH.mint(swapper.address, parseEther('2'));
       await collateral.mint(router.address, parseEther('2'));
       await stablecoin.mint(router.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [collateral.address, bob.address, 0, 0, 1, '0x'],
       );
@@ -327,7 +327,7 @@ contract('Swapper', () => {
       await stETH.mint(swapper.address, parseEther('1'));
       await collateral.mint(router.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [collateral.address, bob.address, 0, 0, 1, '0x'],
       );
@@ -345,7 +345,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stETH.mint(router.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stablecoin.address, bob.address, 0, 10, 2, '0x'],
       );
@@ -357,7 +357,7 @@ contract('Swapper', () => {
       // The flow is to swap to stETH and then directly mint stablecoins
       await stETH.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 2, '0x'],
       );
@@ -374,7 +374,7 @@ contract('Swapper', () => {
       // The flow is to swap to stETH and then directly mint stablecoins
       await stETH.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 2, '0x'],
       );
@@ -393,7 +393,7 @@ contract('Swapper', () => {
     it('success - no swap and no mint/burn with leftover tokens', async () => {
       await stETH.mint(swapper.address, parseEther('2'));
       await stablecoin.mint(swapper.address, parseEther('3'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 0, '0x'],
       );
@@ -404,7 +404,7 @@ contract('Swapper', () => {
     });
     it('success - no swap and no mint/burn with just one leftover token as the outToken 1/3', async () => {
       await stETH.mint(swapper.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 0, '0x'],
       );
@@ -413,7 +413,7 @@ contract('Swapper', () => {
     });
     it('success - no swap and no mint/burn with just one leftover token as the outToken 2/3', async () => {
       await stETH.mint(swapper.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 0, '0x'],
       );
@@ -423,7 +423,7 @@ contract('Swapper', () => {
     });
     it('success - no swap and no mint/burn with just one leftover token as the outToken 3/3', async () => {
       await stETH.mint(swapper.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 0, '0x'],
       );
@@ -432,7 +432,7 @@ contract('Swapper', () => {
     });
     it('success - no swap and no mint/burn with just one leftover token as the inToken', async () => {
       await stETH.mint(swapper.address, parseEther('2'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 0, '0x'],
       );
@@ -445,7 +445,7 @@ contract('Swapper', () => {
       // The flow is to swap to stETH and then directly mint stablecoins
       await stETH.mint(router.address, parseEther('1'));
       await stablecoin.mint(swapper.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 1, '0x'],
       );
@@ -461,7 +461,7 @@ contract('Swapper', () => {
       // The flow is to swap to stETH and then directly mint stablecoins
       await stETH.mint(router.address, parseEther('2'));
       await stablecoin.mint(swapper.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 1, '0x'],
       );
@@ -478,7 +478,7 @@ contract('Swapper', () => {
       // The flow is to swap to stETH and then directly mint stablecoins
       await stETH.mint(router.address, parseEther('2'));
       await stablecoin.mint(swapper.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [stETH.address, bob.address, 0, 3, 1, '0x'],
       );
@@ -493,7 +493,7 @@ contract('Swapper', () => {
     it('reverts - not enough stETH available', async () => {
       await stETH.mint(swapper.address, parseEther('0.9'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 2, 0, '0x'],
       );
@@ -504,7 +504,7 @@ contract('Swapper', () => {
     it('success - stETH available', async () => {
       await stETH.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 2, 0, '0x'],
       );
@@ -516,7 +516,7 @@ contract('Swapper', () => {
     it('reverts - too small amount', async () => {
       await stETH.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 2, 0, '0x'],
       );
@@ -528,7 +528,7 @@ contract('Swapper', () => {
     it('reverts - too small amount but slippage check catches the minimum amount', async () => {
       await stETH.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, parseEther('1'), 2, 0, '0x'],
       );
@@ -540,7 +540,7 @@ contract('Swapper', () => {
     it('success - leftover amount', async () => {
       await stETH.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1.1'));
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 2, 0, '0x'],
       );
@@ -564,7 +564,7 @@ contract('Swapper', () => {
         },
         [],
       );
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
       );
@@ -583,7 +583,7 @@ contract('Swapper', () => {
         },
         [],
       );
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
       );
@@ -602,7 +602,7 @@ contract('Swapper', () => {
         },
         [],
       );
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
       );
@@ -614,7 +614,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
       const payload1inch = router.interface.encodeFunctionData('oneInch', [parseEther('1')]);
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
       );
@@ -628,7 +628,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('2'));
       await stablecoin.mint(router.address, parseEther('2'));
       const payload1inch = router.interface.encodeFunctionData('oneInch', [parseEther('1')]);
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
       );
@@ -643,7 +643,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
       const payload1inch = router.interface.encodeFunctionData('oneInch', [parseEther('1')]);
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
       );
@@ -656,7 +656,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));
       const payload1inch = router.interface.encodeFunctionData('oneInch', [parseEther('1')]);
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, parseEther('1'), 1, 0, payload1inch],
       );
@@ -669,7 +669,7 @@ contract('Swapper', () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('2'));
       const payload1inch = router.interface.encodeFunctionData('oneInch', [parseEther('1')]);
-      let data = ethers.utils.defaultAbiCoder.encode(
+      const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256', 'uint128', 'uint128', 'bytes'],
         [ZERO_ADDRESS, bob.address, 0, 1, 0, payload1inch],
       );
