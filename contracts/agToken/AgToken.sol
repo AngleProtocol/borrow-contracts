@@ -147,7 +147,6 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     /// @inheritdoc IAgToken
     function addMinter(address minter) external onlyTreasury {
-        require(minter != address(0), "0");
         isMinter[minter] = true;
         emit MinterToggled(minter);
     }

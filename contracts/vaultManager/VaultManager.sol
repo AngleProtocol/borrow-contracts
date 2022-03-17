@@ -114,9 +114,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address who,
         bytes memory repayData
     ) public payable whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
-        /* `newInterestRateAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
-        only once inside the first action where they are necessary, then they are returned to the `angle` function
-        where they are passed forward to further actions */
+        // `newInterestRateAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
+        // only once inside the first action where they are necessary, then they are returned to the `angle` function
+        // where they are passed forward to further actions
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
         uint256 collateralAmount;
@@ -501,10 +501,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         if (address(vaultManager) == address(this)) {
             _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
-            /* No need to check the integrity of `vaultManager` here because `_getDebtIn` can be entered only through the
-            `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as he
-            would get his debt increasing in the current vault without decreasing it in the remote vault.
-            */
+            // No need to check the integrity of `vaultManager` here because `_getDebtIn` can be entered only through the
+            // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
+            // would get their debt increasing in the current vault without decreasing it in the remote vault.
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
         }
         return (oracleValue, newInterestRateAccumulator);
@@ -536,8 +535,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         )
     {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        /* We normalize the amount by dividing it by `newInterestRateAccumulator`. This makes accounting easier, since
-        it allows us to process all (past and future) debts like debts created at the inception of the contract. */
+        // We normalize the amount by dividing it by `newInterestRateAccumulator`. This makes accounting easier, since
+        // it allows us to process all (past and future) debts like debts created at the inception of the contract.
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
         // if there was no previous debt, we have to check that the debt creation will be higher than `dust`
         if (vaultData[vaultID].normalizedDebt == 0)
