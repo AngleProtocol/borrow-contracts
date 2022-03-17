@@ -294,16 +294,16 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         // We're first using as an intermediate in this variable something that does not correspond
         // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in
         // the vault expressed in stablecoin value and in a custom base
-        uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracle.read();
+        uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracle.read() / (BASE_PARAMS * _assetBase);
         // The function will revert above if `toWithdraw` is too big
 
         if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
         else {
-            collateralFactor = (BASE_PARAMS * _assetBase * debt) / futureStablecoinsInVault;
+            collateralFactor = debt / futureStablecoinsInVault;
         }
         // This is the targeted debt at the end of the call, which might not be reached if the collateral
         // factor is not moved enough
-        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (_assetBase * BASE_PARAMS);
+        futureStablecoinsInVault = futureStablecoinsInVault * targetCF;
         uint16 len = 1;
         (collateralFactor >= upperCF) ? len += 1 : 0; // Needs to repay
         (collateralFactor <= lowerCF && futureStablecoinsInVault > vaultManagerDust) ? len += 1 : 0; // Needs to borrow
