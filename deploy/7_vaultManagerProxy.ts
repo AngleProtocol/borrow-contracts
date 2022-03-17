@@ -3,7 +3,7 @@ import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { VaultManager__factory } from '../typechain';
+import { AgToken, Treasury, VaultManager__factory } from '../typechain';
 import params from './networks';
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -12,7 +12,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdminAddress: string;
   const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
-  const treasury = (await ethers.getContract('Treasury')).address;
+  const treasury = (await ethers.getContract('Treasury')) as Treasury;
+  const agToken = (await ethers.getContract('AgToken')) as AgToken;
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -36,7 +37,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         implementation,
         VaultManager__factory.createInterface(),
       ).interface.encodeFunctionData('initialize', [
-        treasury,
+        treasury.address,
         vaultManagerParams.collateral,
         oracle,
         vaultManagerParams.params,
@@ -49,8 +50,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         args: [implementation, proxyAdminAddress, callData],
         log: !argv.ci,
       });
-
       const vaultManagerAddress = (await deployments.get(name)).address;
+
+      await (await treasury.addVaultManager(vaultManagerAddress)).wait();
+
       console.log(`Successfully deployed ${name} at the address ${vaultManagerAddress}`);
       console.log('');
     }
