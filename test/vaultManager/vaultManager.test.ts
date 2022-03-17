@@ -1401,10 +1401,6 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getTotalDebt(), debt.mul(162789 * 100).div(10000000), 0.01);
     });
   });
-<<<<<<< HEAD
-
-=======
->>>>>>> 504bc6f (readded tests)
   describe('liquidation with dust', () => {
     const collatAmount = parseUnits('2', collatBase);
     const borrowAmount = parseEther('1');
@@ -1683,7 +1679,7 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getVaultDebt(2), borrowAmount, 0.0001);
     });
 
-    it('success - addCollateral', async () => {
+    it('success - removeCollateral', async () => {
       const collatAmount = parseUnits('2', collatBase);
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
