@@ -396,6 +396,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         rewardsAccumulator += (block.timestamp - lastTime) * totalSupply();
         lastTime = block.timestamp;
 
+        // This will be 0 on the first deposit since the balance is initialized later
         rewardsAccumulatorOf[from] += (block.timestamp - lastTimeOf[from]) * balanceOf(from);
         lastTimeOf[from] = block.timestamp;
     }
