@@ -31,10 +31,11 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @notice Returns all the vaults owned or controlled (under the form of approval) by an address
     /// @param spender Address for which vault ownerships should be checked
     /// @return List of `vaultID` controlled by this address
+    /// @return Count of vaults owned by the address
     /// @dev This function is never to be called on-chain since it iterates over all addresses and is here
     /// to reduce dependency on an external graph to link an ID to its owner
     function getControlledVaults(address spender) external view returns (uint256[] memory, uint256) {
-        uint256 arraySize = _vaultIDCount;
+        uint256 arraySize = vaultIDCount;
         uint256[] memory vaultsControlled = new uint256[](arraySize);
         address owner;
         uint256 count;
@@ -198,10 +199,10 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     function _mint(address to) internal returns (uint256 vaultID) {
         require(!whitelistingActivated || (isWhitelisted[to] && isWhitelisted[msg.sender]), "20");
         unchecked {
-            _vaultIDCount += 1;
+            vaultIDCount += 1;
             _balances[to] += 1;
         }
-        vaultID = _vaultIDCount;
+        vaultID = vaultIDCount;
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
         require(_checkOnERC721Received(address(0), to, vaultID, ""), "29");

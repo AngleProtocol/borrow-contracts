@@ -221,7 +221,7 @@ contract Treasury is ITreasury, Initializable {
             uint256 toBurn = balance <= badDebtValue ? balance : badDebtValue;
             stablecoin.burnSelf(toBurn, address(this));
             // If we burned more than `surplusBuffer`, we set surplus to 0. It means we had to tap into Treasury reserve
-            surplusBufferValue = toBurn >= surplusBufferValue ? 0 : surplusBufferValue - toBurn ;
+            surplusBufferValue = toBurn >= surplusBufferValue ? 0 : surplusBufferValue - toBurn;
             badDebtValue -= toBurn;
         }
         surplusBuffer = surplusBufferValue;
