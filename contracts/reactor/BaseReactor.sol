@@ -299,14 +299,14 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
         if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
         else {
-            collateralFactor = (BASE_PARAMS * _assetBase * debt) / futureStablecoinsInVault;
+            collateralFactor = (debt * BASE_PARAMS * _assetBase) / futureStablecoinsInVault;
         }
         // This is the targeted debt at the end of the call, which might not be reached if the collateral
         // factor is not moved enough
-        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (_assetBase * BASE_PARAMS);
-        uint16 len = 1;
-        (collateralFactor >= upperCF) ? len += 1 : 0; // Needs to repay
-        (collateralFactor <= lowerCF && futureStablecoinsInVault > vaultManagerDust) ? len += 1 : 0; // Needs to borrow
+        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (BASE_PARAMS * _assetBase);
+
+        // 1 action to add or remove collateral + 1 additional action if we need to borrow or repay
+        uint8 len = (collateralFactor >= upperCF) || (collateralFactor <= lowerCF && futureStablecoinsInVault > vaultManagerDust) ? 2 : 1;
 
         ActionType[] memory actions = new ActionType[](len);
         bytes[] memory datas = new bytes[](len);
@@ -396,6 +396,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         rewardsAccumulator += (block.timestamp - lastTime) * totalSupply();
         lastTime = block.timestamp;
 
+        // This will be 0 on the first deposit since the balance is initialized later
         rewardsAccumulatorOf[from] += (block.timestamp - lastTimeOf[from]) * balanceOf(from);
         lastTimeOf[from] = block.timestamp;
     }

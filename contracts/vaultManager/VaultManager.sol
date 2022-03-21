@@ -114,6 +114,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address who,
         bytes memory repayData
     ) public payable whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
+        // `newInterestRateAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
+        // only once inside the first action where they are necessary, then they are returned to the `angle` function
+        // where they are passed forward to further actions
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
         uint256 collateralAmount;
@@ -466,7 +469,18 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         toMint = stablecoinAmount - borrowFeePaid;
     }
 
-    /// @notice Internal version of the `getDebtIn` function
+    /// @notice Gets debt in a vault from another vault potentially in another `VaultManager` contract
+    /// @param srcVaultID ID of the vault from this contract for which growing debt
+    /// @param vaultManager Address of the `vaultManager` where the targeted vault is
+    /// @param dstVaultID ID of the vault in the target contract
+    /// @param stablecoinAmount Amount of stablecoins to grow the debt of. This amount will be converted
+    /// to a normalized value in both vaultManager contracts
+    /// @param oracleValue Oracle value at the start of the call (potentially zero if it has not been computed yet)
+    /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// computed yet)
+    /// @dev A solvency check is performed after the debt increase in the source `vaultID`
+    /// @dev Only approved addresses by the source vault owner can perform this action, however any vault
+    /// from any vaultManager contract can see its debt reduced by this means
     /// @return Computed value of the oracle
     /// @return Computed value of the interest rate accumulator
     function _getDebtIn(
@@ -487,7 +501,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         if (address(vaultManager) == address(this)) {
             _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
-            require(treasury.isVaultManager(address(vaultManager)), "22");
+            // No need to check the integrity of `vaultManager` here because `_getDebtIn` can be entered only through the
+            // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
+            // would get their debt increasing in the current vault without decreasing it in the remote vault.
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
         }
         return (oracleValue, newInterestRateAccumulator);
@@ -519,7 +535,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         )
     {
         if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+        // We normalize the amount by dividing it by `newInterestRateAccumulator`. This makes accounting easier, since
+        // it allows us to process all (past and future) debts like debts created at the inception of the contract.
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
+        // if there was no previous debt, we have to check that the debt creation will be higher than `dust`
         if (vaultData[vaultID].normalizedDebt == 0)
             require(changeAmount * newInterestRateAccumulator > dust * BASE_INTEREST, "24");
         vaultData[vaultID].normalizedDebt += changeAmount;
@@ -650,7 +669,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param from Address from which the stablecoins for the liquidation should be taken: this address should be the `msg.sender`
     /// or have received an approval
     /// @param to Address to which discounted collateral should be sent
-    /// @dev This function will not revert if it's called on a vault that cannot be liquidated
+    /// @dev This function will revert if it's called on a vault that cannot be liquidated or that does not exist
     function liquidate(
         uint256[] memory vaultIDs,
         uint256[] memory amounts,

@@ -129,8 +129,8 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
 
     /// @notice Changes the core contract of the protocol
     /// @param _core New core contract
-    /// @dev This function verifies that the governors of the new core contract are exactly
-    /// the same as those of this one. It also notifies the `flashLoanModule` of the change
+    /// @dev This function verifies that all governors of the current core contract are also governors
+    /// of the new core contract. It also notifies the `flashLoanModule` of the change.
     /// @dev Governance wishing to change the core contract should also make sure to call `setCore`
     /// in the different treasury contracts
     function setCore(ICoreBorrow _core) external onlyRole(GOVERNOR_ROLE) {

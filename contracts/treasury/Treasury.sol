@@ -118,16 +118,16 @@ contract Treasury is ITreasury, Initializable {
     /// @dev This function fails if the `flashLoanModule` has not been initialized yet
     function fetchSurplusFromFlashLoan() external returns (uint256, uint256) {
         uint256 surplusBufferValue = surplusBuffer + flashLoanModule.accrueInterestToTreasury(stablecoin);
-        return _updateSurplusBadDebt(surplusBufferValue, badDebt);
+        return _updateSurplusAndBadDebt(surplusBufferValue, badDebt);
     }
 
-    /// @notice Fetches surplus a list of vaultManager contracts
+    /// @notice Fetches surplus from a list of vaultManager contracts
     /// @return Surplus buffer value at the end of the call
     /// @return Bad debt value at the end of the call
     /// TODO: could be removed or not?
     function fetchSurplusFromVaultManagers(address[] memory vaultManagers) external returns (uint256, uint256) {
         (uint256 surplusBufferValue, uint256 badDebtValue) = _fetchSurplusFromList(vaultManagers);
-        return _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
+        return _updateSurplusAndBadDebt(surplusBufferValue, badDebtValue);
     }
 
     /// @notice Pushes the surplus buffer to the `surplusManager` contract
@@ -175,7 +175,7 @@ contract Treasury is ITreasury, Initializable {
         // It will fail anyway if the `flashLoanModule` is the zero address
         if (address(flashLoanModule) != address(0))
             surplusBufferValue += flashLoanModule.accrueInterestToTreasury(stablecoin);
-        (surplusBufferValue, badDebtValue) = _updateSurplusBadDebt(surplusBufferValue, badDebtValue);
+        (surplusBufferValue, badDebtValue) = _updateSurplusAndBadDebt(surplusBufferValue, badDebtValue);
     }
 
     /// @notice Fetches the surplus from a list of `VaultManager` addresses without modifying the
@@ -183,7 +183,7 @@ contract Treasury is ITreasury, Initializable {
     /// @return surplusBufferValue Value the `surplusBuffer` should have after the call if it was updated
     /// @return badDebtValue Value the `badDebt` should have after the call if it was updated
     /// @dev This internal function is never to be called alone, and should always be called in conjunction
-    /// with the `_updateSurplusBadDebt` function
+    /// with the `_updateSurplusAndBadDebt` function
     function _fetchSurplusFromList(address[] memory vaultManagers)
         internal
         returns (uint256 surplusBufferValue, uint256 badDebtValue)
@@ -209,7 +209,7 @@ contract Treasury is ITreasury, Initializable {
     /// @dev When calling this function, it is possible that there is a positive `surplusBufferValue` and `badDebtValue`,
     /// this function tries to reconcile both values and makes sure that we either have surplus or bad debt but not both
     /// at the same time
-    function _updateSurplusBadDebt(uint256 surplusBufferValue, uint256 badDebtValue)
+    function _updateSurplusAndBadDebt(uint256 surplusBufferValue, uint256 badDebtValue)
         internal
         returns (uint256, uint256)
     {
@@ -217,15 +217,12 @@ contract Treasury is ITreasury, Initializable {
             // If we have bad debt we need to burn stablecoins that accrued to the protocol
             // We still need to make sure that we're not burning too much or as much as we can if the debt is big
             uint256 balance = stablecoin.balanceOf(address(this));
-            if (balance < badDebtValue) {
-                stablecoin.burnSelf(balance, address(this));
-                surplusBufferValue = 0;
-                badDebtValue -= balance;
-            } else {
-                stablecoin.burnSelf(badDebtValue, address(this));
-                surplusBufferValue = badDebtValue >= surplusBufferValue ? 0 : surplusBufferValue - badDebtValue;
-                badDebtValue = 0;
-            }
+            // We are going to burn min(balance, badDebtValue)
+            uint256 toBurn = balance <= badDebtValue ? balance : badDebtValue;
+            stablecoin.burnSelf(toBurn, address(this));
+            // If we burned more than `surplusBuffer`, we set surplus to 0. It means we had to tap into Treasury reserve
+            surplusBufferValue = toBurn >= surplusBufferValue ? 0 : surplusBufferValue - toBurn ;
+            badDebtValue -= toBurn;
         }
         surplusBuffer = surplusBufferValue;
         badDebt = badDebtValue;
@@ -270,13 +267,16 @@ contract Treasury is ITreasury, Initializable {
     function removeVaultManager(address vaultManager) external onlyGovernor {
         require(vaultManagerMap[vaultManager], "3");
         delete vaultManagerMap[vaultManager];
+        // deletion from vaultManagerList loop
         uint256 vaultManagerListLength = vaultManagerList.length;
         for (uint256 i = 0; i < vaultManagerListLength - 1; i++) {
             if (vaultManagerList[i] == vaultManager) {
+                // replace the VaultManager to remove with the last of the list
                 vaultManagerList[i] = vaultManagerList[vaultManagerListLength - 1];
                 break;
             }
         }
+        // remove last element in array since it's now a duplicate
         vaultManagerList.pop();
         emit VaultManagerToggled(vaultManager);
         stablecoin.removeMinter(vaultManager);
