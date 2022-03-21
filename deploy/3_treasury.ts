@@ -1,9 +1,9 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
-import { AgTokenSideChain, AgTokenSideChain__factory } from '../typechain';
 
-import { Treasury__factory } from '../typechain';
+import { AgTokenSideChain, AgTokenSideChain__factory, Treasury__factory } from '../typechain';
+
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
@@ -11,7 +11,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdmin: string;
   let agTokenAddress: string;
-  let agTokenName: string = 'agEUR';
+  const agTokenName = 'agEUR';
 
   if (!network.live || network.config.chainId == 1) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -39,10 +39,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const coreBorrow = await deployments.get('CoreBorrow');
 
-  const dataTreasury = new ethers.Contract(
-    treasuryImplementation,
-    treasuryInterface,
-  ).interface.encodeFunctionData('initialize', [coreBorrow.address, agTokenAddress]);
+  const dataTreasury = new ethers.Contract(treasuryImplementation, treasuryInterface).interface.encodeFunctionData(
+    'initialize',
+    [coreBorrow.address, agTokenAddress],
+  );
 
   console.log('Now deploying the Proxy');
   await deploy('Treasury', {

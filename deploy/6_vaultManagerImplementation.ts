@@ -14,6 +14,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
     args: [parseEther('10000'), parseEther('10000')], // TODO Dust Parameters
     log: !argv.ci,
   });
+
   const vaultManagerImplementation = (await ethers.getContract('VaultManager_Implementation')).address;
 
   console.log(`Successfully deployed the implementation for VaultManager at ${vaultManagerImplementation}`);
@@ -21,5 +22,5 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
 };
 
 func.tags = ['vaultManagerImplementation'];
-// func.dependencies = ['flashAngle'];
+func.dependencies = ['flashAngle'];
 export default func;

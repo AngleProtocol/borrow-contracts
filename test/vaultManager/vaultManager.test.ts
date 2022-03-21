@@ -1401,7 +1401,6 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getTotalDebt(), debt.mul(162789 * 100).div(10000000), 0.01);
     });
   });
-
   describe('liquidation with dust', () => {
     const collatAmount = parseUnits('2', collatBase);
     const borrowAmount = parseEther('1');
@@ -1536,7 +1535,6 @@ contract('VaultManager', () => {
       );
     });
   });
-
   describe('accrueInterestToTreasury', () => {
     it('reverts - non treasury', async () => {
       await expect(vaultManager.accrueInterestToTreasury()).to.be.revertedWith('14');
@@ -1643,6 +1641,105 @@ contract('VaultManager', () => {
       );
       expect(await vaultManager.surplus()).to.be.equal(0);
       expect(await vaultManager.badDebt()).to.be.equal(0);
+    });
+  });
+
+  describe('used vaultId 0 to manage new vault', () => {
+    it('success - addCollateral', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+      ]);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+    });
+
+    it('success - borrow', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('0.5');
+
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+      ]);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
+      expectApprox(await vaultManager.getVaultDebt(1), borrowAmount, 0.0001);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+      expectApprox(await vaultManager.getVaultDebt(2), borrowAmount, 0.0001);
+    });
+
+    it('success - removeCollateral', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        removeCollateral(0, collatAmount.div(2)),
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        removeCollateral(0, collatAmount.div(2)),
+      ]);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount.div(2));
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.div(2));
+    });
+
+    it('success - repay', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('0.5');
+
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+        repayDebt(0, borrowAmount.div(2)),
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+        repayDebt(0, borrowAmount.div(2)),
+      ]);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
+      expectApprox(await vaultManager.getVaultDebt(1), borrowAmount.div(2), 0.0001);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+      expectApprox(await vaultManager.getVaultDebt(2), borrowAmount.div(2), 0.0001);
+    });
+
+    it('success - closeVault', async () => {
+      await angle(vaultManager, alice, [createVault(alice.address), closeVault(0)]);
+      await expect(vaultManager.ownerOf(1)).to.be.revertedWith('26');
+    });
+
+    it('success - getDebtIn', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1.999');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+        borrow(1, borrowAmount),
+      ]);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1.9989'), 0.1);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        getDebtIn(0, vaultManager.address, 1, parseEther('1')),
+      ]);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
     });
   });
 });

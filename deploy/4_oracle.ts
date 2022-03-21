@@ -1,7 +1,7 @@
-import { DeployFunction } from 'hardhat-deploy/types';
 import { ChainId } from '@angleprotocol/sdk';
-import yargs from 'yargs';
 import { parseEther } from 'ethers/lib/utils';
+import { DeployFunction } from 'hardhat-deploy/types';
+import yargs from 'yargs';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -100,5 +100,5 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
 };
 
 func.tags = ['oracle'];
-// func.dependencies = ['treasury'];
+func.dependencies = ['treasury'];
 export default func;

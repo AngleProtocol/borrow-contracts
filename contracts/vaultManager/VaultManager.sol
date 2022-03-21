@@ -127,8 +127,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             if (action == ActionType.createVault) {
                 _mint(abi.decode(datas[i], (address)));
             } else if (action == ActionType.closeVault) {
+                vaultID = abi.decode(datas[i], (uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (stablecoinAmount, collateralAmount, oracleValue, newInterestRateAccumulator) = _closeVault(
-                    abi.decode(datas[i], (uint256)),
+                    vaultID,
                     oracleValue,
                     newInterestRateAccumulator
                 );
@@ -136,10 +138,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.addCollateral) {
                 (vaultID, collateralAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 _addCollateral(vaultID, collateralAmount);
                 paymentData.collateralAmountToReceive += collateralAmount;
             } else if (action == ActionType.removeCollateral) {
                 (vaultID, collateralAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (oracleValue, newInterestRateAccumulator) = _removeCollateral(
                     vaultID,
                     collateralAmount,
@@ -149,6 +153,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.collateralAmountToGive += collateralAmount;
             } else if (action == ActionType.repayDebt) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (stablecoinAmount, newInterestRateAccumulator) = _repayDebt(
                     vaultID,
                     stablecoinAmount,
@@ -157,6 +162,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.borrow) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _borrow(
                     vaultID,
                     stablecoinAmount,
@@ -171,6 +177,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     datas[i],
                     (uint256, address, uint256, uint256)
                 );
+                if (vaultID == 0) vaultID = _vaultIDCount;
                 (oracleValue, newInterestRateAccumulator) = _getDebtIn(
                     vaultID,
                     IVaultManager(vaultManager),
