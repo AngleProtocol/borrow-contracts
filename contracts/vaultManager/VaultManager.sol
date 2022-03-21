@@ -114,10 +114,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address who,
         bytes memory repayData
     ) public payable whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
-        // `newInterestRateAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
+        // `newInterestAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
         // only once inside the first action where they are necessary, then they are returned to the `angle` function
         // where they are passed forward to further actions
-        uint256 newInterestRateAccumulator;
+        uint256 newInterestAccumulator;
         uint256 oracleValue;
         uint256 collateralAmount;
         uint256 stablecoinAmount;
@@ -129,10 +129,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             } else if (action == ActionType.closeVault) {
                 vaultID = abi.decode(datas[i], (uint256));
                 if (vaultID == 0) vaultID = vaultIDCount;
-                (stablecoinAmount, collateralAmount, oracleValue, newInterestRateAccumulator) = _closeVault(
+                (stablecoinAmount, collateralAmount, oracleValue, newInterestAccumulator) = _closeVault(
                     vaultID,
                     oracleValue,
-                    newInterestRateAccumulator
+                    newInterestAccumulator
                 );
                 paymentData.collateralAmountToGive += collateralAmount;
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
@@ -144,30 +144,30 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             } else if (action == ActionType.removeCollateral) {
                 (vaultID, collateralAmount) = abi.decode(datas[i], (uint256, uint256));
                 if (vaultID == 0) vaultID = vaultIDCount;
-                (oracleValue, newInterestRateAccumulator) = _removeCollateral(
+                (oracleValue, newInterestAccumulator) = _removeCollateral(
                     vaultID,
                     collateralAmount,
                     oracleValue,
-                    newInterestRateAccumulator
+                    newInterestAccumulator
                 );
                 paymentData.collateralAmountToGive += collateralAmount;
             } else if (action == ActionType.repayDebt) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
                 if (vaultID == 0) vaultID = vaultIDCount;
-                (stablecoinAmount, newInterestRateAccumulator) = _repayDebt(
+                (stablecoinAmount, newInterestAccumulator) = _repayDebt(
                     vaultID,
                     stablecoinAmount,
-                    newInterestRateAccumulator
+                    newInterestAccumulator
                 );
                 paymentData.stablecoinAmountToReceive += stablecoinAmount;
             } else if (action == ActionType.borrow) {
                 (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
                 if (vaultID == 0) vaultID = vaultIDCount;
-                (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _borrow(
+                (stablecoinAmount, oracleValue, newInterestAccumulator) = _borrow(
                     vaultID,
                     stablecoinAmount,
                     oracleValue,
-                    newInterestRateAccumulator
+                    newInterestAccumulator
                 );
                 paymentData.stablecoinAmountToGive += stablecoinAmount;
             } else if (action == ActionType.getDebtIn) {
@@ -178,13 +178,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     (uint256, address, uint256, uint256)
                 );
                 if (vaultID == 0) vaultID = vaultIDCount;
-                (oracleValue, newInterestRateAccumulator) = _getDebtIn(
+                (oracleValue, newInterestAccumulator) = _getDebtIn(
                     vaultID,
                     IVaultManager(vaultManager),
                     dstVaultID,
                     stablecoinAmount,
                     oracleValue,
-                    newInterestRateAccumulator
+                    newInterestAccumulator
                 );
             } else if (action == ActionType.permit) {
                 address owner;
@@ -316,18 +316,18 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @notice Verifies whether a given vault is solvent (i.e. should be liquidated or not)
     /// @param vault Data of the vault to check
     /// @param oracleValue Oracle value at the time of the call (it is in the base of the stablecoin, that is for agTokens 10**18)
-    /// @param newInterestRateAccumulator Value of the `interestRateAccumulator` at the time of the call
+    /// @param newInterestAccumulator Value of the `interestAccumulator` at the time of the call
     /// @return healthFactor Health factor of the vault: if it's inferior to 1 (`BASE_PARAMS` in fact) this means that the vault can be liquidated
     /// @return currentDebt Current value of the debt of the vault (taking into account interest)
     /// @return collateralAmountInStable Collateral in the vault expressed in stablecoin value
     /// @return oracleValue Current value of the oracle
-    /// @return newInterestRateAccumulator Current value of the `interestRateAccumulator`
+    /// @return newInterestAccumulator Current value of the `interestAccumulator`
     /// @dev If the oracle value or the interest rate accumulator has not been called at the time of the
     /// call, this function computes it
     function _isSolvent(
         Vault memory vault,
         uint256 oracleValue,
-        uint256 newInterestRateAccumulator
+        uint256 newInterestAccumulator
     )
         internal
         view
@@ -340,16 +340,16 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         )
     {
         if (oracleValue == 0) oracleValue = oracle.read();
-        if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        uint256 currentDebt = (vault.normalizedDebt * newInterestRateAccumulator) / BASE_INTEREST;
+        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        uint256 currentDebt = (vault.normalizedDebt * newInterestAccumulator) / BASE_INTEREST;
         uint256 collateralAmountInStable = (vault.collateralAmount * oracleValue) / _collatBase;
         uint256 healthFactor;
         if (currentDebt == 0) healthFactor = type(uint256).max;
         else healthFactor = (collateralAmountInStable * collateralFactor) / currentDebt;
-        return (healthFactor, currentDebt, collateralAmountInStable, oracleValue, newInterestRateAccumulator);
+        return (healthFactor, currentDebt, collateralAmountInStable, oracleValue, newInterestAccumulator);
     }
 
-    /// @notice Calculates the current value of the `interestRateAccumulator` without updating the value
+    /// @notice Calculates the current value of the `interestAccumulator` without updating the value
     /// in storage
     /// @dev This function avoids expensive exponentiation and the calculation is performed using a binomial approximation
     /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
@@ -374,7 +374,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param vaultID ID of the vault to close
     /// @param oracleValueStart Oracle value at the start of the call: if it's 0 it's going to be computed
     /// in the `_isSolvent` function
-    /// @param newInterestRateAccumulatorStart Interest rate accumulator value at the start of the call: if it's 0
+    /// @param newInterestAccumulatorStart Interest rate accumulator value at the start of the call: if it's 0
     /// it's going to be computed in the `isSolvent` function
     /// @return Current debt of the vault to be repaid
     /// @return Value of the collateral in the vault to reimburse
@@ -384,7 +384,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     function _closeVault(
         uint256 vaultID,
         uint256 oracleValueStart,
-        uint256 newInterestRateAccumulatorStart
+        uint256 newInterestAccumulatorStart
     )
         internal
         onlyApprovedOrOwner(msg.sender, vaultID)
@@ -397,16 +397,14 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     {
         Vault memory vault = vaultData[vaultID];
         // Optimize for gas here
-        (
-            uint256 healthFactor,
-            uint256 currentDebt,
-            ,
-            uint256 oracleValue,
-            uint256 newInterestRateAccumulator
-        ) = _isSolvent(vault, oracleValueStart, newInterestRateAccumulatorStart);
+        (uint256 healthFactor, uint256 currentDebt, , uint256 oracleValue, uint256 newInterestAccumulator) = _isSolvent(
+            vault,
+            oracleValueStart,
+            newInterestAccumulatorStart
+        );
         require(healthFactor > BASE_PARAMS, "21");
         _burn(vaultID);
-        return (currentDebt, vault.collateralAmount, oracleValue, newInterestRateAccumulator);
+        return (currentDebt, vault.collateralAmount, oracleValue, newInterestAccumulator);
     }
 
     /// @notice Increases the collateral balance of a vault
@@ -421,7 +419,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param vaultID ID of the vault to decrease the collateral balance of
     /// @param collateralAmount Amount of collateral to reduce the balance of
     /// @param oracleValueStart Oracle value at the start of the call (given here to avoid double computations)
-    /// @param interestRateAccumulatorStart Value of the interest rate accumulator (potentially zero if it has not been
+    /// @param interestAccumulatorStart Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @return Computed value of the oracle
     /// @return Computed value of the interest rate accumulator
@@ -429,47 +427,47 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 vaultID,
         uint256 collateralAmount,
         uint256 oracleValueStart,
-        uint256 interestRateAccumulatorStart
+        uint256 interestAccumulatorStart
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) returns (uint256, uint256) {
         vaultData[vaultID].collateralAmount -= collateralAmount;
-        (uint256 healthFactor, , , uint256 oracleValue, uint256 newInterestRateAccumulator) = _isSolvent(
+        (uint256 healthFactor, , , uint256 oracleValue, uint256 newInterestAccumulator) = _isSolvent(
             vaultData[vaultID],
             oracleValueStart,
-            interestRateAccumulatorStart
+            interestAccumulatorStart
         );
         require(healthFactor > BASE_PARAMS, "21");
         emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
-        return (oracleValue, newInterestRateAccumulator);
+        return (oracleValue, newInterestAccumulator);
     }
 
     /// @notice Increases the debt balance of a vault and takes into account borrowing fees
     /// @param vaultID ID of the vault to increase borrow balance of
     /// @param stablecoinAmount Amount of stablecoins to borrow
     /// @param oracleValueStart Oracle value at the start of the call (given here to avoid double computations)
-    /// @param newInterestRateAccumulatorStart Value of the interest rate accumulator (potentially zero if it has not been
+    /// @param newInterestAccumulatorStart Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @return toMint Amount of stablecoins to mint
     /// @return oracleValue Computed value of the oracle
-    /// @return interestRateAccumulator Computed value of the interest rate accumulator
+    /// @return interestAccumulator Computed value of the interest rate accumulator
     function _borrow(
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 oracleValueStart,
-        uint256 newInterestRateAccumulatorStart
+        uint256 newInterestAccumulatorStart
     )
         internal
         onlyApprovedOrOwner(msg.sender, vaultID)
         returns (
             uint256 toMint,
             uint256 oracleValue,
-            uint256 interestRateAccumulator
+            uint256 interestAccumulator
         )
     {
-        (stablecoinAmount, oracleValue, interestRateAccumulator) = _increaseDebt(
+        (stablecoinAmount, oracleValue, interestAccumulator) = _increaseDebt(
             vaultID,
             stablecoinAmount,
             oracleValueStart,
-            newInterestRateAccumulatorStart
+            newInterestAccumulatorStart
         );
         uint256 borrowFeePaid = (borrowFee * stablecoinAmount) / BASE_PARAMS;
         surplus += borrowFeePaid;
@@ -483,7 +481,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param stablecoinAmount Amount of stablecoins to grow the debt of. This amount will be converted
     /// to a normalized value in both vaultManager contracts
     /// @param oracleValue Oracle value at the start of the call (potentially zero if it has not been computed yet)
-    /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// @param newInterestAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @dev A solvency check is performed after the debt increase in the source `vaultID`
     /// @dev Only approved addresses by the source vault owner can perform this action, however any vault
@@ -496,32 +494,32 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 dstVaultID,
         uint256 stablecoinAmount,
         uint256 oracleValue,
-        uint256 newInterestRateAccumulator
+        uint256 newInterestAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) returns (uint256, uint256) {
         // The `stablecoinAmount` needs to be rounded down in the `_increaseDebt` function to reduce the room for exploits
-        (stablecoinAmount, oracleValue, newInterestRateAccumulator) = _increaseDebt(
+        (stablecoinAmount, oracleValue, newInterestAccumulator) = _increaseDebt(
             srcVaultID,
             stablecoinAmount,
             oracleValue,
-            newInterestRateAccumulator
+            newInterestAccumulator
         );
         if (address(vaultManager) == address(this)) {
-            _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
+            _repayDebt(dstVaultID, stablecoinAmount, newInterestAccumulator);
         } else {
             // No need to check the integrity of `vaultManager` here because `_getDebtIn` can be entered only through the
             // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
             // would get their debt increasing in the current vault without decreasing it in the remote vault.
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
         }
-        return (oracleValue, newInterestRateAccumulator);
+        return (oracleValue, newInterestAccumulator);
     }
 
     /// @notice Increases the debt of a given vault and verifies that this vault is still solvent
     /// @param vaultID ID of the vault to increase the debt of
     /// @param stablecoinAmount Amount of stablecoin to increase the debt of: this amount is converted in
-    /// normalized debt using the pre-computed (or not) `newInterestRateAccumulator` value
+    /// normalized debt using the pre-computed (or not) `newInterestAccumulator` value
     /// @param oracleValueStart Oracle value at the start of the call (given here to avoid double computations)
-    /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// @param newInterestAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @return Amount of stablecoins to issue from this debt increase
     /// @return Computed value of the oracle
@@ -532,7 +530,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 vaultID,
         uint256 stablecoinAmount,
         uint256 oracleValueStart,
-        uint256 newInterestRateAccumulator
+        uint256 newInterestAccumulator
     )
         internal
         returns (
@@ -541,33 +539,33 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             uint256
         )
     {
-        if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        // We normalize the amount by dividing it by `newInterestRateAccumulator`. This makes accounting easier, since
+        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        // We normalize the amount by dividing it by `newInterestAccumulator`. This makes accounting easier, since
         // it allows us to process all (past and future) debts like debts created at the inception of the contract.
-        uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
+        uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestAccumulator;
         // if there was no previous debt, we have to check that the debt creation will be higher than `dust`
         if (vaultData[vaultID].normalizedDebt == 0)
-            require(changeAmount * newInterestRateAccumulator > dust * BASE_INTEREST, "24");
+            require(changeAmount * newInterestAccumulator > dust * BASE_INTEREST, "24");
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
-        require(totalNormalizedDebt * newInterestRateAccumulator <= debtCeiling * BASE_INTEREST, "45");
+        require(totalNormalizedDebt * newInterestAccumulator <= debtCeiling * BASE_INTEREST, "45");
         (uint256 healthFactor, , , uint256 oracleValue, ) = _isSolvent(
             vaultData[vaultID],
             oracleValueStart,
-            newInterestRateAccumulator
+            newInterestAccumulator
         );
         require(healthFactor > BASE_PARAMS, "21");
         emit InternalDebtUpdated(vaultID, changeAmount, 1);
-        return ((changeAmount * newInterestRateAccumulator) / BASE_INTEREST, oracleValue, newInterestRateAccumulator);
+        return ((changeAmount * newInterestAccumulator) / BASE_INTEREST, oracleValue, newInterestAccumulator);
     }
 
     /// @notice Decreases the debt of a given vault and verifies that this vault still has an amount of debt superior
     /// to a dusty amount or no debt at all
     /// @param vaultID ID of the vault to decrease the debt of
     /// @param stablecoinAmount Amount of stablecoin to decrease the debt of: this amount is converted in
-    /// normalized debt using the pre-computed (or not) `newInterestRateAccumulator` value
+    /// normalized debt using the pre-computed (or not) `newInterestAccumulator` value
     /// To repay the whole debt, one can pass `type(uint256).max`
-    /// @param newInterestRateAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// @param newInterestAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     /// @return Amount of stablecoins to be burnt to correctly repay the debt
     /// @return Computed value of the interest rate accumulator
@@ -575,30 +573,30 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     function _repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
-        uint256 newInterestRateAccumulator
+        uint256 newInterestAccumulator
     ) internal returns (uint256, uint256) {
-        if (newInterestRateAccumulator == 0) newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
         uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt;
         // To save one variable declaration, `changeAmount` is first expressed in stablecoin amount before being converted
         // to a normalized amount. Here we first store the maximum amount that can be repaid given the current debt
-        uint256 changeAmount = (newVaultNormalizedDebt * newInterestRateAccumulator) / BASE_INTEREST;
+        uint256 changeAmount = (newVaultNormalizedDebt * newInterestAccumulator) / BASE_INTEREST;
         // In some situations (e.g. liquidations), the `stablecoinAmount` is rounded above and we want to make
         // sure to avoid underflows in all situations
         if (stablecoinAmount >= changeAmount) {
             stablecoinAmount = changeAmount;
             changeAmount = newVaultNormalizedDebt;
         } else {
-            changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestRateAccumulator;
+            changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestAccumulator;
         }
         newVaultNormalizedDebt -= changeAmount;
         totalNormalizedDebt -= changeAmount;
         require(
-            newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestRateAccumulator > dust * BASE_INTEREST,
+            newVaultNormalizedDebt == 0 || newVaultNormalizedDebt * newInterestAccumulator > dust * BASE_INTEREST,
             "24"
         );
         vaultData[vaultID].normalizedDebt = newVaultNormalizedDebt;
         emit InternalDebtUpdated(vaultID, changeAmount, 0);
-        return (stablecoinAmount, newInterestRateAccumulator);
+        return (stablecoinAmount, newInterestAccumulator);
     }
 
     /// @notice Handles the simultaneous repayment of stablecoins with a transfer of collateral
@@ -659,13 +657,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @dev This function updates the `interestAccumulator`
     /// @dev It should also be called when updating the value of the per second interest rate
     function _accrue() internal {
-        uint256 newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
-        uint256 interestAccrued = (totalNormalizedDebt * (newInterestRateAccumulator - interestAccumulator)) /
+        uint256 newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        uint256 interestAccrued = (totalNormalizedDebt * (newInterestAccumulator - interestAccumulator)) /
             BASE_INTEREST;
         surplus += interestAccrued;
-        interestAccumulator = newInterestRateAccumulator;
+        interestAccumulator = newInterestAccumulator;
         lastInterestAccumulatorUpdated = block.timestamp;
-        emit InterestRateAccumulatorUpdated(newInterestRateAccumulator, block.timestamp);
+        emit InterestRateAccumulatorUpdated(newInterestAccumulator, block.timestamp);
     }
 
     // ============================ Liquidations ===================================
@@ -706,7 +704,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Stores all the data about an ongoing liquidation of multiple vaults
         require(vaultIDs.length == amounts.length, "25");
         liqData.oracleValue = oracle.read();
-        liqData.newInterestRateAccumulator = _calculateCurrentInterestRateAccumulator();
+        liqData.newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
         for (uint256 i = 0; i < vaultIDs.length; i++) {
             Vault memory vault = vaultData[vaultIDs[i]];
             // Computing if liquidation can take place for a vault
@@ -714,7 +712,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 vault,
                 msg.sender,
                 liqData.oracleValue,
-                liqData.newInterestRateAccumulator
+                liqData.newInterestAccumulator
             );
 
             // Makes sure not to leave a dusty amount in the vault by either not liquidating too much
@@ -746,7 +744,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 _repayDebt(
                     vaultIDs[i],
                     (amounts[i] * liquidationSurcharge) / BASE_PARAMS,
-                    liqData.newInterestRateAccumulator
+                    liqData.newInterestAccumulator
                 );
             }
             liqData.collateralAmountToGive += collateralReleased;
@@ -760,18 +758,18 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     /// @notice Internal version of the `checkLiquidation` function
     /// @dev This function takes two additional parameters as when entering this function `oracleValue`
-    /// and `newInterestRateAccumulator` should have always been computed
+    /// and `newInterestAccumulator` should have always been computed
     function _checkLiquidation(
         Vault memory vault,
         address liquidator,
         uint256 oracleValue,
-        uint256 newInterestRateAccumulator
+        uint256 newInterestAccumulator
     ) internal view returns (LiquidationOpportunity memory liqOpp) {
         // Checking if the vault can be liquidated
         (uint256 healthFactor, uint256 currentDebt, uint256 collateralAmountInStable, , ) = _isSolvent(
             vault,
             oracleValue,
-            newInterestRateAccumulator
+            newInterestAccumulator
         );
         // Health factor of a vault that does not exist is `type(uint256).max`
         require(healthFactor < BASE_PARAMS, "44");
@@ -809,7 +807,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 // We're rounding up the max amount to repay to make sure all the debt ends up being paid
                 // and we're computing again the real value of the debt to avoid propagation of rounding errors
                 maxAmountToRepay =
-                    (vault.normalizedDebt * newInterestRateAccumulator * BASE_PARAMS) /
+                    (vault.normalizedDebt * newInterestAccumulator * BASE_PARAMS) /
                     (surcharge * BASE_INTEREST) +
                     1;
                 // In this case the threshold amount is such that it leaves just enough dust

@@ -60,8 +60,8 @@ struct LiquidatorData {
     uint256 badDebtFromLiquidation;
     // Oracle value (in stablecoin base) at the time of the liquidation
     uint256 oracleValue;
-    // Value of the interestRateAccumulator at the time of the call
-    uint256 newInterestRateAccumulator;
+    // Value of the `interestAccumulator` at the time of the call
+    uint256 newInterestAccumulator;
 }
 
 /// @notice Data to track during a series of action the amount to give or receive in stablecoins and collateral
