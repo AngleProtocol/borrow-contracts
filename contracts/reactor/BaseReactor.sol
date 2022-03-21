@@ -306,7 +306,10 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (BASE_PARAMS * _assetBase);
 
         // 1 action to add or remove collateral + 1 additional action if we need to borrow or repay
-        uint8 len = (collateralFactor >= upperCF) || (collateralFactor <= lowerCF && futureStablecoinsInVault > vaultManagerDust) ? 2 : 1;
+        uint8 len = (collateralFactor >= upperCF) ||
+            (collateralFactor <= lowerCF && futureStablecoinsInVault > vaultManagerDust)
+            ? 2
+            : 1;
 
         ActionType[] memory actions = new ActionType[](len);
         bytes[] memory datas = new bytes[](len);

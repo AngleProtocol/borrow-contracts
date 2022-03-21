@@ -115,7 +115,7 @@ contract Swapper is ISwapper {
             data,
             (address, address, uint256, uint128, uint128, bytes)
         );
-        
+
         if (mintOrBurn == 1) {
             // First performing burn transactions as you may usually get stablecoins first
             _checkAngleRouterAllowance(inToken);
@@ -231,9 +231,7 @@ contract Swapper is ISwapper {
             _changeAllowance(inToken, address(uniV3Router), type(uint256).max);
             uniAllowedToken[inToken] = true;
         }
-        amountOut = uniV3Router.exactInput(
-            ExactInputParams(path, address(this), block.timestamp, amount, 0)
-        );
+        amountOut = uniV3Router.exactInput(ExactInputParams(path, address(this), block.timestamp, amount, 0));
     }
 
     /// @notice Allows to swap any token to an accepted collateral via 1Inch API
@@ -241,10 +239,7 @@ contract Swapper is ISwapper {
     /// @param payload Bytes needed for 1Inch API
     /// @dev Here again, we don't specify a slippage here as in the `swap` function a final slippage check
     /// is performed at the end
-    function _swapOn1Inch(
-        IERC20 inToken,
-        bytes memory payload
-    ) internal returns (uint256 amountOut) {
+    function _swapOn1Inch(IERC20 inToken, bytes memory payload) internal returns (uint256 amountOut) {
         // Approve transfer to the `oneInch` router if it is the first time the token is used
         if (!oneInchAllowedToken[inToken]) {
             _changeAllowance(inToken, oneInch, type(uint256).max);

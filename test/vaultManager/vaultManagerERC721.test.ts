@@ -114,6 +114,7 @@ contract('VaultManager - ERC721', () => {
       expect(await vaultManager.name()).to.be.equal('Angle Protocol USDC/agEUR Vault');
       expect(await vaultManager.symbol()).to.be.equal('USDC/agEUR-vault');
       expect(await vaultManager.paused()).to.be.true;
+      expect(await vaultManager.vaultIDCount()).to.be.equal(0);
     });
 
     it('success - access control', async () => {
@@ -177,7 +178,7 @@ contract('VaultManager - ERC721', () => {
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
       await vaultManager.connect(guardian).togglePause();
     });
-    describe('getControlledVaults', () => {
+    describe('getControlledVaults & vaultIDCount', () => {
       it('success - no vault', async () => {
         const [, count] = await vaultManager.getControlledVaults(alice.address);
         expect(count).to.be.equal(0);
@@ -188,6 +189,7 @@ contract('VaultManager - ERC721', () => {
         const [vaults] = await vaultManager.getControlledVaults(alice.address);
         expect(vaults.length).to.be.equal(1);
         expect(vaults[0].toNumber()).to.be.equal(1);
+        expect(await vaultManager.vaultIDCount()).to.be.equal(1);
       });
 
       it('success - second vault', async () => {
@@ -197,17 +199,21 @@ contract('VaultManager - ERC721', () => {
         expect(vaults.length).to.be.equal(2);
         expect(count).to.be.equal(1);
         expect(vaults[0].toNumber()).to.be.equal(2);
+        expect(await vaultManager.vaultIDCount()).to.be.equal(2);
       });
 
       it('success - second and third vault', async () => {
         await angle(vaultManager, bob, [createVault(bob.address)]);
+        expect(await vaultManager.vaultIDCount()).to.be.equal(1);
         await angle(vaultManager, alice, [createVault(alice.address)]);
+        expect(await vaultManager.vaultIDCount()).to.be.equal(2);
         await angle(vaultManager, alice, [createVault(alice.address)]);
         const [vaults, count] = await vaultManager.getControlledVaults(alice.address);
         expect(vaults.length).to.be.equal(3);
         expect(count).to.be.equal(2);
         expect(vaults[0].toNumber()).to.be.equal(2);
         expect(vaults[1].toNumber()).to.be.equal(3);
+        expect(await vaultManager.vaultIDCount()).to.be.equal(3);
       });
 
       it('success - burn vault', async () => {
@@ -219,6 +225,7 @@ contract('VaultManager - ERC721', () => {
         expect(vaults.length).to.be.equal(3);
         expect(count).to.be.equal(1);
         expect(vaults[0].toNumber()).to.be.equal(3);
+        expect(await vaultManager.vaultIDCount()).to.be.equal(3);
       });
     });
 
@@ -293,7 +300,7 @@ contract('VaultManager - ERC721', () => {
         await expect(vaultManager.ownerOf(1)).to.be.revertedWith('26');
       });
 
-      it('reverts - unexistant vault', async () => {
+      it('reverts - nonexistent vault', async () => {
         await expect(vaultManager.ownerOf(100)).to.be.revertedWith('26');
       });
 
@@ -313,7 +320,7 @@ contract('VaultManager - ERC721', () => {
         await expect(vaultManager.connect(alice).approve(alice.address, 2)).to.be.revertedWith('27');
       });
 
-      it('reverts - unexistant vault', async () => {
+      it('reverts - nonexistent vault', async () => {
         await expect(vaultManager.connect(alice).approve(bob.address, 1)).to.be.revertedWith('26');
       });
 
@@ -334,7 +341,7 @@ contract('VaultManager - ERC721', () => {
         await angle(vaultManager, alice, [closeVault(1)]);
       });
 
-      it('reverts - unexistant vault', async () => {
+      it('reverts - nonexistent vault', async () => {
         await expect(vaultManager.connect(alice).getApproved(1)).to.be.revertedWith('26');
       });
 
