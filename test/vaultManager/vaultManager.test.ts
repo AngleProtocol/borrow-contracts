@@ -1556,8 +1556,8 @@ contract('VaultManager', () => {
       );
       inIndirectReceipt(
         receipt,
-        new utils.Interface(['event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp)']),
-        'InterestRateAccumulatorUpdated',
+        new utils.Interface(['event InterestAccumulatorUpdated(uint256 value, uint256 timestamp)']),
+        'InterestAccumulatorUpdated',
         {
           value: parseUnits('1', 27),
           timestamp: await latestTime(),
@@ -1589,8 +1589,8 @@ contract('VaultManager', () => {
       );
       inIndirectReceipt(
         receipt,
-        new utils.Interface(['event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp)']),
-        'InterestRateAccumulatorUpdated',
+        new utils.Interface(['event InterestAccumulatorUpdated(uint256 value, uint256 timestamp)']),
+        'InterestAccumulatorUpdated',
         {
           timestamp: await latestTime(),
         },
@@ -1633,8 +1633,8 @@ contract('VaultManager', () => {
       );
       inIndirectReceipt(
         receipt,
-        new utils.Interface(['event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp)']),
-        'InterestRateAccumulatorUpdated',
+        new utils.Interface(['event InterestAccumulatorUpdated(uint256 value, uint256 timestamp)']),
+        'InterestAccumulatorUpdated',
         {
           timestamp: await latestTime(),
         },

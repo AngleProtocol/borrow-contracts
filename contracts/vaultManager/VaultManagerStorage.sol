@@ -132,7 +132,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     event AccruedToTreasury(uint256 surplusEndValue, uint256 badDebtEndValue);
     event CollateralAmountUpdated(uint256 vaultID, uint256 collateralAmount, uint8 isIncrease);
-    event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp);
+    event InterestAccumulatorUpdated(uint256 value, uint256 timestamp);
     event InternalDebtUpdated(uint256 vaultID, uint256 internalAmount, uint8 isIncrease);
     event FiledUint64(uint64 param, bytes32 what);
     event DebtCeilingUpdated(uint256 debtCeiling);

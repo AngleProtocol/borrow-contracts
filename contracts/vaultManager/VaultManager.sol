@@ -283,14 +283,14 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     /// @inheritdoc IVaultManagerFunctions
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
-        return (vaultData[vaultID].normalizedDebt * _calculateCurrentInterestRateAccumulator()) / BASE_INTEREST;
+        return (vaultData[vaultID].normalizedDebt * _calculateCurrentInterestAccumulator()) / BASE_INTEREST;
     }
 
     /// @notice Gets the total debt across all vaults
     /// @return Total debt across all vaults, taking into account the interest accumulated
     /// over time
     function getTotalDebt() external view returns (uint256) {
-        return (totalNormalizedDebt * _calculateCurrentInterestRateAccumulator()) / BASE_INTEREST;
+        return (totalNormalizedDebt * _calculateCurrentInterestAccumulator()) / BASE_INTEREST;
     }
 
     /// @notice Checks whether a given vault is liquidable and if yes gives information regarding its liquidation
@@ -307,7 +307,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             vaultData[vaultID],
             liquidator,
             oracle.read(),
-            _calculateCurrentInterestRateAccumulator()
+            _calculateCurrentInterestAccumulator()
         );
     }
 
@@ -340,7 +340,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         )
     {
         if (oracleValue == 0) oracleValue = oracle.read();
-        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestAccumulator();
         uint256 currentDebt = (vault.normalizedDebt * newInterestAccumulator) / BASE_INTEREST;
         uint256 collateralAmountInStable = (vault.collateralAmount * oracleValue) / _collatBase;
         uint256 healthFactor;
@@ -355,7 +355,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
     /// @dev The approximation slightly undercharges borrowers with the advantage of a great gas cost reduction
     /// @dev This function was mostly inspired from Aave implementation
-    function _calculateCurrentInterestRateAccumulator() internal view returns (uint256) {
+    function _calculateCurrentInterestAccumulator() internal view returns (uint256) {
         uint256 exp = block.timestamp - lastInterestAccumulatorUpdated;
         uint256 ratePerSecond = interestRate;
         if (exp == 0 || ratePerSecond == 0) return interestAccumulator;
@@ -539,7 +539,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             uint256
         )
     {
-        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestAccumulator();
         // We normalize the amount by dividing it by `newInterestAccumulator`. This makes accounting easier, since
         // it allows us to process all (past and future) debts like debts created at the inception of the contract.
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestAccumulator;
@@ -575,7 +575,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 stablecoinAmount,
         uint256 newInterestAccumulator
     ) internal returns (uint256, uint256) {
-        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        if (newInterestAccumulator == 0) newInterestAccumulator = _calculateCurrentInterestAccumulator();
         uint256 newVaultNormalizedDebt = vaultData[vaultID].normalizedDebt;
         // To save one variable declaration, `changeAmount` is first expressed in stablecoin amount before being converted
         // to a normalized amount. Here we first store the maximum amount that can be repaid given the current debt
@@ -657,13 +657,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @dev This function updates the `interestAccumulator`
     /// @dev It should also be called when updating the value of the per second interest rate
     function _accrue() internal {
-        uint256 newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        uint256 newInterestAccumulator = _calculateCurrentInterestAccumulator();
         uint256 interestAccrued = (totalNormalizedDebt * (newInterestAccumulator - interestAccumulator)) /
             BASE_INTEREST;
         surplus += interestAccrued;
         interestAccumulator = newInterestAccumulator;
         lastInterestAccumulatorUpdated = block.timestamp;
-        emit InterestRateAccumulatorUpdated(newInterestAccumulator, block.timestamp);
+        emit InterestAccumulatorUpdated(newInterestAccumulator, block.timestamp);
     }
 
     // ============================ Liquidations ===================================
@@ -704,7 +704,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Stores all the data about an ongoing liquidation of multiple vaults
         require(vaultIDs.length == amounts.length, "25");
         liqData.oracleValue = oracle.read();
-        liqData.newInterestAccumulator = _calculateCurrentInterestRateAccumulator();
+        liqData.newInterestAccumulator = _calculateCurrentInterestAccumulator();
         for (uint256 i = 0; i < vaultIDs.length; i++) {
             Vault memory vault = vaultData[vaultIDs[i]];
             // Computing if liquidation can take place for a vault
