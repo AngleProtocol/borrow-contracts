@@ -357,7 +357,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         }
 
         if (toRepay > 0) _pull(toRepay);
-        vaultManager.angle(actions, datas, address(this), address(this), address(this), "");
+        vaultManager.batch(actions, datas, address(this), address(this), address(this), "");
         if (toBorrow > 0) _push(toBorrow);
     }
 

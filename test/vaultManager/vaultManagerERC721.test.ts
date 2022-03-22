@@ -19,7 +19,7 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { addCollateral, angle, closeVault, createVault, deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
+import { addCollateral, batch, closeVault, createVault, deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('VaultManager - ERC721', () => {
   let deployer: SignerWithAddress;
@@ -185,7 +185,7 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('success - first vault', async () => {
-        await angle(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
         const [vaults] = await vaultManager.getControlledVaults(alice.address);
         expect(vaults.length).to.be.equal(1);
         expect(vaults[0].toNumber()).to.be.equal(1);
@@ -193,8 +193,8 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('success - second vault', async () => {
-        await angle(vaultManager, bob, [createVault(bob.address)]);
-        await angle(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, bob, [createVault(bob.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
         const [vaults, count] = await vaultManager.getControlledVaults(alice.address);
         expect(vaults.length).to.be.equal(2);
         expect(count).to.be.equal(1);
@@ -203,11 +203,11 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('success - second and third vault', async () => {
-        await angle(vaultManager, bob, [createVault(bob.address)]);
+        await batch(vaultManager, bob, [createVault(bob.address)]);
         expect(await vaultManager.vaultIDCount()).to.be.equal(1);
-        await angle(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
         expect(await vaultManager.vaultIDCount()).to.be.equal(2);
-        await angle(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
         const [vaults, count] = await vaultManager.getControlledVaults(alice.address);
         expect(vaults.length).to.be.equal(3);
         expect(count).to.be.equal(2);
@@ -217,10 +217,10 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('success - burn vault', async () => {
-        await angle(vaultManager, bob, [createVault(bob.address)]);
-        await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(2)]);
+        await batch(vaultManager, bob, [createVault(bob.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(2)]);
         const [vaults, count] = await vaultManager.getControlledVaults(alice.address);
         expect(vaults.length).to.be.equal(3);
         expect(count).to.be.equal(1);
@@ -231,10 +231,10 @@ contract('VaultManager - ERC721', () => {
 
     describe('isApprovedOrOwner', () => {
       beforeEach(async () => {
-        await angle(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
         await collateral.connect(alice).mint(alice.address, parseEther('1'));
         await collateral.connect(alice).approve(vaultManager.address, parseEther('1'));
-        await angle(vaultManager, alice, [addCollateral(1, parseEther('1'))]);
+        await batch(vaultManager, alice, [addCollateral(1, parseEther('1'))]);
       });
 
       it('success - owner is approved', async () => {
@@ -254,10 +254,10 @@ contract('VaultManager - ERC721', () => {
     describe('tokenURI', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        await angle(vaultManager, alice, [createVault(alice.address)]);
-        for (let i = 0; i < 20; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
+        for (let i = 0; i < 20; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - Unexistent vault', async () => {
@@ -276,8 +276,8 @@ contract('VaultManager - ERC721', () => {
     describe('balanceOf', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 20; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 20; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - zero address', async () => {
@@ -292,8 +292,8 @@ contract('VaultManager - ERC721', () => {
     describe('ownerOf', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 2; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 2; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - closed vault', async () => {
@@ -312,8 +312,8 @@ contract('VaultManager - ERC721', () => {
     describe('approve', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 2; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 2; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - cannot self approve', async () => {
@@ -337,8 +337,8 @@ contract('VaultManager - ERC721', () => {
     describe('getApproved', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 2; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 2; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - nonexistent vault', async () => {
@@ -354,8 +354,8 @@ contract('VaultManager - ERC721', () => {
     describe('setApprovalForAll', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 4; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 4; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - cannot self approve', async () => {
@@ -376,8 +376,8 @@ contract('VaultManager - ERC721', () => {
     describe('isApprovedForAll', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 4; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 4; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('success', async () => {
@@ -392,8 +392,8 @@ contract('VaultManager - ERC721', () => {
     describe('transferFrom', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 4; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 4; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - do not own vault', async () => {
@@ -426,8 +426,8 @@ contract('VaultManager - ERC721', () => {
     describe('safeTransferFrom', () => {
       beforeEach(async () => {
         await vaultManager.connect(guardian).setBaseURI('website');
-        for (let i = 0; i < 4; i++) await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [closeVault(1)]);
+        for (let i = 0; i < 4; i++) await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [closeVault(1)]);
       });
 
       it('reverts - neither approved or owner', async () => {
@@ -468,8 +468,8 @@ contract('VaultManager - ERC721', () => {
       let receiver: Contract;
       beforeEach(async () => {
         receiver = await new MockERC721Receiver__factory(deployer).deploy();
-        await angle(vaultManager, alice, [createVault(alice.address)]);
-        await angle(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
+        await batch(vaultManager, alice, [createVault(alice.address)]);
       });
       it('success', async () => {
         await vaultManager
@@ -494,12 +494,12 @@ contract('VaultManager - ERC721', () => {
       it('reverts - not receiver', async () => {
         const receiver = await new MockERC721Receiver__factory(deployer).deploy();
         await receiver.setMode(2);
-        await expect(angle(vaultManager, alice, [createVault(receiver.address)])).to.be.revertedWith('29');
+        await expect(batch(vaultManager, alice, [createVault(receiver.address)])).to.be.revertedWith('29');
       });
 
       it('reverts - not whitelisted', async () => {
         await vaultManager.connect(governor).toggleWhitelisting();
-        await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
+        await expect(batch(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
       });
     });
   });

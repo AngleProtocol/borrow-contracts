@@ -26,7 +26,7 @@ import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt } from '../utils/expectEvent';
 import {
   addCollateral,
-  angle,
+  batch,
   borrow,
   closeVault,
   createVault,
@@ -144,14 +144,14 @@ contract('VaultManager', () => {
     });
   });
 
-  describe('angle', () => {
+  describe('batch', () => {
     it('reverts - paused', async () => {
       await vaultManager.connect(guardian).togglePause();
-      await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('42');
+      await expect(batch(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('42');
     });
 
     it('success - state', async () => {
-      await angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
+      await batch(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
       expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
       expect(await vaultManager.ownerOf(1)).to.be.equal(alice.address);
       expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
@@ -159,20 +159,20 @@ contract('VaultManager', () => {
 
     it('reverts - not whitelisted', async () => {
       await vaultManager.connect(governor).toggleWhitelisting();
-      await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
+      await expect(batch(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
     });
     it('reverts - unknown action', async () => {
       await expect(
         vaultManager
           .connect(governor)
-          ['angle(uint8[],bytes[],address,address)']([10], ['0x'], ZERO_ADDRESS, ZERO_ADDRESS),
+          ['batch(uint8[],bytes[],address,address)']([10], ['0x'], ZERO_ADDRESS, ZERO_ADDRESS),
       ).to.be.reverted;
     });
 
     it('success - whitelisted', async () => {
       await vaultManager.connect(governor).toggleWhitelisting();
       await vaultManager.connect(governor).toggleWhitelist(alice.address);
-      await angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
+      await batch(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
       expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
       expect(await vaultManager.ownerOf(1)).to.be.equal(alice.address);
       expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
@@ -184,14 +184,14 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
         borrow(2, borrowAmount),
       ]);
       await oracle.update(parseEther('0.9'));
-      await expect(angle(vaultManager, alice, [closeVault(2)])).to.be.revertedWith('21');
+      await expect(batch(vaultManager, alice, [closeVault(2)])).to.be.revertedWith('21');
     });
   });
 
@@ -200,7 +200,7 @@ contract('VaultManager', () => {
       const amount = parseUnits('1', collatBase);
       await collateral.connect(alice).mint(alice.address, amount);
       await collateral.connect(alice).approve(vaultManager.address, amount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, amount),
@@ -214,7 +214,7 @@ contract('VaultManager', () => {
       const amount = parseUnits('1', collatBase);
       await collateral.connect(alice).mint(alice.address, amount);
       await collateral.connect(alice).approve(vaultManager.address, amount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, amount),
@@ -225,7 +225,7 @@ contract('VaultManager', () => {
       const amount2 = parseUnits('3', collatBase);
       await collateral.connect(alice).mint(alice.address, amount2);
       await collateral.connect(alice).approve(vaultManager.address, amount2);
-      await angle(vaultManager, alice, [addCollateral(1, amount2)]);
+      await batch(vaultManager, alice, [addCollateral(1, amount2)]);
       expect(await collateral.balanceOf(alice.address)).to.be.equal(0);
       expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(amount.add(amount2));
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(amount2);
@@ -237,14 +237,14 @@ contract('VaultManager', () => {
       const amount = parseUnits('1', collatBase);
       await collateral.connect(alice).mint(alice.address, amount);
       await collateral.connect(alice).approve(vaultManager.address, amount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, amount),
       ]);
       expect(await collateral.balanceOf(alice.address)).to.be.equal(0);
       expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(amount);
-      await angle(vaultManager, alice, [removeCollateral(2, amount)]);
+      await batch(vaultManager, alice, [removeCollateral(2, amount)]);
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
     });
     it('reverts - insolvent vault', async () => {
@@ -252,13 +252,13 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('0.999');
       await collateral.connect(alice).mint(alice.address, amount);
       await collateral.connect(alice).approve(vaultManager.address, amount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, amount),
         borrow(2, borrowAmount),
       ]);
-      await expect(angle(vaultManager, alice, [removeCollateral(2, parseUnits('0.5', collatBase))])).to.be.revertedWith(
+      await expect(batch(vaultManager, alice, [removeCollateral(2, parseUnits('0.5', collatBase))])).to.be.revertedWith(
         '21',
       );
     });
@@ -272,13 +272,13 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('2');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
       ]);
 
-      await expect(angle(vaultManager, alice, [borrow(2, borrowAmount)])).to.be.revertedWith('21');
+      await expect(batch(vaultManager, alice, [borrow(2, borrowAmount)])).to.be.revertedWith('21');
     });
     it('reverts - dusty amount', async () => {
       // Collat amount in stable should be 4
@@ -286,13 +286,13 @@ contract('VaultManager', () => {
       const collatAmount = parseUnits('2', collatBase);
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
       ]);
 
-      await expect(angle(vaultManager, alice, [borrow(2, parseUnits('0.01', 9))])).to.be.revertedWith('24');
+      await expect(batch(vaultManager, alice, [borrow(2, parseUnits('0.01', 9))])).to.be.revertedWith('24');
     });
     it('reverts - debt ceiling amount', async () => {
       // Collat amount in stable should be 4
@@ -300,12 +300,12 @@ contract('VaultManager', () => {
       const collatAmount = parseUnits('10000', collatBase);
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
       ]);
-      await expect(angle(vaultManager, alice, [borrow(2, parseEther('101'))])).to.be.revertedWith('45');
+      await expect(batch(vaultManager, alice, [borrow(2, parseEther('101'))])).to.be.revertedWith('45');
     });
 
     it('success - in two transactions', async () => {
@@ -315,13 +315,13 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
       ]);
 
-      await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
+      await batch(vaultManager, alice, [borrow(2, borrowAmount)]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
       await expect(vaultManager.checkLiquidation(2, alice.address)).to.be.revertedWith('44');
@@ -333,7 +333,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -345,7 +345,7 @@ contract('VaultManager', () => {
       await vaultManager
         .connect(governor)
         .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
-      await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
+      await batch(vaultManager, alice, [borrow(2, borrowAmount)]);
       displayVaultState(vaultManager, 2, log, collatBase);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.998'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
@@ -355,7 +355,7 @@ contract('VaultManager', () => {
         .connect(governor)
         .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
       expectApprox(await vaultManager.surplus(), parseEther('0.29989'), 0.1);
-      await angle(vaultManager, alice, [addCollateral(2, collatAmount.mul(2)), borrow(2, borrowAmount)]);
+      await batch(vaultManager, alice, [addCollateral(2, collatAmount.mul(2)), borrow(2, borrowAmount)]);
       // Vault debt should be 1.998*1.05 + 1.998
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('4.098'), 0.1);
       // Surplus should have accrued during this period: it should be 0.05*1.998+0.19989*2 =
@@ -369,7 +369,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -387,13 +387,13 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('0.999');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
         borrow(2, borrowAmount),
       ]);
-      await angle(vaultManager, alice, [borrow(2, parseEther('1'))]);
+      await batch(vaultManager, alice, [borrow(2, parseEther('1'))]);
 
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
@@ -407,13 +407,13 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
         borrow(2, borrowAmount),
       ]);
-      await angle(vaultManager, alice, [repayDebt(2, parseEther('1'))]);
+      await batch(vaultManager, alice, [repayDebt(2, parseEther('1'))]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
     });
     it('success - when amount to repay is slightly above the debt and rounded down', async () => {
@@ -423,7 +423,7 @@ contract('VaultManager', () => {
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
       await stableMaster.connect(alice).mint(agToken.address, alice.address, borrowAmount);
       await agToken.connect(alice).approve(vaultManager.address, borrowAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -438,7 +438,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -452,7 +452,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -462,7 +462,7 @@ contract('VaultManager', () => {
         borrow(1, borrowAmount),
       ]);
       const vaultDebt = await vaultManager.getVaultDebt(2);
-      await expect(angle(vaultManager, alice, [repayDebt(2, vaultDebt.add(parseUnits('3', 9)))])).to.be.revertedWith(
+      await expect(batch(vaultManager, alice, [repayDebt(2, vaultDebt.add(parseUnits('3', 9)))])).to.be.revertedWith(
         '24',
       );
     });
@@ -473,7 +473,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -482,7 +482,7 @@ contract('VaultManager', () => {
         addCollateral(1, collatAmount),
       ]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
-      await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))]);
+      await batch(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
     });
@@ -491,7 +491,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(1, collatAmount),
@@ -508,14 +508,14 @@ contract('VaultManager', () => {
       await treasury.setVaultManager2(vaultManager2.address);
       await treasury.addMinter(agToken.address, vaultManager2.address);
       await collateral.connect(alice).approve(vaultManager2.address, collatAmount.mul(10));
-      await angle(vaultManager2, alice, [
+      await batch(vaultManager2, alice, [
         createVault(alice.address),
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
       ]);
       const surplusPre = await vaultManager.surplus();
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.9989'), 0.1);
-      await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
+      await batch(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
       expect(await vaultManager.surplus()).to.be.equal(surplusPre);
@@ -525,7 +525,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(1, collatAmount),
@@ -547,14 +547,14 @@ contract('VaultManager', () => {
       await treasury.addMinter(agToken.address, vaultManager2.address);
       await collateral.connect(alice).approve(vaultManager2.address, collatAmount.mul(10));
 
-      await angle(vaultManager2, alice, [
+      await batch(vaultManager2, alice, [
         createVault(alice.address),
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
       ]);
       const surplusPre = await vaultManager2.surplus();
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.999'), 0.1);
-      await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
+      await batch(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
       expectApprox(await vaultManager2.surplus(), surplusPre.add(parseEther('0.1')), 0.1);
@@ -597,7 +597,7 @@ contract('VaultManager', () => {
         parseEther('1'),
         'agEUR',
       );
-      await angle(vaultManager, bob, [permit(permitData)]);
+      await batch(vaultManager, bob, [permit(permitData)]);
       expect(await agToken.allowance(bob.address, vaultManager.address)).to.be.equal(parseEther('1'));
     });
     it('reverts - overflow on v', async () => {
@@ -612,7 +612,7 @@ contract('VaultManager', () => {
       );
       // Max value for a uint8 is 255
       permitData.v = 10000000;
-      await expect(angle(vaultManager, bob, [permit(permitData)])).to.be.reverted;
+      await expect(batch(vaultManager, bob, [permit(permitData)])).to.be.reverted;
     });
     it('reverts - invalid signature', async () => {
       const permitData = await signPermit(
@@ -624,7 +624,7 @@ contract('VaultManager', () => {
         parseEther('1'),
         'test',
       );
-      await expect(angle(vaultManager, bob, [permit(permitData)])).to.be.reverted;
+      await expect(batch(vaultManager, bob, [permit(permitData)])).to.be.reverted;
     });
   });
   describe('composed actions', () => {
@@ -636,7 +636,7 @@ contract('VaultManager', () => {
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
       mockSwapper = (await new MockSwapper__factory(deployer).deploy()) as MockSwapper;
       await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount.mul(1000));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount.mul(2)),
@@ -646,7 +646,7 @@ contract('VaultManager', () => {
     it('success - stablecoin and collateral to receive by the protocol', async () => {
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(2));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
-      await angle(vaultManager, alice, [addCollateral(2, collatAmount), repayDebt(2, parseEther('1'))]);
+      await batch(vaultManager, alice, [addCollateral(2, collatAmount), repayDebt(2, parseEther('1'))]);
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
     });
@@ -657,7 +657,7 @@ contract('VaultManager', () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [addCollateral(2, collatAmount), repayDebt(2, parseEther('1'))],
@@ -676,7 +676,7 @@ contract('VaultManager', () => {
     });
     it('reverts - stablecoin and collateral to receive by the protocol but from address has not approved', async () => {
       await expect(
-        angle(
+        batch(
           vaultManager,
           alice,
           [addCollateral(2, collatAmount), repayDebt(2, parseEther('1'))],
@@ -688,12 +688,12 @@ contract('VaultManager', () => {
       ).to.be.revertedWith('23');
     });
     it('success - stablecoin and collateral to be paid by the protocol', async () => {
-      await angle(vaultManager, alice, [createVault(alice.address), addCollateral(3, collatAmount.mul(2))]);
+      await batch(vaultManager, alice, [createVault(alice.address), addCollateral(3, collatAmount.mul(2))]);
       expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount.mul(2));
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(vaultManager, alice, [removeCollateral(3, collatAmount), borrow(3, borrowAmount)]);
+      await batch(vaultManager, alice, [removeCollateral(3, collatAmount), borrow(3, borrowAmount)]);
       expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
       expectApprox(await vaultManager.getVaultDebt(3), parseEther('1.9989'), 0.1);
       expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount);
@@ -701,14 +701,14 @@ contract('VaultManager', () => {
       expect(await collateral.balanceOf(alice.address)).to.be.equal(aliceCollateralBalance.add(collatAmount));
     });
     it('success - stablecoin and collateral to be paid by the protocol with a different to address', async () => {
-      await angle(vaultManager, alice, [createVault(alice.address), addCollateral(3, collatAmount.mul(2))]);
+      await batch(vaultManager, alice, [createVault(alice.address), addCollateral(3, collatAmount.mul(2))]);
       expect((await vaultManager.vaultData(3)).collateralAmount).to.be.equal(collatAmount.mul(2));
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [removeCollateral(3, collatAmount), borrow(3, borrowAmount)],
@@ -729,7 +729,7 @@ contract('VaultManager', () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
@@ -749,7 +749,7 @@ contract('VaultManager', () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [removeCollateral(2, collatAmount)],
@@ -771,7 +771,7 @@ contract('VaultManager', () => {
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [removeCollateral(2, collatAmount)],
@@ -791,7 +791,7 @@ contract('VaultManager', () => {
     });
     it('reverts - handle repay from address not approved', async () => {
       await expect(
-        angle(
+        batch(
           vaultManager,
           alice,
           [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
@@ -804,7 +804,7 @@ contract('VaultManager', () => {
     });
     it('reverts - handle repay when the who address is invalid', async () => {
       await expect(
-        angle(
+        batch(
           vaultManager,
           alice,
           [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
@@ -822,7 +822,7 @@ contract('VaultManager', () => {
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await agToken.connect(bob).approve(alice.address, parseEther('10'));
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
@@ -843,7 +843,7 @@ contract('VaultManager', () => {
     it('reverts - handle repay with an approved address but fails to get enough stablecoins', async () => {
       await agToken.connect(charlie).approve(alice.address, parseEther('10'));
       await expect(
-        angle(
+        batch(
           vaultManager,
           alice,
           [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
@@ -861,7 +861,7 @@ contract('VaultManager', () => {
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
       await agToken.connect(bob).approve(alice.address, parseEther('10'));
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
@@ -883,7 +883,7 @@ contract('VaultManager', () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
@@ -905,7 +905,7 @@ contract('VaultManager', () => {
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
@@ -927,7 +927,7 @@ contract('VaultManager', () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       await collateral.connect(alice).transfer(bob.address, aliceCollateralBalance);
       await expect(
-        angle(
+        batch(
           vaultManager,
           alice,
           [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
@@ -944,7 +944,7 @@ contract('VaultManager', () => {
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
       const bobCollateralBalance = await collateral.balanceOf(bob.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
@@ -965,7 +965,7 @@ contract('VaultManager', () => {
     });
     it('reverts - swapToCollateral who address is invalid', async () => {
       await expect(
-        angle(
+        batch(
           vaultManager,
           alice,
           [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
@@ -980,7 +980,7 @@ contract('VaultManager', () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
-      await angle(
+      await batch(
         vaultManager,
         alice,
         [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
@@ -1005,7 +1005,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -1093,7 +1093,7 @@ contract('VaultManager', () => {
       await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount);
       await agToken.connect(bob).approve(vaultManager.address, borrowAmount);
 
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -1339,7 +1339,7 @@ contract('VaultManager', () => {
       // So max borrowable amount is 1
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
@@ -1424,7 +1424,7 @@ contract('VaultManager', () => {
       await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount.mul(100));
       await agToken.connect(bob).approve(vaultManager.address, borrowAmount.mul(100));
 
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -1451,7 +1451,7 @@ contract('VaultManager', () => {
       await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount.mul(100));
       await agToken.connect(bob).approve(vaultManager.address, borrowAmount.mul(100));
 
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -1572,7 +1572,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('0.999');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -1604,7 +1604,7 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('0.999');
       await collateral.connect(alice).mint(alice.address, collatAmount);
       await collateral.connect(alice).approve(vaultManager.address, collatAmount);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         createVault(alice.address),
         addCollateral(2, collatAmount),
@@ -1649,7 +1649,7 @@ contract('VaultManager', () => {
       const collatAmount = parseUnits('2', collatBase);
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(0, collatAmount),
         createVault(alice.address),
@@ -1665,7 +1665,7 @@ contract('VaultManager', () => {
 
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(0, collatAmount),
         borrow(0, borrowAmount),
@@ -1683,7 +1683,7 @@ contract('VaultManager', () => {
       const collatAmount = parseUnits('2', collatBase);
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(0, collatAmount),
         removeCollateral(0, collatAmount.div(2)),
@@ -1701,7 +1701,7 @@ contract('VaultManager', () => {
 
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(0, collatAmount),
         borrow(0, borrowAmount),
@@ -1718,7 +1718,7 @@ contract('VaultManager', () => {
     });
 
     it('success - closeVault', async () => {
-      await angle(vaultManager, alice, [createVault(alice.address), closeVault(0)]);
+      await batch(vaultManager, alice, [createVault(alice.address), closeVault(0)]);
       await expect(vaultManager.ownerOf(1)).to.be.revertedWith('26');
     });
 
@@ -1727,13 +1727,13 @@ contract('VaultManager', () => {
       const borrowAmount = parseEther('1.999');
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
       ]);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1.9989'), 0.1);
-      await angle(vaultManager, alice, [
+      await batch(vaultManager, alice, [
         createVault(alice.address),
         addCollateral(0, collatAmount),
         getDebtIn(0, vaultManager.address, 1, parseEther('1')),

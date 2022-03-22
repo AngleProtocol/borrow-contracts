@@ -251,7 +251,7 @@ async function displayVaultState(
   }
 }
 
-async function angle(
+async function batch(
   vaultManager: VaultManager,
   signer: SignerWithAddress,
   calls: Call[],
@@ -269,17 +269,17 @@ async function angle(
   if (who !== ZERO_ADDRESS) {
     await vaultManager
       .connect(signer)
-      ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
+      ['batch(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
   } else {
-    await vaultManager.connect(signer)['angle(uint8[],bytes[],address,address)'](actions, datas, from, to);
+    await vaultManager.connect(signer)['batch(uint8[],bytes[],address,address)'](actions, datas, from, to);
   }
 }
 
 export {
   addCollateral,
-  angle,
   balance,
   BASE_PARAMS,
+  batch,
   borrow,
   closeVault,
   createVault,

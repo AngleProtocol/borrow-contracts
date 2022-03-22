@@ -143,7 +143,7 @@ interface IVaultManagerFunctions {
     /// @return paymentData Struct containing the final transfers executed
     /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
     /// or computations (like `oracleValue`) are done only once
-    function angle(
+    function batch(
         ActionType[] memory actions,
         bytes[] memory datas,
         address from,
@@ -162,7 +162,7 @@ interface IVaultManagerFunctions {
     /// @return paymentData Struct containing the final transfers executed
     /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
     /// or computations (like `oracleValue`) are done only once
-    function angle(
+    function batch(
         ActionType[] memory actions,
         bytes[] memory datas,
         address from,

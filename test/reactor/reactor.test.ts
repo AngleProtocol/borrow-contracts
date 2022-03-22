@@ -22,7 +22,7 @@ import {
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import {
-  angle,
+  batch,
   deployUpgradeable,
   displayReactorState,
   displayVaultState,
@@ -469,7 +469,7 @@ contract('Reactor', () => {
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
-      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      await batch(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
       expect(await reactor.lastDebt()).to.be.equal(parseEther('1.6'));
@@ -618,7 +618,7 @@ contract('Reactor', () => {
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
-      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      await batch(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.rebalance();
       expect(await reactor.claimableRewards()).to.be.equal(parseEther('0.8'));
       // State of the reactor should not change otherwise
@@ -865,7 +865,7 @@ contract('Reactor', () => {
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
-      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      await batch(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
       expect(await reactor.lastDebt()).to.be.equal(parseEther('1.6'));
@@ -891,7 +891,7 @@ contract('Reactor', () => {
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
-      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      await batch(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       // Here we record a gain
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));

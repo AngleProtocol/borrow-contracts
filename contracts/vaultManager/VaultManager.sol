@@ -96,17 +96,17 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     }
 
     /// @inheritdoc IVaultManagerFunctions
-    function angle(
+    function batch(
         ActionType[] memory actions,
         bytes[] memory datas,
         address from,
         address to
     ) external payable returns (PaymentData memory) {
-        return angle(actions, datas, from, to, address(0), new bytes(0));
+        return batch(actions, datas, from, to, address(0), new bytes(0));
     }
 
     /// @inheritdoc IVaultManagerFunctions
-    function angle(
+    function batch(
         ActionType[] memory actions,
         bytes[] memory datas,
         address from,
@@ -115,7 +115,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         bytes memory repayData
     ) public payable whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
         // `newInterestRateAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
-        // only once inside the first action where they are necessary, then they are returned to the `angle` function
+        // only once inside the first action where they are necessary, then they are returned to the `batch` function
         // where they are passed forward to further actions
         uint256 newInterestRateAccumulator;
         uint256 oracleValue;
@@ -509,7 +509,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             _repayDebt(dstVaultID, stablecoinAmount, newInterestRateAccumulator);
         } else {
             // No need to check the integrity of `vaultManager` here because `_getDebtIn` can be entered only through the
-            // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
+            // `batch` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
             // would get their debt increasing in the current vault without decreasing it in the remote vault.
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
         }
