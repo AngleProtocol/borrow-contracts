@@ -32,7 +32,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @param spender Address for which vault ownerships should be checked
     /// @return List of `vaultID` controlled by this address
     /// @return Count of vaults owned by the address
-    /// @dev This function is never to be called on-chain since it iterates over all addresses and is here
+    /// @dev This function is never to be called on-chain since it iterates over all vaultIDs. It is here
     /// to reduce dependency on an external graph to link an ID to its owner
     function getControlledVaults(address spender) external view returns (uint256[] memory, uint256) {
         uint256 arraySize = vaultIDCount;

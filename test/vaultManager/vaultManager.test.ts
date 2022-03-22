@@ -246,6 +246,7 @@ contract('VaultManager', () => {
       expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(amount);
       await angle(vaultManager, alice, [removeCollateral(2, amount)]);
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
     });
     it('reverts - insolvent vault', async () => {
       const amount = parseUnits('1', collatBase);
@@ -322,6 +323,7 @@ contract('VaultManager', () => {
       ]);
 
       await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
       await expect(vaultManager.checkLiquidation(2, alice.address)).to.be.revertedWith('44');
@@ -346,6 +348,7 @@ contract('VaultManager', () => {
         .connect(governor)
         .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
       await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       displayVaultState(vaultManager, 2, log, collatBase);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.998'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
@@ -356,6 +359,7 @@ contract('VaultManager', () => {
         .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
       expectApprox(await vaultManager.surplus(), parseEther('0.29989'), 0.1);
       await angle(vaultManager, alice, [addCollateral(2, collatAmount.mul(2)), borrow(2, borrowAmount)]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       // Vault debt should be 1.998*1.05 + 1.998
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('4.098'), 0.1);
       // Surplus should have accrued during this period: it should be 0.05*1.998+0.19989*2 =
@@ -375,7 +379,7 @@ contract('VaultManager', () => {
         addCollateral(2, collatAmount),
         borrow(2, borrowAmount),
       ]);
-
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
       await expect(vaultManager.checkLiquidation(2, alice.address)).to.be.revertedWith('44');
@@ -393,7 +397,9 @@ contract('VaultManager', () => {
         addCollateral(2, collatAmount),
         borrow(2, borrowAmount),
       ]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       await angle(vaultManager, alice, [borrow(2, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
 
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
@@ -414,6 +420,7 @@ contract('VaultManager', () => {
         borrow(2, borrowAmount),
       ]);
       await angle(vaultManager, alice, [repayDebt(2, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
     });
     it('success - when amount to repay is slightly above the debt and rounded down', async () => {
@@ -431,6 +438,7 @@ contract('VaultManager', () => {
         repayDebt(2, borrowAmount.add(1)),
       ]);
       expect(await vaultManager.getVaultDebt(2)).to.be.equal(0);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
     });
 
     it('success - in just one transaction', async () => {
@@ -445,6 +453,7 @@ contract('VaultManager', () => {
         borrow(2, borrowAmount),
         repayDebt(2, parseEther('1')),
       ]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
     });
     it('reverts - debt repaid but dusty amount left', async () => {
@@ -483,6 +492,7 @@ contract('VaultManager', () => {
       ]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
     });
@@ -513,9 +523,11 @@ contract('VaultManager', () => {
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
       ]);
+      expect(await vaultManager2.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       const surplusPre = await vaultManager.surplus();
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.9989'), 0.1);
       await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
       expect(await vaultManager.surplus()).to.be.equal(surplusPre);
@@ -552,9 +564,11 @@ contract('VaultManager', () => {
         addCollateral(1, collatAmount),
         borrow(1, borrowAmount),
       ]);
+      expect(await vaultManager2.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       const surplusPre = await vaultManager2.surplus();
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.999'), 0.1);
       await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager2.getVaultDebt(1), parseEther('1.1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
       expectApprox(await vaultManager2.surplus(), surplusPre.add(parseEther('0.1')), 0.1);

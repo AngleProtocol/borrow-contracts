@@ -76,7 +76,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     uint64 public maxLiquidationDiscount;
     /// @notice Whether whitelisting is required to own a vault or not
     bool public whitelistingActivated;
-    /// @notice Whether the vault paused or not
+    /// @notice Whether the contract is paused or not
     bool public paused;
 
     // =============================== Variables ===================================
