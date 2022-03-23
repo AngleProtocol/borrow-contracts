@@ -1756,4 +1756,102 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
     });
   });
+
+  describe('tracking interest', () => {
+    it('success - when two people come in', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      // Setting 0 borrow fee
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('borrowFee'));
+      expect(await vaultManager.borrowFee()).to.be.equal(0);
+
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await collateral.connect(alice).mint(bob.address, collatAmount.mul(10));
+      await collateral.connect(bob).approve(vaultManager.address, collatAmount.mul(10));
+      await collateral.connect(alice).mint(charlie.address, collatAmount.mul(10));
+      await collateral.connect(charlie).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+        borrow(1, borrowAmount),
+      ]);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      await increaseTime(365 * 24 * 3600);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1.05'), 0.01);
+      await angle(vaultManager, bob, [
+        createVault(bob.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+      ]);
+      expectApprox(await vaultManager.surplus(), parseEther('0.05'), 0.1);
+      expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.05', 27), 0.1);
+      await increaseTime(365 * 24 * 3600);
+      // Here debt should be 1.05 * 1.05 = 1.1025
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1.1025'), 0.01);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.05'), 0.01);
+      await angle(vaultManager, charlie, [
+        createVault(charlie.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+      ]);
+      // Interest accumulator tracks accumulation of 5% for two years
+      expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.1025', 27), 0.1);
+      expectApprox(await vaultManager.surplus(), parseEther('0.1525'), 0.1);
+    });
+    it('success - when three people come in and varying time frames', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      // Setting 0 borrow fee
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('borrowFee'));
+      expect(await vaultManager.borrowFee()).to.be.equal(0);
+
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await collateral.connect(alice).mint(bob.address, collatAmount.mul(10));
+      await collateral.connect(bob).approve(vaultManager.address, collatAmount.mul(10));
+      await collateral.connect(alice).mint(charlie.address, collatAmount.mul(10));
+      await collateral.connect(charlie).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+        borrow(1, borrowAmount),
+      ]);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      // 10 years
+      await increaseTime(365 * 24 * 3600 * 10);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1.6278946'), 0.01);
+      await angle(vaultManager, bob, [
+        createVault(bob.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+      ]);
+      // Here debt should be 1.05^10 = 1.6288946
+      expectApprox(await vaultManager.surplus(), parseEther('0.6278946'), 0.1);
+      expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.6278946', 27), 0.1);
+      await increaseTime(365 * 24 * 3600);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1.7093393'), 0.01);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.05'), 0.01);
+      await angle(vaultManager, charlie, [
+        createVault(charlie.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+      ]);
+      // Interest accumulator tracks accumulation of 5% for 11 years
+      expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.7093393', 27), 0.1);
+      expectApprox(await vaultManager.surplus(), parseEther('0.759'), 0.1);
+      await increaseTime(365 * 24 * 3600);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        addCollateral(0, collatAmount),
+        borrow(0, borrowAmount),
+      ]);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1.79469'), 0.01);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.1025'), 0.01);
+      expectApprox(await vaultManager.getVaultDebt(3), parseEther('1.05'), 0.01);
+      expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.79469', 27), 0.1);
+      // Surplus is 0.79585 + 0.1025 + 0.05
+      expectApprox(await vaultManager.surplus(), parseEther('0.947'), 0.1);
+    });
+  });
 });

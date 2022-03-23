@@ -136,24 +136,7 @@ interface IVaultManagerFunctions {
     /// @notice Allows composability between calls to the different entry points of this module. Any user calling
     /// this function can perform any of the allowed actions in the order of their choice
     /// @param actions Set of actions to perform
-    /// @param datas Data to be decoded for each action: it can include like the `vaultID` or the
-    /// @param from Address from which stablecoins will be taken if one action includes burning stablecoins. This address
-    /// should either be the `msg.sender` or be approved by the latter
-    /// @param to Address to which stablecoins and/or collateral will be sent in case of
-    /// @return paymentData Struct containing the final transfers executed
-    /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
-    /// or computations (like `oracleValue`) are done only once
-    function angle(
-        ActionType[] memory actions,
-        bytes[] memory datas,
-        address from,
-        address to
-    ) external payable returns (PaymentData memory paymentData);
-
-    /// @notice Allows composability between calls to the different entry points of this module. Any user calling
-    /// this function can perform any of the allowed actions in the order of their choice
-    /// @param actions Set of actions to perform
-    /// @param datas Data to be decoded for each action: it can include like the `vaultID` or the
+    /// @param datas Data to be decoded for each action: it can include like the `vaultID` or the `stablecoinAmount` to borrow
     /// @param from Address from which stablecoins will be taken if one action includes burning stablecoins. This address
     /// should either be the `msg.sender` or be approved by the latter
     /// @param to Address to which stablecoins and/or collateral will be sent in case of
@@ -169,6 +152,15 @@ interface IVaultManagerFunctions {
         address to,
         address who,
         bytes memory repayData
+    ) external payable returns (PaymentData memory paymentData);
+
+    /// @notice This function is a wrapper built on top of the function above. It enables users to interact with the contract
+    /// without having to provide `who` and `repayData` parameters
+    function angle(
+        ActionType[] memory actions,
+        bytes[] memory datas,
+        address from,
+        address to
     ) external payable returns (PaymentData memory paymentData);
 
     /// @notice Initializes the `VaultManager` contract
