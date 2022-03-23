@@ -246,6 +246,14 @@ contract('Reactor', () => {
       await ANGLE.mint(reactor.address, gains);
       expect(await reactor.previewWithdraw(sharesAmount)).to.be.equal(sharesAmount.div(2));
     });
+    it('success - rounded up shares', async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      const gains = parseUnits('1', collatBase).sub(1);
+      await ANGLE.mint(reactor.address, gains);
+      expect(await reactor.previewWithdraw(sharesAmount)).to.be.equal(sharesAmount.div(2).add(1));
+    });
   });
   describe('previewMint', () => {
     const sharesAmount = parseUnits('1', collatBase);
@@ -265,6 +273,14 @@ contract('Reactor', () => {
       const gains = parseUnits('1', collatBase);
       await ANGLE.mint(reactor.address, gains);
       expect(await reactor.previewMint(sharesAmount)).to.be.equal(sharesAmount.mul(2));
+    });
+    it('success - rounded up assets', async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      const gains = parseUnits('1', collatBase).sub(1);
+      await ANGLE.mint(reactor.address, gains);
+      expect(await reactor.previewMint(sharesAmount.div(2).sub(1))).to.be.equal(sharesAmount.sub(2));
     });
   });
   describe('previewRedeem', () => {
@@ -304,7 +320,7 @@ contract('Reactor', () => {
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       const gains = parseUnits('1', collatBase);
       await ANGLE.mint(reactor.address, gains);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.div(2));
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2));
     });
   });
   describe('maxRedeem', () => {
@@ -477,7 +493,19 @@ contract('Reactor', () => {
       const claimable = await reactor.claimableRewards();
       expectApprox(claimable, parseEther('0.8'), 0.00001);
     });
-
+    it('success - mint with rounding', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      // Shares amount is consumed
+      expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
+      await treasury.addMinter(agEUR.address, bob.address);
+      await agEUR.connect(bob).mint(bob.address, parseEther('1'));
+      // To make a gain we need to repay debt on behalf of the vault
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      await reactor.connect(alice).mint(sharesAmount.div(2).add(1), alice.address);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(199).div(100).sub(1));
+    });
     it('success - second mint with borrow', async () => {
       const secondSharesAmount = sharesAmount;
       await ANGLE.connect(alice).mint(alice.address, secondSharesAmount);
@@ -807,6 +835,19 @@ contract('Reactor', () => {
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(assetsAmount);
       expect(await reactor.allowance(alice.address, bob.address)).to.be.equal(0);
       expectApprox(await vaultManager.getVaultDebt(1), totalAsset.sub(assetsAmount).mul(2).mul(targetCF), 0.00001);
+    });
+    it('success - withdraw with rounding', async () => {
+      const sharesAmount = parseUnits('1', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
+      // Shares amount is consumed
+      expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
+      await treasury.addMinter(agEUR.address, bob.address);
+      await agEUR.connect(bob).mint(bob.address, parseEther('1'));
+      // To make a gain we need to repay debt on behalf of the vault
+      await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      await reactor.connect(alice).withdraw(sharesAmount.sub(1), alice.address, alice.address);
+      expect(await reactor.balanceOf(alice.address)).to.be.equal(sharesAmount.div(2));
     });
     it('success - from approved by msg.sender and different to address', async () => {
       await reactor.connect(alice).approve(bob.address, sharesAmount);

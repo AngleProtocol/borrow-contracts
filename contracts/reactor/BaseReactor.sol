@@ -74,7 +74,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @inheritdoc IERC4626
     function deposit(uint256 assets, address to) public nonReentrant returns (uint256 shares) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
-        shares = _convertToShares(assets, usedAssets + looseAssets);
+        shares = _convertToShares(assets, usedAssets + looseAssets, 0);
         require(shares != 0, "ZERO_SHARES");
         _deposit(assets, shares, to, usedAssets, looseAssets + assets);
     }
@@ -82,7 +82,9 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @inheritdoc IERC4626
     function mint(uint256 shares, address to) public nonReentrant returns (uint256 assets) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
-        assets = _convertToAssets(shares, usedAssets + looseAssets);
+        uint256 totalSupply = totalSupply();
+        assets = _convertToAssets(shares, usedAssets + looseAssets, totalSupply);
+        assets += (_convertToShares(assets, usedAssets + looseAssets, totalSupply) < shares ? 1 : 0);
         _deposit(assets, shares, to, usedAssets, looseAssets + assets);
     }
 
@@ -95,7 +97,9 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         address from
     ) public nonReentrant returns (uint256 shares) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
-        shares = _convertToShares(assets, usedAssets + looseAssets);
+        uint256 totalSupply = totalSupply();
+        shares = _convertToShares(assets, usedAssets + looseAssets, totalSupply);
+        shares += (_convertToAssets(shares, usedAssets + looseAssets, totalSupply) < assets ? 1 : 0);
         _withdraw(assets, shares, to, from, usedAssets, looseAssets);
     }
 
@@ -112,7 +116,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         address from
     ) public nonReentrant returns (uint256 assets) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
-        require((assets = _convertToAssets(shares, usedAssets + looseAssets)) != 0, "ZERO_ASSETS");
+        require((assets = _convertToAssets(shares, usedAssets + looseAssets, 0)) != 0, "ZERO_ASSETS");
         _withdraw(assets, shares, to, from, usedAssets, looseAssets);
     }
 
@@ -134,12 +138,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @inheritdoc IERC4626
     function convertToShares(uint256 assets) public view returns (uint256) {
-        return _convertToShares(assets, totalAssets());
+        return _convertToShares(assets, totalAssets(), 0);
     }
 
     /// @inheritdoc IERC4626
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        return _convertToAssets(shares, totalAssets());
+        return _convertToAssets(shares, totalAssets(), 0);
     }
 
     /// @inheritdoc IERC4626
@@ -149,14 +153,20 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @inheritdoc IERC4626
     function previewMint(uint256 shares) public view returns (uint256) {
-        return convertToAssets(shares);
+        uint256 totalAssetAmount = totalAssets();
+        uint256 totalSupply = totalSupply();
+        uint256 assets = _convertToAssets(shares, totalAssetAmount, totalSupply);
+        return assets + (_convertToShares(assets, totalAssetAmount, totalSupply) < shares ? 1 : 0);
     }
 
     /// @notice Computes how many shares one would need to withdraw assets
     /// @param assets Amount of asset to withdraw
     /// @inheritdoc IERC4626
     function previewWithdraw(uint256 assets) public view returns (uint256) {
-        return convertToShares(assets);
+        uint256 totalAssetAmount = totalAssets();
+        uint256 totalSupply = totalSupply();
+        uint256 shares = _convertToShares(assets, totalAssetAmount, totalSupply);
+        return shares + (_convertToAssets(shares, totalAssetAmount, totalSupply) < assets ? 1 : 0);
     }
 
     /// @notice Computes how many assets one would get by burning shares
@@ -182,7 +192,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @inheritdoc IERC4626
     // TODO worth completing with restrictions based on current harvest
     function maxWithdraw(address user) public view virtual returns (uint256) {
-        return convertToShares(balanceOf(user));
+        return convertToAssets(balanceOf(user));
     }
 
     /// @inheritdoc IERC4626
@@ -217,8 +227,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @param assets Amount of assets to convert
     /// @param totalAssetAmount Total amount of asset controlled by the vault
     /// @return Corresponding amount of shares
-    function _convertToShares(uint256 assets, uint256 totalAssetAmount) internal view returns (uint256) {
-        uint256 supply = totalSupply();
+    function _convertToShares(
+        uint256 assets,
+        uint256 totalAssetAmount,
+        uint256 _supply
+    ) internal view returns (uint256) {
+        uint256 supply = _supply == 0 ? totalSupply() : _supply;
         return supply == 0 ? assets : (assets * supply) / totalAssetAmount;
     }
 
@@ -228,8 +242,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @return Corresponding amount of assets
     /// @dev It is at the level of this function that losses from liquidations are taken into account, because this
     /// reduces the totalAssetAmount and hence the amount of assets you are entitled to get from your shares
-    function _convertToAssets(uint256 shares, uint256 totalAssetAmount) internal view returns (uint256) {
-        uint256 supply = totalSupply();
+    function _convertToAssets(
+        uint256 shares,
+        uint256 totalAssetAmount,
+        uint256 _supply
+    ) internal view returns (uint256) {
+        uint256 supply = _supply == 0 ? totalSupply() : _supply;
         return supply == 0 ? shares : (shares * totalAssetAmount) / supply;
     }
 
