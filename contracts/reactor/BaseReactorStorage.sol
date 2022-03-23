@@ -63,7 +63,7 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     uint256 public claimedRewardsAccumulator;
     /// @notice Last time rewards were claimed in the reactor
     uint256 public lastTime;
-    /// @notice Last known stable debt to the `vaultManager`
+    /// @notice Last known stable debt to the `VaultManager`
     uint256 public lastDebt;
 
     /// @notice Maps an address to the last time it claimed its rewards

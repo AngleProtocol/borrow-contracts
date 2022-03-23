@@ -271,7 +271,7 @@ contract('Treasury', () => {
         treasury
           .connect(impersonatedSigners[governor])
           .recoverERC20(stablecoin.address, alice.address, parseEther('1')),
-      ).to.be.revertedWith('4');
+      ).to.be.reverted;
     });
     it('success - stablecoin token address', async () => {
       await stablecoin.mint(treasury.address, parseEther('10'));

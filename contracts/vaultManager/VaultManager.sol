@@ -423,7 +423,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     /// @notice Gets debt in a vault from another vault potentially in another `VaultManager` contract
     /// @param srcVaultID ID of the vault from this contract for which growing debt
-    /// @param vaultManager Address of the `vaultManager` where the targeted vault is
+    /// @param vaultManager Address of the `VaultManager` where the targeted vault is
     /// @param dstVaultID ID of the vault in the target contract
     /// @param stablecoinAmount Amount of stablecoins to grow the debt of. This amount will be converted
     /// to a normalized value in both vaultManager contracts
@@ -446,7 +446,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         if (address(vaultManager) == address(this)) {
             _repayDebt(dstVaultID, stablecoinAmount, newInterestAccumulator);
         } else {
-            // No need to check the integrity of `vaultManager` here because `_getDebtIn` can be entered only through the
+            // No need to check the integrity of `VaultManager` here because `_getDebtIn` can be entered only through the
             // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
             // would get their debt increasing in the current vault without decreasing it in the remote vault.
             vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
@@ -861,6 +861,12 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         emit ToggledWhitelisting(flag);
     }
 
+    /// @notice Changes the whitelisting of an address
+    /// @param target Address to toggle
+    function toggleWhitelist(address target) external onlyGovernor {
+        isWhitelisted[target] = !isWhitelisted[target];
+    }
+
     /// @notice Changes the reference to the oracle contract used to get the price of the oracle
     /// @param _oracle Reference to the oracle contract
     function setOracle(address _oracle) external onlyGovernor {
@@ -875,12 +881,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // This function makes sure to propagate the change to the associated contract
         // even though a single oracle contract could be used in different places
         oracle.setTreasury(_treasury);
-    }
-
-    /// @notice Changes the whitelisting of an address
-    /// @param target Address to toggle
-    function toggleWhitelist(address target) external onlyGovernor {
-        isWhitelisted[target] = !isWhitelisted[target];
     }
 
     /// @notice Pauses external permissionless functions of the contract
