@@ -74,6 +74,10 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     uint64 public liquidationSurcharge;
     /// @notice Maximum discount given to liquidators
     uint64 public maxLiquidationDiscount;
+    /// @notice Whether whitelisting is required to own a vault or not
+    bool public whitelistingActivated;
+    /// @notice Whether the contract is paused or not
+    bool public paused;
 
     // =============================== Variables ===================================
 
@@ -96,14 +100,6 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     mapping(uint256 => Vault) public vaultData;
     /// @notice Maps an address to whether it's whitelisted and can open or own a vault
     mapping(address => bool) public isWhitelisted;
-
-    // =============================== Parameters ==================================
-
-    /// @notice Whether whitelisting is required to own a vault or not
-    bool public whitelistingActivated;
-
-    /// @notice Whether the vault paused or not
-    bool public paused;
 
     // ================================ ERC721 Data ================================
 
@@ -132,7 +128,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     event AccruedToTreasury(uint256 surplusEndValue, uint256 badDebtEndValue);
     event CollateralAmountUpdated(uint256 vaultID, uint256 collateralAmount, uint8 isIncrease);
-    event InterestRateAccumulatorUpdated(uint256 value, uint256 timestamp);
+    event InterestAccumulatorUpdated(uint256 value, uint256 timestamp);
     event InternalDebtUpdated(uint256 vaultID, uint256 internalAmount, uint8 isIncrease);
     event FiledUint64(uint64 param, bytes32 what);
     event DebtCeilingUpdated(uint256 debtCeiling);

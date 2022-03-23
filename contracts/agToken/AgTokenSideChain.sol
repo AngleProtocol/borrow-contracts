@@ -39,8 +39,9 @@ contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     ) external initializer {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
-        require(address(ITreasury(_treasury).stablecoin()) == address(this), "6");
-        treasury = ITreasury(_treasury);
+        require(address(_treasury.stablecoin()) == address(this), "6");
+        treasury = _treasury;
+        emit TreasuryUpdated(address(_treasury));
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
