@@ -11,6 +11,8 @@ import "./BaseReactor.sol";
 /// @author Angle Core Team
 contract EulerReactor is BaseReactor {
     IEulerEToken public euler;
+    uint256 public lastETokenValue;
+    uint256 public minInvest;
 
     /// @notice Initializes the `BaseReactor` contract and
     /// the underlying `VaultManager`
@@ -63,7 +65,6 @@ contract EulerReactor is BaseReactor {
         // Liquidity on Euler
         uint256 poolSize = stablecoin.balanceOf(address(euler));
         if (poolSize < stablecoinsValueToRedeem) stablecoinsValueToRedeem = poolSize;
-
         maxAmount = (stablecoinsValueToRedeem * _assetBase) / oracleRate;
     }
 
@@ -74,7 +75,11 @@ contract EulerReactor is BaseReactor {
     /// on a threshold
     /// @dev Amount should not be above maxExternalAmount defined in Euler otherwise it will revert
     function _push(uint256 amount) internal virtual override returns (uint256 amountInvested) {
-        euler.deposit(0, amount);
+        (uint256 lentAssets, uint256 looseAssets) = _report();
+
+        if (looseAssets > minInvest) euler.deposit(0, amount);
+        // TODO should be equal to lentAssets + amount or  lentAssets in the else
+        lastETokenValue = euler.balanceOfUnderlying(address(this));
         return amount;
     }
 
@@ -83,7 +88,21 @@ contract EulerReactor is BaseReactor {
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
     /// @dev The call will revert if `stablecoin.balanceOf(address(euler))<amount`
     function _pull(uint256 amount) internal virtual override returns (uint256 amountAvailable) {
+        (uint256 lentAssets, ) = _report();
+
         euler.withdraw(0, amount);
+        // should be equal to lentAssets - amount // TODO verify
+        lastETokenValue = euler.balanceOfUnderlying(address(this));
+
         return amount;
+    }
+
+    function _report() internal returns (uint256 lentAssets, uint256 looseAssets) {
+        lentAssets = euler.balanceOfUnderlying(address(this));
+        looseAssets = stablecoin.balanceOf(address(this));
+        uint256 total = looseAssets + lentAssets;
+
+        if (total > lastETokenValue) claimableRewards += total - lastETokenValue;
+        else currentLoss += lastETokenValue - total;
     }
 }
