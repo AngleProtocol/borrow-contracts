@@ -38,8 +38,8 @@ contract EulerReactor is BaseReactor {
     function maxWithdraw(address user) public view virtual override returns (uint256) {
         uint256 toWithdraw = convertToAssets(balanceOf(user));
         (, uint256 looseAssets) = _getAssets();
-        if(toWithdraw<= looseAssets) return toWithdraw;
-        else return _maxStablecoinsAvailable(toWithdraw-looseAssets);
+        if (toWithdraw <= looseAssets) return toWithdraw;
+        else return _maxStablecoinsAvailable(toWithdraw - looseAssets);
     }
 
     /// @inheritdoc IERC4626
@@ -48,23 +48,23 @@ contract EulerReactor is BaseReactor {
         uint256 maxAmountToRedeem;
         uint256 toWithdraw = convertToAssets(balanceOf(user));
         (, uint256 looseAssets) = _getAssets();
-        if(toWithdraw<= looseAssets) maxAmountToRedeem = toWithdraw;
-        else maxAmountToRedeem = _maxStablecoinsAvailable(toWithdraw-looseAssets);
+        if (toWithdraw <= looseAssets) maxAmountToRedeem = toWithdraw;
+        else maxAmountToRedeem = _maxStablecoinsAvailable(toWithdraw - looseAssets);
         return convertToShares(maxAmountToRedeem);
     }
 
     /// @notice Returns the maximum amount of assets that can be withdrawn considering current Euler liquidity
-    /// @params amount Amount of assets wanted to be withdrawn
+    /// @param amount Amount of assets wanted to be withdrawn
     /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
-    function _maxStablecoinsAvailable(uint256 amount) internal override returns (uint256 maxAmount) {
+    function _maxStablecoinsAvailable(uint256 amount) internal view returns (uint256 maxAmount) {
         uint256 oracleRate = oracle.read();
         // convert amount to value in stablecoin
-        uint256 stablecoinsValueToRedeem = (amount * oracleRate) / assetBase;
+        uint256 stablecoinsValueToRedeem = (amount * oracleRate) / _assetBase;
         // Liquidity on Euler
         uint256 poolSize = stablecoin.balanceOf(address(euler));
         if (poolSize < stablecoinsValueToRedeem) stablecoinsValueToRedeem = poolSize;
 
-        maxAmount = stablecoinsValue * _assetBase / oracleRate
+        maxAmount = (stablecoinsValueToRedeem * _assetBase) / oracleRate;
     }
 
     /// @notice Virtual function to invest stablecoins
