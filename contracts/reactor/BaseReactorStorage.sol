@@ -56,7 +56,6 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     /// @notice Loss (in stablecoin) accumulated by the reactor: it's going to prevent the reactor from
     /// repaying its debt
     uint256 public currentLoss;
-
     /// @notice Used to track rewards accumulated by all depositors of the reactor
     uint256 public rewardsAccumulator;
     /// @notice Tracks rewards already claimed by all depositors

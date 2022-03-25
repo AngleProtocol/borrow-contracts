@@ -155,7 +155,9 @@ contract Settlement {
             // But at the same time, you cannot get more collateral than the value of the stablecoins you brought
             uint256 maxExchangeRate = (BASE_STABLECOIN * _collatBase) / oracleValue;
             if (_collateralStablecoinExchangeRate >= maxExchangeRate) {
-                // In this situation, we're sure that `leftOverCollateral` will be positive
+                // In this situation, we're sure that `leftOverCollateral` will be positive: governance should be wary
+                // to call `recoverERC20` short after though as there's nothing that is going to prevent people to redeem
+                // more stablecoins than the `leftOverDebt`
                 leftOverCollateral = collateralBalance - (leftOverDebt * _collatBase) / oracleValue;
                 _collateralStablecoinExchangeRate = maxExchangeRate;
             }
