@@ -91,6 +91,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @inheritdoc IERC4626
     /// @dev The amount of assets specified should be smaller than the amount of assets controlled by the
     /// reactor
+    /// @dev `assets` should also be inferior to maxWithdraw(from)
     function withdraw(
         uint256 assets,
         address to,
@@ -110,6 +111,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
+    /// @dev `shares` should be inferior to maxRedeem(from)
     function redeem(
         uint256 shares,
         address to,
@@ -190,14 +192,10 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address user) public view virtual returns (uint256) {
-        return convertToAssets(balanceOf(user));
-    }
+    function maxWithdraw(address user) public view virtual returns (uint256) {}
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address user) public view virtual returns (uint256) {
-        return balanceOf(user);
-    }
+    function maxRedeem(address user) public view virtual returns (uint256) {}
 
     /// @inheritdoc IERC721ReceiverUpgradeable
     function onERC721Received(
@@ -387,9 +385,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Virtual function to withdraw stablecoins
     /// @param amount Amount needed at the end of the call
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
-    /// @dev Eventually actually triggers smthg depending on a threshold
-    /// @dev Calling this function should eventually trigger something regarding strategies depending
-    /// on a threshold
+    /// @dev pull funds back to the reactor, full amounts may not be redeemable
     function _pull(uint256 amount) internal virtual returns (uint256 amountAvailable) {}
 
     /// @notice Claims rewards earned by a user
