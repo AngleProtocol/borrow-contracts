@@ -24,7 +24,7 @@ contract Treasury is ITreasury, Initializable {
 
     // =============================== References ==================================
 
-    /// @notice Reference to the Core contract of the module which handles all AccessControl logic
+    /// @notice Reference to the `CoreBorrow` contract of the module which handles all AccessControl logic
     ICoreBorrow public core;
     /// @notice Flash Loan Module with a minter right on the stablecoin
     IFlashAngle public flashLoanModule;
@@ -124,7 +124,6 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Fetches surplus from a list of vaultManager contracts
     /// @return Surplus buffer value at the end of the call
     /// @return Bad debt value at the end of the call
-    /// TODO: could be removed or not?
     function fetchSurplusFromVaultManagers(address[] memory vaultManagers) external returns (uint256, uint256) {
         (uint256 surplusBufferValue, uint256 badDebtValue) = _fetchSurplusFromList(vaultManagers);
         return _updateSurplusAndBadDebt(surplusBufferValue, badDebtValue);
@@ -132,7 +131,6 @@ contract Treasury is ITreasury, Initializable {
 
     /// @notice Pushes the surplus buffer to the `surplusManager` contract
     /// @return governanceAllocation Amount transferred to governance
-    /// @dev This function will fail if the `surplusManager` has not been initialized yet
     /// @dev It makes sure to fetch the surplus from all the contracts handled by this treasury to avoid
     /// the situation where rewards are still distributed to governance even though a `VaultManager` has made
     /// a big loss
@@ -160,7 +158,6 @@ contract Treasury is ITreasury, Initializable {
     /// the `surplusBuffer` and hence the amount going to governance
     function updateBadDebt(uint256 amount) external returns (uint256 badDebtValue) {
         badDebtValue = badDebt;
-        require(amount <= badDebtValue, "4");
         stablecoin.burnSelf(amount, address(this));
         badDebtValue -= amount;
         badDebt = badDebtValue;
@@ -240,10 +237,10 @@ contract Treasury is ITreasury, Initializable {
         stablecoin.addMinter(minter);
     }
 
-    /// @notice Adds a new `vaultManager`
+    /// @notice Adds a new `VaultManager`
     /// @param vaultManager `VaultManager` contract to add
     /// @dev This contract should have already been initialized with a correct treasury address
-    /// @dev It's this function that gives the minter right to the `vaultManager`
+    /// @dev It's this function that gives the minter right to the `VaultManager`
     function addVaultManager(address vaultManager) external onlyGovernor {
         require(!vaultManagerMap[vaultManager], "5");
         require(address(IVaultManager(vaultManager).treasury()) == address(this), "6");
@@ -256,14 +253,14 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Removes a minter from the stablecoin contract
     /// @param minter Minter address to remove
     function removeMinter(address minter) external onlyGovernor {
-        // To remove the minter role to a `vaultManager` you have to go through the `removeVaultManager` function
+        // To remove the minter role to a `VaultManager` you have to go through the `removeVaultManager` function
         require(!vaultManagerMap[minter], "36");
         stablecoin.removeMinter(minter);
     }
 
-    /// @notice Removes a `vaultManager`
+    /// @notice Removes a `VaultManager`
     /// @param vaultManager `VaultManager` contract to remove
-    /// @dev A removed `vaultManager` loses its minter right on the stablecoin
+    /// @dev A removed `VaultManager` loses its minter right on the stablecoin
     function removeVaultManager(address vaultManager) external onlyGovernor {
         require(vaultManagerMap[vaultManager], "3");
         delete vaultManagerMap[vaultManager];
@@ -346,9 +343,9 @@ contract Treasury is ITreasury, Initializable {
         emit SurplusManagerUpdated(_surplusManager);
     }
 
-    /// @notice Sets a new `Core` contract
+    /// @notice Sets a new `core` contract
     /// @dev This function should typically be called on all treasury contracts after the `setCore`
-    /// function has been called on the `Core` contract
+    /// function has been called on the `CoreBorrow` contract
     /// @dev One sanity check that can be performed here is to verify whether at least the governor
     /// calling the contract is still a governor in the new core
     function setCore(ICoreBorrow _core) external onlyGovernor {

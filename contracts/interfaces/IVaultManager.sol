@@ -103,7 +103,7 @@ interface IVaultManagerFunctions {
     /// @dev `surplus` and `badDebt` should be reset to 0 once their current value have been given to the `treasury` contract
     function accrueInterestToTreasury() external returns (uint256 surplusValue, uint256 badDebtValue);
 
-    /// @notice Removes debt from a vault after being requested to do so by another `vaultManager` contract
+    /// @notice Removes debt from a vault after being requested to do so by another `VaultManager` contract
     /// @param vaultID ID of the vault to remove debt from
     /// @param amountStablecoins Amount of stablecoins to remove from the debt: this amount is to be converted to an
     /// internal debt amount

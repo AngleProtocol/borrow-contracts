@@ -178,8 +178,8 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @inheritdoc IERC4626
     /// @dev Technically, the maximum deposit could be less than the max uint256
-    /// if there is a `debtCeiling` in the associated `vaultManager`. This implementation
-    /// assumes that the `vaultManager` does not have any debt ceiling
+    /// if there is a `debtCeiling` in the associated `VaultManager`. This implementation
+    /// assumes that the `VaultManager` does not have any debt ceiling
     function maxDeposit(address) public pure returns (uint256) {
         return type(uint256).max;
     }
@@ -216,7 +216,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @notice Gets the assets controlled by the reactor: those in the associated vaultManager
     /// as well as those in the contract
-    /// @return usedAssets Amount of the `asset` in the associated `vaultManager`
+    /// @return usedAssets Amount of the `asset` in the associated `VaultManager`
     /// @return looseAssets Amount of the `asset` in the contract
     function _getAssets() internal view returns (uint256 usedAssets, uint256 looseAssets) {
         (usedAssets, ) = vaultManager.vaultData(vaultID);
@@ -256,9 +256,9 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @param currentDebt Current value of the debt
     /// @notice In the case where you get liquidated, you actually record a gain in stablecoin,
     /// which is normal to compensate for the decrease of the collateral in the vault
-    /// @dev In case where a loss (like from interest taken by the `vaultManager`) is planned, then stakeholders
+    /// @dev In case where a loss (like from interest taken by the `VaultManager`) is planned, then stakeholders
     /// are incentivized to front run it and claim their rewards in advance. In normal times, this reactor therefore
-    /// works well mostly with `vaultManager` on which there are no interest taken (and no borrowing fees)
+    /// works well mostly with `VaultManager` on which there are no interest taken (and no borrowing fees)
     function _handleCurrentDebt(uint256 currentDebt) internal {
         if (lastDebt >= currentDebt) {
             // This happens if you have been liquidated or if debt has been paid on your behalf
@@ -483,12 +483,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @notice Changes the treasury contract
     /// @dev Like the function above, this permissionless function just adjusts the treasury to
-    /// the address of the treasury contract from the `vaultManager` in case it has been modified
+    /// the address of the treasury contract from the `VaultManager` in case it has been modified
     function setTreasury() external {
         treasury = vaultManager.treasury();
     }
 
-    /// @notice Changes the dust parameter by querying the `vaultManager`
+    /// @notice Changes the dust parameter by querying the `VaultManager`
     function setDust() external {
         vaultManagerDust = vaultManager.dust();
     }
