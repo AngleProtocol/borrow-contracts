@@ -702,7 +702,7 @@ contract('Treasury', () => {
   });
   describe('updateBadDebt', () => {
     it('reverts - too high amount', async () => {
-      await expect(treasury.updateBadDebt(1)).to.be.revertedWith('4');
+      await expect(treasury.updateBadDebt(1)).to.be.revertedWith('ERC20: burn amount exceeds balance');
     });
     it('reverts - nothing to burn in the contract', async () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
