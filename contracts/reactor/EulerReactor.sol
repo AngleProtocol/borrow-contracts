@@ -11,7 +11,7 @@ import "./BaseReactor.sol";
 /// @author Angle Core Team
 contract EulerReactor is BaseReactor {
     IEulerEToken public euler;
-    uint256 public lastETokenValue;
+    uint256 public lastBalance;
     uint256 public minInvest;
 
     /// @notice Initializes the `BaseReactor` contract and
@@ -77,9 +77,9 @@ contract EulerReactor is BaseReactor {
     function _push(uint256 amount) internal virtual override returns (uint256 amountInvested) {
         (uint256 lentAssets, uint256 looseAssets) = _report();
 
-        if (looseAssets > minInvest) euler.deposit(0, amount);
-        // TODO should be equal to lentAssets + amount or  lentAssets in the else
-        lastETokenValue = euler.balanceOfUnderlying(address(this));
+        if (looseAssets > minInvest) euler.deposit(0, looseAssets);
+        // TODO should be equal to lentAssets + looseAssets  or  lentAssets in the else
+        lastBalance = euler.balanceOfUnderlying(address(this)) + looseAssets;
         return amount;
     }
 
@@ -88,11 +88,11 @@ contract EulerReactor is BaseReactor {
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
     /// @dev The call will revert if `stablecoin.balanceOf(address(euler))<amount`
     function _pull(uint256 amount) internal virtual override returns (uint256 amountAvailable) {
-        (uint256 lentAssets, ) = _report();
+        (uint256 lentAssets, uint256 looseAssets) = _report();
 
         euler.withdraw(0, amount);
-        // should be equal to lentAssets - amount // TODO verify
-        lastETokenValue = euler.balanceOfUnderlying(address(this));
+        // TODO should be equal to lentAssets + looseAssets - amount
+        lastBalance = euler.balanceOfUnderlying(address(this)) + looseAssets - amount;
 
         return amount;
     }
@@ -102,7 +102,7 @@ contract EulerReactor is BaseReactor {
         looseAssets = stablecoin.balanceOf(address(this));
         uint256 total = looseAssets + lentAssets;
 
-        if (total > lastETokenValue) claimableRewards += total - lastETokenValue;
-        else currentLoss += lastETokenValue - total;
+        if (total > lastBalance) _handleGain(total - lastBalance);
+        else _handleLoss(lastBalance - total);
     }
 }

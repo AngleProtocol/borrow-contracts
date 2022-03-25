@@ -260,13 +260,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             // This happens if you have been liquidated or if debt has been paid on your behalf
             _handleGain(lastDebt - currentDebt);
         } else {
-            uint256 loss = currentDebt - lastDebt;
-            if (claimableRewards >= loss) {
-                claimableRewards -= loss;
-            } else {
-                currentLoss += loss - claimableRewards;
-                claimableRewards = 0;
-            }
+            _handleLoss(currentDebt - lastDebt);
         }
     }
 
@@ -279,6 +273,17 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         } else {
             claimableRewards += gain - currentLossVariable;
             currentLoss = 0;
+        }
+    }
+
+    /// @notice Propagates a loss to the claimable rewards and/or currentLoss
+    /// @param loss Loss to propagate
+    function _handleLoss(uint256 loss) internal {
+        if (claimableRewards >= loss) {
+            claimableRewards -= loss;
+        } else {
+            currentLoss += loss - claimableRewards;
+            claimableRewards = 0;
         }
     }
 
