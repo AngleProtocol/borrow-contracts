@@ -28,20 +28,5 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: |
-          slither . --ignore-compile --filter-paths "node_modules" --disable-color --print human-summary > slither-audit.txt 2>&1
-
-          echo "##vso[task.setvariable variable=slitherAuditRun]yes";
-
-          export LError=$(grep 'low issues' slither-audit.txt | sed 's/[a-zA-Z:0 ]//g')
-          export MError=$(grep 'medium issues' slither-audit.txt | sed 's/[a-zA-Z:0 ]//g')
-          export HError=$(grep 'high issues' slither-audit.txt | sed 's/[a-zA-Z:0 ]//g')
-
-          echo -en '-------------------------------\n\n\n# Details:\n##############################\n\n' >> slither-audit.txt
-          slither . --ignore-compile --filter-paths "node_modules" --disable-color >> slither-audit.txt 2>&1
-
-          if [ ! -z "${LError}" ] || [ ! -z "${MError}" ] || [ ! -z "${HError}" ] ; then 
-            echo "##vso[task.complete result=Failed;]Slither found a issue." ;
-          fi
-
-          echo "##vso[task.setvariable variable=slitherAudit]$(cat slither-audit.txt | sed ':a;N;$!ba;s/\n/%0D%0A/g')"
+          slither .
       # slither . --filter-paths contracts/mock
