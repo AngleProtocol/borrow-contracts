@@ -1,4 +1,4 @@
-name: Security analysis
+name: Slither analysis
 
 on: [workflow_dispatch]
 
@@ -7,26 +7,24 @@ defaults:
     shell: bash
 
 jobs:
-  slither:
+  analyze:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.1.1
+        continue-on-error: true
+        id: slither
         with:
-          node-version: '14'
-      - uses: actions/setup-python@v2
+          node-version: 16
+          sarif: results.sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v1
         with:
-          python-version: '3.x'
-      - run: |
-          python -m pip install --upgrade pip
-          pip3 install slither-analyzer solc-select
-          solc-select install 0.6.11
-          solc-select use 0.6.11
-      - run: |
-          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
-          yarn install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: |
-          slither .
-      # slither . --filter-paths contracts/mock
+          sarif_file: ${{ steps.slither.outputs.sarif }}

@@ -21,6 +21,7 @@ docgen/SUMMARY.md
 solidity-flattenedContracts
 ./crytic-export
 typechain
+slither-audit.txt
 
 
 # Test output
