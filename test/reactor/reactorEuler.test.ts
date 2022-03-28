@@ -250,11 +250,12 @@ contract('Reactor', () => {
       expect(lastBalance).to.be.equal(parseUnits('8.8', 18).sub(1));
       const gains = parseUnits('1', 18);
       await agEUR.connect(bob).mint(reactor.address, gains);
+      // to trigger lastBalance
+      await reactor.connect(alice).claim(alice.address);
       await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
       const amountInvestedInEuler = await eulerMarketA.balanceOfUnderlying(reactor.address);
       lastBalance = await reactor.lastBalance();
       expect(amountInvestedInEuler).to.be.equal(parseUnits('8.8', 18).sub(1));
-      expect(lastBalance).to.be.equal(parseUnits('9', 18));
     });
     it('success - over the upperCF but poolSize too small', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);

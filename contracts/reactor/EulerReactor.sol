@@ -153,6 +153,7 @@ contract EulerReactor is BaseReactor {
         console.log("_pull - lentStablecoins ", lentStablecoins);
         console.log("_pull - looseStablecoins ", looseStablecoins);
         console.log("_pull - amount ", amount);
+        console.log("_pull - before lastBalance ", lastBalance);
 
         if (looseStablecoins < amount) {
             euler.withdraw(0, amount - looseStablecoins);
@@ -160,6 +161,7 @@ contract EulerReactor is BaseReactor {
         } else {
             lastBalance = lentStablecoins + looseStablecoins - amount;
         }
+        console.log("_pull - after lastBalance ", lastBalance);
 
         return amount;
     }
@@ -167,12 +169,14 @@ contract EulerReactor is BaseReactor {
     function _report(uint256 amountToAdd) internal returns (uint256 lentStablecoins, uint256 looseStablecoins) {
         lentStablecoins = euler.balanceOfUnderlying(address(this));
         looseStablecoins = stablecoin.balanceOf(address(this));
-        // always positive otherwise we couldn't do the operation
-        uint256 total = looseStablecoins + lentStablecoins - amountToAdd;
-
         console.log("report - lastBalance ", lastBalance);
         console.log("report - looseAssets ", looseStablecoins);
         console.log("report - lentAssets ", lentStablecoins);
+        console.log("report - amountToAdd ", amountToAdd);
+
+        // always positive otherwise we couldn't do the operation
+        uint256 total = looseStablecoins + lentStablecoins - amountToAdd;
+
         console.log("report - total ", total);
 
         if (total > lastBalance) _handleGain(total - lastBalance);

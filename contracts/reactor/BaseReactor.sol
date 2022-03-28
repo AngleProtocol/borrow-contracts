@@ -359,7 +359,6 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             toBorrow = futureStablecoinsInVault - debt;
             actions[len] = ActionType.borrow;
             datas[len] = abi.encodePacked(vaultID, toBorrow);
-            lastDebt += toBorrow;
             len += 1;
         }
 
@@ -372,6 +371,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         if (toRepay > 0) _pull(toRepay);
         console.log("balance before borrow ", stablecoin.balanceOf(address(this)));
         console.log("toRepay ", toRepay);
+        console.log("debt ", debt);
         PaymentData memory paymentData = vaultManager.angle(
             actions,
             datas,
@@ -380,12 +380,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             address(this),
             ""
         );
+
+        console.log("toBorrow before ", toBorrow);
         // VaultManagers always round to their advantages + there can be a borrow fee taken
         if (toBorrow > 0) {
-            lastDebt -= (toBorrow - paymentData.stablecoinAmountToGive);
+            lastDebt += paymentData.stablecoinAmountToGive;
             toBorrow = paymentData.stablecoinAmountToGive;
-        } else if (toRepay > 0) {
-            lastDebt += (toRepay - paymentData.stablecoinAmountToReceive);
         }
 
         console.log("balance after borrow ", stablecoin.balanceOf(address(this)));
@@ -393,16 +393,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         if (toBorrow > 0) _push(toBorrow);
     }
 
-    /// @notice Rebalances the underlying vault
+    /// @notice Compute future debt to the vaultManager and the collateral factor of the current debt with future assets
     /// @param toWithdraw Amount of assets to withdraw
     /// @param usedAssets Amount of assets in the vault
     /// @param looseAssets Amount of assets already in the contract
-    /// @dev `toWithdraw` is always lower than managed assets (`= usedAssets+looseAssets`): indeed if it was superior
-    /// it would mean either
-    /// - that the `withdraw` function was called with an amount of assets greater than the amount of asset controlled
-    /// by the reactor
-    /// - or that the `redeem` function was called with an amount of shares greater than the total supply
-    /// @dev `usedAssets` and `looseAssets` are passed as parameters here to avoid performing the same calculation twice
+    /// @param debt Current debt owed to the vaultManager
+    /// @param oracleRate Exchange rate from asset to stablecoin
     function _getFutureDebtAndCF(
         uint256 toWithdraw,
         uint256 usedAssets,
