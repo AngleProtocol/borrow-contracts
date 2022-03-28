@@ -23,7 +23,7 @@ contract Swapper is ISwapper {
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice AngleRouter
     IAngleRouter public immutable angleRouter;
-    /// @notice Reference to the Core contract of the module which handles all AccessControl logic
+    /// @notice Reference to the `CoreBorrow` contract of the module which handles all AccessControl logic
     ICoreBorrow public immutable core;
     /// @notice Wrapped StETH contract
     IWStETH public immutable wStETH;

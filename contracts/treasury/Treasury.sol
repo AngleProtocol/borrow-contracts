@@ -157,9 +157,8 @@ contract Treasury is ITreasury, Initializable {
     /// @dev It is impossible to burn more than the `badDebt` otherwise this function could be used to manipulate
     /// the `surplusBuffer` and hence the amount going to governance
     function updateBadDebt(uint256 amount) external returns (uint256 badDebtValue) {
-        badDebtValue = badDebt;
         stablecoin.burnSelf(amount, address(this));
-        badDebtValue -= amount;
+        badDebtValue = badDebt - amount;
         badDebt = badDebtValue;
         emit BadDebtUpdated(badDebtValue);
     }
