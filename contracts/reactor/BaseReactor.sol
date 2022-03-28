@@ -190,13 +190,11 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    // TODO worth completing with restrictions based on current harvest
     function maxWithdraw(address user) public view virtual returns (uint256) {
         return convertToAssets(balanceOf(user));
     }
 
     /// @inheritdoc IERC4626
-    // TODO worth completing with restrictions based on current harvest
     function maxRedeem(address user) public view virtual returns (uint256) {
         return balanceOf(user);
     }
