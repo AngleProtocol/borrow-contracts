@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Signer } from 'ethers';
+import { BigNumber, Signer } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
-import hre, { contract, ethers } from 'hardhat';
+import hre, { contract, ethers, web3 } from 'hardhat';
 
 import {
   AgToken,
@@ -42,11 +42,12 @@ contract('Reactor', () => {
   let stableMaster: MockStableMaster;
   let agEUR: AgToken;
   let vaultManager: VaultManager;
-  let lastTime: number;
+  let guardianRole: string;
+  let guardianError: string;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
-  const collatBase = 9;
+  const collatBase = 6;
   const yearlyRate = 1.05;
   const ratePerSecond = yearlyRate ** (1 / (365 * 24 * 3600)) - 1;
   const lowerCF = 0.2e9;
@@ -57,7 +58,7 @@ contract('Reactor', () => {
     debtCeiling: parseEther('100'),
     collateralFactor: 0.9e9,
     targetHealthFactor: 1.1e9,
-    borrowFee: 0.1e9,
+    borrowFee: 0e9,
     interestRate: parseUnits(ratePerSecond.toFixed(27), 27),
     liquidationSurcharge: 0.9e9,
     maxLiquidationDiscount: 0.1e9,
@@ -81,6 +82,9 @@ contract('Reactor', () => {
 
       impersonatedSigners[ob.name] = await ethers.getSigner(ob.address);
     }
+
+    guardianRole = web3.utils.keccak256('GUARDIAN_ROLE');
+    guardianError = `AccessControl: account ${alice.address.toLowerCase()} is missing role ${guardianRole}`;
   });
 
   beforeEach(async () => {
@@ -104,6 +108,7 @@ contract('Reactor', () => {
     await agEUR.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
     await treasury.addMinter(agEUR.address, vaultManager.address);
     await treasury.addMinter(agEUR.address, bob.address);
+    await agEUR.connect(bob).mint(bob.address, parseUnits('10000000', 18));
 
     oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
 
@@ -112,10 +117,11 @@ contract('Reactor', () => {
     await vaultManager.initialize(treasury.address, ANGLE.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
 
-    eulerMarketA = await new MockEulerPool__factory(deployer).deploy(agEUR.address, parseUnits('10000000', 18));
+    eulerMarketA = await new MockEulerPool__factory(deployer).deploy(agEUR.address, parseUnits('0', 18));
     reactor = (await deployUpgradeable(new EulerReactor__factory(deployer))) as EulerReactor;
     await reactor.initialize(
       eulerMarketA.address,
+      ethers.constants.Zero,
       'ANGLE/agEUR Reactor',
       'ANGLE/agEUR Reactor',
       vaultManager.address,
@@ -123,6 +129,27 @@ contract('Reactor', () => {
       targetCF,
       upperCF,
     );
+    await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
+    await agEUR.connect(bob).approve(eulerMarketA.address, ethers.constants.MaxUint256);
+  });
+  describe('setMinInvest', () => {
+    it('initialize', async () => {
+      expect(await reactor.minInvest()).to.be.equal(0);
+    });
+    it('revert - only guardian or governor', async () => {
+      const newMinInvest = parseUnits('1', collatBase);
+      await expect(reactor.connect(alice).setMinInvest(newMinInvest)).to.be.revertedWith('2');
+    });
+    it('success - invest only at 1 unit', async () => {
+      const newMinInvest = parseUnits('1', collatBase);
+      await reactor.connect(guardian).setMinInvest(newMinInvest);
+      expect(await reactor.minInvest()).to.be.equal(newMinInvest);
+    });
+    it('success - invest at all thres', async () => {
+      const newMinInvest = parseUnits('0', collatBase);
+      await reactor.connect(governor).setMinInvest(newMinInvest);
+      expect(await reactor.minInvest()).to.be.equal(newMinInvest);
+    });
   });
   describe('maxWithdraw', () => {
     const sharesAmount = parseUnits('1', collatBase);
@@ -133,36 +160,95 @@ contract('Reactor', () => {
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
+      //   await eulerMarketA.connect(bob).setPoolSize(sharesAmount);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.sub(1));
+      // attention here you can't withdraw all if the interest rate from borrow is > 0 and we didn't do any profit on Euler
+      // because you can't repay the debt
+    });
+    it('success - when no liquidity on Euler', async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await eulerMarketA.connect(bob).setPoolSize(ethers.constants.Zero);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(ethers.constants.Zero);
+    });
+    it('success - when some has been minted and no need to withdraw from Euler', async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      const gains = parseUnits('1', collatBase);
+      await ANGLE.connect(bob).mint(reactor.address, gains);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2).sub(1));
+    });
+    it('success - when some has been minted and no need to withdraw from Euler', async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await ANGLE.connect(bob).mint(bob.address, sharesAmount);
+      await ANGLE.connect(bob).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await reactor.connect(bob).mint(sharesAmount, bob.address);
+      // this will have only a marginal impact on the maxWithdraw function
+      // it only allows to correct rounding errors which is why it is equal to sharesAmount
+      const gains = parseUnits('1', 18);
+      await agEUR.connect(bob).mint(reactor.address, gains);
       expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount);
     });
-    it('success - when some has been minted and a gain has been made', async () => {
+    it('success - when some has been minted and need euler withdraw', async () => {
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       const gains = parseUnits('1', collatBase);
       await ANGLE.mint(reactor.address, gains);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2));
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2).sub(1));
     });
   });
-  describe('maxRedeem', () => {
+  describe('Withdraw', () => {
     const sharesAmount = parseUnits('1', collatBase);
-    it('success - when no asset', async () => {
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(0);
-    });
-    it('success - when some has been minted', async () => {
+    it('success - set interest rate to 0', async () => {
+      const balanceAgEUR = await agEUR.balanceOf(alice.address);
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, 'interestRate');
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
+      //   await eulerMarketA.connect(bob).setPoolSize(sharesAmount);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.sub(1));
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
     });
-    it('success - when some has been minted and a gain has been made', async () => {
+    it('success - set interest rate to 0', async () => {
+      const balanceAgEUR = await agEUR.balanceOf(alice.address);
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, 'interestRate');
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
-      const gains = parseUnits('1', collatBase);
-      await ANGLE.mint(reactor.address, gains);
-      // It's still the balance of the user
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
+      //   await eulerMarketA.connect(bob).setPoolSize(sharesAmount);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.sub(1));
+      // need to have some return otherwie we can't
+      const payForRounding = parseUnits('1', 0);
+      await agEUR.connect(bob).mint(reactor.address, payForRounding);
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
     });
   });
+  //   describe('maxRedeem', () => {
+  //     const sharesAmount = parseUnits('1', collatBase);
+  //     it('success - when no asset', async () => {
+  //       expect(await reactor.maxRedeem(alice.address)).to.be.equal(0);
+  //     });
+  //     it('success - when some has been minted', async () => {
+  //       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+  //       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+  //       await reactor.connect(alice).mint(sharesAmount, alice.address);
+  //       expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
+  //     });
+  //     it('success - when some has been minted and a gain has been made', async () => {
+  //       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+  //       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+  //       await reactor.connect(alice).mint(sharesAmount, alice.address);
+  //       const gains = parseUnits('1', collatBase);
+  //       await ANGLE.mint(reactor.address, gains);
+  //       // It's still the balance of the user
+  //       expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
+  //     });
+  //   });
 });

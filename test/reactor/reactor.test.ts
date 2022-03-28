@@ -304,47 +304,6 @@ contract('Reactor', () => {
       expect(await reactor.previewRedeem(sharesAmount)).to.be.equal(sharesAmount.mul(2));
     });
   });
-  describe('maxWithdraw', () => {
-    const sharesAmount = parseUnits('1', collatBase);
-    it('success - when no asset', async () => {
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(0);
-    });
-    it('success - when some has been minted', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount);
-    });
-    it('success - when some has been minted and a gain has been made', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      const gains = parseUnits('1', collatBase);
-      await ANGLE.mint(reactor.address, gains);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2));
-    });
-  });
-  describe('maxRedeem', () => {
-    const sharesAmount = parseUnits('1', collatBase);
-    it('success - when no asset', async () => {
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(0);
-    });
-    it('success - when some has been minted', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
-    });
-    it('success - when some has been minted and a gain has been made', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      const gains = parseUnits('1', collatBase);
-      await ANGLE.mint(reactor.address, gains);
-      // It's still the balance of the user
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
-    });
-  });
   describe('onERC721Received', () => {
     it('reverts - sender is not vaultManager', async () => {
       await expect(reactor.onERC721Received(alice.address, alice.address, 0, '0x')).to.be.revertedWith('3');
