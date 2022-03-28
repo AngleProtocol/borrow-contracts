@@ -135,11 +135,6 @@ async function deployUpgradeable(factory: ContractFactory, ...args: any[]): Prom
 
 async function expectApproxDelta(actual: BigNumber, expected: BigNumber, delta: BigNumber): Promise<void> {
   const margin = expected.div(delta);
-
-  console.log(expected.sub(margin).toString());
-  console.log(actual.toString());
-  console.log(expected.add(margin).toString());
-
   if (actual.isNegative()) {
     expect(expected.gte(actual.add(margin))).to.be.true;
     expect(expected.lte(actual.sub(margin))).to.be.true;

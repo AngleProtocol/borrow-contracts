@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerERC721.sol";
-import "hardhat/console.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -542,9 +541,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address who,
         bytes memory data
     ) internal {
-        console.log("stableAmountToRepay ", stableAmountToRepay);
-        console.log("stableAmount balance ", stablecoin.balanceOf(msg.sender));
-        console.log("collateralAmountToGive ", collateralAmountToGive);
         if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
         if (stableAmountToRepay > 0) {
             if (data.length > 0) {

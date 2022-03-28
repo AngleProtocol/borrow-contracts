@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "./BaseReactorStorage.sol";
-import "hardhat/console.sol";
 
 /// @title BaseReactor
 /// @notice Reactor for using a token as collateral for agTokens. ERC4646 tokenized Vault implementation.
@@ -368,10 +367,11 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             datas[len] = abi.encodePacked(vaultID, toWithdraw - looseAssets);
         }
 
-        if (toRepay > 0) _pull(toRepay);
-        console.log("balance before borrow ", stablecoin.balanceOf(address(this)));
-        console.log("toRepay ", toRepay);
-        console.log("debt ", debt);
+        if (toRepay > 0) {
+            toRepay = toRepay == type(uint256).max ? debt : toRepay;
+            _pull(toRepay);
+        }
+
         PaymentData memory paymentData = vaultManager.angle(
             actions,
             datas,
@@ -381,16 +381,11 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             ""
         );
 
-        console.log("toBorrow before ", toBorrow);
         // VaultManagers always round to their advantages + there can be a borrow fee taken
         if (toBorrow > 0) {
             lastDebt += paymentData.stablecoinAmountToGive;
-            toBorrow = paymentData.stablecoinAmountToGive;
+            _push(paymentData.stablecoinAmountToGive);
         }
-
-        console.log("balance after borrow ", stablecoin.balanceOf(address(this)));
-        console.log("toBorrow ", toBorrow);
-        if (toBorrow > 0) _push(toBorrow);
     }
 
     /// @notice Compute future debt to the vaultManager and the collateral factor of the current debt with future assets

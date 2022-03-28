@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "hardhat/console.sol";
 
 contract MockEulerPool {
     IERC20 public collateral;
@@ -41,8 +40,6 @@ contract MockEulerPool {
 
     function withdraw(uint256, uint256 amount) external {
         if (amount == type(uint256).max) amount = (users[msg.sender] * interestRateAccumulator) / 10**18;
-        console.log("amount ", amount);
-        console.log("poolSize ", poolSize);
 
         require(amount <= poolSize, "4");
         users[msg.sender] -= (amount * 10**18) / interestRateAccumulator;
