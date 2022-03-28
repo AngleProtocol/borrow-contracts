@@ -44,10 +44,9 @@ contract EulerReactor is BaseReactor {
     /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
     function maxWithdraw(address user) public view virtual override returns (uint256) {
         uint256 toWithdraw = convertToAssets(balanceOf(user));
-        console.log("toWithdraw ", toWithdraw);
-        (, uint256 looseAssets) = _getAssets();
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         if (toWithdraw <= looseAssets) return toWithdraw;
-        else return looseAssets + _maxStablecoinsAvailable(toWithdraw - looseAssets);
+        else return looseAssets + _maxStablecoinsAvailable(toWithdraw, usedAssets, looseAssets);
     }
 
     /// @inheritdoc IERC4626
@@ -55,9 +54,9 @@ contract EulerReactor is BaseReactor {
     function maxRedeem(address user) public view virtual override returns (uint256) {
         uint256 maxAmountToRedeem;
         uint256 toWithdraw = convertToAssets(balanceOf(user));
-        (, uint256 looseAssets) = _getAssets();
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         if (toWithdraw <= looseAssets) maxAmountToRedeem = toWithdraw;
-        else maxAmountToRedeem = _maxStablecoinsAvailable(toWithdraw - looseAssets);
+        else maxAmountToRedeem = _maxStablecoinsAvailable(toWithdraw, usedAssets, looseAssets);
         return convertToShares(looseAssets + maxAmountToRedeem);
     }
 
@@ -78,15 +77,51 @@ contract EulerReactor is BaseReactor {
 
     /// @notice Returns the maximum amount of assets that can be withdrawn considering current Euler liquidity
     /// @param amount Amount of assets wanted to be withdrawn
+    /// @param usedAssets Amount of assets collateralizing the vault
+    /// @param looseAssets Amount of assets directly accessible -- in the contract balance
     /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
-    function _maxStablecoinsAvailable(uint256 amount) internal view returns (uint256 maxAmount) {
+    function _maxStablecoinsAvailable(
+        uint256 amount,
+        uint256 usedAssets,
+        uint256 looseAssets
+    ) internal view returns (uint256 maxAmount) {
+        uint256 toWithdraw = amount - looseAssets;
         uint256 oracleRate = oracle.read();
-        // convert amount to value in stablecoin and take into account the targetCF
-        uint256 stablecoinsValueToRedeem = (amount * oracleRate * targetCF) / (_assetBase * BASE_PARAMS);
-        // Liquidity on Euler
-        uint256 poolSize = stablecoin.balanceOf(address(euler));
-        if (poolSize < stablecoinsValueToRedeem) stablecoinsValueToRedeem = poolSize;
-        maxAmount = (stablecoinsValueToRedeem * _assetBase * BASE_PARAMS) / (oracleRate * targetCF);
+
+        uint256 debt = vaultManager.getVaultDebt(vaultID);
+        (uint256 futureStablecoinsInVault, uint256 collateralFactor) = _getFutureDebtAndCF(
+            toWithdraw,
+            usedAssets,
+            looseAssets,
+            debt,
+            oracleRate
+        );
+
+        uint256 stablecoinsValueToRedeem;
+        if (collateralFactor >= upperCF) {
+            // If the `collateralFactor` is too high, then too much has been borrowed
+            // and stablecoins should be repaid
+            stablecoinsValueToRedeem = debt - futureStablecoinsInVault;
+            if (futureStablecoinsInVault <= vaultManagerDust) {
+                // If this happens in a moment at which the reactor has a loss, then it will not be able
+                // to repay it all, and the function will revert
+                stablecoinsValueToRedeem = type(uint256).max;
+            }
+            // Liquidity on Euler
+            uint256 poolSize = stablecoin.balanceOf(address(euler));
+            uint256 reactorBalanceEuler = euler.balanceOfUnderlying(address(this));
+            uint256 maxEulerWithdrawal = poolSize > reactorBalanceEuler ? reactorBalanceEuler : poolSize;
+            // if we can fully reimburse with Euler liquidity then users can withdraw hiw whole balance
+            if (maxEulerWithdrawal < stablecoinsValueToRedeem) {
+                stablecoinsValueToRedeem = maxEulerWithdrawal;
+                maxAmount = (stablecoinsValueToRedeem * _assetBase * BASE_PARAMS) / (oracleRate * targetCF);
+                maxAmount = maxAmount > toWithdraw ? toWithdraw : maxAmount;
+            } else {
+                maxAmount = toWithdraw;
+            }
+        } else {
+            maxAmount = toWithdraw;
+        }
     }
 
     /// @notice Virtual function to invest stablecoins
@@ -96,11 +131,15 @@ contract EulerReactor is BaseReactor {
     /// on a threshold
     /// @dev Amount should not be above maxExternalAmount defined in Euler otherwise it will revert
     function _push(uint256 amount) internal virtual override returns (uint256 amountInvested) {
-        (uint256 lentAssets, uint256 looseAssets) = _report(amount);
+        (uint256 lentStablecoins, uint256 looseStablecoins) = _report(amount);
 
-        if (looseAssets > minInvest) euler.deposit(0, looseAssets);
-        // TODO should be equal to lentAssets + looseAssets  or  lentAssets in the else
-        lastBalance = euler.balanceOfUnderlying(address(this)) + looseAssets;
+        if (looseStablecoins > minInvest) {
+            euler.deposit(0, looseStablecoins);
+            // as looseStablecoins should be null
+            lastBalance = euler.balanceOfUnderlying(address(this));
+        } else {
+            lastBalance = lentStablecoins + looseStablecoins;
+        }
         return amount;
     }
 
@@ -109,28 +148,37 @@ contract EulerReactor is BaseReactor {
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
     /// @dev The call will revert if `stablecoin.balanceOf(address(euler))<amount`
     function _pull(uint256 amount) internal virtual override returns (uint256 amountAvailable) {
-        (uint256 lentAssets, uint256 looseAssets) = _report(0);
+        (uint256 lentStablecoins, uint256 looseStablecoins) = _report(0);
 
-        euler.withdraw(0, amount);
-        // TODO should be equal to lentAssets + looseAssets - amount / there can be a delta of 1 wei
-        // need an external call if amount == type(uint256).max so not worth it
-        lastBalance = euler.balanceOfUnderlying(address(this)) + looseAssets;
+        console.log("_pull - lentStablecoins ", lentStablecoins);
+        console.log("_pull - looseStablecoins ", looseStablecoins);
+        console.log("_pull - amount ", amount);
+
+        if (looseStablecoins < amount) {
+            euler.withdraw(0, amount - looseStablecoins);
+            lastBalance = euler.balanceOfUnderlying(address(this));
+        } else {
+            lastBalance = lentStablecoins + looseStablecoins - amount;
+        }
 
         return amount;
     }
 
-    function _report(uint256 amountToAdd) internal returns (uint256 lentAssets, uint256 looseAssets) {
-        lentAssets = euler.balanceOfUnderlying(address(this));
-        looseAssets = stablecoin.balanceOf(address(this));
+    function _report(uint256 amountToAdd) internal returns (uint256 lentStablecoins, uint256 looseStablecoins) {
+        lentStablecoins = euler.balanceOfUnderlying(address(this));
+        looseStablecoins = stablecoin.balanceOf(address(this));
         // always positive otherwise we couldn't do the operation
-        uint256 total = looseAssets + lentAssets - amountToAdd;
+        uint256 total = looseStablecoins + lentStablecoins - amountToAdd;
 
-        console.log("lastBalance ", lastBalance);
-        console.log("looseAssets ", lastBalance);
-        console.log("lentAssets ", lastBalance);
-        console.log("total ", total);
+        console.log("report - lastBalance ", lastBalance);
+        console.log("report - looseAssets ", looseStablecoins);
+        console.log("report - lentAssets ", lentStablecoins);
+        console.log("report - total ", total);
 
         if (total > lastBalance) _handleGain(total - lastBalance);
         else _handleLoss(lastBalance - total);
+
+        console.log("report - claimableRewards ", claimableRewards);
+        console.log("report - currentLoss ", currentLoss);
     }
 }

@@ -543,6 +543,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         bytes memory data
     ) internal {
         console.log("stableAmountToRepay ", stableAmountToRepay);
+        console.log("stableAmount balance ", stablecoin.balanceOf(msg.sender));
         console.log("collateralAmountToGive ", collateralAmountToGive);
         if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
         if (stableAmountToRepay > 0) {

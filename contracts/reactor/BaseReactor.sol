@@ -307,23 +307,16 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         _handleCurrentDebt(debt);
         lastDebt = debt;
 
-        uint256 collateralFactor;
         uint256 toRepay;
         uint256 toBorrow;
 
-        // We're first using as an intermediate in this variable something that does not correspond
-        // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in
-        // the vault expressed in stablecoin value and in a custom base
-        uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracle.read();
-        // The function will revert above if `toWithdraw` is too big
-
-        if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
-        else {
-            collateralFactor = (debt * BASE_PARAMS * _assetBase) / futureStablecoinsInVault;
-        }
-        // This is the targeted debt at the end of the call, which might not be reached if the collateral
-        // factor is not moved enough
-        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (BASE_PARAMS * _assetBase);
+        (uint256 futureStablecoinsInVault, uint256 collateralFactor) = _getFutureDebtAndCF(
+            toWithdraw,
+            usedAssets,
+            looseAssets,
+            debt,
+            oracle.read()
+        );
 
         // 1 action to add or remove collateral + 1 additional action if we need to borrow or repay
         uint8 len = (collateralFactor >= upperCF) ||
@@ -336,7 +329,6 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
         len = 0;
 
-        // TODO maybe overkill to always add to the vault?
         if (toWithdraw <= looseAssets) {
             // Add Collateral
             actions[len] = ActionType.addCollateral;
@@ -396,8 +388,41 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             lastDebt += (toRepay - paymentData.stablecoinAmountToReceive);
         }
 
-        console.log("balance before borrow ", stablecoin.balanceOf(address(this)));
+        console.log("balance after borrow ", stablecoin.balanceOf(address(this)));
+        console.log("toBorrow ", toBorrow);
         if (toBorrow > 0) _push(toBorrow);
+    }
+
+    /// @notice Rebalances the underlying vault
+    /// @param toWithdraw Amount of assets to withdraw
+    /// @param usedAssets Amount of assets in the vault
+    /// @param looseAssets Amount of assets already in the contract
+    /// @dev `toWithdraw` is always lower than managed assets (`= usedAssets+looseAssets`): indeed if it was superior
+    /// it would mean either
+    /// - that the `withdraw` function was called with an amount of assets greater than the amount of asset controlled
+    /// by the reactor
+    /// - or that the `redeem` function was called with an amount of shares greater than the total supply
+    /// @dev `usedAssets` and `looseAssets` are passed as parameters here to avoid performing the same calculation twice
+    function _getFutureDebtAndCF(
+        uint256 toWithdraw,
+        uint256 usedAssets,
+        uint256 looseAssets,
+        uint256 debt,
+        uint256 oracleRate
+    ) internal view returns (uint256 futureStablecoinsInVault, uint256 collateralFactor) {
+        // We're first using as an intermediate in this variable something that does not correspond
+        // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in
+        // the vault expressed in stablecoin value and in a custom base
+        futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracleRate;
+        // The function will revert above if `toWithdraw` is too big
+
+        if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
+        else {
+            collateralFactor = (debt * BASE_PARAMS * _assetBase) / futureStablecoinsInVault;
+        }
+        // This is the targeted debt at the end of the call, which might not be reached if the collateral
+        // factor is not moved enough
+        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (BASE_PARAMS * _assetBase);
     }
 
     /// @notice Virtual function to invest stablecoins

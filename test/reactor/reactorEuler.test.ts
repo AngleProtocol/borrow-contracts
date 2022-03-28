@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, Signer } from 'ethers';
-import { parseEther, parseUnits } from 'ethers/lib/utils';
+import { formatBytes32String, formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
 import {
@@ -23,7 +23,9 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
+import { deployUpgradeable, expectApproxDelta, ZERO_ADDRESS } from '../utils/helpers';
+
+const PRECISION = 5;
 
 contract('Reactor', () => {
   const log = true;
@@ -178,7 +180,7 @@ contract('Reactor', () => {
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       const gains = parseUnits('1', collatBase);
       await ANGLE.connect(bob).mint(reactor.address, gains);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2).sub(1));
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2));
     });
     it('success - when some has been minted and no need to withdraw from Euler', async () => {
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
@@ -193,62 +195,150 @@ contract('Reactor', () => {
       await agEUR.connect(bob).mint(reactor.address, gains);
       expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount);
     });
-    it('success - when some has been minted and need euler withdraw', async () => {
+  });
+  describe('maxRedeem', () => {
+    const sharesAmount = parseUnits('1', collatBase);
+    it('success - when no asset', async () => {
+      expect(await reactor.maxRedeem(alice.address)).to.be.equal(0);
+    });
+    it('success - when some has been minted', async () => {
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
-      const gains = parseUnits('1', collatBase);
-      await ANGLE.mint(reactor.address, gains);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2).sub(1));
+      expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount.sub(1));
     });
   });
   describe('Withdraw', () => {
     const sharesAmount = parseUnits('1', collatBase);
     it('success - set interest rate to 0', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, 'interestRate');
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
-      //   await eulerMarketA.connect(bob).setPoolSize(sharesAmount);
+      const amountInvestedInEuler = await eulerMarketA.balanceOfUnderlying(reactor.address);
+      expect(amountInvestedInEuler).to.be.equal(parseUnits('0.8', 18).sub(1));
       expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.sub(1));
       await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
       expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
     });
-    it('success - set interest rate to 0', async () => {
-      const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, 'interestRate');
+    it('success - under minInvest', async () => {
+      const newMinInvest = parseUnits('1', 18);
+      await reactor.connect(guardian).setMinInvest(newMinInvest);
+
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
-      //   await eulerMarketA.connect(bob).setPoolSize(sharesAmount);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.sub(1));
-      // need to have some return otherwie we can't
-      const payForRounding = parseUnits('1', 0);
-      await agEUR.connect(bob).mint(reactor.address, payForRounding);
+
+      const amountInvestedInEuler = await eulerMarketA.balanceOfUnderlying(reactor.address);
+      const lastBalance = await reactor.lastBalance();
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      expect(amountInvestedInEuler).to.be.equal(ethers.constants.Zero);
+      expect(lastBalance).to.be.equal(parseUnits('0.8', 18).sub(1));
+      expectApproxDelta(vaultDebt, parseUnits('0.8', 18), parseUnits('1', PRECISION));
+    });
+    it('success - no need to withdraw from Euler', async () => {
+      const sharesAmountBob = parseUnits('10', collatBase);
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await ANGLE.connect(bob).mint(bob.address, sharesAmountBob);
+      await ANGLE.connect(bob).approve(reactor.address, sharesAmountBob);
+      await reactor.connect(bob).deposit(sharesAmountBob, bob.address);
+      let lastBalance = await reactor.lastBalance();
+      expect(lastBalance).to.be.equal(parseUnits('8.8', 18).sub(1));
+      const gains = parseUnits('1', 18);
+      await agEUR.connect(bob).mint(reactor.address, gains);
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      const amountInvestedInEuler = await eulerMarketA.balanceOfUnderlying(reactor.address);
+      lastBalance = await reactor.lastBalance();
+      expect(amountInvestedInEuler).to.be.equal(parseUnits('8.8', 18).sub(1));
+      expect(lastBalance).to.be.equal(parseUnits('9', 18));
+    });
+    it('success - over the upperCF but poolSize too small', async () => {
+      const balanceAgEUR = await agEUR.balanceOf(alice.address);
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await eulerMarketA.connect(bob).setPoolSize(parseUnits('0.4', 18));
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.div(2));
       await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
       expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.div(2));
+      expect(await reactor.balanceOf(alice.address)).to.be.equal(sharesAmount.div(2));
+    });
+    it('success - withdraw under the upperCF', async () => {
+      const sharesAmountBob = parseUnits('10', collatBase);
+      const balanceAgEUR = await agEUR.balanceOf(alice.address);
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await ANGLE.connect(bob).mint(bob.address, sharesAmountBob);
+      await ANGLE.connect(bob).approve(reactor.address, sharesAmountBob);
+      await reactor.connect(bob).deposit(sharesAmountBob, bob.address);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount);
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount);
+    });
+    it('success - over the upperCF but not reaching the dust', async () => {
+      const sharesAmountBob = parseUnits('0.2', collatBase);
+      const balanceAgEUR = await agEUR.balanceOf(alice.address);
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await ANGLE.connect(bob).mint(bob.address, sharesAmountBob);
+      await ANGLE.connect(bob).approve(reactor.address, sharesAmountBob);
+      await reactor.connect(bob).deposit(sharesAmountBob, bob.address);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount);
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount);
+    });
+    it('revert - non null interest rate VaultManager and no profits', async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.sub(1));
+      await expect(
+        reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address),
+      ).to.be.revertedWith('ERC20: burn amount exceeds balance');
+    });
+    it('success - overall profit', async () => {
+      const balanceAgEUR = await agEUR.balanceOf(alice.address);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a profit on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('2', 18));
+      await eulerMarketA.connect(bob).setPoolSize(parseUnits('1.6', 18));
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount);
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      // sub(2) because we have the interest rate x2 but the actual deposit was 0.79999...
+      const approxProfit = parseUnits('1.6', 18).sub(2).sub(vaultDebt);
+      expectApproxDelta(
+        await agEUR.balanceOf(alice.address),
+        balanceAgEUR.add(approxProfit),
+        parseUnits('1', PRECISION),
+      );
+    });
+    it('success - loss also on Euler', async () => {
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a loss on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('0.5', 18));
+      await eulerMarketA.connect(bob).setPoolSize(parseUnits('0.4', 18));
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.div(2).sub(1));
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      const loss = parseUnits('0.4', 18).add(vaultDebt.sub(parseUnits('0.8', 18)));
+      expectApproxDelta(await reactor.connect(alice).currentLoss(), loss, parseUnits('1', PRECISION));
     });
   });
-  //   describe('maxRedeem', () => {
-  //     const sharesAmount = parseUnits('1', collatBase);
-  //     it('success - when no asset', async () => {
-  //       expect(await reactor.maxRedeem(alice.address)).to.be.equal(0);
-  //     });
-  //     it('success - when some has been minted', async () => {
-  //       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-  //       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-  //       await reactor.connect(alice).mint(sharesAmount, alice.address);
-  //       expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
-  //     });
-  //     it('success - when some has been minted and a gain has been made', async () => {
-  //       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-  //       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-  //       await reactor.connect(alice).mint(sharesAmount, alice.address);
-  //       const gains = parseUnits('1', collatBase);
-  //       await ANGLE.mint(reactor.address, gains);
-  //       // It's still the balance of the user
-  //       expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
-  //     });
-  //   });
 });

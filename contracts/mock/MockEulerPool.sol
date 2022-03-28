@@ -40,7 +40,7 @@ contract MockEulerPool {
     }
 
     function withdraw(uint256, uint256 amount) external {
-        if (amount == type(uint256).max) amount = users[msg.sender];
+        if (amount == type(uint256).max) amount = (users[msg.sender] * interestRateAccumulator) / 10**18;
         console.log("amount ", amount);
         console.log("poolSize ", poolSize);
 
