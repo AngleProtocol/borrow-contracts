@@ -129,6 +129,7 @@ contract('Reactor', () => {
       upperCF,
     );
   });
+
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -493,6 +494,7 @@ contract('Reactor', () => {
       const claimable = await reactor.claimableRewards();
       expectApprox(claimable, parseEther('0.8'), 0.00001);
     });
+
     it('success - mint with rounding', async () => {
       const sharesAmount = parseUnits('1', collatBase);
       await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
@@ -504,8 +506,11 @@ contract('Reactor', () => {
       // To make a gain we need to repay debt on behalf of the vault
       await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount.div(2).add(1), alice.address);
-      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(199).div(100).sub(1));
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(
+        sharesAmount.mul(100).sub(sharesAmount.mul(5).div(10).add(1)),
+      );
     });
+
     it('success - second mint with borrow', async () => {
       const secondSharesAmount = sharesAmount;
       await ANGLE.connect(alice).mint(alice.address, secondSharesAmount);
