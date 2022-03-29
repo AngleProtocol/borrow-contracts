@@ -1153,13 +1153,10 @@ contract('VaultManager', () => {
             bob.address,
           )
       ).wait();
-      /* TODO: test fails we need to find a way to process array in events
-      console.log(receipt);
 
       inReceipt(receipt, 'LiquidatedVaults', {
-        vaultIDs: [2],
+        vaultIDs: [BigNumber.from(2)],
       });
-      */
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
