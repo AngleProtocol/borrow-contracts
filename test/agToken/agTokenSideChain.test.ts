@@ -8,7 +8,7 @@ import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('AgToken', () => {
+contract('AgTokenSideChain', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;

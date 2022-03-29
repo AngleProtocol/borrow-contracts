@@ -85,7 +85,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     // ==================== External Permissionless Functions ======================
 
     /// @notice Returns the list of all supported bridge tokens
-    /// @dev It is helpful for UIs
+    /// @dev Helpful for UIs
     function allBridgeTokens() external view returns (address[] memory) {
         return bridgeTokensList;
     }
@@ -148,7 +148,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         uint64 fee,
         bool paused
     ) external onlyGovernor {
-        require(!bridges[bridgeToken].allowed, "51");
+        require(!bridges[bridgeToken].allowed && bridgeToken != address(0), "51");
         require(fee <= BASE_PARAMS, "9");
         BridgeDetails memory _bridge;
         _bridge.limit = limit;
@@ -218,5 +218,4 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         isFeeExempt[theAddress] = !feeExemptStatus;
         emit FeeToggled(theAddress, !feeExemptStatus);
     }
-
 }

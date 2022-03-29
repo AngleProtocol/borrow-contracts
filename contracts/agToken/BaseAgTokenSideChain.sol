@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "../interfaces/IAgToken.sol";
-import "../interfaces/IStableMaster.sol";
 import "../interfaces/ITreasury.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
@@ -71,32 +70,6 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     }
 
     // ======================= Minter Role Only Functions ==========================
-
-    /// @notice Destroys `amount` token from the caller without giving collateral back
-    /// @param amount Amount to burn
-    /// @param poolManager Reference to the `PoolManager` contract for which the `stocksUsers` will
-    /// need to be updated
-    /// @dev This function is left here if we want to deploy Angle Core Module on Polygon: it has been restricted
-    /// to a minter role only
-    function burnNoRedeem(uint256 amount, address poolManager) external onlyMinter {
-        _burn(msg.sender, amount);
-        IStableMaster(msg.sender).updateStocksUsers(amount, poolManager);
-    }
-
-    /// @notice Burns `amount` of agToken on behalf of another account without redeeming collateral back
-    /// @param account Account to burn on behalf of
-    /// @param amount Amount to burn
-    /// @param poolManager Reference to the `PoolManager` contract for which the `stocksUsers` will need to be updated
-    /// @dev This function is left here if we want to deploy Angle Core Module on Polygon: it has been restricted
-    /// to a minter role only
-    function burnFromNoRedeem(
-        address account,
-        uint256 amount,
-        address poolManager
-    ) external onlyMinter {
-        _burnFromNoRedeem(amount, account, msg.sender);
-        IStableMaster(msg.sender).updateStocksUsers(amount, poolManager);
-    }
 
     /// @inheritdoc IAgToken
     function burnSelf(uint256 amount, address burner) external onlyMinter {
