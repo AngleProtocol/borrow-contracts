@@ -23,7 +23,7 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt } from '../utils/expectEvent';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import {
   addCollateral,
   angle,
@@ -1143,19 +1143,26 @@ contract('VaultManager', () => {
         0.0001,
       );
 
-      await vaultManager
-        .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address)'](
-          [2],
-          [parseEther(maxStablecoinAmountToRepay.toString())],
-          bob.address,
-          bob.address,
-        );
+      const receipt = await (
+        await vaultManager
+          .connect(bob)
+          ['liquidate(uint256[],uint256[],address,address)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            bob.address,
+            bob.address,
+          )
+      ).wait();
+
+      inReceipt(receipt, 'LiquidatedVaults', {
+        vaultIDs: [BigNumber.from(2)],
+      });
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
     });
+
     it('success - case 2 without boost', async () => {
       const rate = 0.9;
       await oracle.update(parseEther(rate.toString()));

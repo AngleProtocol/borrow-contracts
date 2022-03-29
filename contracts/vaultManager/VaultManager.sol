@@ -675,6 +675,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Normalization of good and bad debt is already handled in the `accrueInterestToTreasury` function
         surplus += (liqData.stablecoinAmountToReceive * (BASE_PARAMS - liquidationSurcharge)) / BASE_PARAMS;
         badDebt += liqData.badDebtFromLiquidation;
+        emit LiquidatedVaults(vaultIDs);
         _handleRepay(liqData.collateralAmountToGive, liqData.stablecoinAmountToReceive, from, to, who, data);
     }
 
