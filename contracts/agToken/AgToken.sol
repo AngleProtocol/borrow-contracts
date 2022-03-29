@@ -96,7 +96,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @param poolManager Reference to the `PoolManager` contract for which the `stocksUsers` will
     /// need to be updated
     /// @dev When calling this function, people should specify the `poolManager` for which they want to decrease
-    /// the `stocksUsers`: this a way for the protocol to maintain healthy accounting variables
+    /// the `stocksUsers`: this is a way for the protocol to maintain healthy accounting variables
     function burnNoRedeem(uint256 amount, address poolManager) external {
         _burn(msg.sender, amount);
         IStableMaster(stableMaster).updateStocksUsers(amount, poolManager);

@@ -213,12 +213,14 @@ contract Treasury is ITreasury, Initializable {
             // If we have bad debt we need to burn stablecoins that accrued to the protocol
             // We still need to make sure that we're not burning too much or as much as we can if the debt is big
             uint256 balance = stablecoin.balanceOf(address(this));
-            // We are going to burn min(balance, badDebtValue)
+            // We are going to burn `min(balance, badDebtValue)`
             uint256 toBurn = balance <= badDebtValue ? balance : badDebtValue;
             stablecoin.burnSelf(toBurn, address(this));
             // If we burned more than `surplusBuffer`, we set surplus to 0. It means we had to tap into Treasury reserve
             surplusBufferValue = toBurn >= surplusBufferValue ? 0 : surplusBufferValue - toBurn;
             badDebtValue -= toBurn;
+            // Note here that the stablecoin balance is necessarily greater than the surplus buffer, and so if 
+            // `surplusBuffer >= toBurn`, then `badDebtValue = toBurn`
         }
         surplusBuffer = surplusBufferValue;
         badDebt = badDebtValue;
