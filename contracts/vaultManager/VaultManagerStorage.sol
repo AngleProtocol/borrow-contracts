@@ -133,6 +133,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event FiledUint64(uint64 param, bytes32 what);
     event DebtCeilingUpdated(uint256 debtCeiling);
     event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
+    event LiquidatedVaults(uint256[] vaultIDs);
     event OracleUpdated(address indexed _oracle);
     event ToggledWhitelisting(bool);
 
