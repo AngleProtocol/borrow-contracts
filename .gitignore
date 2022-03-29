@@ -22,6 +22,7 @@ solidity-flattenedContracts
 ./crytic-export
 typechain
 slither-audit.txt
+slither
 
 
 # Test output
