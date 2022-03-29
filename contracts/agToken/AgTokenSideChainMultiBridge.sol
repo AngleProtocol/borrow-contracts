@@ -106,7 +106,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
             bridgeDetails.limit > 0 && IERC20(bridgeToken).balanceOf(address(this)) + amount <= bridgeDetails.limit,
             "4"
         );
-        IERC20(bridgeToken).safeTransfer(to, amount);
+        IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
         if (!isFeeExempt[msg.sender]) {
@@ -192,13 +192,14 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
 
     /// @notice Updates the `limit` amount for `bridgeToken`
     function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardian {
-        require(!bridges[bridgeToken].allowed, "51");
+        require(bridges[bridgeToken].allowed, "51");
         bridges[bridgeToken].limit = limit;
         emit BridgeTokenLimitUpdated(bridgeToken, limit);
     }
 
     /// @notice Updates the `fee` value for `bridgeToken`
     function setSwapFee(address bridgeToken, uint64 fee) external onlyGovernorOrGuardian {
+        require(bridges[bridgeToken].allowed, "51");
         require(fee <= BASE_PARAMS, "9");
         bridges[bridgeToken].fee = fee;
         emit BridgeTokenFeeUpdated(bridgeToken, fee);
