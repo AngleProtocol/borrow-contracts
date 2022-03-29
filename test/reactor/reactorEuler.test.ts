@@ -131,7 +131,7 @@ contract('Reactor', () => {
       targetCF,
       upperCF,
     );
-    await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
+    // await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
     await agEUR.connect(bob).approve(eulerMarketA.address, ethers.constants.MaxUint256);
   });
   describe('setMinInvest', () => {

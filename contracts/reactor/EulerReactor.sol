@@ -17,6 +17,10 @@ contract EulerReactor is BaseReactor {
     uint256 public lastBalance;
     uint256 public minInvest;
 
+    // =============================== Events ======================================
+
+    event MinInvestUpdated(uint256);
+
     /// @notice Initializes the `BaseReactor` contract and
     /// the underlying `VaultManager`
     /// @param _name Name of the ERC4626 token
@@ -38,10 +42,13 @@ contract EulerReactor is BaseReactor {
         euler = _euler;
         minInvest = minInvest_;
         _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF);
+        IERC20(address(stablecoin)).safeApprove(address(euler), type(uint256).max);
     }
 
     /// @inheritdoc IERC4626
     /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
+    /// @dev We do not take into account the claim(amount) call in these computation - as it
+    /// would asks to estimate
     function maxWithdraw(address user) public view virtual override returns (uint256) {
         uint256 toWithdraw = convertToAssets(balanceOf(user));
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
@@ -52,19 +59,15 @@ contract EulerReactor is BaseReactor {
     /// @inheritdoc IERC4626
     /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
     function maxRedeem(address user) public view virtual override returns (uint256) {
-        uint256 maxAmountToRedeem;
-        uint256 toWithdraw = convertToAssets(balanceOf(user));
-        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
-        if (toWithdraw <= looseAssets) maxAmountToRedeem = toWithdraw;
-        else maxAmountToRedeem = _maxStablecoinsAvailable(toWithdraw, usedAssets, looseAssets);
-        return convertToShares(looseAssets + maxAmountToRedeem);
+        return convertToShares(maxWithdraw(user));
     }
 
     function setMinInvest(uint256 minInvest_) public onlyGovernorOrGuardian {
         minInvest = minInvest_;
+        emit MinInvestUpdated(minInvest_);
     }
 
-    /// @notice Changes allowance of this contract for a given token
+    /// @notice Changes allowance of this contract to Euler deposit contract
     /// @param amount Amount allowed
     function changeAllowance(uint256 amount) external onlyGovernorOrGuardian {
         uint256 currentAllowance = IERC20(address(stablecoin)).allowance(address(this), address(euler));
@@ -79,7 +82,7 @@ contract EulerReactor is BaseReactor {
     /// @param amount Amount of assets wanted to be withdrawn
     /// @param usedAssets Amount of assets collateralizing the vault
     /// @param looseAssets Amount of assets directly accessible -- in the contract balance
-    /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
+    /// @dev If reaching the upperCF, users are limited in the amount to be withdrawn by liquidity on Euler contracts
     function _maxStablecoinsAvailable(
         uint256 amount,
         uint256 usedAssets,
@@ -97,57 +100,64 @@ contract EulerReactor is BaseReactor {
             oracleRate
         );
 
+        // Initialisation that users can withdraw it all, if it can't then maxAmount will be updated
+        // This equality will stand if:
+        //      1) collateralFactor < upperCF: contract does not need to repay debt and therefore do not need to remove Euler Liquidity
+        //      2) looseStablecoins >= stablecoinsValueToRedeem : debt to be repaid is lower than the reactor stablecoin balance
+        //      3) Euler liquidity available to the reactor is larger than the debt to be repaid
+        maxAmount = toWithdraw;
+
         uint256 stablecoinsValueToRedeem;
+        // If the new collateral factor is above upperCF, we need to repay stablecoins to free collateral,
+        // and therefore we need to withdraw liquidity on Euler.
+        // This is possible only if both the reactor balance on Euler and poolSize (available liquidity on Euler) is larger
+        // than the needed stablecoins --> users can withdraw toWithdraw
+        // Mimic the _rebalance() in a case of a withdraw
         if (collateralFactor >= upperCF) {
-            // If the `collateralFactor` is too high, then too much has been borrowed
-            // and stablecoins should be repaid
             stablecoinsValueToRedeem = debt - futureStablecoinsInVault;
             if (futureStablecoinsInVault <= vaultManagerDust) {
-                // If this happens in a moment at which the reactor has a loss, then it will not be able
-                // to repay it all, and the function will revert
                 stablecoinsValueToRedeem = type(uint256).max;
             }
-            // Liquidity on Euler
-            uint256 poolSize = stablecoin.balanceOf(address(euler));
-            uint256 reactorBalanceEuler = euler.balanceOfUnderlying(address(this));
-            uint256 maxEulerWithdrawal = poolSize > reactorBalanceEuler ? reactorBalanceEuler : poolSize;
-            // if we can fully reimburse with Euler liquidity then users can withdraw hiw whole balance
-            if (maxEulerWithdrawal < stablecoinsValueToRedeem) {
-                stablecoinsValueToRedeem = maxEulerWithdrawal;
-                maxAmount = (stablecoinsValueToRedeem * _assetBase * BASE_PARAMS) / (oracleRate * targetCF);
-                maxAmount = maxAmount > toWithdraw ? toWithdraw : maxAmount;
-            } else {
-                maxAmount = toWithdraw;
+            // take into account non invested stablecoins as they are at hand
+            uint256 looseStablecoins = stablecoin.balanceOf(address(this));
+            if (stablecoinsValueToRedeem > looseStablecoins) {
+                stablecoinsValueToRedeem -= looseStablecoins;
+                // Liquidity on Euler
+                uint256 poolSize = stablecoin.balanceOf(address(euler));
+                uint256 reactorBalanceEuler = euler.balanceOfUnderlying(address(this));
+                uint256 maxEulerWithdrawal = poolSize > reactorBalanceEuler ? reactorBalanceEuler : poolSize;
+                // if we can fully reimburse with Euler liquidity then users can withdraw hiw whole balance
+                if (maxEulerWithdrawal < stablecoinsValueToRedeem) {
+                    stablecoinsValueToRedeem = maxEulerWithdrawal;
+                    maxAmount = (stablecoinsValueToRedeem * _assetBase * BASE_PARAMS) / (oracleRate * targetCF);
+                    maxAmount = maxAmount > toWithdraw ? toWithdraw : maxAmount;
+                }
             }
-        } else {
-            maxAmount = toWithdraw;
         }
     }
 
-    /// @notice Virtual function to invest stablecoins
+    /// @notice Function to invest stablecoins
     /// @param amount Amount of new stablecoins managed
-    /// @return amountInvested Amount invested in the strategy
-    /// @dev Calling this function should eventually trigger something regarding strategies depending
-    /// on a threshold
+    /// @return amountInvested Amount truly invested in the strategy
     /// @dev Amount should not be above maxExternalAmount defined in Euler otherwise it will revert
-    function _push(uint256 amount) internal virtual override returns (uint256 amountInvested) {
+    function _push(uint256 amount) internal override returns (uint256 amountInvested) {
         (uint256 lentStablecoins, uint256 looseStablecoins) = _report(amount);
 
         if (looseStablecoins > minInvest) {
             euler.deposit(0, looseStablecoins);
+            amountInvested = looseStablecoins;
             // as looseStablecoins should be null
             lastBalance = euler.balanceOfUnderlying(address(this));
         } else {
             lastBalance = lentStablecoins + looseStablecoins;
         }
-        return amount;
+        return amountInvested;
     }
 
-    /// @notice Virtual function to withdraw stablecoins
+    /// @notice Function to withdraw stablecoins
     /// @param amount Amount needed at the end of the call
-    /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
-    /// @dev The call will revert if `stablecoin.balanceOf(address(euler))<amount`
-    function _pull(uint256 amount) internal virtual override returns (uint256 amountAvailable) {
+    /// @return amountAvailable Amount available in the contracts, new `looseStablecoins`
+    function _pull(uint256 amount) internal override returns (uint256 amountAvailable) {
         (uint256 lentStablecoins, uint256 looseStablecoins) = _report(0);
 
         if (looseStablecoins < amount) {
@@ -155,12 +165,13 @@ contract EulerReactor is BaseReactor {
                 ? type(uint256).max
                 : (amount - looseStablecoins);
             euler.withdraw(0, amountWithdrawnFromEuler);
+            amountAvailable = looseStablecoins + amountWithdrawnFromEuler;
+
             lastBalance = euler.balanceOfUnderlying(address(this));
         } else {
             lastBalance = lentStablecoins + looseStablecoins - amount;
+            amountAvailable = amount;
         }
-
-        return amount;
     }
 
     function _report(uint256 amountToAdd) internal returns (uint256 lentStablecoins, uint256 looseStablecoins) {
@@ -169,8 +180,9 @@ contract EulerReactor is BaseReactor {
 
         // always positive otherwise we couldn't do the operation
         uint256 total = looseStablecoins + lentStablecoins - amountToAdd;
+        uint256 lastBalance_ = lastBalance;
 
-        if (total > lastBalance) _handleGain(total - lastBalance);
-        else _handleLoss(lastBalance - total);
+        if (total > lastBalance_) _handleGain(total - lastBalance_);
+        else _handleLoss(lastBalance_ - total);
     }
 }
