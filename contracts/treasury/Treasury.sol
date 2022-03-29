@@ -219,7 +219,7 @@ contract Treasury is ITreasury, Initializable {
             // If we burned more than `surplusBuffer`, we set surplus to 0. It means we had to tap into Treasury reserve
             surplusBufferValue = toBurn >= surplusBufferValue ? 0 : surplusBufferValue - toBurn;
             badDebtValue -= toBurn;
-            // Note here that the stablecoin balance is necessarily greater than the surplus buffer, and so if 
+            // Note here that the stablecoin balance is necessarily greater than the surplus buffer, and so if
             // `surplusBuffer >= toBurn`, then `badDebtValue = toBurn`
         }
         surplusBuffer = surplusBufferValue;
@@ -265,16 +265,16 @@ contract Treasury is ITreasury, Initializable {
     function removeVaultManager(address vaultManager) external onlyGovernor {
         require(vaultManagerMap[vaultManager], "3");
         delete vaultManagerMap[vaultManager];
-        // deletion from vaultManagerList loop
+        // deletion from `vaultManagerList` loop
         uint256 vaultManagerListLength = vaultManagerList.length;
         for (uint256 i = 0; i < vaultManagerListLength - 1; i++) {
             if (vaultManagerList[i] == vaultManager) {
-                // replace the VaultManager to remove with the last of the list
+                // replace the `VaultManager` to remove with the last of the list
                 vaultManagerList[i] = vaultManagerList[vaultManagerListLength - 1];
                 break;
             }
         }
-        // remove last element in array since it's now a duplicate
+        // remove last element in array
         vaultManagerList.pop();
         emit VaultManagerToggled(vaultManager);
         stablecoin.removeMinter(vaultManager);

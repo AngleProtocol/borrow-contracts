@@ -10,15 +10,14 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20Pe
 /// @title AgTokenSideChain
 /// @author Angle Core Team
 /// @notice Contract for Angle agTokens to be deployed on any other chain than Ethereum mainnet
-/// @dev This contract is used to create and handle the stablecoins of Angle protocol
-/// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange
+/// @dev This contract is used to create and handle the stablecoins of Angle protocol in a different chain than Ethereum
 contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     // ======================= Parameters and Variables ============================
 
     /// @inheritdoc IAgToken
     mapping(address => bool) public isMinter;
     /// @notice Reference to the treasury contract which can grant minting rights
-    ITreasury public treasury;
+    address public treasury;
 
     // ================================== Events ===================================
 
@@ -35,11 +34,11 @@ contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     function initialize(
         string memory name_,
         string memory symbol_,
-        ITreasury _treasury
+        address _treasury
     ) external initializer {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
-        require(address(_treasury.stablecoin()) == address(this), "6");
+        require(address(ITreasury(_treasury).stablecoin()) == address(this), "6");
         treasury = _treasury;
         emit TreasuryUpdated(address(_treasury));
     }
@@ -72,6 +71,32 @@ contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     }
 
     // ======================= Minter Role Only Functions ==========================
+
+    /// @notice Destroys `amount` token from the caller without giving collateral back
+    /// @param amount Amount to burn
+    /// @param poolManager Reference to the `PoolManager` contract for which the `stocksUsers` will
+    /// need to be updated
+    /// @dev This function is left here if we want to deploy Angle Core Module on Polygon: it has been restricted
+    /// to a minter role only
+    function burnNoRedeem(uint256 amount, address poolManager) external onlyMinter {
+        _burn(msg.sender, amount);
+        IStableMaster(msg.sender).updateStocksUsers(amount, poolManager);
+    }
+
+    /// @notice Burns `amount` of agToken on behalf of another account without redeeming collateral back
+    /// @param account Account to burn on behalf of
+    /// @param amount Amount to burn
+    /// @param poolManager Reference to the `PoolManager` contract for which the `stocksUsers` will need to be updated
+    /// @dev This function is left here if we want to deploy Angle Core Module on Polygon: it has been restricted
+    /// to a minter role only
+    function burnFromNoRedeem(
+        address account,
+        uint256 amount,
+        address poolManager
+    ) external onlyMinter {
+        _burnFromNoRedeem(amount, account, msg.sender);
+        IStableMaster(msg.sender).updateStocksUsers(amount, poolManager);
+    }
 
     /// @inheritdoc IAgToken
     function burnSelf(uint256 amount, address burner) external onlyMinter {
@@ -110,7 +135,7 @@ contract AgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     /// @inheritdoc IAgToken
     function setTreasury(address _treasury) external onlyTreasury {
-        treasury = ITreasury(_treasury);
+        treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }
 
