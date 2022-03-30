@@ -5,9 +5,9 @@ import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
-import { expect } from '../test/utils/chai-setup';
-import { inIndirectReceipt, inReceipt } from '../test/utils/expectEvent';
-import { deployUpgradeable, ZERO_ADDRESS } from '../test/utils/helpers';
+import { expect } from '../../test/utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../../test/utils/expectEvent';
+import { deployUpgradeable, ZERO_ADDRESS } from '../../test/utils/helpers';
 import {
   AgToken,
   AgToken__factory,
@@ -18,7 +18,7 @@ import {
   ProxyAdmin,
   Treasury,
   Treasury__factory,
-} from '../typechain';
+} from '../../typechain';
 
 contract('AgToken - End-to-end Upgrade', () => {
   let deployer: SignerWithAddress;

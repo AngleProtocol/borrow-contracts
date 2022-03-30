@@ -88,6 +88,11 @@ const config: HardhatUserConfig = {
       live: true,
       url: nodeUrl('polygon'),
       accounts: accounts('polygon'),
+      forking: {
+        enabled: argv.fork || false,
+        url: nodeUrl('forkpolygon'),
+        blockNumber: 14256515,
+      },
       gas: 'auto',
     },
     mainnet: {
