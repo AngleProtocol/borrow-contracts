@@ -212,7 +212,7 @@ interface IVaultManagerStorage {
     /// @notice Reference to the collateral handled by this `VaultManager`
     function collateral() external view returns (IERC20);
 
-    /// @notice Total normalized amount of stablecoins borrowed
+    /// @notice Total normalized amount of stablecoins borrowed, not taking into account the potential bad debt accumulated
     function totalNormalizedDebt() external view returns (uint256);
 
     /// @notice Maximum amount of stablecoins that can be issued with this contract
