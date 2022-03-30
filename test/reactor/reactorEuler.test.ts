@@ -153,6 +153,19 @@ contract('Reactor', () => {
       expect(await reactor.minInvest()).to.be.equal(newMinInvest);
     });
   });
+  describe('changeAllowance', () => {
+    it('revert - only guardian or governor', async () => {
+      await expect(reactor.connect(alice).changeAllowance(ethers.constants.Zero)).to.be.revertedWith('2');
+    });
+    it('success - decrease allowance', async () => {
+      await reactor.connect(guardian).changeAllowance(ethers.constants.Zero);
+      expect(await agEUR.allowance(reactor.address, eulerMarketA.address)).to.be.equal(parseEther('0'));
+    });
+    it('success - increaseAllowance', async () => {
+      await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
+      expect(await agEUR.allowance(reactor.address, eulerMarketA.address)).to.be.equal(ethers.constants.MaxUint256);
+    });
+  });
   describe('maxDeposit', () => {
     beforeEach(async () => {
       await vaultManager.connect(governor).setDebtCeiling(ethers.constants.MaxUint256.div(parseUnits('1', 27)));
