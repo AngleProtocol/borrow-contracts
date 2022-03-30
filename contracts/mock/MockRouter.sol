@@ -9,8 +9,6 @@ import "../interfaces/IAngleRouter.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 
-import "hardhat/console.sol";
-
 contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     using SafeERC20 for IERC20;
 

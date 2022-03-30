@@ -133,6 +133,17 @@ async function deployUpgradeable(factory: ContractFactory, ...args: any[]): Prom
   return new Contract(Proxy.address, factory.interface, alice);
 }
 
+async function expectApproxDelta(actual: BigNumber, expected: BigNumber, delta: BigNumber): Promise<void> {
+  const margin = expected.div(delta);
+  if (actual.isNegative()) {
+    expect(expected.gte(actual.add(margin))).to.be.true;
+    expect(expected.lte(actual.sub(margin))).to.be.true;
+  } else {
+    expect(expected.lte(actual.add(margin))).to.be.true;
+    expect(expected.gte(actual.sub(margin))).to.be.true;
+  }
+}
+
 function expectApprox(value: BigNumberish, target: BigNumberish, error: number): void {
   expect(value).to.be.lt(
     BigNumber.from(target)
@@ -287,6 +298,7 @@ export {
   displayReactorState,
   displayVaultState,
   expectApprox,
+  expectApproxDelta,
   getDebtIn,
   getImpersonatedSigner,
   increaseTime,

@@ -91,6 +91,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @inheritdoc IERC4626
     /// @dev The amount of assets specified should be smaller than the amount of assets controlled by the
     /// reactor
+    /// @dev `assets` should also be inferior to maxWithdraw(from)
     function withdraw(
         uint256 assets,
         address to,
@@ -110,6 +111,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
+    /// @dev `shares` should be inferior to maxRedeem(from)
     function redeem(
         uint256 shares,
         address to,
@@ -180,24 +182,20 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @dev Technically, the maximum deposit could be less than the max uint256
     /// if there is a `debtCeiling` in the associated `VaultManager`. This implementation
     /// assumes that the `VaultManager` does not have any debt ceiling
-    function maxDeposit(address) public pure returns (uint256) {
+    function maxDeposit(address) public view virtual returns (uint256) {
         return type(uint256).max;
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address) public pure returns (uint256) {
+    function maxMint(address) public view virtual returns (uint256) {
         return type(uint256).max;
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address user) public view virtual returns (uint256) {
-        return convertToAssets(balanceOf(user));
-    }
+    function maxWithdraw(address user) public view virtual returns (uint256) {}
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address user) public view virtual returns (uint256) {
-        return balanceOf(user);
-    }
+    function maxRedeem(address user) public view virtual returns (uint256) {}
 
     /// @inheritdoc IERC721ReceiverUpgradeable
     function onERC721Received(
@@ -262,13 +260,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             // This happens if you have been liquidated or if debt has been paid on your behalf
             _handleGain(lastDebt - currentDebt);
         } else {
-            uint256 loss = currentDebt - lastDebt;
-            if (claimableRewards >= loss) {
-                claimableRewards -= loss;
-            } else {
-                currentLoss += loss - claimableRewards;
-                claimableRewards = 0;
-            }
+            _handleLoss(currentDebt - lastDebt);
         }
     }
 
@@ -281,6 +273,17 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         } else {
             claimableRewards += gain - currentLossVariable;
             currentLoss = 0;
+        }
+    }
+
+    /// @notice Propagates a loss to the claimable rewards and/or currentLoss
+    /// @param loss Loss to propagate
+    function _handleLoss(uint256 loss) internal {
+        if (claimableRewards >= loss) {
+            claimableRewards -= loss;
+        } else {
+            currentLoss += loss - claimableRewards;
+            claimableRewards = 0;
         }
     }
 
@@ -303,23 +306,16 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         _handleCurrentDebt(debt);
         lastDebt = debt;
 
-        uint256 collateralFactor;
         uint256 toRepay;
         uint256 toBorrow;
 
-        // We're first using as an intermediate in this variable something that does not correspond
-        // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in
-        // the vault expressed in stablecoin value and in a custom base
-        uint256 futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracle.read();
-        // The function will revert above if `toWithdraw` is too big
-
-        if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
-        else {
-            collateralFactor = (debt * BASE_PARAMS * _assetBase) / futureStablecoinsInVault;
-        }
-        // This is the targeted debt at the end of the call, which might not be reached if the collateral
-        // factor is not moved enough
-        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (BASE_PARAMS * _assetBase);
+        (uint256 futureStablecoinsInVault, uint256 collateralFactor) = _getFutureDebtAndCF(
+            toWithdraw,
+            usedAssets,
+            looseAssets,
+            debt,
+            oracle.read()
+        );
 
         // 1 action to add or remove collateral + 1 additional action if we need to borrow or repay
         uint8 len = (collateralFactor >= upperCF) ||
@@ -362,7 +358,6 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             toBorrow = futureStablecoinsInVault - debt;
             actions[len] = ActionType.borrow;
             datas[len] = abi.encodePacked(vaultID, toBorrow);
-            lastDebt += toBorrow;
             len += 1;
         }
 
@@ -372,9 +367,53 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             datas[len] = abi.encodePacked(vaultID, toWithdraw - looseAssets);
         }
 
-        if (toRepay > 0) _pull(toRepay);
-        vaultManager.angle(actions, datas, address(this), address(this), address(this), "");
-        if (toBorrow > 0) _push(toBorrow);
+        if (toRepay > 0) {
+            toRepay = toRepay == type(uint256).max ? debt : toRepay;
+            _pull(toRepay);
+        }
+
+        PaymentData memory paymentData = vaultManager.angle(
+            actions,
+            datas,
+            address(this),
+            address(this),
+            address(this),
+            ""
+        );
+
+        // VaultManagers always round to their advantages + there can be a borrow fee taken
+        if (toBorrow > 0) {
+            lastDebt += paymentData.stablecoinAmountToGive;
+            _push(paymentData.stablecoinAmountToGive);
+        }
+    }
+
+    /// @notice Compute future debt to the vaultManager and the collateral factor of the current debt with future assets
+    /// @param toWithdraw Amount of assets to withdraw
+    /// @param usedAssets Amount of assets in the vault
+    /// @param looseAssets Amount of assets already in the contract
+    /// @param debt Current debt owed to the vaultManager
+    /// @param oracleRate Exchange rate from asset to stablecoin
+    function _getFutureDebtAndCF(
+        uint256 toWithdraw,
+        uint256 usedAssets,
+        uint256 looseAssets,
+        uint256 debt,
+        uint256 oracleRate
+    ) internal view returns (uint256 futureStablecoinsInVault, uint256 collateralFactor) {
+        // We're first using as an intermediate in this variable something that does not correspond
+        // to the future amount of stablecoins borrowed in the vault: it is the future collateral amount in
+        // the vault expressed in stablecoin value and in a custom base
+        futureStablecoinsInVault = (usedAssets + looseAssets - toWithdraw) * oracleRate;
+        // The function will revert above if `toWithdraw` is too big
+
+        if (futureStablecoinsInVault == 0) collateralFactor = type(uint256).max;
+        else {
+            collateralFactor = (debt * BASE_PARAMS * _assetBase) / futureStablecoinsInVault;
+        }
+        // This is the targeted debt at the end of the call, which might not be reached if the collateral
+        // factor is not moved enough
+        futureStablecoinsInVault = (futureStablecoinsInVault * targetCF) / (BASE_PARAMS * _assetBase);
     }
 
     /// @notice Virtual function to invest stablecoins
@@ -387,9 +426,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Virtual function to withdraw stablecoins
     /// @param amount Amount needed at the end of the call
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
-    /// @dev Eventually actually triggers smthg depending on a threshold
-    /// @dev Calling this function should eventually trigger something regarding strategies depending
-    /// on a threshold
+    /// @dev pull funds back to the reactor, full amounts may not be redeemable
     function _pull(uint256 amount) internal virtual returns (uint256 amountAvailable) {}
 
     /// @notice Claims rewards earned by a user

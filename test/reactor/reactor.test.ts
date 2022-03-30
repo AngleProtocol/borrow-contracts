@@ -129,7 +129,6 @@ contract('Reactor', () => {
       upperCF,
     );
   });
-
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -304,47 +303,6 @@ contract('Reactor', () => {
       expect(await reactor.previewRedeem(sharesAmount)).to.be.equal(sharesAmount.mul(2));
     });
   });
-  describe('maxWithdraw', () => {
-    const sharesAmount = parseUnits('1', collatBase);
-    it('success - when no asset', async () => {
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(0);
-    });
-    it('success - when some has been minted', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount);
-    });
-    it('success - when some has been minted and a gain has been made', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      const gains = parseUnits('1', collatBase);
-      await ANGLE.mint(reactor.address, gains);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.mul(2));
-    });
-  });
-  describe('maxRedeem', () => {
-    const sharesAmount = parseUnits('1', collatBase);
-    it('success - when no asset', async () => {
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(0);
-    });
-    it('success - when some has been minted', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
-    });
-    it('success - when some has been minted and a gain has been made', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      const gains = parseUnits('1', collatBase);
-      await ANGLE.mint(reactor.address, gains);
-      // It's still the balance of the user
-      expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount);
-    });
-  });
   describe('onERC721Received', () => {
     it('reverts - sender is not vaultManager', async () => {
       await expect(reactor.onERC721Received(alice.address, alice.address, 0, '0x')).to.be.revertedWith('3');
@@ -489,12 +447,11 @@ contract('Reactor', () => {
       await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
-      expect(await reactor.lastDebt()).to.be.equal(parseEther('1.6'));
+      expect(await reactor.lastDebt()).to.be.equal(parseEther('1.44'));
       expect(await reactor.currentLoss()).to.be.equal(parseEther('0'));
       const claimable = await reactor.claimableRewards();
-      expectApprox(claimable, parseEther('0.8'), 0.00001);
+      expectApprox(claimable, parseEther('0.72'), 0.00001);
     });
-
     it('success - mint with rounding', async () => {
       const sharesAmount = parseUnits('1', collatBase);
       await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
@@ -506,11 +463,8 @@ contract('Reactor', () => {
       // To make a gain we need to repay debt on behalf of the vault
       await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount.div(2).add(1), alice.address);
-      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(
-        sharesAmount.mul(100).sub(sharesAmount.mul(5).div(10).add(1)),
-      );
+      expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(199).div(2).sub(1));
     });
-
     it('success - second mint with borrow', async () => {
       const secondSharesAmount = sharesAmount;
       await ANGLE.connect(alice).mint(alice.address, secondSharesAmount);
@@ -653,7 +607,7 @@ contract('Reactor', () => {
       // To make a gain we need to repay debt on behalf of the vault
       await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.rebalance();
-      expect(await reactor.claimableRewards()).to.be.equal(parseEther('0.8'));
+      expect(await reactor.claimableRewards()).to.be.equal(parseEther('0.72'));
       // State of the reactor should not change otherwise
       expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
       expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
@@ -914,10 +868,10 @@ contract('Reactor', () => {
       await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
-      expect(await reactor.lastDebt()).to.be.equal(parseEther('1.6'));
+      expect(await reactor.lastDebt()).to.be.equal(parseEther('1.44'));
       expect(await reactor.currentLoss()).to.be.equal(parseEther('0'));
       const claimable = await reactor.claimableRewards();
-      expectApprox(claimable, parseEther('0.8'), 0.00001);
+      expectApprox(claimable, parseEther('0.72'), 0.00001);
       await reactor.claim(alice.address);
       // In this implementation, `pull` just returns 0
       expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);
@@ -943,12 +897,13 @@ contract('Reactor', () => {
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(98));
       // But here we record a loss since interest have been taken in the meantime
       await reactor.connect(alice).mint(sharesAmount, alice.address);
+      console.log('last alice mint');
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(97));
       expectApprox(await reactor.lastDebt(), parseEther('1.6'), 0.0001);
       expect(await reactor.currentLoss()).to.be.equal(parseEther('0'));
       // There are still claimable rewards
       const claimable = await reactor.claimableRewards();
-      expectApprox(claimable, parseEther('0.8'), 0.00001);
+      expectApprox(claimable, parseEther('0.56'), 0.00001);
       await reactor.claim(alice.address);
       // In this implementation, `pull` just returns 0
       expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);

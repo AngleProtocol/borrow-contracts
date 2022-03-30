@@ -11,7 +11,6 @@ module.exports = {
     'oracle/implementations/OracleBTCEURChainlink.sol',
     'oracle/implementations/OracleETHEURChainlink.sol',
     'reactor/BaseReactorStorage.sol',
-    'reactor/EulerReactor.sol',
     'vaultManager/VaultManagerStorage.sol',
   ],
   providerOptions: {
