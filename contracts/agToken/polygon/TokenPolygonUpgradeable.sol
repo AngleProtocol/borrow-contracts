@@ -7,8 +7,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/IAgToken.sol";
-import "../interfaces/ITreasury.sol";
+import "../../interfaces/IAgToken.sol";
+import "../../interfaces/ITreasury.sol";
 
 interface IChildToken {
     function deposit(address user, bytes calldata depositData) external;
@@ -138,6 +138,8 @@ contract TokenPolygonUpgradeable is
         _;
     }
 
+    /// @notice Sets up the treasury contract on Polygon after the upgrade
+    /// @param _treasury Address of the treasury contract
     function setUpTreasury(address _treasury) external {
         // Only governor on Polygon
         require(msg.sender == 0xdA2D2f638D6fcbE306236583845e5822554c02EA, "1");
@@ -232,10 +234,7 @@ contract TokenPolygonUpgradeable is
     ) external {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         require(bridgeDetails.allowed && !bridgeDetails.paused, "51");
-        require(
-            IERC20(bridgeToken).balanceOf(address(this)) + amount <= bridgeDetails.limit,
-            "4"
-        );
+        require(IERC20(bridgeToken).balanceOf(address(this)) + amount <= bridgeDetails.limit, "4");
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
