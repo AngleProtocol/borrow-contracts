@@ -1161,6 +1161,11 @@ contract('VaultManager', () => {
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expectApprox(
+        await vaultManager.totalNormalizedDebt(),
+        borrowAmount.sub(parseEther(maxStablecoinAmountToRepay.toString()).mul(params.liquidationSurcharge).div(1e9)),
+        0.001,
+      );
     });
 
     it('success - case 2 without boost', async () => {
@@ -1197,6 +1202,11 @@ contract('VaultManager', () => {
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expectApprox(
+        await vaultManager.totalNormalizedDebt(),
+        borrowAmount.sub(parseEther(maxStablecoinAmountToRepay.toString()).mul(params.liquidationSurcharge).div(1e9)),
+        0.001,
+      );
     });
 
     it('success - max discount', async () => {
@@ -1232,6 +1242,11 @@ contract('VaultManager', () => {
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expectApprox(
+        await vaultManager.totalNormalizedDebt(),
+        borrowAmount.sub(parseEther(maxStablecoinAmountToRepay.toString()).mul(params.liquidationSurcharge).div(1e9)),
+        0.001,
+      );
     });
 
     it('success - vault has to be emptied', async () => {
@@ -1270,6 +1285,7 @@ contract('VaultManager', () => {
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
     });
 
     it('success - dust collateral limit', async () => {
@@ -1307,6 +1323,7 @@ contract('VaultManager', () => {
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
     });
 
     it('success - dust collateral amount from start', async () => {
@@ -1349,6 +1366,7 @@ contract('VaultManager', () => {
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
     });
   });
   describe('getTotalDebt', () => {
@@ -1510,6 +1528,7 @@ contract('VaultManager', () => {
       await displayVaultState(vaultManager, 2, log, collatBase);
 
       await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
     });
     it('success - max amount to repay is changed because of dust and for unhealthy collateral with bad debt', async () => {
       // The dust amount of collateral is 0.5, so we'll fall below it
@@ -1554,6 +1573,7 @@ contract('VaultManager', () => {
         borrowAmount.sub(parseEther((maxStablecoinAmountToRepay * 0.9).toString())),
         0.001,
       );
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
     });
   });
   describe('accrueInterestToTreasury', () => {
@@ -1635,14 +1655,16 @@ contract('VaultManager', () => {
       await agToken.connect(bob).approve(vaultManager.address, borrowAmount.mul(100));
       const rate = 0.01;
       await oracle.update(parseEther(rate.toString()));
+      const maxStablecoinAmountToRepay = (await vaultManager.checkLiquidation(2, bob.address))
+        .maxStablecoinAmountToRepay;
       await vaultManager
         .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address)'](
-          [2],
-          [(await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay],
-          bob.address,
-          bob.address,
-        );
+        ['liquidate(uint256[],uint256[],address,address)']([2], [maxStablecoinAmountToRepay], bob.address, bob.address);
+      expectApprox(
+        await vaultManager.badDebt(),
+        borrowAmount.sub(maxStablecoinAmountToRepay.mul(params.liquidationSurcharge).div(1e9)),
+        0.001,
+      );
       const receipt = await (await treasury.accrueInterestToTreasuryVaultManager(vaultManager.address)).wait();
       inIndirectReceipt(
         receipt,
@@ -1662,6 +1684,7 @@ contract('VaultManager', () => {
       );
       expect(await vaultManager.surplus()).to.be.equal(0);
       expect(await vaultManager.badDebt()).to.be.equal(0);
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
     });
   });
 

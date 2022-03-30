@@ -649,6 +649,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // In this case, `stablecoinAmountToReceive` is still rounded up
             if (vault.collateralAmount <= collateralReleased) {
                 collateralReleased = vault.collateralAmount;
+                // remove all the vault's debt (debt repayed + bad debt) from VaultManager totalDebt
+                totalNormalizedDebt -= vault.normalizedDebt;
                 // Reinitializing the `vaultID`: we're not burning the vault in this case for integration purposes
                 delete vaultData[vaultIDs[i]];
                 liqData.badDebtFromLiquidation +=
