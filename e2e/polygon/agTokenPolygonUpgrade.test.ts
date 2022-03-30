@@ -2,12 +2,12 @@ import { CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { ProxyAdmin_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
-import { parseEther } from 'ethers/lib/utils';
+import { parseEther, recoverAddress } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
 import { expect } from '../../test/utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../../test/utils/expectEvent';
-import { deployUpgradeable, ZERO_ADDRESS } from '../../test/utils/helpers';
+import { deployUpgradeable, ZERO_ADDRESS, latestTime } from '../../test/utils/helpers';
 import {
   CoreBorrow,
   CoreBorrow__factory,
@@ -22,6 +22,7 @@ import {
   MockToken__factory,
 } from '../../typechain';
 import { parseAmount } from '../../utils/bignumber';
+import { signPermit, domainSeparator } from '../../test/utils/sigUtils';
 
 contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   let deployer: SignerWithAddress;
@@ -43,6 +44,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   let governorRole: string;
   let guardianRole: string;
   let flashloanerTreasuryRole: string;
+  let defaultAdminRole: string;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -64,6 +66,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       depositorRole = web3.utils.keccak256('DEPOSITOR_ROLE');
       guardianRole = web3.utils.keccak256('GUARDIAN_ROLE');
       governorRole = web3.utils.keccak256('GOVERNOR_ROLE');
+      defaultAdminRole = '0x0000000000000000000000000000000000000000000000000000000000000000';
       flashloanerTreasuryRole = web3.utils.keccak256('FLASHLOANER_TREASURY_ROLE');
     }
   });
@@ -106,6 +109,89 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     await agToken
       .connect(impersonatedSigners[governor])
       .addBridgeToken(bridgeToken.address, parseEther('10'), parseAmount.gwei(0.5), false);
+  });
+
+  describe('permit structure', () => {
+    it('success - nonce and separator correctly initialized', async () => {
+      expect(await agToken.nonces(bob.address)).to.be.equal(0);
+      expect(await agToken.DOMAIN_SEPARATOR()).to.be.equal(await domainSeparator('agEUR', agToken.address));
+    });
+    it('reverts - invalid signature', async () => {
+      const permitData = await signPermit(
+        bob,
+        0,
+        agToken.address,
+        (await latestTime()) + 10000000000,
+        charlie.address,
+        parseEther('1'),
+        'agEUR',
+      );
+      await expect(
+        agToken
+          .connect(bob)
+          .permit(
+            bob.address,
+            charlie.address,
+            permitData.value,
+            permitData.deadline,
+            permitData.v,
+            permitData.r,
+            permitData.s,
+          ),
+      ).to.be.revertedWith('ERC20Permit: invalid signature');
+    });
+    it('reverts - expired deadline', async () => {
+      const permitData = await signPermit(
+        bob,
+        0,
+        agToken.address,
+        (await latestTime()) - 1000,
+        charlie.address,
+        parseEther('1'),
+        'agEUR',
+      );
+      await expect(
+        agToken
+          .connect(bob)
+          .permit(
+            bob.address,
+            charlie.address,
+            permitData.value,
+            permitData.deadline,
+            permitData.v,
+            permitData.r,
+            permitData.s,
+          ),
+      ).to.be.revertedWith('ERC20Permit: expired deadline');
+    });
+    it('success - permit occurred successfully', async () => {
+      const permitData = await signPermit(
+        bob,
+        0,
+        agToken.address,
+        1648637667 + 100000000000,
+        charlie.address,
+        parseEther('10'),
+        'agEUR',
+      );
+      const recovered = await recoverAddress(
+        '0x88b149e2fd00f00af2375ae27dd516bedc664e497caa9f778eda7a21e4645d6f',
+        '0xb22491ad91af1f555acc415e34db347b132ef32662b5fbd9ec0f099b1d0ee6c424edae5c70f3afd8539b94c5aae1bd3c28358741e65ce5ee80594849a197ebe71c',
+      );
+      console.log('Recovered', recovered);
+
+      await agToken
+        .connect(bob)
+        .permit(
+          bob.address,
+          charlie.address,
+          permitData.value,
+          permitData.deadline,
+          permitData.v,
+          permitData.r,
+          permitData.s,
+        );
+    });
   });
 
   describe('upgrade - old References & Variables', () => {
@@ -161,12 +247,16 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       expect(await agToken.isMinter(flashAngle.address)).to.be.equal(true);
       expect(await agToken.treasury()).to.be.equal(treasury.address);
       expect(await agToken.treasuryInitialized()).to.be.equal(true);
+      expect(await agToken.hasRole(depositorRole, polygonGovernor)).to.be.equal(true);
+      expect(await agToken.hasRole(defaultAdminRole, governor)).to.be.equal(true);
     });
     it('success - flashAngle', async () => {
       expect(await flashAngle.core()).to.be.equal(coreBorrow.address);
       expect((await flashAngle.stablecoinMap(agToken.address)).treasury).to.be.equal(treasury.address);
     });
   });
+
+  /*
   describe('addMinter', () => {
     it('success - minter added', async () => {
       const receipt = await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
@@ -780,4 +870,5 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       expect(await agToken.treasury()).to.be.equal(newTreasury.address);
     });
   });
+  */
 });

@@ -72,6 +72,7 @@ export async function signPermit(
 ): Promise<TypePermit> {
   const data = buildData(owner.address, chainId, verifyingContract, deadline, spender, nonce, value, name, version);
   const signature = await owner._signTypedData(data.domain, data.types, data.message);
+  console.log(signature);
   const { v, r, s } = fromRpcSig(signature);
 
   return {
