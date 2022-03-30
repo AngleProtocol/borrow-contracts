@@ -280,23 +280,6 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       expect(await agToken.isMinter(bob.address)).to.be.equal(false);
     });
   });
-  describe('setTreasury', () => {
-    it('reverts - non treasury', async () => {
-      await expect(agToken.connect(charlie).setTreasury(alice.address)).to.be.revertedWith('1');
-    });
-    it('success - treasury updated', async () => {
-      const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
-      await newTreasury.initialize(coreBorrow.address, agToken.address);
-      await coreBorrow.connect(impersonatedSigners[governor]).removeFlashLoanerTreasuryRole(treasury.address);
-      const receipt = await (
-        await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)
-      ).wait();
-      inReceipt(receipt, 'NewTreasurySet', {
-        _treasury: newTreasury.address,
-      });
-      expect(await agToken.treasury()).to.be.equal(newTreasury.address);
-    });
-  });
 
   describe('addBridgeToken', () => {
     it('success - token added', async () => {
@@ -643,6 +626,8 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
         },
       );
       expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(parseEther('10').add(agTokenBalance));
+      // Resetting state
+      await agToken.connect(impersonatedSigners[governor]).toggleFeesForAddress(deployer.address);
     });
     it('success - with no transaction fees and non exempt address', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0'));
@@ -716,6 +701,8 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     });
     it('reverts - invalid bridgeToken balance', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'));
+      expect(await agToken.isMinter(alice.address)).to.be.equal(false);
+      await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address);
       await agToken.connect(alice).mint(deployer.address, parseEther('100'));
       await expect(
         agToken
@@ -727,21 +714,25 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'));
       await agToken.connect(alice).mint(deployer.address, parseEther('100'));
       await bridgeToken.connect(impersonatedSigners[governor]).mint(agToken.address, parseEther('100'));
+      const deployerBalance = await agToken.balanceOf(deployer.address);
+      const bobBalance = await bridgeToken.balanceOf(bob.address);
+      const agTokenBalance = await bridgeToken.balanceOf(agToken.address);
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('100'), bob.address);
-      expect(await agToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
-      expect(await bridgeToken.balanceOf(bob.address)).to.be.equal(parseEther('50'));
-      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
-      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(parseEther('50'));
+      expect(await agToken.balanceOf(deployer.address)).to.be.equal(deployerBalance.sub(parseEther('100')));
+      expect(await bridgeToken.balanceOf(bob.address)).to.be.equal(bobBalance.add(parseEther('50')));
+      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(agTokenBalance.sub(parseEther('50')));
     });
     it('success - with a valid bridgeToken balance but a fee exemption', async () => {
       await agToken.connect(impersonatedSigners[governor]).toggleFeesForAddress(deployer.address);
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'));
       await agToken.connect(alice).mint(deployer.address, parseEther('100'));
+
       await bridgeToken.connect(impersonatedSigners[governor]).mint(agToken.address, parseEther('100'));
+      const deployerBalance = await agToken.balanceOf(deployer.address);
+      const bobBalance = await bridgeToken.balanceOf(bob.address);
+      const agTokenBalance = await bridgeToken.balanceOf(agToken.address);
       const receipt = await (
-        await agToken
-          .connect(impersonatedSigners[governor])
-          .swapOut(bridgeToken.address, parseEther('100'), bob.address)
+        await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('100'), bob.address)
       ).wait();
       inIndirectReceipt(
         receipt,
@@ -753,20 +744,40 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
           value: parseEther('100'),
         },
       );
-      expect(await agToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
-      expect(await bridgeToken.balanceOf(bob.address)).to.be.equal(parseEther('100'));
-      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(parseEther('0'));
-      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
+      expect(await agToken.balanceOf(deployer.address)).to.be.equal(deployerBalance.sub(parseEther('100')));
+      expect(await bridgeToken.balanceOf(bob.address)).to.be.equal(bobBalance.add(parseEther('100')));
+      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(agTokenBalance.sub(parseEther('100')));
+      // Reset state
+      await agToken.connect(impersonatedSigners[governor]).toggleFeesForAddress(deployer.address);
     });
     it('success - with weird transaction fees', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.0004'));
       await agToken.connect(alice).mint(deployer.address, parseEther('100'));
       await bridgeToken.connect(impersonatedSigners[governor]).mint(agToken.address, parseEther('100'));
-      await agToken.connect(impersonatedSigners[governor]).swapOut(bridgeToken.address, parseEther('100'), bob.address);
-      expect(await agToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
-      expect(await bridgeToken.balanceOf(bob.address)).to.be.equal(parseEther('99.96'));
-      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
-      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(parseEther('0.04'));
+      const deployerBalance = await agToken.balanceOf(deployer.address);
+      const bobBalance = await bridgeToken.balanceOf(bob.address);
+      const agTokenBalance = await bridgeToken.balanceOf(agToken.address);
+      await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('100'), bob.address);
+      expect(await agToken.balanceOf(deployer.address)).to.be.equal(deployerBalance.sub(parseEther('100')));
+      expect(await bridgeToken.balanceOf(bob.address)).to.be.equal(bobBalance.add(parseEther('99.96')));
+      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(agTokenBalance.sub(parseEther('99.96')));
+    });
+  });
+  describe('setTreasury', () => {
+    it('reverts - non treasury', async () => {
+      await expect(agToken.connect(charlie).setTreasury(alice.address)).to.be.revertedWith('1');
+    });
+    it('success - treasury updated', async () => {
+      const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
+      await newTreasury.initialize(coreBorrow.address, agToken.address);
+      await coreBorrow.connect(impersonatedSigners[governor]).removeFlashLoanerTreasuryRole(treasury.address);
+      const receipt = await (
+        await treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)
+      ).wait();
+      inReceipt(receipt, 'NewTreasurySet', {
+        _treasury: newTreasury.address,
+      });
+      expect(await agToken.treasury()).to.be.equal(newTreasury.address);
     });
   });
 });

@@ -116,7 +116,7 @@ contract TokenPolygonUpgradeable is
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
     modifier onlyTreasury() {
-        require(msg.sender == address(treasury), "1");
+        require(msg.sender == treasury, "1");
         _;
     }
 
@@ -180,7 +180,6 @@ contract TokenPolygonUpgradeable is
     // ======================= Treasury Only Functions =============================
 
     function addMinter(address minter) external onlyTreasury {
-        require(minter != address(0), "0");
         isMinter[minter] = true;
         emit MinterToggled(minter);
     }
