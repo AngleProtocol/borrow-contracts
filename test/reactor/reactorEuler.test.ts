@@ -153,6 +153,47 @@ contract('Reactor', () => {
       expect(await reactor.minInvest()).to.be.equal(newMinInvest);
     });
   });
+  describe('maxDeposit', () => {
+    beforeEach(async () => {
+      await vaultManager.connect(governor).setDebtCeiling(ethers.constants.MaxUint256.div(parseUnits('1', 27)));
+    });
+    it('success - debtCeiling and max sane amount on Euler are infinite', async () => {
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(ethers.constants.MaxUint256);
+    });
+    it('success - debtCeiling is infinite but max sane amount on Euler is not infinite', async () => {
+      await eulerMarketA.setMAXSANEAMOUNT(parseUnits('100', 18));
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(parseUnits('125', collatBase));
+    });
+    it('success - debtCeiling is not infinite but max sane amount on Euler is infinite', async () => {
+      await vaultManager.connect(governor).setDebtCeiling(parseUnits('100', 18));
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(parseUnits('125', collatBase));
+    });
+    it('success - debtCeiling < max sane amount - not infinite', async () => {
+      await eulerMarketA.setMAXSANEAMOUNT(parseUnits('100', 18));
+      await vaultManager.connect(governor).setDebtCeiling(parseUnits('50', 18));
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(parseUnits('62.5', collatBase));
+    });
+    it('success - debtCeiling > max sane amount - not infinite', async () => {
+      await eulerMarketA.setMAXSANEAMOUNT(parseUnits('50', 18));
+      await vaultManager.connect(governor).setDebtCeiling(parseUnits('100', 18));
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(parseUnits('62.5', collatBase));
+    });
+    it('success - super low max sane amount - but no borrow triggered ', async () => {
+      const sharesAmount = parseUnits('100', collatBase);
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await eulerMarketA.setMAXSANEAMOUNT(parseUnits('0.0001', 18));
+      expect(await reactor.maxDeposit(alice.address)).to.be.equal(parseUnits('100', collatBase));
+    });
+  });
+  describe('maxMint', () => {
+    it('success', async () => {
+      await eulerMarketA.setMAXSANEAMOUNT(parseUnits('50', 18));
+      await vaultManager.connect(governor).setDebtCeiling(parseUnits('100', 18));
+      expect(await reactor.maxMint(alice.address)).to.be.equal(parseUnits('62.5', collatBase));
+    });
+  });
   describe('maxWithdraw', () => {
     const sharesAmount = parseUnits('1', collatBase);
     it('success - when no asset', async () => {

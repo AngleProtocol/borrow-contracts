@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract MockEulerPool {
     IERC20 public collateral;
     uint256 public poolSize;
+    uint256 public MAX_SANE_AMOUNT;
 
     mapping(address => uint256) public users;
     uint256 public interestRateAccumulator;
@@ -15,6 +16,7 @@ contract MockEulerPool {
         collateral = collateral_;
         poolSize = poolSize_;
         interestRateAccumulator = 10**18;
+        MAX_SANE_AMOUNT = type(uint112).max;
     }
 
     function setPoolSize(uint256 poolSize_) external {
@@ -26,6 +28,10 @@ contract MockEulerPool {
 
     function setInterestRateAccumulator(uint256 interestRateAccumulator_) external {
         interestRateAccumulator = interestRateAccumulator_;
+    }
+
+    function setMAXSANEAMOUNT(uint256 MAX_SANE_AMOUNT_) external {
+        MAX_SANE_AMOUNT = MAX_SANE_AMOUNT_;
     }
 
     function balanceOfUnderlying(address account) external view returns (uint256) {

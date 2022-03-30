@@ -46,6 +46,41 @@ contract EulerReactor is BaseReactor {
     }
 
     /// @inheritdoc IERC4626
+    /// @dev user address has no impact on the maxDeposit
+    /// @dev Users are limited by the `debtCeiling` in the associated `VaultManager` and the `maxExternalAmount` defined on Euler
+    /// @dev Contrary to maxWithdraw you don't need to check conditions on upperCF
+    function maxDeposit(address) public view override returns (uint256 maxAssetDeposit) {
+        (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        uint256 debt = vaultManager.getVaultDebt(vaultID);
+        uint256 debtCeiling = vaultManager.debtCeiling();
+        uint256 availableStablecoins = debtCeiling - debt;
+        // Angle stablecoins are in base 18 no scaling needed
+        uint256 maxDepositEuler = euler.MAX_SANE_AMOUNT();
+        // By default you can deposit maxUint if there are no restrictions
+        maxAssetDeposit = type(uint256).max;
+        // debtCeiling max value is `type(uint256).max / BASE_INTEREST` ( cf VaultManager.sol line 480)
+        if (debtCeiling != (type(uint256).max / 10**27) || maxDepositEuler != type(uint112).max) {
+            uint256 oracleRate = oracle.read();
+            if (availableStablecoins >= maxDepositEuler) availableStablecoins = maxDepositEuler;
+            uint256 newDebt = availableStablecoins + debt;
+            maxAssetDeposit = (newDebt * _assetBase * BASE_PARAMS) / targetCF;
+            uint256 collateralFactor = (debt * BASE_PARAMS * _assetBase * oracleRate) / (maxAssetDeposit * 10**18);
+            // If CF is larger than lowerCF then no borrow will be made and user can deposit up until reaching a CF of  lowerCF
+            if (collateralFactor > lowerCF) {
+                maxAssetDeposit = (debt * _assetBase * BASE_PARAMS) / lowerCF;
+            }
+            maxAssetDeposit = (maxAssetDeposit / oracleRate) - usedAssets - looseAssets;
+        }
+    }
+
+    /// @inheritdoc IERC4626
+    /// @param user Address of the user who will interact with the contract
+    /// @dev user address has no impact on the maxMint
+    function maxMint(address user) public view override returns (uint256) {
+        return convertToShares(maxDeposit(user));
+    }
+
+    /// @inheritdoc IERC4626
     /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
     /// @dev We do not take into account the claim(amount) call in these computation - as it
     /// would asks to estimate

@@ -3,6 +3,12 @@
 pragma solidity >=0.8.12;
 
 /// @notice Main storage contract for the Euler system
+interface IEulerConstants {
+    /// @notice gives the maxExternalAmount in base 18
+    function MAX_SANE_AMOUNT() external view returns (uint256);
+}
+
+/// @notice Main storage contract for the Euler system
 interface IEuler {
     /// @notice Lookup the current implementation contract for a module
     /// @param moduleId Fixed constant that refers to a module type (ie MODULEID__ETOKEN)
@@ -259,7 +265,7 @@ interface IEulerExec {
 }
 
 /// @notice Tokenised representation of assets
-interface IEulerEToken {
+interface IEulerEToken is IEulerConstants {
     /// @notice Pool name, ie "Euler Pool: DAI"
     function name() external view returns (string memory);
 

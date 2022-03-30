@@ -215,6 +215,9 @@ interface IVaultManagerStorage {
     /// @notice Total normalized amount of stablecoins borrowed
     function totalNormalizedDebt() external view returns (uint256);
 
+    /// @notice Maximum amount of stablecoins that can be issued with this contract
+    function debtCeiling() external view returns (uint256);
+
     /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
     function vaultData(uint256 vaultID) external view returns (uint256 collateralAmount, uint256 normalizedDebt);
 }

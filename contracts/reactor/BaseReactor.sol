@@ -182,12 +182,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @dev Technically, the maximum deposit could be less than the max uint256
     /// if there is a `debtCeiling` in the associated `VaultManager`. This implementation
     /// assumes that the `VaultManager` does not have any debt ceiling
-    function maxDeposit(address) public pure returns (uint256) {
+    function maxDeposit(address) public view virtual returns (uint256) {
         return type(uint256).max;
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address) public pure returns (uint256) {
+    function maxMint(address) public view virtual returns (uint256) {
         return type(uint256).max;
     }
 
