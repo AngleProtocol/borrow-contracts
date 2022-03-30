@@ -77,7 +77,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
     modifier onlyTreasury() {
-        require(msg.sender == address(treasury), "1");
+        require(msg.sender == treasury, "1");
         _;
     }
 

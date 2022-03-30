@@ -103,7 +103,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         require(bridgeDetails.allowed && !bridgeDetails.paused, "51");
         require(
-            bridgeDetails.limit > 0 && IERC20(bridgeToken).balanceOf(address(this)) + amount <= bridgeDetails.limit,
+            IERC20(bridgeToken).balanceOf(address(this)) + amount <= bridgeDetails.limit,
             "4"
         );
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
