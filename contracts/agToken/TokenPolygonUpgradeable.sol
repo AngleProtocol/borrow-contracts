@@ -8,10 +8,17 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 
 interface IChildToken {
     function deposit(address user, bytes calldata depositData) external;
+
     function withdraw(uint256 amount) external;
 }
 
-contract TokenPolygonUpgradeable is Initializable, ERC20Upgradeable, AccessControlUpgradeable, EIP712Upgradeable, IChildToken {
+contract TokenPolygonUpgradeable is
+    Initializable,
+    ERC20Upgradeable,
+    AccessControlUpgradeable,
+    EIP712Upgradeable,
+    IChildToken
+{
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
 
     /// @dev emitted when the child chain manager changes
@@ -20,7 +27,12 @@ contract TokenPolygonUpgradeable is Initializable, ERC20Upgradeable, AccessContr
 
     constructor() initializer {}
 
-    function initialize(string memory _name, string memory _symbol, address childChainManager, address guardian) public initializer {
+    function initialize(
+        string memory _name,
+        string memory _symbol,
+        address childChainManager,
+        address guardian
+    ) public initializer {
         __ERC20_init(_name, _symbol);
         __AccessControl_init();
         _setupRole(DEFAULT_ADMIN_ROLE, guardian);
@@ -33,10 +45,7 @@ contract TokenPolygonUpgradeable is Initializable, ERC20Upgradeable, AccessContr
      * @param user address to mint the token to
      * @param depositData encoded amount to mint
      */
-    function deposit(address user, bytes calldata depositData)
-        external
-        override
-    {
+    function deposit(address user, bytes calldata depositData) external override {
         require(hasRole(DEPOSITOR_ROLE, msg.sender));
         uint256 amount = abi.decode(depositData, (uint256));
         _mint(user, amount);
@@ -47,7 +56,7 @@ contract TokenPolygonUpgradeable is Initializable, ERC20Upgradeable, AccessContr
      * @dev Should burn user's tokens. This transaction will be verified when exiting on root chain
      * @param amount amount of tokens to withdraw
      */
-    function withdraw(uint256 amount) override external {
+    function withdraw(uint256 amount) external override {
         _burn(_msgSender(), amount);
     }
 }

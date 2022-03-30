@@ -21,8 +21,7 @@ contract EulerReactor is BaseReactor {
 
     event MinInvestUpdated(uint256);
 
-    /// @notice Initializes the `BaseReactor` contract and
-    /// the underlying `VaultManager`
+    /// @notice Initializes the `BaseReactor` contract and the underlying `VaultManager`
     /// @param _name Name of the ERC4626 token
     /// @param _symbol Symbol of the ERC4626 token
     /// @param _vaultManager Underlying `VaultManager` used to borrow stablecoin
@@ -46,26 +45,28 @@ contract EulerReactor is BaseReactor {
     }
 
     /// @inheritdoc IERC4626
-    /// @dev user address has no impact on the maxDeposit
     /// @dev Users are limited by the `debtCeiling` in the associated `VaultManager` and the `maxExternalAmount` defined on Euler
-    /// @dev Contrary to maxWithdraw you don't need to check conditions on upperCF
+    /// @dev A given user address has no impact on the `maxDeposit`: conditions are the same for every users
+    /// @dev Contrary to `maxWithdraw` you don't need to check conditions on upperCF
     function maxDeposit(address) public view override returns (uint256 maxAssetDeposit) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         uint256 debt = vaultManager.getVaultDebt(vaultID);
         uint256 debtCeiling = vaultManager.debtCeiling();
-        uint256 availableStablecoins = debtCeiling - debt;
+        uint256 availableStablecoins = debtCeiling - vaultManager.getTotalDebt();
         // Angle stablecoins are in base 18 no scaling needed
         uint256 maxDepositEuler = euler.MAX_SANE_AMOUNT();
         // By default you can deposit maxUint if there are no restrictions
         maxAssetDeposit = type(uint256).max;
-        // debtCeiling max value is `type(uint256).max / BASE_INTEREST` ( cf VaultManager.sol line 480)
+        // debtCeiling max value is `type(uint256).max / BASE_INTEREST` (otherwise it could overflow in the `VaultManager`)
         if (debtCeiling != (type(uint256).max / 10**27) || maxDepositEuler != type(uint112).max) {
+            // If there is a debt ceiling or a max Euler deposit, then the max deposit for a user is the amount of collateral
+            // such that borrowing against it would exceed this debt ceiling
             uint256 oracleRate = oracle.read();
             if (availableStablecoins >= maxDepositEuler) availableStablecoins = maxDepositEuler;
             uint256 newDebt = availableStablecoins + debt;
             maxAssetDeposit = (newDebt * _assetBase * BASE_PARAMS) / targetCF;
-            uint256 collateralFactor = (debt * BASE_PARAMS * _assetBase * oracleRate) / (maxAssetDeposit * 10**18);
-            // If CF is larger than lowerCF then no borrow will be made and user can deposit up until reaching a CF of  lowerCF
+            uint256 collateralFactor = (debt * BASE_PARAMS * _assetBase) / maxAssetDeposit;
+            // If CF is larger than lowerCF then no borrow will be made and user can deposit up until reaching a CF of lowerCF
             if (collateralFactor > lowerCF) {
                 maxAssetDeposit = (debt * _assetBase * BASE_PARAMS) / lowerCF;
             }
@@ -85,8 +86,8 @@ contract EulerReactor is BaseReactor {
     /// @dev We do not take into account the claim(amount) call in these computation - as it
     /// would asks to estimate
     function maxWithdraw(address user) public view virtual override returns (uint256) {
-        uint256 toWithdraw = convertToAssets(balanceOf(user));
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
+        uint256 toWithdraw = _convertToAssets(balanceOf(user), usedAssets + looseAssets, 0);
         if (toWithdraw <= looseAssets) return toWithdraw;
         else return looseAssets + _maxStablecoinsAvailable(toWithdraw, usedAssets, looseAssets);
     }
@@ -116,8 +117,8 @@ contract EulerReactor is BaseReactor {
     /// @notice Returns the maximum amount of assets that can be withdrawn considering current Euler liquidity
     /// @param amount Amount of assets wanted to be withdrawn
     /// @param usedAssets Amount of assets collateralizing the vault
-    /// @param looseAssets Amount of assets directly accessible -- in the contract balance
-    /// @dev If reaching the upperCF, users are limited in the amount to be withdrawn by liquidity on Euler contracts
+    /// @param looseAssets Amount of assets directly accessible in the contract balance
+    /// @dev If reaching the `upperCF`, users are limited in the amount to be withdrawn by liquidity on Euler contracts
     function _maxStablecoinsAvailable(
         uint256 amount,
         uint256 usedAssets,
@@ -143,17 +144,17 @@ contract EulerReactor is BaseReactor {
         maxAmount = toWithdraw;
 
         uint256 stablecoinsValueToRedeem;
-        // If the new collateral factor is above upperCF, we need to repay stablecoins to free collateral,
+        // If the collateral factor after a withdraw goes above upperCF, we need to repay stablecoins to free collateral,
         // and therefore we need to withdraw liquidity on Euler.
-        // This is possible only if both the reactor balance on Euler and poolSize (available liquidity on Euler) is larger
-        // than the needed stablecoins --> users can withdraw toWithdraw
-        // Mimic the _rebalance() in a case of a withdraw
+        // If both the reactor balance on Euler and poolSize (available liquidity on Euler) are larger than the needed
+        // stablecoins --> users can withdraw toWithdraw, in the other case it's not possible
+        // Computation here mimics the `_rebalance()` function in a case of a withdraw
         if (collateralFactor >= upperCF) {
             stablecoinsValueToRedeem = debt - futureStablecoinsInVault;
             if (futureStablecoinsInVault <= vaultManagerDust) {
                 stablecoinsValueToRedeem = type(uint256).max;
             }
-            // take into account non invested stablecoins as they are at hand
+            // Takes into account non invested stablecoins as they are at hand
             uint256 looseStablecoins = stablecoin.balanceOf(address(this));
             if (stablecoinsValueToRedeem > looseStablecoins) {
                 stablecoinsValueToRedeem -= looseStablecoins;
@@ -161,7 +162,7 @@ contract EulerReactor is BaseReactor {
                 uint256 poolSize = stablecoin.balanceOf(address(euler));
                 uint256 reactorBalanceEuler = euler.balanceOfUnderlying(address(this));
                 uint256 maxEulerWithdrawal = poolSize > reactorBalanceEuler ? reactorBalanceEuler : poolSize;
-                // if we can fully reimburse with Euler liquidity then users can withdraw hiw whole balance
+                // if we can fully reimburse with Euler liquidity then users can withdraw their whole balance
                 if (maxEulerWithdrawal < stablecoinsValueToRedeem) {
                     stablecoinsValueToRedeem = maxEulerWithdrawal;
                     maxAmount = (stablecoinsValueToRedeem * _assetBase * BASE_PARAMS) / (oracleRate * targetCF);
@@ -194,18 +195,17 @@ contract EulerReactor is BaseReactor {
     /// @return amountAvailable Amount available in the contracts, new `looseStablecoins`
     function _pull(uint256 amount) internal override returns (uint256 amountAvailable) {
         (uint256 lentStablecoins, uint256 looseStablecoins) = _report(0);
-
+        amountAvailable = looseStablecoins;
         if (looseStablecoins < amount) {
             uint256 amountWithdrawnFromEuler = (amount - looseStablecoins) > lentStablecoins
                 ? type(uint256).max
                 : (amount - looseStablecoins);
             euler.withdraw(0, amountWithdrawnFromEuler);
-            amountAvailable = looseStablecoins + amountWithdrawnFromEuler;
+            amountAvailable += amountWithdrawnFromEuler;
 
             lastBalance = euler.balanceOfUnderlying(address(this));
         } else {
             lastBalance = lentStablecoins + looseStablecoins - amount;
-            amountAvailable = amount;
         }
     }
 
