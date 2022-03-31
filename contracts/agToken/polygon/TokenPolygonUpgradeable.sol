@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "./utils/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
@@ -160,13 +160,13 @@ contract TokenPolygonUpgradeable is
     /// @param amount Amount of stablecoins to burn
     /// @dev This function can typically be called if there is a settlement mechanism to burn stablecoins
     function burnStablecoin(uint256 amount) external {
-        _burn(msg.sender, amount);
+        _burnCustom(msg.sender, amount);
     }
 
     // ======================= Minter Role Only Functions ==========================
 
     function burnSelf(uint256 amount, address burner) external onlyMinter {
-        _burn(burner, amount);
+        _burnCustom(burner, amount);
     }
 
     function burnFrom(
@@ -214,7 +214,7 @@ contract TokenPolygonUpgradeable is
             require(currentAllowance >= amount, "23");
             _approve(burner, sender, currentAllowance - amount);
         }
-        _burn(burner, amount);
+        _burnCustom(burner, amount);
     }
 
     // ==================== External Permissionless Functions ======================
@@ -259,7 +259,7 @@ contract TokenPolygonUpgradeable is
     ) external {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         require(bridgeDetails.allowed && !bridgeDetails.paused, "51");
-        _burn(msg.sender, amount);
+        _burnCustom(msg.sender, amount);
         uint256 bridgeOut = amount;
         if (!isFeeExempt[msg.sender]) {
             bridgeOut -= (bridgeOut * bridgeDetails.fee) / BASE_PARAMS;
@@ -386,8 +386,10 @@ contract TokenPolygonUpgradeable is
         bytes32 hash = _hashTypedDataV4(structHash);
 
         address signer = ECDSAUpgradeable.recover(hash, v, r, s);
+        console.log("Hash to sign");
         console.logBytes32(hash);
-        console.log("signer",signer);
+        console.log("signer recovered",signer);
+        console.log("Owner specified", owner);
         require(signer == owner, "ERC20Permit: invalid signature");
 
         _approve(owner, spender, value);
