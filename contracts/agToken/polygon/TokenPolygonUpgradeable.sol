@@ -70,8 +70,6 @@ contract TokenPolygonUpgradeable is
     // ======================= New data added for the upgrade ======================
     // =============================================================================
 
-    uint256[49] private __gap;
-
     mapping(address => bool) public isMinter;
     /// @notice Reference to the treasury contract which can grant minting rights
     address public treasury;
@@ -352,7 +350,7 @@ contract TokenPolygonUpgradeable is
         emit FeeToggled(theAddress, !feeExemptStatus);
     }
 
-    uint256[49] private __gap2;
+    uint256[49] private __gap;
 
     // =============================================================================
     // ================================ Permit data ================================
@@ -420,7 +418,5 @@ contract TokenPolygonUpgradeable is
         current = nonce.current();
         nonce.increment();
     }
-
-    uint256[49] private __gap3;
     
 }

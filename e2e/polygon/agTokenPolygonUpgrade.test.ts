@@ -111,6 +111,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       .connect(impersonatedSigners[governor])
       .addBridgeToken(bridgeToken.address, parseEther('10'), parseAmount.gwei(0.5), false);
   });
+
   /*
   describe('permit structure', () => {
     
