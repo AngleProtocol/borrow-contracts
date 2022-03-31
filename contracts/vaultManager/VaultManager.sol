@@ -281,9 +281,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         return (vaultData[vaultID].normalizedDebt * _calculateCurrentInterestAccumulator()) / BASE_INTEREST;
     }
 
-    /// @notice Gets the total debt across all vaults
-    /// @return Total debt across all vaults, taking into account the interest accumulated
-    /// over time
+    /// @inheritdoc IVaultManagerFunctions
     function getTotalDebt() external view returns (uint256) {
         return (totalNormalizedDebt * _calculateCurrentInterestAccumulator()) / BASE_INTEREST;
     }

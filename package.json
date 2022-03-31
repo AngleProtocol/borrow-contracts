@@ -19,8 +19,9 @@
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
     "size": "hardhat size-contracts",
     "test": "hardhat test",
-    "test:e2e": "FORK=true hardhat test e2e/*.ts",
-    "test:all": "yarn test && yarn test:e2e",
+    "test:e2e:mainnet": "FORK=true hardhat test e2e/mainnet/*.ts",
+    "test:e2e:polygon": "FORK=true hardhat test e2e/polygon/*.ts",
+    "test:all": "yarn test && yarn test:e2e:mainnet",
     "testFork": "FORK=true hardhat test"
   },
   "repository": {

@@ -12,8 +12,7 @@ import "./BaseReactorStorage.sol";
 abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpgradeable, IERC4626 {
     using SafeERC20 for IERC20;
 
-    /// @notice Initializes the `BaseReactor` contract and
-    /// the underlying `VaultManager`
+    /// @notice Initializes the `BaseReactor` contract and the underlying `VaultManager`
     /// @param _name Name of the ERC4626 token
     /// @param _symbol Symbol of the ERC4626 token
     /// @param _vaultManager Underlying `VaultManager` used to borrow stablecoin
@@ -237,7 +236,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @param totalAssetAmount Total amount of asset controlled by the vault
     /// @return Corresponding amount of assets
     /// @dev It is at the level of this function that losses from liquidations are taken into account, because this
-    /// reduces the totalAssetAmount and hence the amount of assets you are entitled to get from your shares
+    /// reduces the `totalAssetAmount` and hence the amount of assets you are entitled to get from your shares
     function _convertToAssets(
         uint256 shares,
         uint256 totalAssetAmount,
@@ -359,6 +358,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             actions[len] = ActionType.borrow;
             datas[len] = abi.encodePacked(vaultID, toBorrow);
             len += 1;
+            // We don't directly update the debt in this contract as there may be some rounding issues
         }
 
         if (toWithdraw > looseAssets) {
@@ -384,15 +384,16 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         // VaultManagers always round to their advantages + there can be a borrow fee taken
         if (toBorrow > 0) {
             lastDebt += paymentData.stablecoinAmountToGive;
+            // If there is a borrow fee, then it will be seen as a loss at the next rebalance
             _push(paymentData.stablecoinAmountToGive);
         }
     }
 
-    /// @notice Compute future debt to the vaultManager and the collateral factor of the current debt with future assets
+    /// @notice Computes future debt to the `vaultManager` and the collateral factor of the current debt with future assets
     /// @param toWithdraw Amount of assets to withdraw
     /// @param usedAssets Amount of assets in the vault
     /// @param looseAssets Amount of assets already in the contract
-    /// @param debt Current debt owed to the vaultManager
+    /// @param debt Current debt owed to the `vaultManager`
     /// @param oracleRate Exchange rate from asset to stablecoin
     function _getFutureDebtAndCF(
         uint256 toWithdraw,
@@ -423,10 +424,9 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// on a threshold
     function _push(uint256 amount) internal virtual returns (uint256 amountInvested) {}
 
-    /// @notice Virtual function to withdraw stablecoins
+    /// @notice Virtual function to withdraw stablecoins to the reactor: full amounts may not be available
     /// @param amount Amount needed at the end of the call
     /// @return amountAvailable Amount available in the contracts, it's like a new `looseAssets` value
-    /// @dev pull funds back to the reactor, full amounts may not be redeemable
     function _pull(uint256 amount) internal virtual returns (uint256 amountAvailable) {}
 
     /// @notice Claims rewards earned by a user

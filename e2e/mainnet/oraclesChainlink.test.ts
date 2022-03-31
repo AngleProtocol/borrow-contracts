@@ -12,9 +12,9 @@ import {
   OracleETHEURChainlink__factory,
   OracleBTCEURChainlink,
   OracleBTCEURChainlink__factory,
-} from '../typechain';
-import { expect } from '../test/utils/chai-setup';
-import { deployUpgradeable, ZERO_ADDRESS } from '../test/utils/helpers';
+} from '../../typechain';
+import { expect } from '../../test/utils/chai-setup';
+import { deployUpgradeable, ZERO_ADDRESS } from '../../test/utils/helpers';
 
 contract('Oracles Chainlink', () => {
   let deployer: SignerWithAddress;

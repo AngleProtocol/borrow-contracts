@@ -50,5 +50,6 @@
   "50": "claim period of collateral against stablecoins has not started",
   "51": "invalid token",
   "52": "too small amount",
-  "53": "empty error"
+  "53": "empty error",
+  "54": "Cannot remove an asset if we're still holding it"
 }

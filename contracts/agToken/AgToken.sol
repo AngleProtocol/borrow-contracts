@@ -46,7 +46,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @inheritdoc IAgToken
     mapping(address => bool) public isMinter;
     /// @notice Reference to the treasury contract which can grant minting rights
-    ITreasury public treasury;
+    address public treasury;
     /// @notice Boolean to check whether the contract has been reinitialized after its upgrade
     bool public treasuryInitialized;
 
@@ -66,7 +66,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         require(msg.sender == 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8, "1");
         require(address(ITreasury(_treasury).stablecoin()) == address(this), "6");
         require(!treasuryInitialized, "34");
-        treasury = ITreasury(_treasury);
+        treasury = _treasury;
         treasuryInitialized = true;
         isMinter[stableMaster] = true;
         emit TreasuryUpdated(_treasury);
@@ -74,10 +74,10 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     // =============================== Modifiers ===================================
 
-    /// @notice Checks to see if it is the `StableMaster` calling this contract
+    /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
     modifier onlyTreasury() {
-        require(msg.sender == address(treasury), "1");
+        require(msg.sender == treasury, "1");
         _;
     }
 
@@ -161,7 +161,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
 
     /// @inheritdoc IAgToken
     function setTreasury(address _treasury) external onlyTreasury {
-        treasury = ITreasury(_treasury);
+        treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }
 

@@ -8,7 +8,7 @@ import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('AgToken', () => {
+contract('AgTokenSideChain', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
@@ -137,9 +137,6 @@ contract('AgToken', () => {
   describe('addMinter', () => {
     it('reverts - non treasury', async () => {
       await expect(agToken.connect(alice).addMinter(alice.address)).to.be.revertedWith('1');
-    });
-    it('reverts - zero address', async () => {
-      await expect(treasury.connect(alice).addMinter(agToken.address, ZERO_ADDRESS)).to.be.revertedWith('0');
     });
     it('success - minter toggled', async () => {
       const receipt = await (await treasury.connect(alice).addMinter(agToken.address, bob.address)).wait();

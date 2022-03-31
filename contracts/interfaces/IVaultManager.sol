@@ -121,6 +121,11 @@ interface IVaultManagerFunctions {
     /// @return Debt of the vault
     function getVaultDebt(uint256 vaultID) external view returns (uint256);
 
+    /// @notice Gets the total debt across all vaults
+    /// @return Total debt across all vaults, taking into account the interest accumulated
+    /// over time
+    function getTotalDebt() external view returns (uint256);
+
     /// @notice Sets the treasury contract
     /// @param _treasury New treasury contract
     /// @dev All required checks when setting up a treasury contract are performed in the contract
