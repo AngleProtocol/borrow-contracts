@@ -22,7 +22,7 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { deployUpgradeable, expectApproxDelta, ZERO_ADDRESS } from '../utils/helpers';
+import { deployUpgradeable, expectApproxDelta, ZERO_ADDRESS, expectApprox } from '../utils/helpers';
 
 const PRECISION = 5;
 
@@ -130,7 +130,7 @@ contract('ReactorEuler', () => {
     it('initialize', async () => {
       expect(await reactor.minInvest()).to.be.equal(0);
     });
-    it('revert - only guardian or governor', async () => {
+    it('reverts - only guardian or governor', async () => {
       const newMinInvest = parseUnits('1', collatBase);
       await expect(reactor.connect(alice).setMinInvest(newMinInvest)).to.be.revertedWith('2');
     });
@@ -146,14 +146,20 @@ contract('ReactorEuler', () => {
     });
   });
   describe('changeAllowance', () => {
-    it('revert - only guardian or governor', async () => {
+    it('reverts - only guardian or governor', async () => {
       await expect(reactor.connect(alice).changeAllowance(ethers.constants.Zero)).to.be.revertedWith('2');
     });
     it('success - decrease allowance', async () => {
       await reactor.connect(guardian).changeAllowance(ethers.constants.Zero);
       expect(await agEUR.allowance(reactor.address, eulerMarketA.address)).to.be.equal(parseEther('0'));
     });
-    it('success - increaseAllowance', async () => {
+    it('success - allowance modified', async () => {
+      await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
+      expect(await agEUR.allowance(reactor.address, eulerMarketA.address)).to.be.equal(ethers.constants.MaxUint256);
+    });
+    it('success - increase allowance', async () => {
+      await reactor.connect(guardian).changeAllowance(ethers.constants.Zero);
+      expect(await agEUR.allowance(reactor.address, eulerMarketA.address)).to.be.equal(parseEther('0'));
       await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
       expect(await agEUR.allowance(reactor.address, eulerMarketA.address)).to.be.equal(ethers.constants.MaxUint256);
     });
@@ -254,7 +260,7 @@ contract('ReactorEuler', () => {
       expect(await reactor.maxRedeem(alice.address)).to.be.equal(sharesAmount.sub(1));
     });
   });
-  describe('Withdraw', () => {
+  describe('withdraw', () => {
     const sharesAmount = parseUnits('1', collatBase);
     it('success - set interest rate to 0', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
@@ -301,7 +307,7 @@ contract('ReactorEuler', () => {
       await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
       const amountInvestedInEuler = await eulerMarketA.balanceOfUnderlying(reactor.address);
       lastBalance = await reactor.lastBalance();
-      expect(amountInvestedInEuler).to.be.equal(parseUnits('8.8', 18).sub(1));
+      expectApprox(amountInvestedInEuler, parseUnits('8.8', 18).sub(1), 0.1);
     });
     it('success - over the upperCF but poolSize too small', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
@@ -346,7 +352,7 @@ contract('ReactorEuler', () => {
       expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount);
     });
-    it('revert - non null interest rate VaultManager and no profits', async () => {
+    it('reverts - non null interest rate VaultManager and no profits', async () => {
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);

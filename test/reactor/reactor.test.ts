@@ -207,6 +207,14 @@ contract('Reactor', () => {
       expect(await reactor.maxDeposit(alice.address)).to.be.equal(MAX_UINT256);
     });
   });
+
+  describe('maxWithdraw, maxRedeem', () => {
+    it('success - nothing returned', async () => {
+      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(0);
+      expect(await reactor.maxRedeem(alice.address)).to.be.equal(0);
+    });
+  });
+
   describe('previewDeposit', () => {
     const sharesAmount = parseUnits('1', collatBase);
     it('success - when no asset', async () => {

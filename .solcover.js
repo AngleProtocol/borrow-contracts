@@ -3,9 +3,10 @@ module.exports = {
   testCommand: 'yarn test',
   compileCommand: 'yarn compile:hardhat',
   skipFiles: [
-    'mock',
+    'agToken/polygon',
     'external',
     'interfaces',
+    'mock',
     'oracle/OracleChainlinkMultiTemplate.sol',
     'oracle/implementations/OracleWSTETHEURChainlink.sol',
     'oracle/implementations/OracleBTCEURChainlink.sol',

@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../../interfaces/IAgToken.sol";
 import "../../interfaces/ITreasury.sol";
-import "hardhat/console.sol";
 
 interface IChildToken {
     function deposit(address user, bytes calldata depositData) external;
@@ -351,5 +350,4 @@ contract TokenPolygonUpgradeable is
     }
 
     uint256[49] private __gap;
-    
 }

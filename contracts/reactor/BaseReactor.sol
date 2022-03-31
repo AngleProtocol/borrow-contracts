@@ -234,6 +234,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Converts an amount of shares of the reactor to assets
     /// @param shares Amount of shares to convert
     /// @param totalAssetAmount Total amount of asset controlled by the vault
+    /// @param _supply Optional value of the total supply of the reactor
     /// @return Corresponding amount of assets
     /// @dev It is at the level of this function that losses from liquidations are taken into account, because this
     /// reduces the `totalAssetAmount` and hence the amount of assets you are entitled to get from your shares
@@ -442,8 +443,9 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
         claimableRewards -= amount;
 
-        amount = _pull(amount);
-        stablecoin.transfer(from, amount);
+        uint256 amountAvailable = _pull(amount);
+        if (amountAvailable > amount) stablecoin.transfer(from, amount);
+        else stablecoin.transfer(from, amountAvailable);
     }
 
     /// @notice Updates global and `msg.sender` accumulator and rewards share
