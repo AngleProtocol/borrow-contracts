@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../../interfaces/IAgToken.sol";
 import "../../interfaces/ITreasury.sol";
-import "hardhat/console.sol";
 
 interface IChildToken {
     function deposit(address user, bytes calldata depositData) external;
@@ -69,8 +68,6 @@ contract TokenPolygonUpgradeable is
     // =============================================================================
     // ======================= New data added for the upgrade ======================
     // =============================================================================
-
-    uint256[49] private __gap;
 
     mapping(address => bool) public isMinter;
     /// @notice Reference to the treasury contract which can grant minting rights
@@ -352,73 +349,6 @@ contract TokenPolygonUpgradeable is
         emit FeeToggled(theAddress, !feeExemptStatus);
     }
 
-    uint256[49] private __gap2;
-
-    // =============================================================================
-    // ================================ Permit data ================================
-    // =============================================================================
-
-    // Permit structure has been forked from OpenZeppelin
-
-    using CountersUpgradeable for CountersUpgradeable.Counter;
-
-    mapping(address => CountersUpgradeable.Counter) private _nonces;
-
-    // solhint-disable-next-line var-name-mixedcase
-    bytes32 private _PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
-    /**
-     * @dev See {IERC20Permit-permit}.
-     */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public {
-        require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
-
-        bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, owner, spender, value, _useNonce(owner), deadline));
-
-        bytes32 hash = _hashTypedDataV4(structHash);
-
-        address signer = ECDSAUpgradeable.recover(hash, v, r, s);
-        console.logBytes32(hash);
-        console.log("signer",signer);
-        require(signer == owner, "ERC20Permit: invalid signature");
-
-        _approve(owner, spender, value);
-    }
-
-    /**
-     * @dev See {IERC20Permit-nonces}.
-     */
-    function nonces(address owner) public view returns (uint256) {
-        return _nonces[owner].current();
-    }
-
-    /**
-     * @dev See {IERC20Permit-DOMAIN_SEPARATOR}.
-     */
-    // solhint-disable-next-line func-name-mixedcase
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
-        return _domainSeparatorV4();
-    }
-
-    /**
-     * @dev "Consume a nonce": return the current value and increment.
-     *
-     * _Available since v4.1._
-     */
-    function _useNonce(address owner) internal returns (uint256 current) {
-        CountersUpgradeable.Counter storage nonce = _nonces[owner];
-        current = nonce.current();
-        nonce.increment();
-    }
-
-    uint256[49] private __gap3;
+    uint256[49] private __gap;
     
 }
