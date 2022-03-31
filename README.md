@@ -8,6 +8,8 @@ Documentation to understand Angle Protocol's Borrowing Module is available [here
 
 Developers documentation to understand the smart contract architecture is available [here](https://developers.angle.money/borrowing-module-contracts/architecture-overview).
 
+Whitepaper for the module can be found [here](https://docs.angle.money/overview/whitepapers).
+
 ## Module Architecture
 
 ![Module Architecture](AngleBorrowingArchitecture.png)
