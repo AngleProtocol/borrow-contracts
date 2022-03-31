@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, Signer } from 'ethers';
-import { formatBytes32String, formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
-import hre, { contract, ethers, web3 } from 'hardhat';
+import { Signer } from 'ethers';
+import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
+import hre, { contract, ethers } from 'hardhat';
 
 import {
   AgToken,
@@ -18,7 +18,6 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  Reactor,
   VaultManager,
   VaultManager__factory,
 } from '../../typechain';
@@ -27,9 +26,7 @@ import { deployUpgradeable, expectApproxDelta, ZERO_ADDRESS } from '../utils/hel
 
 const PRECISION = 5;
 
-contract('Reactor', () => {
-  const log = true;
-
+contract('ReactorEuler', () => {
   let deployer: SignerWithAddress;
   let governor: SignerWithAddress;
   let guardian: SignerWithAddress;
@@ -44,8 +41,6 @@ contract('Reactor', () => {
   let stableMaster: MockStableMaster;
   let agEUR: AgToken;
   let vaultManager: VaultManager;
-  let guardianRole: string;
-  let guardianError: string;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -84,9 +79,6 @@ contract('Reactor', () => {
 
       impersonatedSigners[ob.name] = await ethers.getSigner(ob.address);
     }
-
-    guardianRole = web3.utils.keccak256('GUARDIAN_ROLE');
-    guardianError = `AccessControl: account ${alice.address.toLowerCase()} is missing role ${guardianRole}`;
   });
 
   beforeEach(async () => {

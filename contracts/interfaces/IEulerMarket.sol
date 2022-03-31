@@ -5,6 +5,7 @@ pragma solidity >=0.8.12;
 /// @notice Main storage contract for the Euler system
 interface IEulerConstants {
     /// @notice gives the maxExternalAmount in base 18
+    //solhint-disable-next-line
     function MAX_SANE_AMOUNT() external view returns (uint256);
 }
 
