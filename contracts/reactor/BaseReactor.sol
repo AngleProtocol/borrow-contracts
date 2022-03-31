@@ -191,10 +191,14 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address user) public view virtual returns (uint256) {}
+    function maxWithdraw(address user) public view virtual returns (uint256) {
+        return convertToAssets(balanceOf(user));
+    }
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address user) public view virtual returns (uint256) {}
+    function maxRedeem(address user) public view virtual returns (uint256) {
+        return balanceOf(user);
+    }
 
     /// @inheritdoc IERC721ReceiverUpgradeable
     function onERC721Received(
@@ -234,6 +238,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Converts an amount of shares of the reactor to assets
     /// @param shares Amount of shares to convert
     /// @param totalAssetAmount Total amount of asset controlled by the vault
+    /// @param _supply Optional value of the total supply of the reactor
     /// @return Corresponding amount of assets
     /// @dev It is at the level of this function that losses from liquidations are taken into account, because this
     /// reduces the `totalAssetAmount` and hence the amount of assets you are entitled to get from your shares
@@ -435,15 +440,15 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @dev Function will revert if there has been no mint
     function _claim(address from) internal returns (uint256 amount) {
         amount = (claimableRewards * rewardsAccumulatorOf[from]) / (rewardsAccumulator - claimedRewardsAccumulator);
-
-        claimedRewardsAccumulator += rewardsAccumulatorOf[from];
-        rewardsAccumulatorOf[from] = 0;
-        lastTimeOf[from] = block.timestamp;
-
-        claimableRewards -= amount;
-
-        amount = _pull(amount);
-        stablecoin.transfer(from, amount);
+        uint256 amountAvailable = _pull(amount);
+        // If we cannot pull enough from the strat then `claim` has no effect
+        if (amountAvailable >= amount) {
+            claimedRewardsAccumulator += rewardsAccumulatorOf[from];
+            rewardsAccumulatorOf[from] = 0;
+            lastTimeOf[from] = block.timestamp;
+            claimableRewards -= amount;
+            stablecoin.transfer(from, amount);
+        }
     }
 
     /// @notice Updates global and `msg.sender` accumulator and rewards share

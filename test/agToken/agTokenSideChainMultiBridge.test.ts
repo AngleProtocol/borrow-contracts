@@ -2,16 +2,16 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
-import { parseAmount } from '../../utils/bignumber';
 
 import {
   AgTokenSideChainMultiBridge,
   AgTokenSideChainMultiBridge__factory,
-  MockTreasury,
-  MockTreasury__factory,
   MockToken,
   MockToken__factory,
+  MockTreasury,
+  MockTreasury__factory,
 } from '../../typechain';
+import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';

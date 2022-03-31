@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract MockEulerPool {
     IERC20 public collateral;
     uint256 public poolSize;
+    //solhint-disable-next-line
     uint256 public MAX_SANE_AMOUNT;
 
     mapping(address => uint256) public users;
@@ -30,6 +31,7 @@ contract MockEulerPool {
         interestRateAccumulator = interestRateAccumulator_;
     }
 
+    //solhint-disable-next-line
     function setMAXSANEAMOUNT(uint256 MAX_SANE_AMOUNT_) external {
         MAX_SANE_AMOUNT = MAX_SANE_AMOUNT_;
     }
