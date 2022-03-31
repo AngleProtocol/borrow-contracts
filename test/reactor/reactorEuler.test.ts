@@ -22,7 +22,7 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { deployUpgradeable, expectApproxDelta, ZERO_ADDRESS, expectApprox } from '../utils/helpers';
+import { deployUpgradeable, expectApprox, expectApproxDelta, ZERO_ADDRESS } from '../utils/helpers';
 
 const PRECISION = 5;
 
