@@ -660,6 +660,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 // There may be an edge case in which: `amounts[i] = (currentDebt * BASE_PARAMS) / surcharge + 1`
                 // In this case, as long as `surcharge < BASE_PARAMS`, there cannot be any underflow in the operation
                 // above
+                emit InternalDebtUpdated(vaultIDs[i], vault.normalizedDebt, 0);
             } else {
                 vaultData[vaultIDs[i]].collateralAmount -= collateralReleased;
                 // In the case where the full debt is being repaid, `amounts[i]` must be rounded above
