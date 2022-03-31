@@ -51,7 +51,7 @@ contract ERC20Upgradeable is Initializable, ContextUpgradeable, IERC20Upgradeabl
      * All two of these values are immutable: they can only be set once during
      * construction.
      */
-     //solhint-disable-next-line
+    //solhint-disable-next-line
     function __ERC20_init(string memory name_, string memory symbol_) internal onlyInitializing {
         __Context_init_unchained();
         __ERC20_init_unchained(name_, symbol_);

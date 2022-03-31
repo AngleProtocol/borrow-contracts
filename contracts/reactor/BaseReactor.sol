@@ -191,10 +191,14 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address user) public view virtual returns (uint256) {}
+    function maxWithdraw(address user) public view virtual returns (uint256) {
+        return convertToAssets(balanceOf(user));
+    }
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address user) public view virtual returns (uint256) {}
+    function maxRedeem(address user) public view virtual returns (uint256) {
+        return balanceOf(user);
+    }
 
     /// @inheritdoc IERC721ReceiverUpgradeable
     function onERC721Received(
@@ -436,16 +440,15 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @dev Function will revert if there has been no mint
     function _claim(address from) internal returns (uint256 amount) {
         amount = (claimableRewards * rewardsAccumulatorOf[from]) / (rewardsAccumulator - claimedRewardsAccumulator);
-
-        claimedRewardsAccumulator += rewardsAccumulatorOf[from];
-        rewardsAccumulatorOf[from] = 0;
-        lastTimeOf[from] = block.timestamp;
-
-        claimableRewards -= amount;
-
         uint256 amountAvailable = _pull(amount);
-        if (amountAvailable > amount) stablecoin.transfer(from, amount);
-        else stablecoin.transfer(from, amountAvailable);
+        // If we cannot pull enough from the strat then `claim` has no effect
+        if (amountAvailable >= amount) {
+            claimedRewardsAccumulator += rewardsAccumulatorOf[from];
+            rewardsAccumulatorOf[from] = 0;
+            lastTimeOf[from] = block.timestamp;
+            claimableRewards -= amount;
+            stablecoin.transfer(from, amount);
+        }
     }
 
     /// @notice Updates global and `msg.sender` accumulator and rewards share
