@@ -191,7 +191,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       });
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('50').add(aliceBalance));
     });
-    it('success - from role granted', async () => {
+    it('success - from role granted 1/2', async () => {
       const bytesPassed = ethers.utils.defaultAbiCoder.encode(['uint256'], [parseEther('47')]);
       await agToken.connect(impersonatedSigners[governor]).grantRole(depositorRole, governor);
       const aliceBalance = await agToken.balanceOf(alice.address);
@@ -204,6 +204,24 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
         value: parseEther('47'),
       });
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('47').add(aliceBalance));
+      // Reset state and revoke role
+      await agToken.connect(impersonatedSigners[governor]).renounceRole(depositorRole, governor);
+      expect(await agToken.hasRole(depositorRole, governor)).to.be.equal(false);
+    });
+    it('success - from role granted 2/2', async () => {
+      const bytesPassed = ethers.utils.defaultAbiCoder.encode(['uint256'], [parseEther('1000000')]);
+      console.log(bytesPassed);
+      await agToken.connect(impersonatedSigners[governor]).grantRole(depositorRole, governor);
+      const aliceBalance = await agToken.balanceOf(alice.address);
+      const receipt = await (
+        await agToken.connect(impersonatedSigners[governor]).deposit(alice.address, bytesPassed)
+      ).wait();
+      inReceipt(receipt, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: alice.address,
+        value: parseEther('1000000'),
+      });
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1000000').add(aliceBalance));
       // Reset state and revoke role
       await agToken.connect(impersonatedSigners[governor]).renounceRole(depositorRole, governor);
       expect(await agToken.hasRole(depositorRole, governor)).to.be.equal(false);
