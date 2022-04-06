@@ -236,4 +236,5 @@ contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {
       });
     });
   });
+  describe('mint', () => {});
 });
