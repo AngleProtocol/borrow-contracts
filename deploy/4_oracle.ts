@@ -10,8 +10,6 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   const treasury = (await deployments.get('Treasury')).address;
 
-  // TODO Work needed here for rinkeby
-
   if (!network.live || network.config.chainId === ChainId.MAINNET) {
     console.log('Now deploying the Oracle ETH/EUR');
     await deploy('Oracle_ETH_EUR', {
