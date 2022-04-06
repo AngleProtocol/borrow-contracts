@@ -1,9 +1,13 @@
 import { CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
-import { ProxyAdmin_Interface, StableMasterFront_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
+import {
+  ProxyAdmin_Interface,
+  StableMasterFront_Interface,
+  ERC20_Interface,
+} from '@angleprotocol/sdk/dist/constants/interfaces';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-import hre, { contract, ethers, web3 } from 'hardhat';
+import hre, { contract, ethers } from 'hardhat';
 
 import { expect } from '../../test/utils/chai-setup';
 import { inReceipt } from '../../test/utils/expectEvent';
@@ -20,9 +24,6 @@ contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {
   let governor: string;
   let guardian: string;
   let proxyAdmin: ProxyAdmin;
-  let guardianRole: string;
-  let governorRole: string;
-  let flashloanerTreasuryRole: string;
   let stableMasterAddress: string;
   let poolManager: string;
 
@@ -43,9 +44,6 @@ contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {
       await hre.network.provider.send('hardhat_setBalance', [address, '0x10000000000000000000000000000']);
       impersonatedSigners[address] = await ethers.getSigner(address);
     }
-    guardianRole = web3.utils.keccak256('GUARDIAN_ROLE');
-    governorRole = web3.utils.keccak256('GOVERNOR_ROLE');
-    flashloanerTreasuryRole = web3.utils.keccak256('FLASHLOANER_TREASURY_ROLE');
   });
 
   before(async () => {
@@ -71,7 +69,6 @@ contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {
   describe('upgrade - References & Variables', () => {
     it('success - agToken', async () => {
       expect(await agToken.isMinter(governor)).to.be.equal(true);
-      expect(await agToken.isMinter(stableMasterAddress)).to.be.equal(true);
       expect(await agToken.stableMaster()).to.be.equal(stableMasterAddress);
     });
     it('success - contract initialized', async () => {
@@ -99,6 +96,18 @@ contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {
       expect(await agToken.balanceOf(governor)).to.be.equal(parseEther('1000'));
     });
   });
+  describe('setUpMinter', () => {
+    it('reverts - non governor', async () => {
+      await expect(agToken.connect(alice).setUpMinter()).to.be.reverted;
+    });
+    it('success - when governor calls', async () => {
+      const receipt = await (await agToken.connect(impersonatedSigners[governor]).setUpMinter()).wait();
+      inReceipt(receipt, 'MinterToggled', {
+        minter: governor,
+      });
+    });
+  });
+
   describe('removeMinter', () => {
     it('reverts - non minter and non address', async () => {
       await expect(agToken.connect(charlie).removeMinter(alice.address)).to.be.revertedWith('36');
@@ -236,5 +245,58 @@ contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {
       });
     });
   });
-  describe('mint', () => {});
+  describe('mint', () => {
+    it('reverts - non minter', async () => {
+      await expect(agToken.connect(bob).mint(alice.address, parseEther('100000'))).to.be.revertedWith('35');
+    });
+    it('success - from minter', async () => {
+      const receipt = await (
+        await agToken.connect(impersonatedSigners[governor]).mint(charlie.address, parseEther('100000'))
+      ).wait();
+      inReceipt(receipt, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: charlie.address,
+        value: parseEther('100000'),
+      });
+      expect(await agToken.balanceOf(charlie.address)).to.be.equal(parseEther('100000'));
+    });
+    it('success - from granted minter', async () => {
+      const receipt1 = await (await agToken.connect(impersonatedSigners[governor]).addMinter(charlie.address)).wait();
+      expect(await agToken.isMinter(charlie.address)).to.be.equal(true);
+      inReceipt(receipt1, 'MinterToggled', {
+        minter: charlie.address,
+      });
+      const receipt = await (await agToken.connect(charlie).mint(charlie.address, parseEther('100000'))).wait();
+      inReceipt(receipt, 'Transfer', {
+        from: ZERO_ADDRESS,
+        to: charlie.address,
+        value: parseEther('100000'),
+      });
+      expect(await agToken.balanceOf(charlie.address)).to.be.equal(parseEther('200000'));
+    });
+    it('success - from stableMaster', async () => {
+      // Bob address has some USDC and will spend here half of his balance
+      const usdc = new ethers.Contract('0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', ERC20_Interface, deployer);
+      const stableMaster = new ethers.Contract(stableMasterAddress, StableMasterFront_Interface, deployer);
+      await usdc.connect(bob).approve(stableMasterAddress, parseEther('1000'));
+      const balance = await usdc.balanceOf(bob.address);
+      const agEURBalance = await agToken.balanceOf(bob.address);
+      // Burning all bob balance
+      const poolManagerDAI = CONTRACTS_ADDRESSES[1].agEUR?.collaterals?.DAI.PoolManager!;
+      await agToken.connect(bob).burnNoRedeem(agEURBalance, poolManagerDAI);
+      // Minting stablecoin
+      await stableMaster.connect(bob).mint(balance.div(2), bob.address, poolManager, 0);
+    });
+    it('success - from stableMaster to another address', async () => {
+      // bob address has some USDC
+      const usdc = new ethers.Contract('0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', ERC20_Interface, deployer);
+      const stableMaster = new ethers.Contract(stableMasterAddress, StableMasterFront_Interface, deployer);
+      await usdc.connect(bob).approve(stableMasterAddress, parseEther('1000'));
+      const balance = await usdc.balanceOf(bob.address);
+      const agEURBalance = await agToken.balanceOf(bob.address);
+      const poolManagerDAI = CONTRACTS_ADDRESSES[1].agEUR?.collaterals?.DAI.PoolManager!;
+      await agToken.connect(bob).burnNoRedeem(agEURBalance, poolManagerDAI);
+      await stableMaster.connect(bob).mint(balance, charlie.address, poolManager, 0);
+    });
+  });
 });

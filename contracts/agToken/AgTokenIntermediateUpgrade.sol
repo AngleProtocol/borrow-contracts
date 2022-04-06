@@ -56,7 +56,6 @@ contract AgTokenIntermediateUpgrade is ERC20PermitUpgradeable {
         address governor = 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8;
         require(msg.sender == governor);
         isMinter[governor] = true;
-        isMinter[stableMaster] = true;
         emit MinterToggled(governor);
     }
 
@@ -64,7 +63,7 @@ contract AgTokenIntermediateUpgrade is ERC20PermitUpgradeable {
 
     /// @notice Checks whether the sender has the minting right
     modifier onlyMinter() {
-        require(isMinter[msg.sender], "35");
+        require(isMinter[msg.sender] || msg.sender == stableMaster, "35");
         _;
     }
 
@@ -132,7 +131,7 @@ contract AgTokenIntermediateUpgrade is ERC20PermitUpgradeable {
         _mint(account, amount);
     }
 
-    // ======================= Treasury Only Functions =============================
+    // ======================= Minter Only Functions ===============================
 
     /// @notice Adds a minter in the contract
     /// @param minter Minter address to add
