@@ -625,6 +625,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         require(vaultIDs.length == amounts.length, "25");
         liqData.oracleValue = oracle.read();
         liqData.newInterestAccumulator = _accrue();
+        emit LiquidatedVaults(vaultIDs);
         for (uint256 i = 0; i < vaultIDs.length; i++) {
             Vault memory vault = vaultData[vaultIDs[i]];
             // Computing if liquidation can take place for a vault
@@ -676,7 +677,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Normalization of good and bad debt is already handled in the `accrueInterestToTreasury` function
         surplus += (liqData.stablecoinAmountToReceive * (BASE_PARAMS - liquidationSurcharge)) / BASE_PARAMS;
         badDebt += liqData.badDebtFromLiquidation;
-        emit LiquidatedVaults(vaultIDs);
         _handleRepay(liqData.collateralAmountToGive, liqData.stablecoinAmountToReceive, from, to, who, data);
     }
 
