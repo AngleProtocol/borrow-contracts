@@ -217,7 +217,6 @@ contract EulerReactor is BaseReactor {
         // always positive otherwise we couldn't do the operation
         uint256 total = looseStablecoins + lentStablecoins - amountToAdd;
         uint256 lastBalance_ = lastBalance;
-
         if (total > lastBalance_) {
             // In case of a yield gain a portion goes to the protocol, the rest goes to users
             // If there is already a loss, the gain is used to compensate the previous loss
