@@ -23,7 +23,7 @@ contract MockReactor is BaseReactor {
 
     function _pull(uint256 amount) internal override returns (uint256) {
         counter += 1;
-        return amount * multiplier / 10**9;
+        return (amount * multiplier) / 10**9;
     }
 
     function increaseAccumulator(uint256 amount) external {
