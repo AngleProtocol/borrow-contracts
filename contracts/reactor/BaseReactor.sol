@@ -25,7 +25,8 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         IVaultManager _vaultManager,
         uint64 _lowerCF,
         uint64 _targetCF,
-        uint64 _upperCF
+        uint64 _upperCF,
+        uint64 _protocolFeeShare
     ) internal initializer {
         __ERC20_init(_name, _symbol);
         vaultManager = _vaultManager;
@@ -44,12 +45,14 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             0 < _lowerCF &&
                 _lowerCF <= _targetCF &&
                 _targetCF <= _upperCF &&
-                _upperCF <= _vaultManager.collateralFactor(),
+                _upperCF <= _vaultManager.collateralFactor() &&
+                _protocolFeeShare <= BASE_PARAMS,
             "15"
         );
         lowerCF = _lowerCF;
         targetCF = _targetCF;
         upperCF = _upperCF;
+        protocolFeeShare = _protocolFeeShare;
 
         asset.approve(address(vaultManager), type(uint256).max);
     }
@@ -547,7 +550,10 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         } else if (what == "upperCF") {
             require(targetCF <= param && param <= vaultManager.collateralFactor(), "18");
             upperCF = param;
-        } else {
+        } else if (what == "protocolFeeShare") {
+            require(param<=BASE_PARAMS, "18");
+        }
+        else {
             revert("43");
         }
         emit FiledUint64(param, what);
@@ -568,6 +574,17 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }
+
+    /// @notice Pulls the fees accumulated by the protocol from its strategies
+    /// @param to Address to which tokens should be sent
+    /// @param amountToRecover Amount of collateral to transfer
+    function pullprotocolFees(address to, uint256 amountToRecover) external onlyGovernorOrGuardian {
+        require(amountToRecover <= feesAccumulated);
+        uint256 amountAvailable = _pull(amountToRecover);
+        amountToRecover = amountToRecover <= amountAvailable ? amountToRecover : amountAvailable;
+        feesAccumulated -= amountToRecover;
+        stablecoin.transfer(to, amountToRecover);
+    }
 }
 
 contract Reactor is BaseReactor {
@@ -577,8 +594,9 @@ contract Reactor is BaseReactor {
         IVaultManager _vaultManager,
         uint64 _lowerCF,
         uint64 _targetCF,
-        uint64 _upperCF
+        uint64 _upperCF,
+        uint64 _protocolFeeShare
     ) external {
-        _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF);
+        _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF, _protocolFeeShare);
     }
 }

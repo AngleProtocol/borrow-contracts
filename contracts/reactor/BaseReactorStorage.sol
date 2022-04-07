@@ -48,9 +48,13 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     uint64 public targetCF;
     /// @notice Value of the collateral factor above which stablecoins should be repaid to avoid liquidations
     uint64 public upperCF;
+    /// @notice Value of the fees going to the protocol at each yield gain from the strategy
+    uint64 public protocolFeeShare;
 
     // =============================== Variables ===================================
 
+    /// @notice Protocol fee surplus
+    uint256 public feesAccumulated;
     /// @notice Rewards (in stablecoin) claimable by depositors of the reactor
     uint256 public claimableRewards;
     /// @notice Loss (in stablecoin) accumulated by the reactor: it's going to prevent the reactor from
