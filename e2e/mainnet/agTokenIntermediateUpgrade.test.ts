@@ -70,8 +70,20 @@ contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {
     it('success - agToken', async () => {
       expect(await agToken.isMinter(governor)).to.be.equal(true);
       expect(await agToken.stableMaster()).to.be.equal(stableMasterAddress);
+      // Uniswap agEUR-FEI
+      expect(await agToken.balanceOf('0xf89ce5ed65737da8440411544b0499c9fad323b2')).to.be.gt(parseEther('1000000'));
+      // Uniswap agEUR-FRAX
+      expect(await agToken.balanceOf('0x8ce5796ef6b0c5918025bcf4f9ca908201b030b3')).to.be.gt(parseEther('1000000'));
+      // Sushiswap agEUR-ANGLE
+      expect(await agToken.balanceOf('0x1f4c763BdE1D4832B3EA0640e66Da00B98831355')).to.be.gt(parseEther('1000000'));
+      // Balances are correct when being logged
     });
     it('success - contract initialized', async () => {
+      await expect(agToken.initialize('agEUR', 'agEUR', governor)).to.be.revertedWith(
+        'Initializable: contract is already initialized',
+      );
+    });
+    it('success - balances to another address', async () => {
       await expect(agToken.initialize('agEUR', 'agEUR', governor)).to.be.revertedWith(
         'Initializable: contract is already initialized',
       );
