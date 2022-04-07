@@ -877,17 +877,27 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }
 
-    /// @notice Toggles permission for owning vaults by any account
-    function toggleWhitelisting() external onlyGovernor {
-        bool flag = !whitelistingActivated;
-        whitelistingActivated = flag;
-        emit ToggledWhitelisting(flag);
+    /// @notice Pauses external permissionless functions of the contract
+    function togglePause() external onlyGovernorOrGuardian {
+        paused = !paused;
+    }
+
+    /// @notice Changes the ERC721 metadata URI
+    function setBaseURI(string memory baseURI_) external onlyGovernorOrGuardian {
+        _baseURI = baseURI_;
     }
 
     /// @notice Changes the whitelisting of an address
     /// @param target Address to toggle
+    /// @dev If the `target` address is the zero address then this function toggles whitelisting
+    /// for all addresses
     function toggleWhitelist(address target) external onlyGovernor {
-        isWhitelisted[target] = !isWhitelisted[target];
+        if (target != address(0)) {
+            isWhitelisted[target] = !isWhitelisted[target];
+        } else {
+            whitelistingActivated = !whitelistingActivated;
+        }
+        
     }
 
     /// @notice Changes the reference to the oracle contract used to get the price of the oracle
@@ -895,7 +905,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     function setOracle(address _oracle) external onlyGovernor {
         require(IOracle(_oracle).treasury() == treasury, "33");
         oracle = IOracle(_oracle);
-        emit OracleUpdated(_oracle);
     }
 
     /// @inheritdoc IVaultManagerFunctions
@@ -906,13 +915,4 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         oracle.setTreasury(_treasury);
     }
 
-    /// @notice Pauses external permissionless functions of the contract
-    function togglePause() external onlyGovernorOrGuardian {
-        paused = !paused;
-    }
-
-    /// @notice Changes the ERC721 metadata URI
-    function setBaseURI(string memory baseURI_) external onlyGovernorOrGuardian {
-        _baseURI = baseURI_;
-    }
 }

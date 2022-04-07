@@ -137,8 +137,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event DebtCeilingUpdated(uint256 debtCeiling);
     event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
     event LiquidatedVaults(uint256[] vaultIDs);
-    event OracleUpdated(address indexed _oracle);
-    event ToggledWhitelisting(bool);
+
 
     /// @param _dust Minimum amount of debt a vault from this implementation can have
     /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
