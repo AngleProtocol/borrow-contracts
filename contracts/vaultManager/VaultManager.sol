@@ -38,7 +38,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Checking if the parameters have been correctly initialized
         require(
             params.collateralFactor <= params.liquidationSurcharge &&
-                params.liquidationSurcharge <= BASE_PARAMS && 
+                params.liquidationSurcharge <= BASE_PARAMS &&
                 BASE_PARAMS <= params.targetHealthFactor &&
                 params.maxLiquidationDiscount < BASE_PARAMS &&
                 0 < params.baseBoost,
@@ -48,7 +48,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         debtCeiling = params.debtCeiling;
         collateralFactor = params.collateralFactor;
         targetHealthFactor = params.targetHealthFactor;
-        
         interestRate = params.interestRate;
         liquidationSurcharge = params.liquidationSurcharge;
         maxLiquidationDiscount = params.maxLiquidationDiscount;
@@ -827,6 +826,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             require(param <= BASE_PARAMS, "9");
             borrowFee = param;
         } else if (what == "RF") {
+            // As liquidation surcharge is stored as `1-fee` and as we need `repayFee` to be smaller
+            // then the liquidation surcharge, then we need to have:
+            // `liquidationSurcharge <= BASE_PARAMS - repayFee` and as such `liquidationSurcharge + repayFee <= BASE_PARAMS`
             require(param + liquidationSurcharge <= BASE_PARAMS, "9");
             repayFee = param;
         } else if (what == "IR") {
@@ -897,7 +899,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         } else {
             whitelistingActivated = !whitelistingActivated;
         }
-        
     }
 
     /// @notice Changes the reference to the oracle contract used to get the price of the oracle
@@ -914,5 +915,4 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // even though a single oracle contract could be used in different places
         oracle.setTreasury(_treasury);
     }
-
 }
