@@ -38,18 +38,17 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Checking if the parameters have been correctly initialized
         require(
             params.collateralFactor <= params.liquidationSurcharge &&
-                params.liquidationSurcharge+params.repayFee <= BASE_PARAMS && 
+                params.liquidationSurcharge <= BASE_PARAMS && 
                 BASE_PARAMS <= params.targetHealthFactor &&
-                params.borrowFee <= BASE_PARAMS &&
                 params.maxLiquidationDiscount < BASE_PARAMS &&
                 0 < params.baseBoost,
             "15"
         );
+
         debtCeiling = params.debtCeiling;
         collateralFactor = params.collateralFactor;
         targetHealthFactor = params.targetHealthFactor;
-        borrowFee = params.borrowFee;
-        repayFee = params.repayFee;
+        
         interestRate = params.interestRate;
         liquidationSurcharge = params.liquidationSurcharge;
         maxLiquidationDiscount = params.maxLiquidationDiscount;
@@ -383,7 +382,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) returns (uint256, uint256) {
         Vault memory vault = vaultData[vaultID];
-        // Optimize for gas here
         (uint256 healthFactor, uint256 currentDebt, ) = _isSolvent(vault, oracleValue, newInterestAccumulator);
         require(healthFactor > BASE_PARAMS, "21");
         totalNormalizedDebt -= vault.normalizedDebt;
@@ -819,25 +817,25 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
     /// the HF and therefore increase the discount between each time
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
-        if (what == "collateralFactor") {
+        if (what == "CF") {
             require(param <= liquidationSurcharge, "9");
             collateralFactor = param;
-        } else if (what == "targetHealthFactor") {
+        } else if (what == "THF") {
             require(param >= BASE_PARAMS, "17");
             targetHealthFactor = param;
-        } else if (what == "borrowFee") {
+        } else if (what == "BF") {
             require(param <= BASE_PARAMS, "9");
             borrowFee = param;
-        } else if (what == "repayFee") {
+        } else if (what == "RF") {
             require(param + liquidationSurcharge <= BASE_PARAMS, "9");
             repayFee = param;
-        } else if (what == "interestRate") {
+        } else if (what == "IR") {
             _accrue();
             interestRate = param;
-        } else if (what == "liquidationSurcharge") {
+        } else if (what == "LS") {
             require(collateralFactor <= param && param + repayFee <= BASE_PARAMS, "18");
             liquidationSurcharge = param;
-        } else if (what == "maxLiquidationDiscount") {
+        } else if (what == "MLD") {
             require(param < BASE_PARAMS, "9");
             maxLiquidationDiscount = param;
         } else {

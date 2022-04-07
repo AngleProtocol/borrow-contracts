@@ -15,8 +15,6 @@ struct VaultParameters {
     uint256 debtCeiling;
     uint64 collateralFactor;
     uint64 targetHealthFactor;
-    uint64 borrowFee;
-    uint64 repayFee;
     uint64 interestRate;
     uint64 liquidationSurcharge;
     uint64 maxLiquidationDiscount;
