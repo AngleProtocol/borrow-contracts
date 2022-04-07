@@ -36,11 +36,12 @@ contract EulerReactor is BaseReactor {
         IVaultManager _vaultManager,
         uint64 _lowerCF,
         uint64 _targetCF,
-        uint64 _upperCF
+        uint64 _upperCF,
+        uint64 _protocolInterestShare
     ) external {
         euler = _euler;
         minInvest = minInvest_;
-        _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF);
+        _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF, _protocolInterestShare);
         IERC20(address(stablecoin)).safeApprove(address(euler), type(uint256).max);
     }
 
@@ -217,7 +218,31 @@ contract EulerReactor is BaseReactor {
         uint256 total = looseStablecoins + lentStablecoins - amountToAdd;
         uint256 lastBalance_ = lastBalance;
 
-        if (total > lastBalance_) _handleGain(total - lastBalance_);
-        else _handleLoss(lastBalance_ - total);
+        if (total > lastBalance_) {
+            // In case of a yield gain a portion goes to the protocol, the rest goes to users
+            // If there is already a loss, the gain is used to compensate the previous loss
+            uint256 gain = total - lastBalance_;
+            uint256 protocolGain = (gain * protocolInterestShare) / BASE_PARAMS;
+            uint256 protocolDebtPre = protocolDebt;
+            if (protocolDebtPre == 0) protocolInterestAccumulated += protocolGain;
+            else if (protocolDebtPre <= protocolGain) {
+                protocolInterestAccumulated += protocolGain - protocolDebtPre;
+                protocolDebt = 0;
+            } else protocolDebt -= protocolGain;
+            _handleGain(gain - protocolGain);
+        } else {
+            // In case of a loss, we first try to compensate it from previous gains for the part that concerns
+            // the protocol
+            uint256 loss = lastBalance_ - total;
+            uint256 lossForProtocol = (loss * protocolInterestShare) / BASE_PARAMS;
+            uint256 protocolInterestAccumulatedPreLoss = protocolInterestAccumulated;
+            // If the loss can not be entirely soaked by the gains already made then
+            // the protocol keeps track of the debt
+            if (lossForProtocol > protocolInterestAccumulatedPreLoss) {
+                protocolInterestAccumulated = 0;
+                protocolDebt += lossForProtocol - protocolInterestAccumulatedPreLoss;
+            } else protocolInterestAccumulated -= lossForProtocol;
+            _handleLoss(loss - lossForProtocol);
+        }
     }
 }

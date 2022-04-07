@@ -122,6 +122,7 @@ contract('ReactorEuler', () => {
       lowerCF,
       targetCF,
       upperCF,
+      0,
     );
     // await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
     await agEUR.connect(bob).approve(eulerMarketA.address, ethers.constants.MaxUint256);
