@@ -180,9 +180,8 @@ contract('VaultManager', () => {
       expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
     });
   });
-  */
+  
   describe('closeVault', () => {
-    /*
     it('reverts - should be liquidated', async () => {
       const collatAmount = parseUnits('2', collatBase);
       const borrowAmount = parseEther('1');
@@ -323,7 +322,7 @@ contract('VaultManager', () => {
       expect(await vaultManager.balanceOf(alice.address)).to.be.equal(1);
       expectApprox(await vaultManager.surplus(), parseEther('0.001001'), 0.01);
     });
-    */
+
     it('success - with everything composed and a year', async () => {
       // 10% borrowing fee, 5% interest rate, 30% repaying fee
       const yearlyRate = 1.05;
@@ -375,9 +374,9 @@ contract('VaultManager', () => {
       // Protocol
       expectApprox(await vaultManager.surplus(), parseEther('0.1').add(parseEther('0.5')), 0.01);
     });
-    // TODO test borrow increase/rounding and so on
+    // TODO test borrow increase/rounding and getDebtIn, getDebtOut with different scenari in terms of borrow/repayFee
+    // TODO run coverage and see which tests e-2-e can be added
   });
-  /*
 
   describe('addCollateral', () => {
     it('success', async () => {
