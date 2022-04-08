@@ -267,10 +267,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 senderRepayFee
     ) external whenNotPaused {
         require(treasury.isVaultManager(msg.sender), "3");
-        // Getting debt out of a vault is equivalent to repaying a portion of your debt: a fee should be paid for this
-        // We're taking the highest of the two repay fees to avoid exploits: otherwise someone could borrow from one vault
-        // transfer its debt to the other vault and repay its debt to the vault which has the lowest fees.
-        uint256 _repayFee = senderRepayFee > repayFee ? senderRepayFee : repayFee;
+        // Getting debt out of a vault is equivalent to repaying a portion of your debt, and this could leave exploits:
+        // someone could borrow from a vault and transfer its debt to a `VaultManager` contract where debt repayment will 
+        // be cheaper: in which case we're making people pay the delta
+        uint256 _repayFee;
+        if (repayFee > senderRepayFee) {
+            _repayFee = repayFee - senderRepayFee; 
+        }
         // Checking the delta of borrow fees to eliminate the risk of exploits here: a similar thing could happen: people
         // could mint from where it is cheap to mint and then transfer their debt to places where it is more expensive
         // to mint
@@ -457,9 +460,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // The `stablecoinAmount` needs to be rounded down in the `_increaseDebt` function to reduce the room for exploits
         stablecoinAmount = _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestAccumulator);
         if (address(vaultManager) == address(this)) {
-            uint256 stablecoinAmountLessRepayFee = (stablecoinAmount * (BASE_PARAMS - repayFee)) / BASE_PARAMS;
-            surplus += stablecoinAmount - stablecoinAmountLessRepayFee;
-            _repayDebt(dstVaultID, stablecoinAmountLessRepayFee, newInterestAccumulator);
+            // No repayFees taken in this case, otherwise the same stablecoin may end up paying fees twice
+            _repayDebt(dstVaultID, stablecoinAmount, newInterestAccumulator);
         } else {
             // No need to check the integrity of `VaultManager` here because `_getDebtIn` can be entered only through the
             // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
