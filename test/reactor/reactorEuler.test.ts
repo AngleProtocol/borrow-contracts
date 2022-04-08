@@ -265,7 +265,7 @@ contract('ReactorEuler', () => {
     const sharesAmount = parseUnits('1', collatBase);
     it('success - set interest rate to 0', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -292,7 +292,7 @@ contract('ReactorEuler', () => {
     });
     it('success - no need to withdraw from Euler', async () => {
       const sharesAmountBob = parseUnits('10', collatBase);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -312,7 +312,7 @@ contract('ReactorEuler', () => {
     });
     it('success - over the upperCF but poolSize too small', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -326,7 +326,7 @@ contract('ReactorEuler', () => {
     it('success - withdraw under the upperCF', async () => {
       const sharesAmountBob = parseUnits('10', collatBase);
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -341,7 +341,7 @@ contract('ReactorEuler', () => {
     it('success - over the upperCF but not reaching the dust', async () => {
       const sharesAmountBob = parseUnits('0.2', collatBase);
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -395,7 +395,7 @@ contract('ReactorEuler', () => {
       expectApproxDelta(await reactor.connect(alice).currentLoss(), loss, parseUnits('1', PRECISION));
     });
     it('success - profit with a non null protocol interest share', async () => {
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -409,7 +409,7 @@ contract('ReactorEuler', () => {
       expect(await reactor.protocolInterestAccumulated()).to.be.equal(vaultDebt.div(2));
     });
     it('success - loss with a non null protocol interest share', async () => {
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -426,7 +426,7 @@ contract('ReactorEuler', () => {
     });
 
     it('success - profit with a non null protocol interest share and a small loss already accumulated', async () => {
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -458,7 +458,7 @@ contract('ReactorEuler', () => {
     });
 
     it('success - profit with a non null protocol interest share and a big loss already accumulated', async () => {
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -491,7 +491,7 @@ contract('ReactorEuler', () => {
     });
 
     it('success - small loss after a big profit with a non null protocol interest share', async () => {
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
