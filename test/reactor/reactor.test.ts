@@ -143,8 +143,8 @@ contract('Reactor', () => {
       upperCF,
       0,
     );
+    await vaultManager.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
   });
-
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -583,7 +583,6 @@ contract('Reactor', () => {
       expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('0.3'));
     });
   });
-
   describe('mint', () => {
     const sharesAmount = parseUnits('1', collatBase);
     beforeEach(async () => {
@@ -592,7 +591,6 @@ contract('Reactor', () => {
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       lastTime = await latestTime();
     });
-
     it('success - added collateral to vault', async () => {
       await displayReactorState(reactor, log);
       expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
@@ -609,12 +607,13 @@ contract('Reactor', () => {
       const sharesAmount = parseUnits('1', collatBase);
       await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
-      // Shares amount is consumed
+      // Shares amount is consumed -> debt is now 0.8
       expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
       await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
       expect(await reactor.lastDebt()).to.be.equal(parseEther('1.44'));
@@ -663,12 +662,10 @@ contract('Reactor', () => {
       expect(await reactor.rewardsAccumulator()).to.be.equal(
         BigNumber.from((await latestTime()) - lastTime).mul(sharesAmount),
       );
-      expectApprox(
-        await vaultManager.getVaultDebt(1),
-        sharesAmount.add(secondSharesAmount).mul(2).mul(targetCF),
-        0.00001,
-      );
+      const sum = sharesAmount.add(secondSharesAmount);
+      expectApprox(await vaultManager.getVaultDebt(1), sum.mul(2).mul(targetCF), 0.00001);
     });
+
     it('success - second mint to a different address', async () => {
       const secondSharesAmount = sharesAmount;
       await ANGLE.connect(alice).mint(alice.address, secondSharesAmount);
@@ -750,7 +747,6 @@ contract('Reactor', () => {
       );
     });
   });
-
   describe('rebalance', () => {
     const sharesAmount = parseUnits('1', collatBase);
     beforeEach(async () => {

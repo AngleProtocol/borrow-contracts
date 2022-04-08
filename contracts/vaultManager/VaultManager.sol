@@ -268,11 +268,11 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     ) external whenNotPaused {
         require(treasury.isVaultManager(msg.sender), "3");
         // Getting debt out of a vault is equivalent to repaying a portion of your debt, and this could leave exploits:
-        // someone could borrow from a vault and transfer its debt to a `VaultManager` contract where debt repayment will 
+        // someone could borrow from a vault and transfer its debt to a `VaultManager` contract where debt repayment will
         // be cheaper: in which case we're making people pay the delta
         uint256 _repayFee;
         if (repayFee > senderRepayFee) {
-            _repayFee = repayFee - senderRepayFee; 
+            _repayFee = repayFee - senderRepayFee;
         }
         // Checking the delta of borrow fees to eliminate the risk of exploits here: a similar thing could happen: people
         // could mint from where it is cheap to mint and then transfer their debt to places where it is more expensive

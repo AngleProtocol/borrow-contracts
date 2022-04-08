@@ -158,13 +158,6 @@ contract('VaultManager - ERC721', () => {
       await expect(tx).to.be.revertedWith('15');
     });
 
-    it('reverts - borrowFee > 1', async () => {
-      const auxPar = { ...params };
-      auxPar.borrowFee = 1.0001e9;
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
-      await expect(tx).to.be.revertedWith('15');
-    });
-
     it('reverts - maxLiquidationDiscount > 1', async () => {
       const auxPar = { ...params };
       auxPar.maxLiquidationDiscount = 1.0001e9;
