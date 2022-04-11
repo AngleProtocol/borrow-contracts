@@ -20,3 +20,12 @@ error InvalidCore();
 error IncompatibleGovernorAndGuardian();
 error NotEnoughGovernorsLeft();
 error ZeroAddress();
+
+
+error BurnAmountExceedsAllowance();
+error InvalidSender();
+error InvalidTreasury();
+error NotGovernor();
+error NotMinter();
+error NotTreasury();
+error TreasuryAlreadyInitialized();
