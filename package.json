@@ -14,6 +14,7 @@
     "lint:js:fix": "eslint --ignore-path .gitignore --fix --max-warnings 30 'test/**/*.{js,ts}' '*.{js,ts}'",
     "lint:sol": "solhint --fix --max-warnings 20 \"contracts/**/*.sol\"",
     "node:fork:implems": "FORK=true hardhat node --tags unpausing",
+    "node:fork:agTokenUpgrade": "FORK=true hardhat node --tags agTokenUpgrade",
     "prettier": "yarn prettier:js && yarn prettier:sol",
     "prettier:sol": "prettier --write 'contracts/**/*.sol'",
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
