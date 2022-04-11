@@ -82,23 +82,23 @@ contract('AgTokenSideChainMultiBridge', () => {
     it('reverts - non governor', async () => {
       await expect(
         agToken.connect(bob).addBridgeToken(bridgeToken.address, parseEther('1'), parseAmount.gwei(0.5), false),
-      ).to.be.revertedWith('1');
+      ).to.be.revertedWith('NotGovernor');
     });
     it('reverts - too high parameter value', async () => {
       const bridgeToken2 = (await new MockToken__factory(deployer).deploy('any-agEUR', 'any-agEUR', 18)) as MockToken;
       await expect(
         agToken.connect(deployer).addBridgeToken(bridgeToken2.address, parseEther('1'), parseAmount.gwei(2), false),
-      ).to.be.revertedWith('9');
+      ).to.be.revertedWith('TooHighParameterValue');
     });
     it('reverts - zero address', async () => {
       await expect(
         agToken.connect(deployer).addBridgeToken(ZERO_ADDRESS, parseEther('1'), parseAmount.gwei(0.5), false),
-      ).to.be.revertedWith('51');
+      ).to.be.revertedWith('InvalidToken');
     });
     it('reverts - already added', async () => {
       await expect(
         agToken.connect(deployer).addBridgeToken(bridgeToken.address, parseEther('1'), parseAmount.gwei(0.5), false),
-      ).to.be.revertedWith('51');
+      ).to.be.revertedWith('InvalidToken');
     });
     it('success - second token added', async () => {
       const bridgeToken2 = (await new MockToken__factory(deployer).deploy(
@@ -127,11 +127,11 @@ contract('AgTokenSideChainMultiBridge', () => {
   });
   describe('removeBridgeToken', () => {
     it('reverts - non governor', async () => {
-      await expect(agToken.connect(bob).removeBridgeToken(bridgeToken.address)).to.be.revertedWith('1');
+      await expect(agToken.connect(bob).removeBridgeToken(bridgeToken.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - non null balance', async () => {
       await bridgeToken.mint(agToken.address, parseEther('1'));
-      await expect(agToken.connect(deployer).removeBridgeToken(bridgeToken.address)).to.be.revertedWith('54');
+      await expect(agToken.connect(deployer).removeBridgeToken(bridgeToken.address)).to.be.revertedWith('');
     });
     it('success - mappings updated when there is one token', async () => {
       const receipt = await (await agToken.connect(deployer).removeBridgeToken(bridgeToken.address)).wait();
@@ -188,7 +188,7 @@ contract('AgTokenSideChainMultiBridge', () => {
     it('reverts - non governor', async () => {
       await expect(
         agToken.connect(bob).recoverERC20(bridgeToken.address, bob.address, parseEther('1')),
-      ).to.be.revertedWith('1');
+      ).to.be.revertedWith('NotGovernor');
     });
     it('reverts - invalid balance', async () => {
       await expect(agToken.connect(deployer).recoverERC20(bridgeToken.address, bob.address, parseEther('1'))).to.be
@@ -210,10 +210,14 @@ contract('AgTokenSideChainMultiBridge', () => {
   });
   describe('setLimit', () => {
     it('reverts - non governor and non guardian', async () => {
-      await expect(agToken.connect(alice).setLimit(bridgeToken.address, parseEther('1'))).to.be.revertedWith('2');
+      await expect(agToken.connect(alice).setLimit(bridgeToken.address, parseEther('1'))).to.be.revertedWith(
+        'NotGovernorOrGuardian',
+      );
     });
     it('reverts - non allowed token', async () => {
-      await expect(agToken.connect(deployer).setLimit(alice.address, parseEther('1'))).to.be.revertedWith('51');
+      await expect(agToken.connect(deployer).setLimit(alice.address, parseEther('1'))).to.be.revertedWith(
+        'InvalidToken',
+      );
     });
     it('success - value updated', async () => {
       const receipt = await (await agToken.connect(deployer).setLimit(bridgeToken.address, parseEther('1000'))).wait();
@@ -227,17 +231,17 @@ contract('AgTokenSideChainMultiBridge', () => {
   describe('setSwapFee', () => {
     it('reverts - non governor and non guardian', async () => {
       await expect(agToken.connect(alice).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'))).to.be.revertedWith(
-        '2',
+        'NotGovernorOrGuardian',
       );
     });
     it('reverts - non allowed token', async () => {
       await expect(agToken.connect(deployer).setSwapFee(alice.address, parseAmount.gwei('0.5'))).to.be.revertedWith(
-        '51',
+        'InvalidToken',
       );
     });
     it('reverts - too high value', async () => {
       await expect(agToken.connect(deployer).setSwapFee(bridgeToken.address, parseAmount.gwei('2'))).to.be.revertedWith(
-        '9',
+        'TooHighParameterValue',
       );
     });
     it('success - value updated', async () => {
@@ -253,10 +257,12 @@ contract('AgTokenSideChainMultiBridge', () => {
   });
   describe('toggleBridge', () => {
     it('reverts - non governor and non guardian', async () => {
-      await expect(agToken.connect(alice).toggleBridge(bridgeToken.address)).to.be.revertedWith('2');
+      await expect(agToken.connect(alice).toggleBridge(bridgeToken.address)).to.be.revertedWith(
+        'NotGovernorOrGuardian',
+      );
     });
     it('reverts - non existing bridge', async () => {
-      await expect(agToken.connect(deployer).toggleBridge(alice.address)).to.be.revertedWith('51');
+      await expect(agToken.connect(deployer).toggleBridge(alice.address)).to.be.revertedWith('InvalidToken');
     });
     it('success - bridge paused', async () => {
       const receipt = await (await agToken.connect(deployer).toggleBridge(bridgeToken.address)).wait();
@@ -278,7 +284,9 @@ contract('AgTokenSideChainMultiBridge', () => {
   });
   describe('toggleFeesForAddress', () => {
     it('reverts - non governor and non guardian', async () => {
-      await expect(agToken.connect(alice).toggleFeesForAddress(bridgeToken.address)).to.be.revertedWith('2');
+      await expect(agToken.connect(alice).toggleFeesForAddress(bridgeToken.address)).to.be.revertedWith(
+        'NotGovernorOrGuardian',
+      );
     });
     it('success - address exempted', async () => {
       const receipt = await (await agToken.connect(deployer).toggleFeesForAddress(alice.address)).wait();
@@ -302,26 +310,26 @@ contract('AgTokenSideChainMultiBridge', () => {
   describe('swapIn', () => {
     it('reverts - incorrect bridge token', async () => {
       await expect(agToken.connect(deployer).swapIn(bob.address, parseEther('1'), alice.address)).to.be.revertedWith(
-        '51',
+        'InvalidToken',
       );
     });
     it('reverts - bridge token paused', async () => {
       await agToken.connect(deployer).toggleBridge(bridgeToken.address);
       await expect(
         agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), alice.address),
-      ).to.be.revertedWith('51');
+      ).to.be.revertedWith('InvalidToken');
     });
     it('reverts - zero limit', async () => {
       await agToken.connect(deployer).setLimit(bridgeToken.address, parseEther('0'));
       await expect(
         agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), alice.address),
-      ).to.be.revertedWith('4');
+      ).to.be.revertedWith('TooBigAmount');
     });
     it('reverts - amount greater than limit', async () => {
       await agToken.connect(deployer).setLimit(bridgeToken.address, parseEther('10'));
       await expect(
         agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('100'), alice.address),
-      ).to.be.revertedWith('4');
+      ).to.be.revertedWith('TooBigAmount');
     });
     it('reverts - insufficient balance or no approval', async () => {
       await agToken.connect(deployer).setLimit(bridgeToken.address, parseEther('100'));
@@ -425,14 +433,14 @@ contract('AgTokenSideChainMultiBridge', () => {
   describe('swapOut', () => {
     it('reverts - incorrect bridge token', async () => {
       await expect(agToken.connect(deployer).swapOut(bob.address, parseEther('1'), alice.address)).to.be.revertedWith(
-        '51',
+        'InvalidToken',
       );
     });
     it('reverts - bridge token paused', async () => {
       await agToken.connect(deployer).toggleBridge(bridgeToken.address);
       await expect(
         agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('1'), alice.address),
-      ).to.be.revertedWith('51');
+      ).to.be.revertedWith('InvalidToken');
     });
     it('reverts - invalid agToken balance', async () => {
       await expect(agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('1'), alice.address)).to.be

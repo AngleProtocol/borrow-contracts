@@ -23,7 +23,7 @@
     "test": "hardhat test",
     "test:e2e:mainnet": "FORK=true hardhat test e2e/mainnet/*.ts",
     "test:e2e:mainnet:oracle": "FORK=true hardhat test e2e/mainnet/oraclesChainlink.test.ts",
-    "test:e2e:mainnet:upgrade": "FORK=true hardhat test e2e/mainnet/agTokenIntermediateUpgrade.test.ts",
+    "test:e2e:mainnet:upgrade": "FORK=true hardhat test e2e/mainnet/agTokenUpgrade.test.ts",
     "test:e2e:polygon": "FORK=true hardhat test e2e/polygon/*.ts",
     "test:all": "yarn test && yarn test:e2e:mainnet",
     "testFork": "FORK=true hardhat test"

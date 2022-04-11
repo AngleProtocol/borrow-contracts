@@ -114,28 +114,43 @@ contract TokenPolygonUpgradeable is
     event TreasuryUpdated(address indexed _treasury);
     event MinterToggled(address indexed minter);
 
+    // ================================== Errors ===================================
+
+    error AssetStillControlledInReserves();
+    error BurnAmountExceedsAllowance();
+    error InvalidSender();
+    error InvalidToken();
+    error InvalidTreasury();
+    error NotGovernor();
+    error NotGovernorOrGuardian();
+    error NotMinter();
+    error NotTreasury();
+    error TooBigAmount();
+    error TooHighParameterValue();
+    error TreasuryAlreadyInitialized();
+
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
     modifier onlyTreasury() {
-        require(msg.sender == treasury, "1");
+        if (msg.sender != treasury) revert NotTreasury();
         _;
     }
 
     /// @notice Checks whether the sender has the minting right
     modifier onlyMinter() {
-        require(isMinter[msg.sender], "35");
+        if (!isMinter[msg.sender]) revert NotMinter();
         _;
     }
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        require(ITreasury(treasury).isGovernor(msg.sender), "1");
+        if (!ITreasury(treasury).isGovernor(msg.sender)) revert NotGovernor();
         _;
     }
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
-        require(ITreasury(treasury).isGovernorOrGuardian(msg.sender), "2");
+        if (!ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         _;
     }
 
@@ -143,9 +158,9 @@ contract TokenPolygonUpgradeable is
     /// @param _treasury Address of the treasury contract
     function setUpTreasury(address _treasury) external {
         // Only governor on Polygon
-        require(msg.sender == 0xdA2D2f638D6fcbE306236583845e5822554c02EA, "1");
-        require(address(ITreasury(_treasury).stablecoin()) == address(this), "6");
-        require(!treasuryInitialized, "34");
+        if (msg.sender != 0xdA2D2f638D6fcbE306236583845e5822554c02EA) revert NotGovernor();
+        if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
+        if (treasuryInitialized) revert TreasuryAlreadyInitialized();
         treasury = _treasury;
         treasuryInitialized = true;
         emit TreasuryUpdated(_treasury);
@@ -186,7 +201,7 @@ contract TokenPolygonUpgradeable is
     }
 
     function removeMinter(address minter) external {
-        require(msg.sender == address(treasury) || msg.sender == minter, "36");
+        if (msg.sender != address(treasury) && msg.sender != minter) revert InvalidSender();
         isMinter[minter] = false;
         emit MinterToggled(minter);
     }
@@ -208,7 +223,7 @@ contract TokenPolygonUpgradeable is
     ) internal {
         if (burner != sender) {
             uint256 currentAllowance = allowance(burner, sender);
-            require(currentAllowance >= amount, "23");
+            if (currentAllowance < amount) revert BurnAmountExceedsAllowance();
             _approve(burner, sender, currentAllowance - amount);
         }
         _burnCustom(burner, amount);
@@ -233,8 +248,8 @@ contract TokenPolygonUpgradeable is
         address to
     ) external {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
-        require(bridgeDetails.allowed && !bridgeDetails.paused, "51");
-        require(IERC20(bridgeToken).balanceOf(address(this)) + amount <= bridgeDetails.limit, "4");
+        if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
+        if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
@@ -255,7 +270,7 @@ contract TokenPolygonUpgradeable is
         address to
     ) external {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
-        require(bridgeDetails.allowed && !bridgeDetails.paused, "51");
+        if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         _burnCustom(msg.sender, amount);
         uint256 bridgeOut = amount;
         if (!isFeeExempt[msg.sender]) {
@@ -277,8 +292,8 @@ contract TokenPolygonUpgradeable is
         uint64 fee,
         bool paused
     ) external onlyGovernor {
-        require(!bridges[bridgeToken].allowed && bridgeToken != address(0), "51");
-        require(fee <= BASE_PARAMS, "9");
+        if (bridges[bridgeToken].allowed || bridgeToken == address(0)) revert InvalidToken();
+        if (fee > BASE_PARAMS) revert TooHighParameterValue();
         BridgeDetails memory _bridge;
         _bridge.limit = limit;
         _bridge.paused = paused;
@@ -292,7 +307,7 @@ contract TokenPolygonUpgradeable is
     /// @notice Removes support for a token
     /// @param bridgeToken Address of the bridge token to remove support for
     function removeBridgeToken(address bridgeToken) external onlyGovernor {
-        require(IERC20(bridgeToken).balanceOf(address(this)) == 0, "54");
+        if (IERC20(bridgeToken).balanceOf(address(this)) != 0) revert AssetStillControlledInReserves();
         delete bridges[bridgeToken];
         // Deletion from `bridgeTokensList` loop
         uint256 bridgeTokensListLength = bridgeTokensList.length;
@@ -321,22 +336,22 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Updates the `limit` amount for `bridgeToken`
     function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardian {
-        require(bridges[bridgeToken].allowed, "51");
+        if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bridges[bridgeToken].limit = limit;
         emit BridgeTokenLimitUpdated(bridgeToken, limit);
     }
 
     /// @notice Updates the `fee` value for `bridgeToken`
     function setSwapFee(address bridgeToken, uint64 fee) external onlyGovernorOrGuardian {
-        require(bridges[bridgeToken].allowed, "51");
-        require(fee <= BASE_PARAMS, "9");
+        if (!bridges[bridgeToken].allowed) revert InvalidToken();
+        if (fee > BASE_PARAMS) revert TooHighParameterValue();
         bridges[bridgeToken].fee = fee;
         emit BridgeTokenFeeUpdated(bridgeToken, fee);
     }
 
     /// @notice Pauses or unpauses swapping in and out for a token
     function toggleBridge(address bridgeToken) external onlyGovernorOrGuardian {
-        require(bridges[bridgeToken].allowed, "51");
+        if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bool pausedStatus = bridges[bridgeToken].paused;
         bridges[bridgeToken].paused = !pausedStatus;
         emit BridgeTokenToggled(bridgeToken, !pausedStatus);
