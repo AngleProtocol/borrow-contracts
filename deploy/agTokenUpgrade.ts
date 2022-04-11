@@ -40,7 +40,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   // ------------------------------------------------------------------------------
 
   if (!network.live) {
+    // https://docs.euler.finance/developers/integration-guide#deposit-and-withdraw
     const governor = '0xdc4e6dfe07efca50a197df15d9200883ef4eb1c8';
+    const eulerMainnet = '0x27182842E098f60e3D576794A5bFFb0777E025d3';
+    const eulerMarkets = '0x3520d5a913427E6F0D6A83E07ccD4A4da316e4d3';
     await hre.network.provider.request({
       method: 'hardhat_impersonateAccount',
       params: [governor],
@@ -70,6 +73,26 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     console.log('Now minting agToken');
     await (await agToken.connect(signer).mint(governor, parseEther('1000000'))).wait();
     console.log('Success');
+    console.log('Approving Euler Market');
+    await (await agToken.connect(signer).approve(eulerMainnet, parseEther('1000000'))).wait();
+    console.log('Success');
+    const eulerMarketsInterface = new ethers.utils.Interface([
+      'function underlyingToEToken(address token) external view returns(address)',
+    ]);
+    console.log('Etoken address');
+    const eulerMarketsContract = new ethers.Contract(eulerMarkets, eulerMarketsInterface, signer);
+    const eToken = await eulerMarketsContract.underlyingToEToken(agTokenAddress);
+    console.log(eToken);
+    const eTokenInterface = new ethers.utils.Interface([
+      'function deposit(uint256 account, uint256 amount) external',
+      'function balanceOf(address who) external view returns(uint256)',
+    ]);
+    console.log('Now proceeding with the deposit');
+    const eTokenContract = new ethers.Contract(eToken, eTokenInterface, signer);
+    await (await eTokenContract.connect(signer).deposit(0, parseEther('1000000'))).wait();
+    console.log('Success');
+    console.log('Balance');
+    console.log((await eTokenContract.balanceOf(governor)).toString());
   }
 };
 
