@@ -4,6 +4,7 @@ module.exports = {
   compileCommand: 'yarn compile:hardhat',
   skipFiles: [
     'agToken/polygon',
+    'agToken/AgTokenIntermediateUpgrade.sol',
     'external',
     'interfaces',
     'mock',

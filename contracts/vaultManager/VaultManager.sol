@@ -38,17 +38,16 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // Checking if the parameters have been correctly initialized
         require(
             params.collateralFactor <= params.liquidationSurcharge &&
-                BASE_PARAMS <= params.targetHealthFactor &&
                 params.liquidationSurcharge <= BASE_PARAMS &&
-                params.borrowFee <= BASE_PARAMS &&
+                BASE_PARAMS <= params.targetHealthFactor &&
                 params.maxLiquidationDiscount < BASE_PARAMS &&
                 0 < params.baseBoost,
             "15"
         );
+
         debtCeiling = params.debtCeiling;
         collateralFactor = params.collateralFactor;
         targetHealthFactor = params.targetHealthFactor;
-        borrowFee = params.borrowFee;
         interestRate = params.interestRate;
         liquidationSurcharge = params.liquidationSurcharge;
         maxLiquidationDiscount = params.maxLiquidationDiscount;
@@ -160,7 +159,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
                     if (vaultID == 0) vaultID = vaultIDCount;
                     stablecoinAmount = _repayDebt(vaultID, stablecoinAmount, newInterestAccumulator);
-                    paymentData.stablecoinAmountToReceive += stablecoinAmount;
+                    uint256 stablecoinAmountPlusRepayFee = (stablecoinAmount * BASE_PARAMS) / (BASE_PARAMS - repayFee);
+                    surplus += stablecoinAmountPlusRepayFee - stablecoinAmount;
+                    paymentData.stablecoinAmountToReceive += stablecoinAmountPlusRepayFee;
                 } else {
                     // Processing actions which need the oracle value
                     if (oracleValue == 0) oracleValue = oracle.read();
@@ -262,16 +263,31 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     function getDebtOut(
         uint256 vaultID,
         uint256 stablecoinAmount,
-        uint256 senderBorrowFee
+        uint256 senderBorrowFee,
+        uint256 senderRepayFee
     ) external whenNotPaused {
         require(treasury.isVaultManager(msg.sender), "3");
-        // Checking the delta of borrow fees to eliminate the risk of exploits here
-        if (senderBorrowFee > borrowFee) {
-            uint256 borrowFeePaid = ((senderBorrowFee - borrowFee) * stablecoinAmount) / BASE_PARAMS;
-            stablecoinAmount -= borrowFeePaid;
-            surplus += borrowFeePaid;
+        // Getting debt out of a vault is equivalent to repaying a portion of your debt, and this could leave exploits:
+        // someone could borrow from a vault and transfer its debt to a `VaultManager` contract where debt repayment will
+        // be cheaper: in which case we're making people pay the delta
+        uint256 _repayFee;
+        if (repayFee > senderRepayFee) {
+            _repayFee = repayFee - senderRepayFee;
         }
-        _repayDebt(vaultID, stablecoinAmount, 0);
+        // Checking the delta of borrow fees to eliminate the risk of exploits here: a similar thing could happen: people
+        // could mint from where it is cheap to mint and then transfer their debt to places where it is more expensive
+        // to mint
+        uint256 _borrowFee;
+        if (senderBorrowFee > borrowFee) {
+            _borrowFee = senderBorrowFee - borrowFee;
+        }
+        // Getting debt out of a vault is equivalent to repaying a portion of your debt: a fee should be paid for this
+        // We're taking the highest of the two repay fees to avoid exploits
+        uint256 stablecoinAmountLessFeePaid = (stablecoinAmount *
+            (BASE_PARAMS - _repayFee) *
+            (BASE_PARAMS - _borrowFee)) / (BASE_PARAMS**2);
+        surplus += stablecoinAmount - stablecoinAmountLessFeePaid;
+        _repayDebt(vaultID, stablecoinAmountLessFeePaid, 0);
     }
 
     // ============================= View Functions ================================
@@ -368,11 +384,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         uint256 newInterestAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) returns (uint256, uint256) {
         Vault memory vault = vaultData[vaultID];
-        // Optimize for gas here
         (uint256 healthFactor, uint256 currentDebt, ) = _isSolvent(vault, oracleValue, newInterestAccumulator);
         require(healthFactor > BASE_PARAMS, "21");
+        totalNormalizedDebt -= vault.normalizedDebt;
         _burn(vaultID);
-        return (currentDebt, vault.collateralAmount);
+        uint256 currentDebtPlusRepayFee = (currentDebt * BASE_PARAMS) / (BASE_PARAMS - repayFee);
+        surplus += currentDebtPlusRepayFee - currentDebt;
+        return (currentDebtPlusRepayFee, vault.collateralAmount);
     }
 
     /// @notice Increases the collateral balance of a vault
@@ -424,7 +442,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param vaultManager Address of the `VaultManager` where the targeted vault is
     /// @param dstVaultID ID of the vault in the target contract
     /// @param stablecoinAmount Amount of stablecoins to grow the debt of. This amount will be converted
-    /// to a normalized value in both vaultManager contracts
+    /// to a normalized value in both `VaultManager` contracts
     /// @param oracleValue Oracle value at the start of the call (potentially zero if it has not been computed yet)
     /// @param newInterestAccumulator Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
@@ -442,12 +460,13 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         // The `stablecoinAmount` needs to be rounded down in the `_increaseDebt` function to reduce the room for exploits
         stablecoinAmount = _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestAccumulator);
         if (address(vaultManager) == address(this)) {
+            // No repayFees taken in this case, otherwise the same stablecoin may end up paying fees twice
             _repayDebt(dstVaultID, stablecoinAmount, newInterestAccumulator);
         } else {
             // No need to check the integrity of `VaultManager` here because `_getDebtIn` can be entered only through the
             // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
             // would get their debt increasing in the current vault without decreasing it in the remote vault.
-            vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee);
+            vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee, repayFee);
         }
     }
 
@@ -650,7 +669,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
             // In this case, `stablecoinAmountToReceive` is still rounded up
             if (vault.collateralAmount <= collateralReleased) {
                 collateralReleased = vault.collateralAmount;
-                // remove all the vault's debt (debt repayed + bad debt) from VaultManager totalDebt
+                // Remove all the vault's debt (debt repayed + bad debt) from VaultManager totalDebt
                 totalNormalizedDebt -= vault.normalizedDebt;
                 // Reinitializing the `vaultID`: we're not burning the vault in this case for integration purposes
                 delete vaultData[vaultIDs[i]];
@@ -736,7 +755,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     1;
                 // In this case the threshold amount is such that it leaves just enough dust
                 // This line cannot underflow as long as the  `dust` parameter is constant: it is always checked that
-                // the debt is greater than the  `dust`. If the  `dust` was to increase due to an implementation upgrade
+                // the debt is greater than the  `dust`. If the `dust` was to increase due to an implementation upgrade
                 // we would need to add some extra checks to avoid underflows
                 // Here the `thresholdRepayAmount` is also rounded down: which means that if a liquidator repays this amount
                 // then there would be more than `dust` left in the vault
@@ -799,22 +818,28 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
     /// the HF and therefore increase the discount between each time
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
-        if (what == "collateralFactor") {
+        if (what == "CF") {
             require(param <= liquidationSurcharge, "9");
             collateralFactor = param;
-        } else if (what == "targetHealthFactor") {
+        } else if (what == "THF") {
             require(param >= BASE_PARAMS, "17");
             targetHealthFactor = param;
-        } else if (what == "borrowFee") {
+        } else if (what == "BF") {
             require(param <= BASE_PARAMS, "9");
             borrowFee = param;
-        } else if (what == "interestRate") {
+        } else if (what == "RF") {
+            // As liquidation surcharge is stored as `1-fee` and as we need `repayFee` to be smaller
+            // then the liquidation surcharge, then we need to have:
+            // `liquidationSurcharge <= BASE_PARAMS - repayFee` and as such `liquidationSurcharge + repayFee <= BASE_PARAMS`
+            require(param + liquidationSurcharge <= BASE_PARAMS, "9");
+            repayFee = param;
+        } else if (what == "IR") {
             _accrue();
             interestRate = param;
-        } else if (what == "liquidationSurcharge") {
-            require(collateralFactor <= param && param <= BASE_PARAMS, "18");
+        } else if (what == "LS") {
+            require(collateralFactor <= param && param + repayFee <= BASE_PARAMS, "18");
             liquidationSurcharge = param;
-        } else if (what == "maxLiquidationDiscount") {
+        } else if (what == "MLD") {
             require(param < BASE_PARAMS, "9");
             maxLiquidationDiscount = param;
         } else {
@@ -856,35 +881,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }
 
-    /// @notice Toggles permission for owning vaults by any account
-    function toggleWhitelisting() external onlyGovernor {
-        bool flag = !whitelistingActivated;
-        whitelistingActivated = flag;
-        emit ToggledWhitelisting(flag);
-    }
-
-    /// @notice Changes the whitelisting of an address
-    /// @param target Address to toggle
-    function toggleWhitelist(address target) external onlyGovernor {
-        isWhitelisted[target] = !isWhitelisted[target];
-    }
-
-    /// @notice Changes the reference to the oracle contract used to get the price of the oracle
-    /// @param _oracle Reference to the oracle contract
-    function setOracle(address _oracle) external onlyGovernor {
-        require(IOracle(_oracle).treasury() == treasury, "33");
-        oracle = IOracle(_oracle);
-        emit OracleUpdated(_oracle);
-    }
-
-    /// @inheritdoc IVaultManagerFunctions
-    function setTreasury(address _treasury) external onlyTreasury {
-        treasury = ITreasury(_treasury);
-        // This function makes sure to propagate the change to the associated contract
-        // even though a single oracle contract could be used in different places
-        oracle.setTreasury(_treasury);
-    }
-
     /// @notice Pauses external permissionless functions of the contract
     function togglePause() external onlyGovernorOrGuardian {
         paused = !paused;
@@ -893,5 +889,32 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @notice Changes the ERC721 metadata URI
     function setBaseURI(string memory baseURI_) external onlyGovernorOrGuardian {
         _baseURI = baseURI_;
+    }
+
+    /// @notice Changes the whitelisting of an address
+    /// @param target Address to toggle
+    /// @dev If the `target` address is the zero address then this function toggles whitelisting
+    /// for all addresses
+    function toggleWhitelist(address target) external onlyGovernor {
+        if (target != address(0)) {
+            isWhitelisted[target] = !isWhitelisted[target];
+        } else {
+            whitelistingActivated = !whitelistingActivated;
+        }
+    }
+
+    /// @notice Changes the reference to the oracle contract used to get the price of the oracle
+    /// @param _oracle Reference to the oracle contract
+    function setOracle(address _oracle) external onlyGovernor {
+        require(IOracle(_oracle).treasury() == treasury, "33");
+        oracle = IOracle(_oracle);
+    }
+
+    /// @inheritdoc IVaultManagerFunctions
+    function setTreasury(address _treasury) external onlyTreasury {
+        treasury = ITreasury(_treasury);
+        // This function makes sure to propagate the change to the associated contract
+        // even though a single oracle contract could be used in different places
+        oracle.setTreasury(_treasury);
     }
 }

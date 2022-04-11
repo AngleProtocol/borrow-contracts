@@ -122,6 +122,7 @@ contract('ReactorEuler', () => {
       lowerCF,
       targetCF,
       upperCF,
+      0,
     );
     // await reactor.connect(guardian).changeAllowance(ethers.constants.MaxUint256);
     await agEUR.connect(bob).approve(eulerMarketA.address, ethers.constants.MaxUint256);
@@ -264,7 +265,7 @@ contract('ReactorEuler', () => {
     const sharesAmount = parseUnits('1', collatBase);
     it('success - set interest rate to 0', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -291,7 +292,7 @@ contract('ReactorEuler', () => {
     });
     it('success - no need to withdraw from Euler', async () => {
       const sharesAmountBob = parseUnits('10', collatBase);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -311,7 +312,7 @@ contract('ReactorEuler', () => {
     });
     it('success - over the upperCF but poolSize too small', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -325,7 +326,7 @@ contract('ReactorEuler', () => {
     it('success - withdraw under the upperCF', async () => {
       const sharesAmountBob = parseUnits('10', collatBase);
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -340,7 +341,7 @@ contract('ReactorEuler', () => {
     it('success - over the upperCF but not reaching the dust', async () => {
       const sharesAmountBob = parseUnits('0.2', collatBase);
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
-      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
       await ANGLE.connect(alice).mint(alice.address, sharesAmount);
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
@@ -392,6 +393,125 @@ contract('ReactorEuler', () => {
       await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
       const loss = parseUnits('0.4', 18).add(vaultDebt.sub(parseUnits('0.8', 18)));
       expectApproxDelta(await reactor.connect(alice).currentLoss(), loss, parseUnits('1', PRECISION));
+    });
+    it('success - profit with a non null protocol interest share', async () => {
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a gain on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('2', 18));
+      await agEUR.connect(bob).mint(eulerMarketA.address, parseUnits('100', 18));
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      await reactor.connect(governor).setUint64(0.5e9, formatBytes32String('protocolInterestShare'));
+      await reactor.connect(alice).redeem(sharesAmount, alice.address, alice.address);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(vaultDebt.div(2).add(1));
+      expect(await reactor.protocolInterestAccumulated()).to.be.equal(vaultDebt.div(2));
+    });
+    it('success - loss with a non null protocol interest share', async () => {
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a loss on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('0.5', 18));
+      await agEUR.connect(bob).mint(eulerMarketA.address, parseUnits('100', 18));
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      await reactor.connect(governor).setUint64(0.5e9, formatBytes32String('protocolInterestShare'));
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      // You can only withdraw half of what you had in this case
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);
+      expect(await reactor.protocolDebt()).to.be.equal(vaultDebt.div(4).add(1));
+      expect(await reactor.currentLoss()).to.be.equal(vaultDebt.div(4).add(1));
+    });
+
+    it('success - profit with a non null protocol interest share and a small loss already accumulated', async () => {
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a loss on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('0.5', 18));
+      await agEUR.connect(bob).mint(eulerMarketA.address, parseUnits('100', 18));
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      await reactor.connect(governor).setUint64(0.5e9, formatBytes32String('protocolInterestShare'));
+
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      // You can only withdraw half of what you had in this case
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);
+      expect(await reactor.protocolDebt()).to.be.equal(vaultDebt.div(4).add(1));
+      expect(await reactor.currentLoss()).to.be.equal(vaultDebt.div(4).add(1));
+      expect(await reactor.protocolInterestAccumulated()).to.be.equal(0);
+      // Only dust is left in the protocol
+      // Alice has 0.5 shares now -> minting so that she has 1.5
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a gain on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('2', 18));
+      await reactor.connect(alice).redeem(sharesAmount, alice.address, alice.address);
+      expect(await reactor.currentLoss()).to.be.equal(0);
+      // Previous loss was 0.2 -> and there are still 0.8 stablecoins out there, so 3.2 after gain is realized -> new gain
+      // is hence 2.4 which divided by 2 makes a protocol gain of 1.2 to offset the loss of 0.2 -> so it's 1 eventually
+      expectApprox(await reactor.protocolInterestAccumulated(), parseEther('1'), 0.1);
+      expectApprox(await agEUR.balanceOf(alice.address), parseEther('1'), 0.1);
+    });
+
+    it('success - profit with a non null protocol interest share and a big loss already accumulated', async () => {
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a loss on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('0.5', 18));
+      await agEUR.connect(bob).mint(eulerMarketA.address, parseUnits('100', 18));
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      await reactor.connect(governor).setUint64(0.5e9, formatBytes32String('protocolInterestShare'));
+
+      await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
+      // You can only withdraw half of what you had in this case
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);
+      expect(await reactor.protocolDebt()).to.be.equal(vaultDebt.div(4).add(1));
+      expect(await reactor.currentLoss()).to.be.equal(vaultDebt.div(4).add(1));
+      expect(await reactor.protocolInterestAccumulated()).to.be.equal(0);
+      // Only dust is left in the protocol
+      // Alice has 0.5 shares now -> minting so that she has 1.5
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a gain on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('0.6', 18));
+      await reactor.connect(alice).redeem(sharesAmount, alice.address, alice.address);
+      // Previous loss was 0.2 -> and there are still 0.8 stablecoins out there, so 0.96 after gain is realized -> new gain
+      // is hence 0.18 which divided by 2 makes a protocol gain of 0.09 to offset the loss of 0.2
+      expect(await reactor.protocolInterestAccumulated()).to.be.equal(0);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(0);
+      expectApprox(await reactor.protocolDebt(), parseEther('0.12'), 0.01);
+      expectApprox(await reactor.currentLoss(), parseEther('0.12'), 0.01);
+    });
+
+    it('success - small loss after a big profit with a non null protocol interest share', async () => {
+      await vaultManager.connect(governor).setUint64(ethers.constants.AddressZero, formatBytes32String('IR'));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      // fake a gain on Euler markets
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('2', 18));
+      await agEUR.connect(bob).mint(eulerMarketA.address, parseUnits('100', 18));
+      const vaultDebt = await vaultManager.getVaultDebt(1);
+      await reactor.connect(governor).setUint64(0.5e9, formatBytes32String('protocolInterestShare'));
+      await reactor.connect(alice).redeem(sharesAmount, alice.address, alice.address);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(vaultDebt.div(2).add(1));
+      // Gain is 0.4
+      expect(await reactor.protocolInterestAccumulated()).to.be.equal(vaultDebt.div(2));
+      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
+      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
+      await reactor.connect(alice).mint(sharesAmount, alice.address);
+      await eulerMarketA.connect(bob).setInterestRateAccumulator(parseUnits('1.5', 18));
+      // Here there are 1.2 stablecoins and a loss of 0.3 on it -> so 0.15 less
+      await reactor.connect(alice).redeem(sharesAmount.div(2), alice.address, alice.address);
+      expect(await reactor.protocolInterestAccumulated()).to.be.equal(vaultDebt.div(2).sub(parseEther('0.15')));
+      expectApprox(await reactor.currentLoss(), parseEther('0.15'), 0.001);
     });
   });
 });

@@ -65,8 +65,12 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     uint64 public collateralFactor;
     /// @notice Maximum Health factor at which a vault can end up after a liquidation (unless it's fully liquidated)
     uint64 public targetHealthFactor;
-    /// @notice Upfront fee taken when borrowing stablecoins
+    /// @notice Upfront fee taken when borrowing stablecoins: this fee is optional and should in practice not be used
     uint64 public borrowFee;
+    /// @notice Upfront fee taken when repaying stablecoins: this fee is optional as well. It should be smaller
+    /// than the liquidation surcharge (cf below) to avoid exploits where people voluntarily get liquidated at a 0
+    /// discount to pay smaller repaying fees
+    uint64 public repayFee;
     /// @notice Per second interest taken to borrowers taking agToken loans
     uint64 public interestRate;
     /// @notice Fee taken by the protocol during a liquidation. Technically, this value is not the fee per se, it's 1 - fee.
@@ -134,8 +138,6 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event DebtCeilingUpdated(uint256 debtCeiling);
     event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
     event LiquidatedVaults(uint256[] vaultIDs);
-    event OracleUpdated(address indexed _oracle);
-    event ToggledWhitelisting(bool);
 
     /// @param _dust Minimum amount of debt a vault from this implementation can have
     /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation

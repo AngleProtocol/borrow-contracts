@@ -130,6 +130,7 @@ contract('Reactor', () => {
       lowerCF,
       targetCF,
       upperCF,
+      0,
     );
 
     reactorClaimable = (await deployUpgradeable(new MockReactor__factory(deployer))) as MockReactor;
@@ -140,9 +141,10 @@ contract('Reactor', () => {
       lowerCF,
       targetCF,
       upperCF,
+      0,
     );
+    await vaultManager.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
   });
-
   describe('initialization', () => {
     it('success - correct state and references', async () => {
       expect(await reactor.lowerCF()).to.be.equal(lowerCF);
@@ -157,11 +159,13 @@ contract('Reactor', () => {
       expect(await vaultManager.ownerOf(1)).to.be.equal(reactor.address);
       expect(await ANGLE.decimals()).to.be.equal(collatBase);
       expect(await agEUR.isMinter(vaultManager.address)).to.be.equal(true);
+      expect(await reactor.surplusManager()).to.be.equal(ZERO_ADDRESS);
+      expect(await reactor.protocolInterestShare()).to.be.equal(0);
     });
     it('reverts - invalid collateral factor values', async () => {
       reactor = (await deployUpgradeable(new Reactor__factory(deployer))) as Reactor;
       await expect(
-        reactor.initialize('ANGLE/agEUR Reactor', 'ANGLE/agEUR Reactor', vaultManager.address, 0, targetCF, upperCF),
+        reactor.initialize('ANGLE/agEUR Reactor', 'ANGLE/agEUR Reactor', vaultManager.address, 0, targetCF, upperCF, 0),
       ).to.be.revertedWith('15');
       await expect(
         reactor.initialize(
@@ -171,6 +175,7 @@ contract('Reactor', () => {
           upperCF,
           targetCF,
           upperCF,
+          0,
         ),
       ).to.be.revertedWith('15');
       await expect(
@@ -181,6 +186,7 @@ contract('Reactor', () => {
           lowerCF,
           targetCF,
           lowerCF,
+          0,
         ),
       ).to.be.revertedWith('15');
       await expect(
@@ -191,10 +197,30 @@ contract('Reactor', () => {
           lowerCF,
           params.collateralFactor,
           upperCF,
+          0,
         ),
       ).to.be.revertedWith('15');
       await expect(
-        reactor.initialize('ANGLE/agEUR Reactor', 'ANGLE/agEUR Reactor', vaultManager.address, lowerCF, targetCF, 1e9),
+        reactor.initialize(
+          'ANGLE/agEUR Reactor',
+          'ANGLE/agEUR Reactor',
+          vaultManager.address,
+          lowerCF,
+          targetCF,
+          1e9,
+          0,
+        ),
+      ).to.be.revertedWith('15');
+      await expect(
+        reactor.initialize(
+          'ANGLE/agEUR Reactor',
+          'ANGLE/agEUR Reactor',
+          vaultManager.address,
+          lowerCF,
+          targetCF,
+          upperCF,
+          2e9,
+        ),
       ).to.be.revertedWith('15');
     });
   });
@@ -397,6 +423,19 @@ contract('Reactor', () => {
     });
   });
 
+  describe('setSurplusManager', () => {
+    it('reverts - access control', async () => {
+      await expect(reactor.connect(alice).setSurplusManager(alice.address)).to.be.revertedWith('2');
+    });
+    it('reverts - zero address', async () => {
+      await expect(reactor.connect(guardian).setSurplusManager(ZERO_ADDRESS)).to.be.revertedWith('0');
+    });
+    it('success - variable updated', async () => {
+      await reactor.connect(guardian).setSurplusManager(alice.address);
+      expect(await reactor.surplusManager()).to.be.equal(alice.address);
+    });
+  });
+
   describe('setUint64', () => {
     it('reverts - access control', async () => {
       await expect(reactor.connect(alice).setUint64(lowerCF, formatBytes32String('lowerCF'))).to.be.revertedWith('2');
@@ -429,6 +468,16 @@ contract('Reactor', () => {
         what: formatBytes32String('upperCF'),
       });
     });
+    it('success - protocolInterestShare', async () => {
+      const receipt = await (
+        await reactor.connect(governor).setUint64(0.7e9, formatBytes32String('protocolInterestShare'))
+      ).wait();
+      expect(await reactor.protocolInterestShare()).to.be.equal(0.7e9);
+      inReceipt(receipt, 'FiledUint64', {
+        param: 0.7e9,
+        what: formatBytes32String('protocolInterestShare'),
+      });
+    });
     it('reverts - invalid lowerCF', async () => {
       await expect(reactor.connect(governor).setUint64(0.6e9, formatBytes32String('lowerCF'))).to.be.revertedWith('18');
       await expect(reactor.connect(governor).setUint64(0, formatBytes32String('lowerCF'))).to.be.revertedWith('18');
@@ -440,6 +489,11 @@ contract('Reactor', () => {
     it('reverts - invalid upperCF', async () => {
       await expect(reactor.connect(governor).setUint64(1e9, formatBytes32String('upperCF'))).to.be.revertedWith('18');
       await expect(reactor.connect(governor).setUint64(0, formatBytes32String('upperCF'))).to.be.revertedWith('18');
+    });
+    it('reverts - invalid protocolInterestShare', async () => {
+      await expect(
+        reactor.connect(governor).setUint64(2e9, formatBytes32String('protocolInterestShare')),
+      ).to.be.revertedWith('18');
     });
     it('reverts - invalid parameter', async () => {
       await expect(reactor.connect(governor).setUint64(1e9, formatBytes32String('wrong message'))).to.be.revertedWith(
@@ -470,6 +524,65 @@ contract('Reactor', () => {
     });
   });
 
+  describe('pullProtocolFees', () => {
+    it('reverts - zero address', async () => {
+      await expect(reactor.pullProtocolFees(ZERO_ADDRESS)).to.be.revertedWith('0');
+    });
+    it('reverts - not guardian', async () => {
+      await expect(reactor.connect(alice).pullProtocolFees(alice.address)).to.be.revertedWith('2');
+    });
+    it('success - when zero available', async () => {
+      await reactor.connect(guardian).pullProtocolFees(alice.address);
+    });
+    it('success - when some available and guardian', async () => {
+      await reactorClaimable.increaseAccumulator(parseEther('1'));
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
+      await treasury.addMinter(agEUR.address, alice.address);
+      await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
+      await reactorClaimable.connect(guardian).pullProtocolFees(alice.address);
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(0);
+      expect(await agEUR.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+    });
+    it('success - when some available and surplusManager', async () => {
+      await reactorClaimable.connect(guardian).setSurplusManager(bob.address);
+      await reactorClaimable.increaseAccumulator(parseEther('1'));
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
+      await treasury.addMinter(agEUR.address, alice.address);
+      await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
+      await reactorClaimable.connect(alice).pullProtocolFees(bob.address);
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(0);
+      expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('1'));
+    });
+    it('success - when some available and surplusManager and guardian', async () => {
+      await reactorClaimable.connect(guardian).setSurplusManager(bob.address);
+      await reactorClaimable.increaseAccumulator(parseEther('1'));
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
+      await treasury.addMinter(agEUR.address, alice.address);
+      await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
+      await reactorClaimable.connect(guardian).pullProtocolFees(bob.address);
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(0);
+      expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('1'));
+    });
+    it('reverts - when not enough funds', async () => {
+      await reactorClaimable.connect(guardian).setSurplusManager(bob.address);
+      await reactorClaimable.increaseAccumulator(parseEther('1'));
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
+      await treasury.addMinter(agEUR.address, alice.address);
+      await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('0.5'));
+      await expect(reactorClaimable.connect(guardian).pullProtocolFees(bob.address)).to.be.reverted;
+    });
+    it('success - when less is pulled than interest accumulated', async () => {
+      await reactorClaimable.connect(guardian).setSurplusManager(bob.address);
+      await reactorClaimable.setMultiplier(0.3e9);
+      await reactorClaimable.increaseAccumulator(parseEther('1'));
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
+      await treasury.addMinter(agEUR.address, alice.address);
+      await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
+      await reactorClaimable.connect(guardian).pullProtocolFees(bob.address);
+      expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('0.7'));
+      expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('0.3'));
+    });
+  });
   describe('mint', () => {
     const sharesAmount = parseUnits('1', collatBase);
     beforeEach(async () => {
@@ -478,7 +591,6 @@ contract('Reactor', () => {
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       lastTime = await latestTime();
     });
-
     it('success - added collateral to vault', async () => {
       await displayReactorState(reactor, log);
       expect(await ANGLE.balanceOf(reactor.address)).to.be.equal(0);
@@ -495,12 +607,13 @@ contract('Reactor', () => {
       const sharesAmount = parseUnits('1', collatBase);
       await ANGLE.connect(alice).mint(alice.address, sharesAmount.mul(100));
       await ANGLE.connect(alice).approve(reactor.address, sharesAmount.mul(100));
-      // Shares amount is consumed
+      // Shares amount is consumed -> debt is now 0.8
       expectApprox(await vaultManager.getVaultDebt(1), sharesAmount.mul(2).mul(targetCF), 0.00001);
       await treasury.addMinter(agEUR.address, bob.address);
       await agEUR.connect(bob).mint(bob.address, parseEther('1'));
       // To make a gain we need to repay debt on behalf of the vault
       await angle(vaultManager, bob, [repayDebt(1, parseEther('1'))]);
+      expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
       await reactor.connect(alice).mint(sharesAmount, alice.address);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount.mul(99));
       expect(await reactor.lastDebt()).to.be.equal(parseEther('1.44'));
@@ -549,12 +662,10 @@ contract('Reactor', () => {
       expect(await reactor.rewardsAccumulator()).to.be.equal(
         BigNumber.from((await latestTime()) - lastTime).mul(sharesAmount),
       );
-      expectApprox(
-        await vaultManager.getVaultDebt(1),
-        sharesAmount.add(secondSharesAmount).mul(2).mul(targetCF),
-        0.00001,
-      );
+      const sum = sharesAmount.add(secondSharesAmount);
+      expectApprox(await vaultManager.getVaultDebt(1), sum.mul(2).mul(targetCF), 0.00001);
     });
+
     it('success - second mint to a different address', async () => {
       const secondSharesAmount = sharesAmount;
       await ANGLE.connect(alice).mint(alice.address, secondSharesAmount);
@@ -636,7 +747,6 @@ contract('Reactor', () => {
       );
     });
   });
-
   describe('rebalance', () => {
     const sharesAmount = parseUnits('1', collatBase);
     beforeEach(async () => {

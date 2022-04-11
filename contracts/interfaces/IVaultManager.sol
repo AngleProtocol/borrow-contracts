@@ -15,7 +15,6 @@ struct VaultParameters {
     uint256 debtCeiling;
     uint64 collateralFactor;
     uint64 targetHealthFactor;
-    uint64 borrowFee;
     uint64 interestRate;
     uint64 liquidationSurcharge;
     uint64 maxLiquidationDiscount;
@@ -109,11 +108,14 @@ interface IVaultManagerFunctions {
     /// internal debt amount
     /// @param senderBorrowFee Borrowing fees from the contract which requested this: this is to make sure that people are not
     /// arbitraging difference in minting fees
+    /// @param senderRepayFee Repay fees from the contract which requested this: this is to make sure that people are not arbitraging
+    /// differences in repay fees
     /// @dev This function can only be called from a vaultManager registered in the same Treasury
     function getDebtOut(
         uint256 vaultID,
         uint256 amountStablecoins,
-        uint256 senderBorrowFee
+        uint256 senderBorrowFee,
+        uint256 senderRepayFee
     ) external;
 
     /// @notice Gets the current debt of a vault

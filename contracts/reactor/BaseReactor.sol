@@ -25,7 +25,8 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         IVaultManager _vaultManager,
         uint64 _lowerCF,
         uint64 _targetCF,
-        uint64 _upperCF
+        uint64 _upperCF,
+        uint64 _protocolInterestShare
     ) internal initializer {
         __ERC20_init(_name, _symbol);
         vaultManager = _vaultManager;
@@ -44,12 +45,14 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             0 < _lowerCF &&
                 _lowerCF <= _targetCF &&
                 _targetCF <= _upperCF &&
-                _upperCF <= _vaultManager.collateralFactor(),
+                _upperCF <= _vaultManager.collateralFactor() &&
+                _protocolInterestShare <= BASE_PARAMS,
             "15"
         );
         lowerCF = _lowerCF;
         targetCF = _targetCF;
         upperCF = _upperCF;
+        protocolInterestShare = _protocolInterestShare;
 
         asset.approve(address(vaultManager), type(uint256).max);
     }
@@ -547,10 +550,18 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         } else if (what == "upperCF") {
             require(targetCF <= param && param <= vaultManager.collateralFactor(), "18");
             upperCF = param;
+        } else if (what == "protocolInterestShare") {
+            require(param <= BASE_PARAMS, "18");
+            protocolInterestShare = param;
         } else {
             revert("43");
         }
         emit FiledUint64(param, what);
+    }
+
+    function setSurplusManager(address _newSurplusManager) external onlyGovernorOrGuardian {
+        require(_newSurplusManager != address(0), "0");
+        surplusManager = _newSurplusManager;
     }
 
     /// @notice Allows to recover any ERC20 token, including the asset managed by the reactor
@@ -568,6 +579,20 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }
+
+    /// @notice Pulls the fees accumulated by the protocol from its strategies
+    /// @param to Address to which tokens should be sent
+    function pullProtocolFees(address to) external {
+        require(to != address(0), "0");
+        if (to != surplusManager) {
+            require(treasury.isGovernorOrGuardian(msg.sender), "2");
+        }
+        uint256 amountToRecover = protocolInterestAccumulated;
+        uint256 amountAvailable = _pull(amountToRecover);
+        amountToRecover = amountToRecover <= amountAvailable ? amountToRecover : amountAvailable;
+        protocolInterestAccumulated -= amountToRecover;
+        stablecoin.transfer(to, amountToRecover);
+    }
 }
 
 contract Reactor is BaseReactor {
@@ -577,8 +602,9 @@ contract Reactor is BaseReactor {
         IVaultManager _vaultManager,
         uint64 _lowerCF,
         uint64 _targetCF,
-        uint64 _upperCF
+        uint64 _upperCF,
+        uint64 _protocolInterestShare
     ) external {
-        _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF);
+        _initialize(_name, _symbol, _vaultManager, _lowerCF, _targetCF, _upperCF, _protocolInterestShare);
     }
 }

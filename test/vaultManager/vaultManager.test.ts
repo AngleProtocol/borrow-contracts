@@ -123,7 +123,9 @@ contract('VaultManager', () => {
     oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
+    await vaultManager.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
   });
+
   describe('oracle', () => {
     it('success - read', async () => {
       const oracle = (await ethers.getContractAt(Oracle__factory.abi, await vaultManager.oracle())) as Oracle;
@@ -158,7 +160,7 @@ contract('VaultManager', () => {
     });
 
     it('reverts - not whitelisted', async () => {
-      await vaultManager.connect(governor).toggleWhitelisting();
+      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
       await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
     });
     it('reverts - unknown action', async () => {
@@ -170,7 +172,7 @@ contract('VaultManager', () => {
     });
 
     it('success - whitelisted', async () => {
-      await vaultManager.connect(governor).toggleWhitelisting();
+      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
       await vaultManager.connect(governor).toggleWhitelist(alice.address);
       await angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
       expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
@@ -178,6 +180,7 @@ contract('VaultManager', () => {
       expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
     });
   });
+
   describe('closeVault', () => {
     it('reverts - should be liquidated', async () => {
       const collatAmount = parseUnits('2', collatBase);
@@ -193,6 +196,186 @@ contract('VaultManager', () => {
       await oracle.update(parseEther('0.9'));
       await expect(angle(vaultManager, alice, [closeVault(2)])).to.be.revertedWith('21');
     });
+    it('success - totalNormalizedDebt updated and 0 borrow fee', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(await vaultManager.totalNormalizedDebt());
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
+      expectApprox(await vaultManager.totalNormalizedDebt(), borrowAmount, 0.1);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(borrowAmount.sub(1));
+      const collateralBalance = await collateral.balanceOf(alice.address);
+      await angle(vaultManager, alice, [closeVault(2)]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(0);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
+      await expect(vaultManager.ownerOf(2)).to.be.revertedWith('26');
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(collateralBalance.add(collatAmount));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(0);
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(1);
+    });
+    it('success - with repay fees 1/3', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('RF'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(await vaultManager.totalNormalizedDebt());
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
+      expectApprox(await vaultManager.totalNormalizedDebt(), borrowAmount, 0.1);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('10').add(borrowAmount).sub(1));
+      const collateralBalance = await collateral.balanceOf(alice.address);
+      await angle(vaultManager, alice, [closeVault(2)]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(0);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
+      await expect(vaultManager.ownerOf(2)).to.be.revertedWith('26');
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(collateralBalance.add(collatAmount));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('10').sub(borrowAmount).add(1));
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(1);
+      expect(await vaultManager.surplus()).to.be.equal(borrowAmount.sub(1));
+    });
+    it('success - with repay fees 2/3', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.005e9, formatBytes32String('RF'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(await vaultManager.totalNormalizedDebt());
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
+      expectApprox(await vaultManager.totalNormalizedDebt(), borrowAmount, 0.1);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('10').add(borrowAmount).sub(1));
+      const collateralBalance = await collateral.balanceOf(alice.address);
+      await angle(vaultManager, alice, [closeVault(2)]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(0);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
+      await expect(vaultManager.ownerOf(2)).to.be.revertedWith('26');
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(collateralBalance.add(collatAmount));
+      // Balance was 11 -> now repaying 1/0.995
+      expectApprox(await agToken.balanceOf(alice.address), parseEther('10').sub(parseEther('0.00502513')).add(1), 0.01);
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(1);
+      expectApprox(await vaultManager.surplus(), parseEther('0.00502513'), 0.01);
+    });
+    it('success - with repay fees 3/3', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.001e9, formatBytes32String('RF'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(await vaultManager.totalNormalizedDebt());
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
+      expectApprox(await vaultManager.totalNormalizedDebt(), borrowAmount, 0.1);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('10').add(borrowAmount).sub(1));
+      const collateralBalance = await collateral.balanceOf(alice.address);
+      await angle(vaultManager, alice, [closeVault(2)]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(0);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
+      await expect(vaultManager.ownerOf(2)).to.be.revertedWith('26');
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(collateralBalance.add(collatAmount));
+      // Balance was 11 -> now repaying 1/0.999
+      expectApprox(await agToken.balanceOf(alice.address), parseEther('10').sub(parseEther('0.001001')).add(1), 0.01);
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(1);
+      expectApprox(await vaultManager.surplus(), parseEther('0.001001'), 0.01);
+    });
+
+    it('success - with everything composed and a year', async () => {
+      // 10% borrowing fee, 5% interest rate, 30% repaying fee
+      const yearlyRate = 1.05;
+      const ratePerSecond = yearlyRate ** (1 / (365 * 24 * 3600)) - 1;
+      await vaultManager
+        .connect(governor)
+        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.1e9, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.3e9, formatBytes32String('RF'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(await vaultManager.totalNormalizedDebt());
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
+      expectApprox(await vaultManager.totalNormalizedDebt(), borrowAmount, 0.1);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(
+        parseEther('10').add(borrowAmount.mul(0.9e1).div(1e1)),
+      );
+      expect(await vaultManager.getVaultDebt(2)).to.be.equal(borrowAmount.sub(1));
+      const collateralBalance = await collateral.balanceOf(alice.address);
+      // Rounding issues here
+      expect(await vaultManager.surplus()).to.be.equal(parseEther('0.1').sub(1));
+      await increaseTime(365 * 24 * 3600);
+      await angle(vaultManager, alice, [closeVault(2)]);
+      // Debt of the person is borrowAmount * (1.05) -> and this person will have to repay borrowAmount * 1.05 / (1-0.3)
+      // of stablecoins to close the position -> which makes 1.5 borrowAmount
+      expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(0);
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(0);
+      await expect(vaultManager.ownerOf(2)).to.be.revertedWith('26');
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(collateralBalance.add(collatAmount));
+      // Balance was 11 -> now repaying 1/0.999
+      expectApprox(
+        await agToken.balanceOf(alice.address),
+        parseEther('10').add(borrowAmount.mul(0.9e1).div(1e1)).sub(borrowAmount.mul(1.5e1).div(1e1)).add(1),
+        0.01,
+      );
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
+      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(1);
+      // Protocol
+      expectApprox(await vaultManager.surplus(), parseEther('0.1').add(parseEther('0.5')), 0.01);
+    });
+    // TODO getDebtIn, getDebtOut with different scenari in terms of borrow/repayFee
+    // TODO run coverage and see which tests e-2-e can be added
   });
 
   describe('addCollateral', () => {
@@ -264,7 +447,6 @@ contract('VaultManager', () => {
       );
     });
   });
-
   describe('borrow', () => {
     it('reverts - limit CF', async () => {
       // Collat amount in stable should be 4
@@ -346,7 +528,7 @@ contract('VaultManager', () => {
       const ratePerSecond = yearlyRate ** (1 / (365 * 24 * 3600)) - 1;
       await vaultManager
         .connect(governor)
-        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
+        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('IR'));
       await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
       expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       displayVaultState(vaultManager, 2, log, collatBase);
@@ -356,7 +538,7 @@ contract('VaultManager', () => {
       await increaseTime(365 * 24 * 3600);
       await vaultManager
         .connect(governor)
-        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
+        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('IR'));
       expectApprox(await vaultManager.surplus(), parseEther('0.29989'), 0.1);
       await angle(vaultManager, alice, [addCollateral(2, collatAmount.mul(2)), borrow(2, borrowAmount)]);
       expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
@@ -404,6 +586,33 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
       expectApprox(await vaultManager.surplus(), parseEther('0.19989'), 0.01);
       await expect(vaultManager.checkLiquidation(2, alice.address)).to.be.revertedWith('44');
+    });
+
+    it('success - check rounding and if it is always in the sense of the protocol', async () => {
+      // Collat amount in stable should be 4
+      // So max borrowable amount is 2
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('RF'));
+      const collatAmount = parseUnits('100000', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(borrowAmount.sub(1));
+      expect(await vaultManager.getVaultDebt(2)).to.be.equal(borrowAmount.sub(1));
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      await expect(vaultManager.checkLiquidation(2, alice.address)).to.be.revertedWith('44');
+      await angle(vaultManager, alice, [borrow(2, borrowAmount)]);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(borrowAmount.mul(2).sub(2));
+      // Debt is here higher than the agToken balance which is the desired output
+      expect(await vaultManager.getVaultDebt(2)).to.be.equal(borrowAmount.mul(2).sub(1));
     });
   });
 
@@ -475,7 +684,109 @@ contract('VaultManager', () => {
         '24',
       );
     });
+    it('success - with repay fee in two tx', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('RF'));
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('2');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount.mul(2)),
+        borrow(2, borrowAmount),
+      ]);
+      const aliceBalance = await agToken.balanceOf(alice.address);
+      await angle(vaultManager, alice, [repayDebt(2, parseEther('1'))]);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(aliceBalance.sub(parseEther('2')));
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
+      expect(await vaultManager.surplus()).to.be.equal(parseEther('1'));
+    });
+    it('success - with repay fee in only one tx', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('RF'));
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('2');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      const aliceBalance = await agToken.balanceOf(alice.address);
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount.mul(2)),
+        borrow(2, borrowAmount),
+        repayDebt(2, parseEther('1')),
+      ]);
+      // Rounding issues here
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(
+        aliceBalance.add(borrowAmount).sub(parseEther('2').add(1)),
+      );
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
+      expect(await vaultManager.surplus()).to.be.equal(parseEther('1'));
+    });
+    it('success - with repay fee in one tx and some weird values 1/2', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.9e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.005e9, formatBytes32String('RF'));
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('2');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount.mul(2)),
+        borrow(2, borrowAmount),
+      ]);
+      const aliceBalance = await agToken.balanceOf(alice.address);
+      await angle(vaultManager, alice, [repayDebt(2, parseEther('1'))]);
+      // Address is going to repay 1/0.995 =
+      expectApprox(await agToken.balanceOf(alice.address), aliceBalance.sub(parseEther('1.005')), 0.001);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
+      expectApprox(await vaultManager.surplus(), parseEther('0.0050212'), 0.1);
+    });
+    it('success - with repay fee in one tx and some weird values 2/2', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.9e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.001e9, formatBytes32String('RF'));
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(alice.address, parseEther('10'));
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('2');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(2));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(2));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount.mul(2)),
+        borrow(2, borrowAmount),
+      ]);
+      const aliceBalance = await agToken.balanceOf(alice.address);
+      await angle(vaultManager, alice, [repayDebt(2, parseEther('1'))]);
+      // Address is going to repay 1/0.999 = 1.001001
+      expectApprox(await agToken.balanceOf(alice.address), aliceBalance.sub(parseEther('1.001001')), 0.001);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
+      expectApprox(await vaultManager.surplus(), parseEther('0.001001'), 0.1);
+    });
   });
+
   describe('getDebtIn', () => {
     it('success - same vaultManager', async () => {
       const collatAmount = parseUnits('2', collatBase);
@@ -515,6 +826,7 @@ contract('VaultManager', () => {
       )) as VaultManager;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
+      await vaultManager2.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
       await treasury.setVaultManager2(vaultManager2.address);
       await treasury.addMinter(agToken.address, vaultManager2.address);
       await collateral.connect(alice).approve(vaultManager2.address, collatAmount.mul(10));
@@ -573,11 +885,217 @@ contract('VaultManager', () => {
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
       expectApprox(await vaultManager2.surplus(), surplusPre.add(parseEther('0.1')), 0.1);
     });
+    it('success - same vaultManager and small borrow fee and repays all the debt', async () => {
+      await vaultManager.connect(governor).setUint64(0.1e9, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('RF'));
+      const collatAmount = parseUnits('10000', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+        // Need to borrow from another vault
+        addCollateral(1, collatAmount),
+      ]);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
+      expectApprox(await agToken.balanceOf(alice.address), parseEther('0.9'), 0.1);
+      await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expect(await vaultManager.getVaultDebt(2)).to.be.equal(0);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      expect(await vaultManager.surplus()).to.be.equal(parseEther('0.1').sub(1));
+    });
+    it('reverts - same vaultManager and small borrow fee but dust in the vault', async () => {
+      await vaultManager.connect(governor).setUint64(0.1e9, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('RF'));
+      const collatAmount = parseUnits('10000', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+        // Need to borrow from another vault
+        addCollateral(1, collatAmount),
+      ]);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
+      expectApprox(await agToken.balanceOf(alice.address), parseEther('0.9'), 0.1);
+      await expect(
+        angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1').sub(1))]),
+      ).to.be.revertedWith('24');
+    });
+
+    it('success - same vaultManager, no borrow fee but repay fee and nothing is done', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.1e9, formatBytes32String('RF'));
+      const collatAmount = parseUnits('10000', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+        // Need to borrow from another vault
+        addCollateral(1, collatAmount),
+      ]);
+      expect(await vaultManager.surplus()).to.be.equal(parseEther('0'));
+      expect(await vaultManager.getVaultDebt(2)).to.be.equal(parseEther('1').sub(1));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1').sub(1));
+      await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expect(await vaultManager.getVaultDebt(2)).to.be.equal(parseEther('0'));
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      expect(await vaultManager.surplus()).to.be.equal(0);
+    });
+
+    it('success - different vaultManagers, same borrow fee but repay fee higher in in vaultManager', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0.1e9, formatBytes32String('RF'));
+      const collatAmount = parseUnits('10000', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+      ]);
+      expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
+      const vaultManager2 = (await deployUpgradeable(
+        new VaultManager__factory(deployer),
+        0.1e9,
+        0.1e9,
+      )) as VaultManager;
+      await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
+      await vaultManager2.connect(guardian).togglePause();
+      await treasury.setVaultManager2(vaultManager2.address);
+      await treasury.addMinter(agToken.address, vaultManager2.address);
+      await collateral.connect(alice).approve(vaultManager2.address, collatAmount.mul(10));
+      await vaultManager2.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager2.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager2.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager2.connect(governor).setUint64(0, formatBytes32String('RF'));
+      await angle(vaultManager2, alice, [
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+        borrow(1, borrowAmount),
+      ]);
+      expect(await vaultManager2.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expectApprox(await vaultManager2.getVaultDebt(1), borrowAmount, 0.1);
+      await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expect(await vaultManager2.getVaultDebt(1)).to.be.equal(0);
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      expect(await vaultManager2.surplus()).to.be.equal(0);
+    });
+    it('success - different vaultManagers, same borrow fee but repay fee higher in out vaultManager', async () => {
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('RF'));
+      const collatAmount = parseUnits('10000', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+      ]);
+      expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
+      const vaultManager2 = (await deployUpgradeable(
+        new VaultManager__factory(deployer),
+        0.1e9,
+        0.1e9,
+      )) as VaultManager;
+      await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
+      await vaultManager2.connect(guardian).togglePause();
+      await treasury.setVaultManager2(vaultManager2.address);
+      await treasury.addMinter(agToken.address, vaultManager2.address);
+      await collateral.connect(alice).approve(vaultManager2.address, collatAmount.mul(10));
+      await vaultManager2.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager2.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager2.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager2.connect(governor).setUint64(0.1e9, formatBytes32String('RF'));
+      await angle(vaultManager2, alice, [
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+        borrow(1, borrowAmount),
+      ]);
+      expect(await vaultManager2.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expectApprox(await vaultManager2.getVaultDebt(1), borrowAmount, 0.1);
+      await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expect(await vaultManager2.getVaultDebt(1)).to.be.equal(parseEther('0.1'));
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      expect(await vaultManager2.surplus()).to.be.equal(parseEther('0.1'));
+    });
+    it('success - different vaultManagers, borrow fee and repay fee to be paid', async () => {
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('BF'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('RF'));
+      const collatAmount = parseUnits('10000', collatBase);
+      const borrowAmount = parseEther('1');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+      ]);
+      expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
+      expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
+      const vaultManager2 = (await deployUpgradeable(
+        new VaultManager__factory(deployer),
+        0.1e9,
+        0.1e9,
+      )) as VaultManager;
+      await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
+      await vaultManager2.connect(guardian).togglePause();
+      await treasury.setVaultManager2(vaultManager2.address);
+      await treasury.addMinter(agToken.address, vaultManager2.address);
+      await collateral.connect(alice).approve(vaultManager2.address, collatAmount.mul(10));
+      await vaultManager2.connect(governor).setUint64(0, formatBytes32String('BF'));
+      await vaultManager2.connect(governor).setUint64(0, formatBytes32String('IR'));
+      await vaultManager2.connect(governor).setUint64(0.5e9, formatBytes32String('LS'));
+      await vaultManager2.connect(governor).setUint64(0.1e9, formatBytes32String('RF'));
+      await angle(vaultManager2, alice, [
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+        borrow(1, borrowAmount),
+      ]);
+      expect(await vaultManager2.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expectApprox(await vaultManager2.getVaultDebt(1), borrowAmount, 0.1);
+      await angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]);
+      // So here: you need to pay 50% borrow fee and on top of that 10% repay fee -> in the end it's 0.45 left
+      expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
+      expect(await vaultManager2.getVaultDebt(1)).to.be.equal(parseEther('0.55'));
+      expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
+      expect(await vaultManager2.surplus()).to.be.equal(parseEther('0.55'));
+    });
   });
 
   describe('getDebtOut', () => {
     it('reverts - invalid sender', async () => {
-      await expect(vaultManager.getDebtOut(1, 0, 0)).to.be.revertedWith('3');
+      await expect(vaultManager.getDebtOut(1, 0, 0, 0)).to.be.revertedWith('3');
     });
   });
   describe('permit', () => {
@@ -1042,7 +1560,7 @@ contract('VaultManager', () => {
     });
 
     it('success - modified max discount', async () => {
-      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('maxLiquidationDiscount'));
+      await vaultManager.connect(governor).setUint64(0.5e9, formatBytes32String('MLD'));
       await oracle.update(parseEther('0.1'));
       expect((await vaultManager.checkLiquidation(2, bob.address)).discount).to.be.equal(1e9 - 0.5e9);
     });
@@ -1398,7 +1916,7 @@ contract('VaultManager', () => {
     });
     it('success - ratePerSecond is 0', async () => {
       const debt = await vaultManager.getTotalDebt();
-      await vaultManager.connect(governor).setUint64(0, formatBytes32String('interestRate'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('IR'));
 
       await increaseTime(1000);
 
@@ -1412,7 +1930,7 @@ contract('VaultManager', () => {
       await increaseTime(24 * 3600 * 365);
       await vaultManager
         .connect(governor)
-        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
+        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('IR'));
       // 15% of borrow amount after a year
       expectApprox(await vaultManager.surplus(), parseEther('0.15'), 0.01);
       expectApprox(await vaultManager.interestAccumulator(), parseUnits('1.05', 27), 0.001);
@@ -1429,7 +1947,7 @@ contract('VaultManager', () => {
       await increaseTime(24 * 3600 * 365 * 10);
       await vaultManager
         .connect(governor)
-        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('interestRate'));
+        .setUint64(parseUnits(ratePerSecond.toFixed(27), 27), formatBytes32String('IR'));
       // 10% of borrow amount after a year + 5% compounded for 10 years which makes 0.1 + 0.628
 
       expectApprox(await vaultManager.surplus(), parseEther('0.7278'), 0.01);
@@ -1792,7 +2310,7 @@ contract('VaultManager', () => {
       const collatAmount = parseUnits('2', collatBase);
       const borrowAmount = parseEther('1');
       // Setting 0 borrow fee
-      await vaultManager.connect(governor).setUint64(0, formatBytes32String('borrowFee'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
       expect(await vaultManager.borrowFee()).to.be.equal(0);
 
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
@@ -1833,7 +2351,7 @@ contract('VaultManager', () => {
       const collatAmount = parseUnits('2', collatBase);
       const borrowAmount = parseEther('1');
       // Setting 0 borrow fee
-      await vaultManager.connect(governor).setUint64(0, formatBytes32String('borrowFee'));
+      await vaultManager.connect(governor).setUint64(0, formatBytes32String('BF'));
       expect(await vaultManager.borrowFee()).to.be.equal(0);
 
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));

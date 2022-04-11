@@ -125,9 +125,9 @@ contract('VaultManager - ERC721', () => {
       await vaultManager.connect(guardian).togglePause();
       expect(await vaultManager.paused()).to.be.false;
 
-      await expect(vaultManager.connect(deployer).toggleWhitelisting()).to.be.reverted;
-      await expect(vaultManager.connect(guardian).toggleWhitelisting()).to.be.reverted;
-      await vaultManager.connect(governor).toggleWhitelisting();
+      await expect(vaultManager.connect(deployer).toggleWhitelist(ZERO_ADDRESS)).to.be.reverted;
+      await expect(vaultManager.connect(guardian).toggleWhitelist(ZERO_ADDRESS)).to.be.reverted;
+      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
       expect(await vaultManager.whitelistingActivated()).to.be.true;
     });
 
@@ -154,13 +154,6 @@ contract('VaultManager - ERC721', () => {
     it('reverts - liquidationSurcharge > 1', async () => {
       const auxPar = { ...params };
       auxPar.liquidationSurcharge = 1.0001e9;
-      const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
-      await expect(tx).to.be.revertedWith('15');
-    });
-
-    it('reverts - borrowFee > 1', async () => {
-      const auxPar = { ...params };
-      auxPar.borrowFee = 1.0001e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('15');
     });
@@ -407,7 +400,7 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - not whitelisted', async () => {
-        await vaultManager.connect(governor).toggleWhitelisting();
+        await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
         await expect(vaultManager.connect(alice).transferFrom(alice.address, bob.address, 2)).to.be.revertedWith('20');
       });
 
@@ -498,7 +491,7 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - not whitelisted', async () => {
-        await vaultManager.connect(governor).toggleWhitelisting();
+        await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
         await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
       });
     });
