@@ -100,12 +100,12 @@ contract('Treasury', () => {
   });
   describe('setSurplusForGovernance', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.setSurplusForGovernance(parseAmount.gwei(0.5))).to.be.revertedWith('1');
+      await expect(treasury.setSurplusForGovernance(parseAmount.gwei(0.5))).to.be.revertedWith('NotGovernor');
     });
     it('reverts - too high amount', async () => {
       await expect(
         treasury.connect(impersonatedSigners[governor]).setSurplusForGovernance(parseAmount.gwei(2)),
-      ).to.be.revertedWith('9');
+      ).to.be.revertedWith('TooHighParameterValue');
     });
     it('success - value updated', async () => {
       const receipt = await (
@@ -117,12 +117,15 @@ contract('Treasury', () => {
       });
     });
   });
+
   describe('addMinter', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.addMinter(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.addMinter(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - zero value', async () => {
-      await expect(treasury.connect(impersonatedSigners[governor]).addMinter(ZERO_ADDRESS)).to.be.revertedWith('0');
+      await expect(treasury.connect(impersonatedSigners[governor]).addMinter(ZERO_ADDRESS)).to.be.revertedWith(
+        'ZeroAddress',
+      );
     });
     it('success - minter added', async () => {
       await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
@@ -131,7 +134,7 @@ contract('Treasury', () => {
   });
   describe('addVaultManager', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.addVaultManager(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.addVaultManager(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - zero value', async () => {
       await expect(treasury.connect(impersonatedSigners[governor]).addVaultManager(ZERO_ADDRESS)).to.be.reverted;
@@ -140,7 +143,7 @@ contract('Treasury', () => {
       const vaultManager2 = (await new MockVaultManager__factory(deployer).deploy(alice.address)) as MockVaultManager;
       await expect(
         treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address),
-      ).to.be.revertedWith('6');
+      ).to.be.revertedWith('InvalidTreasury');
     });
     it('success - vaultManager added', async () => {
       const receipt = await (
@@ -158,18 +161,18 @@ contract('Treasury', () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
       await expect(
         treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address),
-      ).to.be.revertedWith('5');
+      ).to.be.revertedWith('AlreadyVaultManager');
     });
   });
   describe('removeMinter', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.removeMinter(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.removeMinter(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - minter is a vaultManager', async () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
       await expect(
         treasury.connect(impersonatedSigners[governor]).removeMinter(vaultManager.address),
-      ).to.be.revertedWith('36');
+      ).to.be.revertedWith('InvalidAddress');
     });
     it('success - minter removed', async () => {
       await (await treasury.connect(impersonatedSigners[governor]).addMinter(alice.address)).wait();
@@ -179,12 +182,12 @@ contract('Treasury', () => {
   });
   describe('removeVaultManager', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.removeVaultManager(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.removeVaultManager(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - vaultManager has not been added yet', async () => {
       await expect(
         treasury.connect(impersonatedSigners[governor]).removeVaultManager(alice.address),
-      ).to.be.revertedWith('3');
+      ).to.be.revertedWith('NotVaultManager');
     });
     it('success - only one vaultManager', async () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
@@ -241,7 +244,9 @@ contract('Treasury', () => {
   });
   describe('recoverERC20', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.recoverERC20(alice.address, alice.address, parseEther('1'))).to.be.revertedWith('1');
+      await expect(treasury.recoverERC20(alice.address, alice.address, parseEther('1'))).to.be.revertedWith(
+        'NotGovernor',
+      );
     });
     it('success - non stablecoin token address', async () => {
       const token = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
@@ -291,13 +296,13 @@ contract('Treasury', () => {
   });
   describe('setTreasury', () => {
     it('reverts - nonGovernor', async () => {
-      await expect(treasury.setTreasury(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.setTreasury(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - still wrong stablecoin', async () => {
       const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
       newTreasury.initialize(coreBorrow.address, alice.address);
       await expect(treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)).to.be.revertedWith(
-        '6',
+        'InvalidTreasury',
       );
     });
     it('reverts - still flashLoaner', async () => {
@@ -305,7 +310,7 @@ contract('Treasury', () => {
       const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
       await newTreasury.initialize(coreBorrow.address, stablecoin.address);
       await expect(treasury.connect(impersonatedSigners[governor]).setTreasury(newTreasury.address)).to.be.revertedWith(
-        '7',
+        'RightsNotRemoved',
       );
     });
     it('success - no vaultManager', async () => {
@@ -335,11 +340,11 @@ contract('Treasury', () => {
   });
   describe('setSurplusManager', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.setSurplusManager(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.setSurplusManager(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - zero value', async () => {
       await expect(treasury.connect(impersonatedSigners[governor]).setSurplusManager(ZERO_ADDRESS)).to.be.revertedWith(
-        '0',
+        'ZeroAddress',
       );
     });
     it('success - value updated', async () => {
@@ -354,12 +359,12 @@ contract('Treasury', () => {
   });
   describe('setCore', () => {
     it('reverts - non governor', async () => {
-      await expect(treasury.setCore(alice.address)).to.be.revertedWith('1');
+      await expect(treasury.setCore(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - invalid core contract', async () => {
       const coreBorrowNew = (await new MockCoreBorrow__factory(deployer).deploy()) as MockCoreBorrow;
       await expect(treasury.connect(impersonatedSigners[governor]).setCore(coreBorrowNew.address)).to.be.revertedWith(
-        '1',
+        'NotGovernor',
       );
     });
     it('success - value updated', async () => {
@@ -376,7 +381,7 @@ contract('Treasury', () => {
   });
   describe('setFlashLoanModule', () => {
     it('reverts - non core', async () => {
-      await expect(treasury.setFlashLoanModule(alice.address)).to.be.revertedWith('10');
+      await expect(treasury.setFlashLoanModule(alice.address)).to.be.revertedWith('NotCore');
     });
     it('success - when no old flash loan Module', async () => {
       await coreBorrow.setFlashLoanModule(treasury.address, alice.address);
@@ -609,7 +614,7 @@ contract('Treasury', () => {
   });
   describe('pushSurplus', () => {
     it('reverts - non-initialized surplusManager', async () => {
-      await expect(treasury.pushSurplus()).to.be.revertedWith('0');
+      await expect(treasury.pushSurplus()).to.be.revertedWith('ZeroAddress');
     });
     it('success - surplusManager initialized and surplus', async () => {
       await treasury.connect(impersonatedSigners[governor]).setSurplusManager(alice.address);

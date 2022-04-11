@@ -63,11 +63,24 @@ contract Treasury is ITreasury, Initializable {
     event SurplusManagerUpdated(address indexed _surplusManager);
     event VaultManagerToggled(address indexed vaultManager);
 
+    // =============================== Errors ======================================
+
+    error AlreadyVaultManager();
+    error InvalidAddress();
+    error InvalidTreasury();
+    error NotCore();
+    error NotGovernor();
+    error NotVaultManager();
+    error RightsNotRemoved();
+    error TooBigAmount();
+    error TooHighParameterValue();
+    error ZeroAddress();
+
     // =============================== Modifier ====================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        require(core.isGovernor(msg.sender), "1");
+        if (!core.isGovernor(msg.sender)) revert NotGovernor();
         _;
     }
 
@@ -75,7 +88,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param _core Address of the `CoreBorrow` contract of the module
     /// @param _stablecoin Address of the stablecoin
     function initialize(ICoreBorrow _core, IAgToken _stablecoin) public initializer {
-        require(address(_stablecoin) != address(0) && address(_core) != address(0), "O");
+        if (address(_stablecoin) == address(0) || address(_core) == address(0)) revert ZeroAddress();
         core = _core;
         stablecoin = _stablecoin;
     }
@@ -131,7 +144,9 @@ contract Treasury is ITreasury, Initializable {
     /// @dev `stablecoin` must be an AgToken and hence `transfer` reverts if the call is not successful
     function pushSurplus() external returns (uint256 governanceAllocation) {
         address _surplusManager = surplusManager;
-        require(_surplusManager != address(0), "0");
+        if (_surplusManager == address(0)) {
+            revert ZeroAddress();
+        }
         (uint256 surplusBufferValue, ) = _fetchSurplusFromAll();
         surplusBuffer = 0;
         emit SurplusBufferUpdated(0);
@@ -226,7 +241,7 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Adds a new minter for the stablecoin
     /// @param minter Minter address to add
     function addMinter(address minter) external onlyGovernor {
-        require(minter != address(0), "0");
+        if (minter == address(0)) revert ZeroAddress();
         stablecoin.addMinter(minter);
     }
 
@@ -235,8 +250,8 @@ contract Treasury is ITreasury, Initializable {
     /// @dev This contract should have already been initialized with a correct treasury address
     /// @dev It's this function that gives the minter right to the `VaultManager`
     function addVaultManager(address vaultManager) external onlyGovernor {
-        require(!vaultManagerMap[vaultManager], "5");
-        require(address(IVaultManager(vaultManager).treasury()) == address(this), "6");
+        if (vaultManagerMap[vaultManager]) revert AlreadyVaultManager();
+        if (address(IVaultManager(vaultManager).treasury()) != address(this)) revert InvalidTreasury();
         vaultManagerMap[vaultManager] = true;
         vaultManagerList.push(vaultManager);
         emit VaultManagerToggled(vaultManager);
@@ -247,7 +262,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param minter Minter address to remove
     function removeMinter(address minter) external onlyGovernor {
         // To remove the minter role to a `VaultManager` you have to go through the `removeVaultManager` function
-        require(!vaultManagerMap[minter], "36");
+        if (vaultManagerMap[minter]) revert InvalidAddress();
         stablecoin.removeMinter(minter);
     }
 
@@ -255,7 +270,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param vaultManager `VaultManager` contract to remove
     /// @dev A removed `VaultManager` loses its minter right on the stablecoin
     function removeVaultManager(address vaultManager) external onlyGovernor {
-        require(vaultManagerMap[vaultManager], "3");
+        if (!vaultManagerMap[vaultManager]) revert NotVaultManager();
         delete vaultManagerMap[vaultManager];
         // deletion from `vaultManagerList` loop
         uint256 vaultManagerListLength = vaultManagerList.length;
@@ -293,7 +308,7 @@ contract Treasury is ITreasury, Initializable {
             // If balance is non zero then this means, after the call to `fetchSurplusFromAll` that
             // bad debt is necessarily null
             uint256 balance = stablecoin.balanceOf(address(this));
-            require(amountToRecover + surplusBuffer <= balance, "4");
+            if (amountToRecover + surplusBuffer > balance) revert TooBigAmount();
             stablecoin.transfer(to, amountToRecover);
         } else {
             IERC20(tokenAddress).safeTransfer(to, amountToRecover);
@@ -306,9 +321,9 @@ contract Treasury is ITreasury, Initializable {
     /// @dev This function is basically a way to remove rights to this contract and grant them to a new one
     /// @dev It could be used to set a new core contract
     function setTreasury(address _treasury) external onlyGovernor {
-        require(ITreasury(_treasury).stablecoin() == stablecoin, "6");
+        if (ITreasury(_treasury).stablecoin() != stablecoin) revert InvalidTreasury();
         // Flash loan role should be removed before calling this function
-        require(!core.isFlashLoanerTreasury(address(this)), "7");
+        if (core.isFlashLoanerTreasury(address(this))) revert RightsNotRemoved();
         emit NewTreasurySet(_treasury);
         for (uint256 i = 0; i < vaultManagerList.length; i++) {
             IVaultManager(vaultManagerList[i]).setTreasury(_treasury);
@@ -322,7 +337,7 @@ contract Treasury is ITreasury, Initializable {
     /// @dev To pause surplus distribution, governance needs to set a zero value for `surplusForGovernance`
     /// which means
     function setSurplusForGovernance(uint64 _surplusForGovernance) external onlyGovernor {
-        require(_surplusForGovernance <= BASE_PARAMS, "9");
+        if (_surplusForGovernance > BASE_PARAMS) revert TooHighParameterValue();
         surplusForGovernance = _surplusForGovernance;
         emit SurplusForGovernanceUpdated(_surplusForGovernance);
     }
@@ -331,7 +346,9 @@ contract Treasury is ITreasury, Initializable {
     /// protocol
     /// @param _surplusManager New address responsible for handling the surplus
     function setSurplusManager(address _surplusManager) external onlyGovernor {
-        require(_surplusManager != address(0), "0");
+        if (_surplusManager == address(0)) {
+            revert ZeroAddress();
+        }
         surplusManager = _surplusManager;
         emit SurplusManagerUpdated(_surplusManager);
     }
@@ -342,14 +359,14 @@ contract Treasury is ITreasury, Initializable {
     /// @dev One sanity check that can be performed here is to verify whether at least the governor
     /// calling the contract is still a governor in the new core
     function setCore(ICoreBorrow _core) external onlyGovernor {
-        require(_core.isGovernor(msg.sender), "1");
+        if (!_core.isGovernor(msg.sender)) revert NotGovernor();
         core = ICoreBorrow(_core);
         emit CoreUpdated(address(_core));
     }
 
     /// @inheritdoc ITreasury
     function setFlashLoanModule(address _flashLoanModule) external {
-        require(msg.sender == address(core), "10");
+        if (msg.sender != address(core)) revert NotCore();
         address oldFlashLoanModule = address(flashLoanModule);
         if (oldFlashLoanModule != address(0)) {
             stablecoin.removeMinter(oldFlashLoanModule);
