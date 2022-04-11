@@ -121,14 +121,6 @@ contract Treasury is ITreasury, Initializable {
         return _updateSurplusAndBadDebt(surplusBufferValue, badDebt);
     }
 
-    /// @notice Fetches surplus from a list of vaultManager contracts
-    /// @return Surplus buffer value at the end of the call
-    /// @return Bad debt value at the end of the call
-    function fetchSurplusFromVaultManagers(address[] memory vaultManagers) external returns (uint256, uint256) {
-        (uint256 surplusBufferValue, uint256 badDebtValue) = _fetchSurplusFromList(vaultManagers);
-        return _updateSurplusAndBadDebt(surplusBufferValue, badDebtValue);
-    }
-
     /// @notice Pushes the surplus buffer to the `surplusManager` contract
     /// @return governanceAllocation Amount transferred to governance
     /// @dev It makes sure to fetch the surplus from all the contracts handled by this treasury to avoid

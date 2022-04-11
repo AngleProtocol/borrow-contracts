@@ -41,7 +41,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
         _setupRole(GOVERNOR_ROLE, governor);
         _setupRole(GUARDIAN_ROLE, guardian);
         _setupRole(GUARDIAN_ROLE, governor);
-        _setRoleAdmin(GUARDIAN_ROLE, GUARDIAN_ROLE);
+        _setRoleAdmin(GUARDIAN_ROLE, GOVERNOR_ROLE);
         _setRoleAdmin(GOVERNOR_ROLE, GOVERNOR_ROLE);
         _setRoleAdmin(FLASHLOANER_TREASURY_ROLE, GOVERNOR_ROLE);
     }
@@ -109,8 +109,8 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// the address also loses its guardian role
     function removeGovernor(address governor) external {
         require(getRoleMemberCount(GOVERNOR_ROLE) > 1, "38");
-        revokeRole(GOVERNOR_ROLE, governor);
         revokeRole(GUARDIAN_ROLE, governor);
+        revokeRole(GOVERNOR_ROLE, governor);
     }
 
     /// @notice Changes the `flashLoanModule` of the protocol
