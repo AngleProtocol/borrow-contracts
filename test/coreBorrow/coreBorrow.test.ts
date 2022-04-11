@@ -103,7 +103,9 @@ contract('CoreBorrow', () => {
     });
     it('reverts - invalid governor/guardian', async () => {
       coreBorrowRevert = (await deployUpgradeable(new CoreBorrow__factory(deployer))) as CoreBorrow;
-      await expect(coreBorrowRevert.initialize(governor, governor)).to.be.revertedWith('12');
+      await expect(coreBorrowRevert.initialize(governor, governor)).to.be.revertedWith(
+        'IncompatibleGovernorAndGuardian',
+      );
       await expect(coreBorrowRevert.initialize(governor, ZERO_ADDRESS)).to.be.reverted;
       await expect(coreBorrowRevert.initialize(ZERO_ADDRESS, guardian)).to.be.reverted;
     });
@@ -128,7 +130,9 @@ contract('CoreBorrow', () => {
   });
   describe('removeGovernor', () => {
     it('reverts - not enough governors left', async () => {
-      await expect(coreBorrow.connect(impersonatedSigners[governor]).removeGovernor(governor)).to.be.revertedWith('38');
+      await expect(coreBorrow.connect(impersonatedSigners[governor]).removeGovernor(governor)).to.be.revertedWith(
+        'NotEnoughGovernorsLeft',
+      );
     });
     it('reverts - nonGovernor', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).addGovernor(bob.address);
@@ -176,7 +180,7 @@ contract('CoreBorrow', () => {
       flashAngle = (await new MockFlashLoanModule__factory(deployer).deploy(governor)) as MockFlashLoanModule;
       await expect(
         coreBorrow.connect(impersonatedSigners[governor]).setFlashLoanModule(flashAngle.address),
-      ).to.be.revertedWith('11');
+      ).to.be.revertedWith('InvalidCore');
     });
     it('success - non zero address and treasury contract added', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).addFlashLoanerTreasuryRole(treasury.address);
@@ -265,7 +269,7 @@ contract('CoreBorrow', () => {
       await coreBorrowRevert.initialize(guardian, alice.address);
       await expect(
         coreBorrow.connect(impersonatedSigners[governor]).setCore(coreBorrowRevert.address),
-      ).to.be.rejectedWith('11');
+      ).to.be.rejectedWith('InvalidCore');
     });
   });
   describe('grantGuardianRole', () => {

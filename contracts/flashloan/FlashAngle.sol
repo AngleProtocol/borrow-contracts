@@ -41,10 +41,21 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     /// @inheritdoc IFlashAngle
     ICoreBorrow public core;
 
+    // =============================== Errors ======================================
+
+    error InvalidReturnMessage();
+    error NotCore();
+    error NotGovernorOrGuardian();
+    error NotTreasury();
+    error TooBigAmount();
+    error TooHighParameterValue();
+    error UnsupportedStablecoin();
+    error ZeroAddress();
+
     /// @notice Initializes the contract
     /// @param _core Core address handling this module
     function initialize(ICoreBorrow _core) public initializer {
-        require(address(_core) != address(0), "0");
+        if (address(_core) == address(0)) revert ZeroAddress();
         core = _core;
     }
 
@@ -55,7 +66,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
 
     /// @notice Checks whether the sender is the core contract
     modifier onlyCore() {
-        require(msg.sender == address(core), "10");
+        if (msg.sender != address(core)) revert NotCore();
         _;
     }
 
@@ -65,7 +76,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     /// `treasury` address is not null in the `stablecoinMap`. This is what's checked in the `CoreBorrow` contract
     /// when adding support for a stablecoin
     modifier onlyExistingStablecoin(IAgToken stablecoin) {
-        require(stablecoinMap[stablecoin].treasury != address(0), "13");
+        if (stablecoinMap[stablecoin].treasury == address(0)) revert UnsupportedStablecoin();
         _;
     }
 
@@ -90,9 +101,10 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         bytes calldata data
     ) external nonReentrant returns (bool) {
         uint256 fee = _flashFee(token, amount);
-        require(amount <= stablecoinMap[IAgToken(token)].maxBorrowable, "4");
+        if (amount > stablecoinMap[IAgToken(token)].maxBorrowable) revert TooBigAmount();
         IAgToken(token).mint(address(receiver), amount);
-        require(receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS, "39");
+        if (receiver.onFlashLoan(msg.sender, token, amount, fee, data) != CALLBACK_SUCCESS)
+            revert InvalidReturnMessage();
         // Token must be an agToken here so normally no need to use `safeTransferFrom`, but out of safety
         // and in case governance whitelists an agToken which does not have a correct implementation, we prefer
         // to use `safeTransferFrom` here
@@ -119,7 +131,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     /// @inheritdoc IFlashAngle
     function accrueInterestToTreasury(IAgToken stablecoin) external returns (uint256 balance) {
         address treasury = stablecoinMap[stablecoin].treasury;
-        require(msg.sender == treasury, "14");
+        if (msg.sender != treasury) revert NotTreasury();
         balance = stablecoin.balanceOf(address(this));
         IERC20(address(stablecoin)).safeTransfer(treasury, balance);
     }
@@ -137,8 +149,8 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         uint64 _flashLoanFee,
         uint256 _maxBorrowable
     ) external onlyExistingStablecoin(stablecoin) {
-        require(core.isGovernorOrGuardian(msg.sender), "2");
-        require(_flashLoanFee <= BASE_PARAMS, "9");
+        if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        if (_flashLoanFee > BASE_PARAMS) revert TooHighParameterValue();
         stablecoinMap[stablecoin].flashLoanFee = _flashLoanFee;
         stablecoinMap[stablecoin].maxBorrowable = _maxBorrowable;
     }

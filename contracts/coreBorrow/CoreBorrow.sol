@@ -32,12 +32,19 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     event FlashLoanModuleUpdated(address indexed _flashloanModule);
     event CoreUpdated(address indexed _core);
 
+    // =============================== Errors ======================================
+
+    error InvalidCore();
+    error IncompatibleGovernorAndGuardian();
+    error NotEnoughGovernorsLeft();
+    error ZeroAddress();
+
     /// @notice Initializes the `CoreBorrow` contract and the access control of the borrowing module
     /// @param governor Address of the governor of the Angle Protocol
     /// @param guardian Guardian address of the protocol
     function initialize(address governor, address guardian) public initializer {
-        require(governor != address(0) && guardian != address(0), "O");
-        require(governor != guardian, "12");
+        if (governor == address(0) || guardian == address(0)) revert ZeroAddress();
+        if (governor == guardian) revert IncompatibleGovernorAndGuardian();
         _setupRole(GOVERNOR_ROLE, governor);
         _setupRole(GUARDIAN_ROLE, guardian);
         _setupRole(GUARDIAN_ROLE, governor);
@@ -108,7 +115,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// @dev It is necessary to call this function to remove a governor role to make sure
     /// the address also loses its guardian role
     function removeGovernor(address governor) external {
-        require(getRoleMemberCount(GOVERNOR_ROLE) > 1, "38");
+        if (getRoleMemberCount(GOVERNOR_ROLE) <= 1) revert NotEnoughGovernorsLeft();
         revokeRole(GUARDIAN_ROLE, governor);
         revokeRole(GOVERNOR_ROLE, governor);  
     }
@@ -117,7 +124,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// @param _flashLoanModule Address of the new flash loan module
     function setFlashLoanModule(address _flashLoanModule) external onlyRole(GOVERNOR_ROLE) {
         if (_flashLoanModule != address(0)) {
-            require(address(IFlashAngle(_flashLoanModule).core()) == address(this), "11");
+            if (address(IFlashAngle(_flashLoanModule).core()) != address(this)) revert InvalidCore();
         }
         uint256 count = getRoleMemberCount(FLASHLOANER_TREASURY_ROLE);
         for (uint256 i = 0; i < count; i++) {
@@ -140,7 +147,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
             success = _core.isGovernor(getRoleMember(GOVERNOR_ROLE, i));
             if (!success) break;
         }
-        require(success, "11");
+        if (!success) revert InvalidCore();
         address _flashLoanModule = flashLoanModule;
         if (_flashLoanModule != address(0)) IFlashAngle(_flashLoanModule).setCore(address(_core));
         emit CoreUpdated(address(_core));
