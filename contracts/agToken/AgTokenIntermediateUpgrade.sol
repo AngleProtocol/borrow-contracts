@@ -7,7 +7,7 @@ import "../interfaces/IStableMaster.sol";
 // OpenZeppelin may update its version of the ERC20PermitUpgradeable token
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
-/// @title AgToken
+/// @title AgTokenIntermediateUpgrade
 /// @author Angle Core Team
 /// @notice Base contract for agToken, that is to say Angle's stablecoins
 /// @dev This contract is used to create and handle the stablecoins of Angle protocol
@@ -52,6 +52,8 @@ contract AgTokenIntermediateUpgrade is ERC20PermitUpgradeable {
 
     // =============================== Setup Function ==============================
 
+    /// @notice Sets up the minter role and gives it to the governor
+    /// @dev This function just has to be called once
     function setUpMinter() external {
         address governor = 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8;
         require(msg.sender == governor);
