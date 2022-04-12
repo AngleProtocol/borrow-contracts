@@ -87,6 +87,21 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     event FiledUint64(uint64 param, bytes32 what);
     event Recovered(address indexed token, address indexed to, uint256 amount);
 
+    // =============================== Errors ======================================
+
+    error InvalidParameterValue();
+    error InvalidParameterType();
+    error InvalidSetOfParameters();
+    error InvalidToken();
+    error NotGovernor();
+    error NotGovernorOrGuardian();
+    error NotVaultManager();
+    error TooHighParameterValue();
+    error TransferAmountExceedsAllowance();
+    error ZeroAddress();
+    error ZeroAssets();
+    error ZeroShares();
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 }

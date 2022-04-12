@@ -133,7 +133,7 @@ contract('ReactorEuler', () => {
     });
     it('reverts - only guardian or governor', async () => {
       const newMinInvest = parseUnits('1', collatBase);
-      await expect(reactor.connect(alice).setMinInvest(newMinInvest)).to.be.revertedWith('2');
+      await expect(reactor.connect(alice).setMinInvest(newMinInvest)).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('success - invest only at 1 unit', async () => {
       const newMinInvest = parseUnits('1', collatBase);
@@ -148,7 +148,9 @@ contract('ReactorEuler', () => {
   });
   describe('changeAllowance', () => {
     it('reverts - only guardian or governor', async () => {
-      await expect(reactor.connect(alice).changeAllowance(ethers.constants.Zero)).to.be.revertedWith('2');
+      await expect(reactor.connect(alice).changeAllowance(ethers.constants.Zero)).to.be.revertedWith(
+        'NotGovernorOrGuardian',
+      );
     });
     it('success - decrease allowance', async () => {
       await reactor.connect(guardian).changeAllowance(ethers.constants.Zero);
