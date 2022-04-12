@@ -28,7 +28,6 @@ contract('CoreBorrow', () => {
   let guardianRole: string;
   let governorRole: string;
   let flashloanerTreasuryRole: string;
-  let guardianError: string;
   let governorError: string;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
@@ -51,7 +50,6 @@ contract('CoreBorrow', () => {
     guardianRole = web3.utils.keccak256('GUARDIAN_ROLE');
     governorRole = web3.utils.keccak256('GOVERNOR_ROLE');
     flashloanerTreasuryRole = web3.utils.keccak256('FLASHLOANER_TREASURY_ROLE');
-    guardianError = `AccessControl: account ${alice.address.toLowerCase()} is missing role ${guardianRole}`;
     governorError = `AccessControl: account ${alice.address.toLowerCase()} is missing role ${governorRole}`;
   });
 
