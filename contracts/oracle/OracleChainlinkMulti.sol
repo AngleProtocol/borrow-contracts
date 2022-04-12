@@ -26,6 +26,10 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     /// @notice Description of the assets concerned by the oracle and the price outputted
     bytes32 public immutable description;
 
+    // ===================================== Error =================================
+
+    error IncompatibleLengths();
+
     /// @notice Constructor for an oracle using Chainlink with multiple pools to read from
     /// @param _circuitChainlink Chainlink pool addresses (in order)
     /// @param _circuitChainIsMultiplied Whether we should multiply or divide by this rate
@@ -46,7 +50,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
         outBase = _outBase;
         description = _description;
         uint256 circuitLength = _circuitChainlink.length;
-        require(circuitLength > 0 && circuitLength == _circuitChainIsMultiplied.length, "25");
+        if (circuitLength == 0 || circuitLength != _circuitChainIsMultiplied.length) revert IncompatibleLengths();
         for (uint256 i = 0; i < circuitLength; i++) {
             AggregatorV3Interface _pool = AggregatorV3Interface(_circuitChainlink[i]);
             circuitChainlink.push(_pool);
