@@ -51,6 +51,14 @@ contract Swapper is ISwapper {
         None
     }
 
+    // ================================== Errors ===================================
+
+    error EmptyReturnMessage();
+    error IncompatibleLengths();
+    error NotGovernorOrGuardian();
+    error TooSmallAmount();
+    error ZeroAddress();
+
     /// @notice Constructor of the contract
     /// @param _core Core address
     /// @param _wStETH wStETH Address
@@ -64,13 +72,12 @@ contract Swapper is ISwapper {
         address _oneInch,
         IAngleRouter _angleRouter
     ) {
-        require(
-            address(_core) != address(0) &&
-                address(_uniV3Router) != address(0) &&
-                _oneInch != address(0) &&
-                address(_angleRouter) != address(0),
-            "0"
-        );
+        if (
+            address(_core) == address(0) ||
+            address(_uniV3Router) == address(0) ||
+            _oneInch == address(0) ||
+            address(_angleRouter) == address(0)
+        ) revert ZeroAddress();
         core = _core;
         IERC20 stETH = IERC20(_wStETH.stETH());
         stETH.safeApprove(address(_wStETH), type(uint256).max);
@@ -135,7 +142,7 @@ contract Swapper is ISwapper {
         // A final slippage check is performed at the end of the call
         // The function reverts anyway if the end balance is inferior to `outTokenOwed`
         uint256 outTokenBalance = outToken.balanceOf(address(this));
-        require(outTokenBalance > minAmountOut, "52");
+        if (outTokenBalance <= minAmountOut) revert TooSmallAmount();
         outToken.safeTransfer(outTokenRecipient, outTokenOwed);
         if (outTokenBalance > outTokenOwed) outToken.safeTransfer(to, outTokenBalance - outTokenOwed);
         // Reusing the `outTokenBalance` variable for the `inToken` balance
@@ -156,8 +163,8 @@ contract Swapper is ISwapper {
         address[] calldata spenders,
         uint256[] calldata amounts
     ) external {
-        require(core.isGovernorOrGuardian(msg.sender), "2");
-        require(tokens.length == spenders.length && tokens.length == amounts.length, "25");
+        if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        if (tokens.length != spenders.length || tokens.length != amounts.length) revert IncompatibleLengths();
         for (uint256 i = 0; i < tokens.length; i++) {
             _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
@@ -262,6 +269,6 @@ contract Swapper is ISwapper {
                 revert(add(32, errMsg), mload(errMsg))
             }
         }
-        revert("53");
+        revert EmptyReturnMessage();
     }
 }
