@@ -607,69 +607,6 @@ contract('Treasury', () => {
       });
     });
   });
-  describe('fetchSurplusFromVaultManagers', () => {
-    it('success - no vaultManager/no flashLoanModule', async () => {
-      await treasury.fetchSurplusFromVaultManagers([]);
-      expect(await treasury.badDebt()).to.be.equal(0);
-      expect(await treasury.surplusBuffer()).to.be.equal(0);
-    });
-    it('success - one vaultManager - just surplus', async () => {
-      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
-      await vaultManager.setSurplusBadDebt(parseEther('1'), 0, stablecoin.address);
-      const receipt = await (await treasury.fetchSurplusFromVaultManagers([vaultManager.address])).wait();
-      expect(await treasury.surplusBuffer()).to.be.equal(parseEther('1'));
-      expect(await treasury.badDebt()).to.be.equal(parseEther('0'));
-      inReceipt(receipt, 'SurplusBufferUpdated', {
-        surplusBufferValue: parseEther('1'),
-      });
-      inReceipt(receipt, 'BadDebtUpdated', {
-        badDebtValue: parseEther('0'),
-      });
-      expect(await stablecoin.balanceOf(treasury.address)).to.be.equal(parseEther('1'));
-    });
-    it('success - two vaultManagers - just surplus', async () => {
-      const vaultManager2 = (await new MockVaultManager__factory(deployer).deploy(
-        treasury.address,
-      )) as MockVaultManager;
-      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
-      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address);
-      await vaultManager.setSurplusBadDebt(parseEther('1'), 0, stablecoin.address);
-      await vaultManager2.setSurplusBadDebt(parseEther('2'), 0, stablecoin.address);
-      const receipt = await (
-        await treasury.fetchSurplusFromVaultManagers([vaultManager.address, vaultManager2.address])
-      ).wait();
-      expect(await treasury.surplusBuffer()).to.be.equal(parseEther('3'));
-      expect(await treasury.badDebt()).to.be.equal(parseEther('0'));
-      inReceipt(receipt, 'SurplusBufferUpdated', {
-        surplusBufferValue: parseEther('3'),
-      });
-      inReceipt(receipt, 'BadDebtUpdated', {
-        badDebtValue: parseEther('0'),
-      });
-      expect(await stablecoin.balanceOf(treasury.address)).to.be.equal(parseEther('3'));
-    });
-    it('success - two vaultManagers - surplus and bad debt', async () => {
-      const vaultManager2 = (await new MockVaultManager__factory(deployer).deploy(
-        treasury.address,
-      )) as MockVaultManager;
-      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
-      await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address);
-      await vaultManager.setSurplusBadDebt(parseEther('1'), 0, stablecoin.address);
-      await vaultManager2.setSurplusBadDebt(0, parseEther('2'), stablecoin.address);
-      const receipt = await (
-        await treasury.fetchSurplusFromVaultManagers([vaultManager.address, vaultManager2.address])
-      ).wait();
-      expect(await treasury.surplusBuffer()).to.be.equal(parseEther('0'));
-      expect(await treasury.badDebt()).to.be.equal(parseEther('1'));
-      inReceipt(receipt, 'SurplusBufferUpdated', {
-        surplusBufferValue: parseEther('0'),
-      });
-      inReceipt(receipt, 'BadDebtUpdated', {
-        badDebtValue: parseEther('1'),
-      });
-      expect(await stablecoin.balanceOf(treasury.address)).to.be.equal(parseEther('0'));
-    });
-  });
   describe('pushSurplus', () => {
     it('reverts - non-initialized surplusManager', async () => {
       await expect(treasury.pushSurplus()).to.be.revertedWith('0');

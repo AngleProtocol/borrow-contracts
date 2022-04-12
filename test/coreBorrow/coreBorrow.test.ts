@@ -87,7 +87,7 @@ contract('CoreBorrow', () => {
       expect(await coreBorrow.isGovernorOrGuardian(governor)).to.be.equal(true);
       expect(await coreBorrow.isFlashLoanerTreasury(governor)).to.be.equal(false);
       expect(await coreBorrow.isFlashLoanerTreasury(guardian)).to.be.equal(false);
-      expect(await coreBorrow.getRoleAdmin(guardianRole)).to.be.equal(guardianRole);
+      expect(await coreBorrow.getRoleAdmin(guardianRole)).to.be.equal(governorRole);
       expect(await coreBorrow.getRoleAdmin(governorRole)).to.be.equal(governorRole);
       expect(await coreBorrow.getRoleAdmin(flashloanerTreasuryRole)).to.be.equal(governorRole);
       expect(await coreBorrow.hasRole(guardianRole, guardian)).to.be.equal(true);
@@ -270,7 +270,7 @@ contract('CoreBorrow', () => {
   });
   describe('grantGuardianRole', () => {
     it('reverts - nonGuardian', async () => {
-      await expect(coreBorrow.connect(alice).grantRole(guardianRole, alice.address)).to.be.revertedWith(guardianError);
+      await expect(coreBorrow.connect(alice).grantRole(guardianRole, alice.address)).to.be.revertedWith(governorError);
     });
     it('success - guardianRole updated', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).grantRole(guardianRole, alice.address);
@@ -280,7 +280,7 @@ contract('CoreBorrow', () => {
   });
   describe('revokeGuardianRole', () => {
     it('reverts - nonGuardian', async () => {
-      await expect(coreBorrow.connect(alice).revokeRole(guardianRole, alice.address)).to.be.revertedWith(guardianError);
+      await expect(coreBorrow.connect(alice).revokeRole(guardianRole, alice.address)).to.be.revertedWith(governorError);
     });
     it('success - guardianRole updated', async () => {
       await coreBorrow.connect(impersonatedSigners[governor]).revokeRole(guardianRole, guardian);
