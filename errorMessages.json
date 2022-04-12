@@ -4,28 +4,3 @@
   "35": "sender is not minter",
   "36": "invalid sender"
 }
-
-error AlreadyVaultManager();
-error InvalidAddress();
-error InvalidTreasury();
-error NotCore();
-error NotGovernor();
-error NotVaultManager();
-error RightsNotRemoved();
-error TooBigAmount();
-error TooHighParameterValue();
-error ZeroAddress();
-
-error InvalidCore();
-error IncompatibleGovernorAndGuardian();
-error NotEnoughGovernorsLeft();
-error ZeroAddress();
-
-
-error BurnAmountExceedsAllowance();
-error InvalidSender();
-error InvalidTreasury();
-error NotGovernor();
-error NotMinter();
-error NotTreasury();
-error TreasuryAlreadyInitialized();
