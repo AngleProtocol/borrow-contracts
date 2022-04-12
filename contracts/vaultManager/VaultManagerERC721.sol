@@ -277,7 +277,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
                 return retval == IERC721ReceiverUpgradeable(to).onERC721Received.selector;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert("24");
+                    revert NonERC721Receiver();
                 } else {
                     // solhint-disable-next-line no-inline-assembly
                     assembly {

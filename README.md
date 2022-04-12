@@ -16,7 +16,7 @@ Whitepaper for the module can be found [here](https://docs.angle.money/overview/
 
 ## Some Remarks on the Code
 
-The smart contracts use error messages. To optimize for gas, these error messages are encoded in numbers rather than in plain text. The conversion from numbers to error messages can be found in `errorMessages.json`.
+Some smart contracts use error messages. These error messages are sometimes encoded in numbers rather than as custom errors like done most of the time. The conversion from numbers to error messages can be found in `errorMessages.json`.
 
 ## Setup
 

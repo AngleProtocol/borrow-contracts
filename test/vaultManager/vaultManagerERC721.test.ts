@@ -485,7 +485,13 @@ contract('VaultManager - ERC721', () => {
       it('reverts - not receiver', async () => {
         await expect(
           vaultManager.connect(alice)['safeTransferFrom(address,address,uint256)'](alice.address, agToken.address, 1),
-        ).to.be.revertedWith('24');
+        ).to.be.revertedWith('NonERC721Receiver');
+      });
+      it('reverts - return value different selector', async () => {
+        await receiver.setMode(2);
+        await expect(
+          vaultManager.connect(alice)['safeTransferFrom(address,address,uint256)'](alice.address, receiver.address, 1),
+        ).to.be.revertedWith('NonERC721Receiver');
       });
     });
 
