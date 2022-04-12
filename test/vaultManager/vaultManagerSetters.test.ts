@@ -99,7 +99,7 @@ contract('VaultManager - Setters', () => {
     it('reverts - access control', async () => {
       await expect(
         vaultManager.connect(alice).setUint64(params.liquidationSurcharge, formatBytes32String('CF')),
-      ).to.be.revertedWith('2');
+      ).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('success - guardian', async () => {
       await vaultManager.connect(guardian).setUint64(params.liquidationSurcharge, formatBytes32String('CF'));
@@ -116,7 +116,7 @@ contract('VaultManager - Setters', () => {
     it('reverts - collateralFactor too high', async () => {
       await expect(
         vaultManager.connect(governor).setUint64(params.liquidationSurcharge + 1, formatBytes32String('CF')),
-      ).to.be.revertedWith('9');
+      ).to.be.revertedWith('TooHighParameterValue');
     });
     it('success - targetHealthFactor', async () => {
       await vaultManager.connect(governor).setUint64(1e9 + 1, formatBytes32String('THF'));
@@ -124,7 +124,7 @@ contract('VaultManager - Setters', () => {
     });
     it('reverts - targetHealthFactor too low', async () => {
       await expect(vaultManager.connect(governor).setUint64(1e9 - 1, formatBytes32String('THF'))).to.be.revertedWith(
-        '17',
+        'TooSmallParameterValue',
       );
     });
     it('success - borrowFee', async () => {
@@ -133,7 +133,7 @@ contract('VaultManager - Setters', () => {
     });
     it('reverts - borrowFee too high', async () => {
       await expect(vaultManager.connect(governor).setUint64(1e9 + 1, formatBytes32String('BF'))).to.be.revertedWith(
-        '9',
+        'TooHighParameterValue',
       );
     });
     it('success - repayFee', async () => {
@@ -142,11 +142,13 @@ contract('VaultManager - Setters', () => {
     });
     it('reverts - repayFee too high', async () => {
       await expect(vaultManager.connect(governor).setUint64(1e9 + 1, formatBytes32String('RF'))).to.be.revertedWith(
-        '9',
+        'TooHighParameterValue',
       );
     });
     it('reverts - repayFee too high because of liquidation surcharge', async () => {
-      await expect(vaultManager.connect(governor).setUint64(0.2e9, formatBytes32String('RF'))).to.be.revertedWith('9');
+      await expect(vaultManager.connect(governor).setUint64(0.2e9, formatBytes32String('RF'))).to.be.revertedWith(
+        'TooHighParameterValue',
+      );
     });
     it('success - interestRate', async () => {
       const timestamp = await latestTime();
@@ -160,19 +162,19 @@ contract('VaultManager - Setters', () => {
     });
     it('reverts - liquidationSurcharge too high', async () => {
       await expect(vaultManager.connect(governor).setUint64(1e9 + 1, formatBytes32String('LS'))).to.be.revertedWith(
-        '18',
+        'InvalidParameterValue',
       );
     });
     it('reverts - liquidationSurcharge too high because of repay fee', async () => {
       await vaultManager.connect(governor).setUint64(0.06e9, formatBytes32String('RF'));
       await expect(vaultManager.connect(governor).setUint64(0.95e9, formatBytes32String('LS'))).to.be.revertedWith(
-        '18',
+        'InvalidParameterValue',
       );
     });
     it('reverts - liquidationSurcharge too low', async () => {
       await expect(
         vaultManager.connect(governor).setUint64(params.collateralFactor - 1, formatBytes32String('LS')),
-      ).to.be.revertedWith('18');
+      ).to.be.revertedWith('InvalidParameterValue');
     });
     it('success - maxLiquidationDiscount', async () => {
       await vaultManager.connect(governor).setUint64(1e9 - 1, formatBytes32String('MLD'));
@@ -180,19 +182,19 @@ contract('VaultManager - Setters', () => {
     });
     it('reverts - maxLiquidationDiscount too high', async () => {
       await expect(vaultManager.connect(governor).setUint64(1e9 + 1, formatBytes32String('MLD'))).to.be.revertedWith(
-        '9',
+        'TooHighParameterValue',
       );
     });
     it('reverts - wrong parameter', async () => {
       await expect(
         vaultManager.connect(governor).setUint64(params.liquidationSurcharge, formatBytes32String('example')),
-      ).to.be.revertedWith('43');
+      ).to.be.revertedWith('InvalidParameterType');
     });
   });
 
   describe('setDebtCeiling', () => {
     it('reverts - access control', async () => {
-      await expect(vaultManager.connect(alice).setDebtCeiling(127)).to.be.revertedWith('2');
+      await expect(vaultManager.connect(alice).setDebtCeiling(127)).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('success - guardian', async () => {
       await vaultManager.connect(guardian).setDebtCeiling(127);
@@ -213,14 +215,14 @@ contract('VaultManager - Setters', () => {
       oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), 1, treasury.address);
     });
     it('reverts - access control', async () => {
-      await expect(vaultManager.connect(alice).setOracle(oracle.address)).to.be.revertedWith('1');
+      await expect(vaultManager.connect(alice).setOracle(oracle.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - guardian', async () => {
-      await expect(vaultManager.connect(guardian).setOracle(oracle.address)).to.be.revertedWith('1');
+      await expect(vaultManager.connect(guardian).setOracle(oracle.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - wrong treasury', async () => {
       oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), 1, agToken.address);
-      await expect(vaultManager.connect(governor).setOracle(oracle.address)).to.be.revertedWith('33');
+      await expect(vaultManager.connect(governor).setOracle(oracle.address)).to.be.revertedWith('InvalidTreasury');
     });
     it('success - governor', async () => {
       await vaultManager.connect(governor).setOracle(oracle.address);
@@ -233,10 +235,10 @@ contract('VaultManager - Setters', () => {
       await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
     });
     it('reverts - access control', async () => {
-      await expect(vaultManager.connect(alice).setTreasury(agToken.address)).to.be.revertedWith('14');
+      await expect(vaultManager.connect(alice).setTreasury(agToken.address)).to.be.revertedWith('NotTreasury');
     });
     it('reverts - guardian', async () => {
-      await expect(vaultManager.connect(guardian).setTreasury(agToken.address)).to.be.revertedWith('14');
+      await expect(vaultManager.connect(guardian).setTreasury(agToken.address)).to.be.revertedWith('NotTreasury');
     });
 
     it('success - treasury', async () => {
@@ -248,10 +250,10 @@ contract('VaultManager - Setters', () => {
 
   describe('toggleWhitelist', () => {
     it('reverts - access control', async () => {
-      await expect(vaultManager.connect(alice).toggleWhitelist(alice.address)).to.be.revertedWith('1');
+      await expect(vaultManager.connect(alice).toggleWhitelist(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - guardian', async () => {
-      await expect(vaultManager.connect(guardian).toggleWhitelist(alice.address)).to.be.revertedWith('1');
+      await expect(vaultManager.connect(guardian).toggleWhitelist(alice.address)).to.be.revertedWith('NotGovernor');
     });
     it('success - governor', async () => {
       await vaultManager.connect(governor).toggleWhitelist(alice.address);
@@ -283,7 +285,7 @@ contract('VaultManager - Setters', () => {
     it('reverts - access control', async () => {
       await expect(
         vaultManager.connect(alice).setLiquidationBoostParameters(agToken.address, [22], [23]),
-      ).to.be.revertedWith('2');
+      ).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('success - guardian', async () => {
       await vaultManager.connect(guardian).setLiquidationBoostParameters(agToken.address, [22, 23], [100, 101]);
@@ -295,15 +297,15 @@ contract('VaultManager - Setters', () => {
     it('reverts - zero yBoost', async () => {
       await expect(
         vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [22], [0]),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
     });
     it('reverts - wrong xBoost and yBoost', async () => {
       await expect(
         vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [22, 21], [1, 2]),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
       await expect(
         vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [21, 22], [2, 1]),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
       await expect(vaultManager.connect(governor).setLiquidationBoostParameters(agToken.address, [0], [100, 101])).to.be
         .reverted;
     });
@@ -314,7 +316,7 @@ contract('VaultManager - Setters', () => {
     it('reverts - invalid address', async () => {
       await expect(
         vaultManager.connect(governor).setLiquidationBoostParameters(ZERO_ADDRESS, [0, 1], [100]),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
     });
   });
 });

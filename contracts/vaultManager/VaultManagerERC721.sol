@@ -22,7 +22,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @param caller Address of the person seeking to interact with the vault
     /// @param vaultID ID of the concerned vault
     modifier onlyApprovedOrOwner(address caller, uint256 vaultID) {
-        require(_isApprovedOrOwner(caller, vaultID), "16");
+        if (!_isApprovedOrOwner(caller, vaultID)) revert NotApproved();
         _;
     }
 
@@ -59,7 +59,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
 
     /// @inheritdoc IERC721MetadataUpgradeable
     function tokenURI(uint256 vaultID) external view returns (string memory) {
-        require(_exists(vaultID), "26");
+        if (!_exists(vaultID)) revert NonexistentVault();
         // There is no vault with `vaultID` equal to 0, so the following variable is
         // always greater than zero
         uint256 temp = vaultID;
@@ -79,7 +79,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
 
     /// @inheritdoc IERC721Upgradeable
     function balanceOf(address owner) external view returns (uint256) {
-        require(owner != address(0), "0");
+        if (owner == address(0)) revert ZeroAddress();
         return _balances[owner];
     }
 
@@ -91,21 +91,21 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @inheritdoc IERC721Upgradeable
     function approve(address to, uint256 vaultID) external {
         address owner = _ownerOf(vaultID);
-        require(to != owner, "27");
-        require(msg.sender == owner || isApprovedForAll(owner, msg.sender), "16");
+        if (to == owner) revert ApprovalToOwner();
+        if (msg.sender != owner && !isApprovedForAll(owner, msg.sender)) revert NotApproved();
 
         _approve(to, vaultID);
     }
 
     /// @inheritdoc IERC721Upgradeable
     function getApproved(uint256 vaultID) external view returns (address) {
-        require(_exists(vaultID), "26");
+        if (!_exists(vaultID)) revert NonexistentVault();
         return _getApproved(vaultID);
     }
 
     /// @inheritdoc IERC721Upgradeable
     function setApprovalForAll(address operator, bool approved) external {
-        require(operator != msg.sender, "28");
+        if (operator == msg.sender) revert ApprovalToCaller();
         _operatorApprovals[msg.sender][operator] = approved;
         emit ApprovalForAll(msg.sender, operator, approved);
     }
@@ -159,7 +159,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @notice Internal version of the `ownerOf` function
     function _ownerOf(uint256 vaultID) internal view returns (address owner) {
         owner = _owners[vaultID];
-        require(owner != address(0), "26");
+        if (owner == address(0)) revert NonexistentVault();
     }
 
     /// @notice Internal version of the `getApproved` function
@@ -175,7 +175,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         bytes memory _data
     ) internal {
         _transfer(from, to, vaultID);
-        require(_checkOnERC721Received(from, to, vaultID, _data), "29");
+        if (!_checkOnERC721Received(from, to, vaultID, _data)) revert NonERC721Receiver();
     }
 
     /// @notice Checks whether a vault exists
@@ -197,7 +197,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @dev This method is equivalent to the `_safeMint` method used in OpenZeppelin ERC721 contract
     /// @dev Emits a {Transfer} event
     function _mint(address to) internal returns (uint256 vaultID) {
-        require(!whitelistingActivated || (isWhitelisted[to] && isWhitelisted[msg.sender]), "20");
+        if (whitelistingActivated && (!isWhitelisted[to] || !isWhitelisted[msg.sender])) revert NotWhitelisted();
         unchecked {
             vaultIDCount += 1;
             _balances[to] += 1;
@@ -205,7 +205,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         vaultID = vaultIDCount;
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
-        require(_checkOnERC721Received(address(0), to, vaultID, ""), "29");
+        if (!_checkOnERC721Received(address(0), to, vaultID, "")) revert NonERC721Receiver();
     }
 
     /// @notice Destroys `vaultID`
@@ -237,9 +237,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address to,
         uint256 vaultID
     ) internal {
-        require(_ownerOf(vaultID) == from, "30");
-        require(to != address(0), "31");
-        require(!whitelistingActivated || isWhitelisted[to], "20");
+        if (_ownerOf(vaultID) != from) revert NotApproved();
+        if (to == address(0)) revert ZeroAddress();
+        if (whitelistingActivated && !isWhitelisted[to]) revert NotWhitelisted();
         // Clear approvals from the previous owner
         _approve(address(0), vaultID);
         unchecked {

@@ -101,7 +101,7 @@ contract('VaultManager - ERC721', () => {
     it('reverts - oracle treasury differs', async () => {
       oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, collatBase, ZERO_ADDRESS);
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
-      await expect(tx).to.be.revertedWith('33');
+      await expect(tx).to.be.revertedWith('InvalidTreasury');
     });
 
     it('success - setters', async () => {
@@ -141,28 +141,28 @@ contract('VaultManager - ERC721', () => {
       const auxPar = { ...params };
       auxPar.collateralFactor = 0.95e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
-      await expect(tx).to.be.revertedWith('15');
+      await expect(tx).to.be.revertedWith('InvalidSetOfParameters');
     });
 
     it('reverts - targetHealthFactor < 1', async () => {
       const auxPar = { ...params };
       auxPar.targetHealthFactor = 0.999e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
-      await expect(tx).to.be.revertedWith('15');
+      await expect(tx).to.be.revertedWith('InvalidSetOfParameters');
     });
 
     it('reverts - liquidationSurcharge > 1', async () => {
       const auxPar = { ...params };
       auxPar.liquidationSurcharge = 1.0001e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
-      await expect(tx).to.be.revertedWith('15');
+      await expect(tx).to.be.revertedWith('InvalidSetOfParameters');
     });
 
     it('reverts - maxLiquidationDiscount > 1', async () => {
       const auxPar = { ...params };
       auxPar.maxLiquidationDiscount = 1.0001e9;
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, auxPar, 'USDC/agEUR');
-      await expect(tx).to.be.revertedWith('15');
+      await expect(tx).to.be.revertedWith('InvalidSetOfParameters');
     });
   });
 
@@ -254,7 +254,7 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - Unexistent vault', async () => {
-        await expect(vaultManager.tokenURI(1)).to.be.revertedWith('26');
+        await expect(vaultManager.tokenURI(1)).to.be.revertedWith('NonexistentVault');
       });
 
       it('success - 1 decimal vault', async () => {
@@ -274,7 +274,7 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - zero address', async () => {
-        await expect(vaultManager.balanceOf(ZERO_ADDRESS)).to.be.revertedWith('0');
+        await expect(vaultManager.balanceOf(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
       });
 
       it('success', async () => {
@@ -290,11 +290,11 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - closed vault', async () => {
-        await expect(vaultManager.ownerOf(1)).to.be.revertedWith('26');
+        await expect(vaultManager.ownerOf(1)).to.be.revertedWith('NonexistentVault');
       });
 
       it('reverts - nonexistent vault', async () => {
-        await expect(vaultManager.ownerOf(100)).to.be.revertedWith('26');
+        await expect(vaultManager.ownerOf(100)).to.be.revertedWith('NonexistentVault');
       });
 
       it('success', async () => {
@@ -310,15 +310,15 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - cannot self approve', async () => {
-        await expect(vaultManager.connect(alice).approve(alice.address, 2)).to.be.revertedWith('27');
+        await expect(vaultManager.connect(alice).approve(alice.address, 2)).to.be.revertedWith('ApprovalToOwner');
       });
 
       it('reverts - nonexistent vault', async () => {
-        await expect(vaultManager.connect(alice).approve(bob.address, 1)).to.be.revertedWith('26');
+        await expect(vaultManager.connect(alice).approve(bob.address, 1)).to.be.revertedWith('NonexistentVault');
       });
 
       it('reverts - not owner nor approved', async () => {
-        await expect(vaultManager.connect(bob).approve(bob.address, 2)).to.be.revertedWith('16');
+        await expect(vaultManager.connect(bob).approve(bob.address, 2)).to.be.revertedWith('NotApproved');
       });
 
       it('success', async () => {
@@ -335,7 +335,7 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - nonexistent vault', async () => {
-        await expect(vaultManager.connect(alice).getApproved(1)).to.be.revertedWith('26');
+        await expect(vaultManager.connect(alice).getApproved(1)).to.be.revertedWith('NonexistentVault');
       });
 
       it('success', async () => {
@@ -352,7 +352,9 @@ contract('VaultManager - ERC721', () => {
       });
 
       it('reverts - cannot self approve', async () => {
-        await expect(vaultManager.connect(alice).setApprovalForAll(alice.address, true)).to.be.revertedWith('28');
+        await expect(vaultManager.connect(alice).setApprovalForAll(alice.address, true)).to.be.revertedWith(
+          'ApprovalToCaller',
+        );
       });
 
       it('success', async () => {
@@ -391,17 +393,21 @@ contract('VaultManager - ERC721', () => {
 
       it('reverts - do not own vault', async () => {
         await expect(vaultManager.connect(alice).transferFrom(charlie.address, bob.address, 2)).to.be.revertedWith(
-          '30',
+          'NotApproved',
         );
       });
 
       it('reverts - zero address', async () => {
-        await expect(vaultManager.connect(alice).transferFrom(alice.address, ZERO_ADDRESS, 2)).to.be.revertedWith('31');
+        await expect(vaultManager.connect(alice).transferFrom(alice.address, ZERO_ADDRESS, 2)).to.be.revertedWith(
+          'ZeroAddress',
+        );
       });
 
       it('reverts - not whitelisted', async () => {
         await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
-        await expect(vaultManager.connect(alice).transferFrom(alice.address, bob.address, 2)).to.be.revertedWith('20');
+        await expect(vaultManager.connect(alice).transferFrom(alice.address, bob.address, 2)).to.be.revertedWith(
+          'NotWhitelisted',
+        );
       });
 
       it('success', async () => {
@@ -487,12 +493,14 @@ contract('VaultManager - ERC721', () => {
       it('reverts - not receiver', async () => {
         const receiver = await new MockERC721Receiver__factory(deployer).deploy();
         await receiver.setMode(2);
-        await expect(angle(vaultManager, alice, [createVault(receiver.address)])).to.be.revertedWith('29');
+        await expect(angle(vaultManager, alice, [createVault(receiver.address)])).to.be.revertedWith(
+          'NonERC721Receiver',
+        );
       });
 
       it('reverts - not whitelisted', async () => {
         await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
-        await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('20');
+        await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('NotWhitelisted');
       });
     });
   });
