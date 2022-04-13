@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.12;
 
-import "../interfaces/IEulerMarket.sol";
+import "../interfaces/external/euler/IEulerMarket.sol";
 
 import "./BaseReactor.sol";
 

@@ -16,6 +16,7 @@
     "lint:sol": "solhint --fix --max-warnings 20 \"contracts/**/*.sol\"",
     "node:fork:implems": "FORK=true hardhat node --tags unpausing",
     "node:fork:agTokenUpgrade": "FORK=true hardhat node --tags agTokenUpgrade",
+    "node:fork:swapper": "FORK=true hardhat node --tags swapper",
     "prettier": "yarn prettier:js && yarn prettier:sol",
     "prettier:sol": "prettier --write 'contracts/**/*.sol'",
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
@@ -40,7 +41,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "^1.0.57",
+    "@angleprotocol/sdk": "^1.0.68",
     "@chainlink/contracts": "0.2.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-solhint": "2.0.0",

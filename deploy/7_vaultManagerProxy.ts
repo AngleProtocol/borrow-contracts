@@ -67,11 +67,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       const vaultManagerAddress = (await deployments.get(name)).address;
       console.log(`Successfully deployed ${name} at the address ${vaultManagerAddress}`);
       console.log('');
-
-      console.log('Now setting the VaultManager in the treasury...');
-      await (await treasury.addVaultManager(vaultManagerAddress)).wait();
-      console.log(`Success`);
-      console.log('');
     }
   }
 

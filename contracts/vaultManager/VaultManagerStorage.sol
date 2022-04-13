@@ -18,7 +18,7 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/ISwapper.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
-import "../interfaces/IVeBoostProxy.sol";
+import "../interfaces/governance/IVeBoostProxy.sol";
 
 /// @title VaultManagerStorage
 /// @author Angle Core Team

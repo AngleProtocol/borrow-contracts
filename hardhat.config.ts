@@ -67,6 +67,15 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/router/AngleRouter01.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
     },
   },
   defaultNetwork: 'hardhat',
@@ -83,7 +92,7 @@ const config: HardhatUserConfig = {
         // For Polygon
         // blockNumber: 26536036,
         // For mainnet
-        blockNumber: 14532448,
+        blockNumber: 14578338,
       },
       mining: argv.disableAutoMining
         ? {

@@ -3,7 +3,7 @@
 pragma solidity 0.8.12;
 
 import "../interfaces/IAgToken.sol";
-import "../interfaces/IStableMaster.sol";
+import "../interfaces/coreModule/IStableMaster.sol";
 // OpenZeppelin may update its version of the ERC20PermitUpgradeable token
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 

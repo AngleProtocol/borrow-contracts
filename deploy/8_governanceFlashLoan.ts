@@ -2,7 +2,6 @@ import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
-
 import {
   AgToken,
   AgToken__factory,
@@ -12,6 +11,8 @@ import {
   FlashAngle__factory,
   ProxyAdmin,
   ProxyAdmin__factory,
+  Treasury,
+  Treasury__factory,
 } from '../typechain';
 import params from './networks';
 
@@ -22,6 +23,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   let proxyAdminAddress: string;
   let agTokenAddress: string;
   let proxyAdmin: ProxyAdmin;
+  let treasuryContract: Treasury;
   let signer: SignerWithAddress;
   let agToken: AgToken;
   let coreBorrow: CoreBorrow;
@@ -44,8 +46,9 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     agTokenAddress = (await deployments.get('AgToken')).address;
   }
   proxyAdmin = new ethers.Contract(proxyAdminAddress, ProxyAdmin__factory.createInterface(), signer) as ProxyAdmin;
-
   const treasury = await deployments.get('Treasury');
+  treasuryContract = new ethers.Contract(treasury.address, Treasury__factory.createInterface(), signer) as Treasury;
+
   const coreBorrowAddress = await deployments.get('CoreBorrow');
 
   if (!network.live) {
@@ -61,6 +64,21 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     await (await agToken.connect(signer).setUpTreasury(treasury.address)).wait();
     console.log('Success');
     console.log('');
+  }
+  if (!network.live || network.config.chainId != 1) {
+    console.log('Setting new vaultManager contracts on the treasury');
+    if (params.stablesParameters.EUR.vaultManagers) {
+      for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
+        const collat = vaultManagerParams.symbol.split('/')[0];
+        const stable = vaultManagerParams.symbol.split('/')[1];
+        const name = `VaultManager_${collat}_${stable}`;
+        const vaultManagerAddress = (await deployments.get(name)).address;
+        console.log(`Now setting ${name} ...`);
+        await (await treasuryContract.connect(signer).addVaultManager(vaultManagerAddress)).wait();
+        console.log(`Success`);
+        console.log('');
+      }
+    }
   }
 
   coreBorrow = new ethers.Contract(
