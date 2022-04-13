@@ -11,7 +11,7 @@ import "../../interfaces/external/lido/IStETH.sol";
 /// @author Angle Core Team
 /// @notice Gives the price of wSTETH in Euro in base 18
 contract OracleWSTETHEURChainlink is BaseOracleChainlinkMulti {
-    bytes32 public constant DESCRIPTION = "wSTETH/EUR Oracle";
+    string public constant DESCRIPTION = "wSTETH/EUR Oracle";
     IStETH public constant STETH = IStETH(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
     /// @notice Constructor of the contract

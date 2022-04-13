@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-import { contract, ethers, web3 } from 'hardhat';
+import { contract, ethers } from 'hardhat';
 
 import {
   MockChainlinkOracle,
@@ -43,7 +43,7 @@ contract('OracleChainlinkMulti', () => {
       parseEther('1'),
       stalePeriod,
       treasury.address,
-      web3.utils.keccak256('desc'),
+      'desc',
     )) as OracleChainlinkMulti;
   });
 
@@ -53,7 +53,7 @@ contract('OracleChainlinkMulti', () => {
       expect(await oracle.circuitChainlink(0)).to.be.equal(chainlink.address);
       expect(await oracle.chainlinkDecimals(0)).to.be.equal(18);
       expect(await oracle.circuitChainIsMultiplied(0)).to.be.equal(1);
-      expect(await oracle.description()).to.be.equal(web3.utils.keccak256('desc'));
+      expect(await oracle.description()).to.be.equal('desc');
       expect(await oracle.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracle.treasury()).to.be.equal(treasury.address);
     });
@@ -65,7 +65,7 @@ contract('OracleChainlinkMulti', () => {
           parseEther('1'),
           stalePeriod,
           treasury.address,
-          web3.utils.keccak256('desc'),
+          'desc',
         ),
       ).to.be.revertedWith('25');
       await expect(
@@ -75,7 +75,7 @@ contract('OracleChainlinkMulti', () => {
           parseEther('1'),
           stalePeriod,
           treasury.address,
-          web3.utils.keccak256('desc'),
+          'desc',
         ),
       ).to.be.revertedWith('25');
     });
@@ -91,7 +91,7 @@ contract('OracleChainlinkMulti', () => {
         parseEther('1'),
         stalePeriod,
         treasury.address,
-        web3.utils.keccak256('desc'),
+        'desc',
       )) as OracleChainlinkMulti;
       expect(await oracleNew.read()).to.be.equal(parseEther('1'));
     });

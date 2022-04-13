@@ -11,7 +11,7 @@ import "../BaseOracleChainlinkMulti.sol";
 /// @notice Gives the price of ETH in Euro in base 18
 contract OracleETHEURChainlink is BaseOracleChainlinkMulti {
     uint256 public constant OUTBASE = 10**18;
-    bytes32 public constant DESCRIPTION = "ETH/EUR Oracle";
+    string public constant DESCRIPTION = "ETH/EUR Oracle";
 
     /// @notice Constructor of the contract
     /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert

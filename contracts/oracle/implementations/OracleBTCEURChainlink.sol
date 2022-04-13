@@ -11,7 +11,7 @@ import "../BaseOracleChainlinkMulti.sol";
 /// @notice Gives the price of BTC in Euro in base 18
 contract OracleBTCEURChainlink is BaseOracleChainlinkMulti {
     uint256 public constant OUTBASE = 10**18;
-    bytes32 public constant DESCRIPTION = "BTC/EUR Oracle";
+    string public constant DESCRIPTION = "BTC/EUR Oracle";
 
     /// @notice Constructor of the contract
     /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
