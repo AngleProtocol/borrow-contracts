@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.12;
 
-import "../interfaces/IVeBoostProxy.sol";
+import "../interfaces/governance/IVeBoostProxy.sol";
 
 contract MockVeBoostProxy is IVeBoostProxy {
     //solhint-disable-next-line

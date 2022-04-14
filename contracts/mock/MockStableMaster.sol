@@ -2,15 +2,14 @@
 
 pragma solidity 0.8.12;
 
-import "../interfaces/IStableMaster.sol";
 import "../interfaces/IAgToken.sol";
 
-contract MockStableMaster is IStableMaster {
+contract MockStableMaster {
     mapping(address => uint256) public poolManagerMap;
 
     constructor() {}
 
-    function updateStocksUsers(uint256 amount, address poolManager) external override {
+    function updateStocksUsers(uint256 amount, address poolManager) external {
         poolManagerMap[poolManager] += amount;
     }
 

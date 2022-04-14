@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradea
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import "../interfaces/IERC4626.sol";
+import "../interfaces/external/IERC4626.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title BaseReactorStorage

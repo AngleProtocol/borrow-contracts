@@ -12,6 +12,8 @@ module.exports = {
     'oracle/implementations/OracleWSTETHEURChainlink.sol',
     'oracle/implementations/OracleBTCEURChainlink.sol',
     'oracle/implementations/OracleETHEURChainlink.sol',
+    // Router here is a copy pasta of the router in another repo
+    'router',
     'reactor/BaseReactorStorage.sol',
     'vaultManager/VaultManagerStorage.sol',
   ],
