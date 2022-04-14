@@ -246,11 +246,7 @@ contract Settlement {
         uint256 amountToRecover
     ) external onlyGovernor {
         if (tokenAddress == address(collateral)) {
-<<<<<<< HEAD
             if (!exchangeRateComputed) revert GlobalClaimPeriodNotStarted();
-=======
-            if (!exchangeRateComputed) revert ClaimPeriodForCollateralAgainstStablecoinsNotStarted();
->>>>>>> 89b062b (adding settlement and reactor)
             leftOverCollateral -= amountToRecover;
             collateral.safeTransfer(to, amountToRecover);
         } else {
