@@ -153,10 +153,12 @@ contract('AgToken - End-to-end Upgrade', () => {
       );
     });
     it('reverts - zero address', async () => {
-      await expect(treasury.connect(impersonatedSigners[governor]).addMinter(ZERO_ADDRESS)).to.be.revertedWith('0');
+      await expect(treasury.connect(impersonatedSigners[governor]).addMinter(ZERO_ADDRESS)).to.be.revertedWith(
+        'ZeroAddress',
+      );
     });
     it('reverts - non treasury', async () => {
-      await expect(agToken.addMinter(alice.address)).to.be.revertedWith('1');
+      await expect(agToken.addMinter(alice.address)).to.be.revertedWith('NotTreasury');
     });
     it('success - can mint', async () => {
       await agToken.connect(alice).mint(alice.address, parseEther('1000'));
@@ -174,13 +176,13 @@ contract('AgToken - End-to-end Upgrade', () => {
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('500'));
     });
     it('reverts - when non minter', async () => {
-      await expect(agToken.connect(bob).burnSelf(parseEther('500'), alice.address)).to.be.revertedWith('35');
+      await expect(agToken.connect(bob).burnSelf(parseEther('500'), alice.address)).to.be.revertedWith('NotMinter');
     });
   });
   describe('burnFrom', () => {
     it('reverts - when non minter', async () => {
       await expect(agToken.connect(bob).burnFrom(parseEther('500'), alice.address, bob.address)).to.be.revertedWith(
-        '35',
+        'NotMinter',
       );
     });
     it('success - add other minter', async () => {
@@ -197,7 +199,7 @@ contract('AgToken - End-to-end Upgrade', () => {
     });
     it('reverts - too small allowance', async () => {
       await expect(agToken.connect(bob).burnFrom(parseEther('500'), alice.address, bob.address)).to.be.revertedWith(
-        '23',
+        'BurnAmountExceedsAllowance',
       );
     });
     it('success - when allowance', async () => {
@@ -273,12 +275,12 @@ contract('AgToken - End-to-end Upgrade', () => {
   });
   describe('removeMinter', () => {
     it('reverts - non minter', async () => {
-      await expect(agToken.connect(charlie).removeMinter(alice.address)).to.be.revertedWith('36');
+      await expect(agToken.connect(charlie).removeMinter(alice.address)).to.be.revertedWith('InvalidSender');
     });
     it('reverts - sender is treasury and address is stableMaster', async () => {
       await expect(
         treasury.connect(impersonatedSigners[governor]).removeMinter(stableMasterAddress),
-      ).to.be.revertedWith('36');
+      ).to.be.revertedWith('InvalidSender');
     });
     it('success - from treasury', async () => {
       const receipt = await (await treasury.connect(impersonatedSigners[governor]).removeMinter(alice.address)).wait();
@@ -302,7 +304,7 @@ contract('AgToken - End-to-end Upgrade', () => {
   });
   describe('setTreasury', () => {
     it('reverts - non treasury', async () => {
-      await expect(agToken.connect(charlie).setTreasury(alice.address)).to.be.revertedWith('1');
+      await expect(agToken.connect(charlie).setTreasury(alice.address)).to.be.revertedWith('NotTreasury');
     });
     it('success - treasury updated', async () => {
       const newTreasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;

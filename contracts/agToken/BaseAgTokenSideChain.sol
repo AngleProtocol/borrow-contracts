@@ -23,6 +23,14 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     event TreasuryUpdated(address indexed _treasury);
     event MinterToggled(address indexed minter);
 
+    // =============================== Errors ================================
+
+    error BurnAmountExceedsAllowance();
+    error InvalidSender();
+    error InvalidTreasury();
+    error NotMinter();
+    error NotTreasury();
+
     // ============================= Constructor ===================================
 
     /// @notice Initializes the contract
@@ -37,7 +45,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     ) internal initializer {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
-        require(address(ITreasury(_treasury).stablecoin()) == address(this), "6");
+        if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
         treasury = _treasury;
         emit TreasuryUpdated(address(_treasury));
     }
@@ -50,13 +58,13 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
     modifier onlyTreasury() {
-        require(msg.sender == address(treasury), "1");
+        if (msg.sender != address(treasury)) revert NotTreasury();
         _;
     }
 
     /// @notice Checks whether the sender has the minting right
     modifier onlyMinter() {
-        require(isMinter[msg.sender], "35");
+        if (!isMinter[msg.sender]) revert NotMinter();
         _;
     }
 
@@ -100,7 +108,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     /// @inheritdoc IAgToken
     function removeMinter(address minter) external {
-        require(msg.sender == address(treasury) || msg.sender == minter, "36");
+        if (msg.sender != address(treasury) && msg.sender != minter) revert InvalidSender();
         isMinter[minter] = false;
         emit MinterToggled(minter);
     }
@@ -123,7 +131,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     ) internal {
         if (burner != sender) {
             uint256 currentAllowance = allowance(burner, sender);
-            require(currentAllowance >= amount, "23");
+            if (currentAllowance < amount) revert BurnAmountExceedsAllowance();
             _approve(burner, sender, currentAllowance - amount);
         }
         _burn(burner, amount);

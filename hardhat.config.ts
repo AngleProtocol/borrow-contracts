@@ -42,12 +42,32 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1,
+            runs: 1000000000,
           },
           // debug: { revertStrings: 'strip' },
         },
       },
     ],
+    overrides: {
+      'contracts/vaultManager/VaultManager.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+      'contracts/reactor/EulerReactor.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000,
+          },
+        },
+      },
+    },
   },
   defaultNetwork: 'hardhat',
   networks: {

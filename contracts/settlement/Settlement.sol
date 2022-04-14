@@ -69,6 +69,16 @@ contract Settlement {
     event SettlementActivated(uint256 startTimestamp);
     event VaultClaimed(uint256 vaultID, uint256 stablecoinAmount, uint256 collateralAmount);
 
+    // ================================ Errors =====================================
+
+    error GlobalClaimPeriodNotStarted();
+    error InsolventVault();
+    error NotGovernor();
+    error NotOwner();
+    error RestrictedClaimPeriodNotEnded();
+    error SettlementNotInitialized();
+    error VaultAlreadyClaimed();
+
     /// @notice Constructor of the contract
     /// @param _vaultManager Address of the `VaultManager` associated to this `Settlement` contract
     /// @dev Out of safety, this constructor reads values from the `VaultManager` contract directly
@@ -81,7 +91,7 @@ contract Settlement {
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        require(vaultManager.treasury().isGovernor(msg.sender), "1");
+        if (!(vaultManager.treasury().isGovernor(msg.sender))) revert NotGovernor();
         _;
     }
 
@@ -116,15 +126,14 @@ contract Settlement {
         address who,
         bytes memory data
     ) external returns (uint256, uint256) {
-        require(
-            activationTimestamp != 0 && block.timestamp <= activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION,
-            "46"
-        );
-        require(!vaultCheck[vaultID], "48");
-        require(vaultManager.ownerOf(vaultID) == msg.sender, "47");
+        if (activationTimestamp == 0 || block.timestamp > activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION)
+            revert SettlementNotInitialized();
+        if (vaultCheck[vaultID]) revert VaultAlreadyClaimed();
+        if (vaultManager.ownerOf(vaultID) != msg.sender) revert NotOwner();
         (uint256 collateralAmount, uint256 normalizedDebt) = vaultManager.vaultData(vaultID);
         uint256 vaultDebt = (normalizedDebt * interestAccumulator) / BASE_INTEREST;
-        require(collateralAmount * oracleValue * collateralFactor >= vaultDebt * BASE_PARAMS * _collatBase, "21");
+        if (collateralAmount * oracleValue * collateralFactor < vaultDebt * BASE_PARAMS * _collatBase)
+            revert InsolventVault();
         vaultCheck[vaultID] = true;
         emit VaultClaimed(vaultID, vaultDebt, collateralAmount);
         return _handleRepay(collateralAmount, vaultDebt, to, who, data);
@@ -136,10 +145,8 @@ contract Settlement {
     /// different `VaultManager` to rebalance the amount of stablecoins on each to make sure that across all settlement contracts
     /// a similar value of collateral can be obtained against a similar value of stablecoins
     function activateGlobalClaimPeriod() external onlyGovernor {
-        require(
-            activationTimestamp != 0 && block.timestamp > activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION,
-            "49"
-        );
+        if (activationTimestamp == 0 || block.timestamp <= activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION)
+            revert RestrictedClaimPeriodNotEnded();
         uint256 collateralBalance = collateral.balanceOf(address(this));
         uint256 leftOverDebt = (vaultManager.totalNormalizedDebt() * interestAccumulator) / BASE_INTEREST;
         uint256 stablecoinBalance = stablecoin.balanceOf(address(this));
@@ -184,7 +191,7 @@ contract Settlement {
         address who,
         bytes memory data
     ) external returns (uint256, uint256) {
-        require(exchangeRateComputed, "50");
+        if (!exchangeRateComputed) revert GlobalClaimPeriodNotStarted();
         return
             _handleRepay(
                 (stablecoinAmount * collateralStablecoinExchangeRate) / BASE_STABLECOIN,
@@ -239,7 +246,7 @@ contract Settlement {
         uint256 amountToRecover
     ) external onlyGovernor {
         if (tokenAddress == address(collateral)) {
-            require(exchangeRateComputed, "50");
+            if (!exchangeRateComputed) revert GlobalClaimPeriodNotStarted();
             leftOverCollateral -= amountToRecover;
             collateral.safeTransfer(to, amountToRecover);
         } else {

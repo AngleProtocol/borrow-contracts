@@ -166,7 +166,7 @@ contract('Reactor', () => {
       reactor = (await deployUpgradeable(new Reactor__factory(deployer))) as Reactor;
       await expect(
         reactor.initialize('ANGLE/agEUR Reactor', 'ANGLE/agEUR Reactor', vaultManager.address, 0, targetCF, upperCF, 0),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
       await expect(
         reactor.initialize(
           'ANGLE/agEUR Reactor',
@@ -177,7 +177,7 @@ contract('Reactor', () => {
           upperCF,
           0,
         ),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
       await expect(
         reactor.initialize(
           'ANGLE/agEUR Reactor',
@@ -188,7 +188,7 @@ contract('Reactor', () => {
           lowerCF,
           0,
         ),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
       await expect(
         reactor.initialize(
           'ANGLE/agEUR Reactor',
@@ -199,7 +199,7 @@ contract('Reactor', () => {
           upperCF,
           0,
         ),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
       await expect(
         reactor.initialize(
           'ANGLE/agEUR Reactor',
@@ -210,7 +210,7 @@ contract('Reactor', () => {
           1e9,
           0,
         ),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
       await expect(
         reactor.initialize(
           'ANGLE/agEUR Reactor',
@@ -221,7 +221,7 @@ contract('Reactor', () => {
           upperCF,
           2e9,
         ),
-      ).to.be.revertedWith('15');
+      ).to.be.revertedWith('InvalidSetOfParameters');
     });
   });
   describe('maxMint', () => {
@@ -387,7 +387,9 @@ contract('Reactor', () => {
   });
   describe('onERC721Received', () => {
     it('reverts - sender is not vaultManager', async () => {
-      await expect(reactor.onERC721Received(alice.address, alice.address, 0, '0x')).to.be.revertedWith('3');
+      await expect(reactor.onERC721Received(alice.address, alice.address, 0, '0x')).to.be.revertedWith(
+        'NotVaultManager',
+      );
     });
   });
   describe('setOracle', () => {
@@ -425,10 +427,10 @@ contract('Reactor', () => {
 
   describe('setSurplusManager', () => {
     it('reverts - access control', async () => {
-      await expect(reactor.connect(alice).setSurplusManager(alice.address)).to.be.revertedWith('2');
+      await expect(reactor.connect(alice).setSurplusManager(alice.address)).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('reverts - zero address', async () => {
-      await expect(reactor.connect(guardian).setSurplusManager(ZERO_ADDRESS)).to.be.revertedWith('0');
+      await expect(reactor.connect(guardian).setSurplusManager(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
     });
     it('success - variable updated', async () => {
       await reactor.connect(guardian).setSurplusManager(alice.address);
@@ -438,7 +440,9 @@ contract('Reactor', () => {
 
   describe('setUint64', () => {
     it('reverts - access control', async () => {
-      await expect(reactor.connect(alice).setUint64(lowerCF, formatBytes32String('lowerCF'))).to.be.revertedWith('2');
+      await expect(reactor.connect(alice).setUint64(lowerCF, formatBytes32String('lowerCF'))).to.be.revertedWith(
+        'NotGovernorOrGuardian',
+      );
     });
     it('success - guardian and lowerCF', async () => {
       const receipt = await (await reactor.connect(guardian).setUint64(0.1e9, formatBytes32String('lowerCF'))).wait();
@@ -479,31 +483,43 @@ contract('Reactor', () => {
       });
     });
     it('reverts - invalid lowerCF', async () => {
-      await expect(reactor.connect(governor).setUint64(0.6e9, formatBytes32String('lowerCF'))).to.be.revertedWith('18');
-      await expect(reactor.connect(governor).setUint64(0, formatBytes32String('lowerCF'))).to.be.revertedWith('18');
+      await expect(reactor.connect(governor).setUint64(0.6e9, formatBytes32String('lowerCF'))).to.be.revertedWith(
+        'InvalidParameterValue',
+      );
+      await expect(reactor.connect(governor).setUint64(0, formatBytes32String('lowerCF'))).to.be.revertedWith(
+        'InvalidParameterValue',
+      );
     });
     it('reverts - invalid targetCF', async () => {
-      await expect(reactor.connect(governor).setUint64(1e9, formatBytes32String('targetCF'))).to.be.revertedWith('18');
-      await expect(reactor.connect(governor).setUint64(0, formatBytes32String('targetCF'))).to.be.revertedWith('18');
+      await expect(reactor.connect(governor).setUint64(1e9, formatBytes32String('targetCF'))).to.be.revertedWith(
+        'InvalidParameterValue',
+      );
+      await expect(reactor.connect(governor).setUint64(0, formatBytes32String('targetCF'))).to.be.revertedWith(
+        'InvalidParameterValue',
+      );
     });
     it('reverts - invalid upperCF', async () => {
-      await expect(reactor.connect(governor).setUint64(1e9, formatBytes32String('upperCF'))).to.be.revertedWith('18');
-      await expect(reactor.connect(governor).setUint64(0, formatBytes32String('upperCF'))).to.be.revertedWith('18');
+      await expect(reactor.connect(governor).setUint64(1e9, formatBytes32String('upperCF'))).to.be.revertedWith(
+        'InvalidParameterValue',
+      );
+      await expect(reactor.connect(governor).setUint64(0, formatBytes32String('upperCF'))).to.be.revertedWith(
+        'InvalidParameterValue',
+      );
     });
     it('reverts - invalid protocolInterestShare', async () => {
       await expect(
         reactor.connect(governor).setUint64(2e9, formatBytes32String('protocolInterestShare')),
-      ).to.be.revertedWith('18');
+      ).to.be.revertedWith('TooHighParameterValue');
     });
     it('reverts - invalid parameter', async () => {
       await expect(reactor.connect(governor).setUint64(1e9, formatBytes32String('wrong message'))).to.be.revertedWith(
-        '43',
+        'InvalidParameterType',
       );
     });
   });
   describe('recoverERC20', () => {
     it('reverts - nonGovernor', async () => {
-      await expect(reactor.recoverERC20(agEUR.address, bob.address, 1)).to.be.revertedWith('1');
+      await expect(reactor.recoverERC20(agEUR.address, bob.address, 1)).to.be.revertedWith('NotGovernor');
     });
     it('success - when token is collateral', async () => {
       const gains = parseUnits('1', collatBase);
@@ -520,16 +536,18 @@ contract('Reactor', () => {
     it('reverts - when token is stablecoin', async () => {
       await treasury.addMinter(agEUR.address, alice.address);
       await agEUR.connect(alice).mint(reactor.address, parseEther('1'));
-      await expect(reactor.connect(governor).recoverERC20(agEUR.address, bob.address, 1)).to.be.revertedWith('51');
+      await expect(reactor.connect(governor).recoverERC20(agEUR.address, bob.address, 1)).to.be.revertedWith(
+        'InvalidToken',
+      );
     });
   });
 
   describe('pullProtocolFees', () => {
     it('reverts - zero address', async () => {
-      await expect(reactor.pullProtocolFees(ZERO_ADDRESS)).to.be.revertedWith('0');
+      await expect(reactor.pullProtocolFees(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
     });
     it('reverts - not guardian', async () => {
-      await expect(reactor.connect(alice).pullProtocolFees(alice.address)).to.be.revertedWith('2');
+      await expect(reactor.connect(alice).pullProtocolFees(alice.address)).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('success - when zero available', async () => {
       await reactor.connect(guardian).pullProtocolFees(alice.address);
@@ -800,7 +818,7 @@ contract('Reactor', () => {
       expectApprox(await vaultManager.getVaultDebt(1), assetsAmount.mul(2).mul(targetCF), 0.00001);
     });
     it('reverts - zero shares', async () => {
-      await expect(reactor.connect(alice).deposit(0, alice.address)).to.be.revertedWith('ZERO_SHARES');
+      await expect(reactor.connect(alice).deposit(0, alice.address)).to.be.revertedWith('ZeroShares');
     });
   });
 
@@ -829,7 +847,7 @@ contract('Reactor', () => {
     });
     it('reverts - from not approved by msg.sender', async () => {
       await expect(reactor.connect(bob).redeem(sharesAmount, alice.address, alice.address)).to.be.revertedWith(
-        'ERC20: transfer amount exceeds allowance',
+        'TransferAmountExceedsAllowance',
       );
     });
     it('reverts - redeems more shares', async () => {
@@ -837,7 +855,7 @@ contract('Reactor', () => {
         .reverted;
     });
     it('reverts - zero assets', async () => {
-      await expect(reactor.connect(bob).redeem(0, alice.address, alice.address)).to.be.revertedWith('ZERO_ASSETS');
+      await expect(reactor.connect(bob).redeem(0, alice.address, alice.address)).to.be.revertedWith('ZeroAssets');
     });
     it('success - from approved by msg.sender and reduced allowance', async () => {
       await reactor.connect(alice).approve(bob.address, sharesAmount);
@@ -928,7 +946,7 @@ contract('Reactor', () => {
     });
     it('reverts - from not approved by msg.sender', async () => {
       await expect(reactor.connect(bob).withdraw(assetsAmount, alice.address, alice.address)).to.be.revertedWith(
-        'ERC20: transfer amount exceeds allowance',
+        'TransferAmountExceedsAllowance',
       );
     });
     it('reverts - withdraw more than what is in the reactor', async () => {

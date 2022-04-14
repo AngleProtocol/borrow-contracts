@@ -67,7 +67,7 @@ contract('OracleChainlinkMulti', () => {
           treasury.address,
           'desc',
         ),
-      ).to.be.revertedWith('25');
+      ).to.be.revertedWith('IncompatibleLengths');
       await expect(
         new OracleChainlinkMulti__factory(deployer).deploy(
           [],
@@ -77,7 +77,7 @@ contract('OracleChainlinkMulti', () => {
           treasury.address,
           'desc',
         ),
-      ).to.be.revertedWith('25');
+      ).to.be.revertedWith('IncompatibleLengths');
     });
   });
   describe('read', () => {
@@ -97,7 +97,7 @@ contract('OracleChainlinkMulti', () => {
     });
     it('reverts - zero ratio', async () => {
       await chainlink.setLatestAnswer(parseEther('0'), await latestTime());
-      await expect(oracle.read()).to.be.revertedWith('37');
+      await expect(oracle.read()).to.be.revertedWith('InvalidChainlinkRate');
     });
     it('reverts - Chainlink reverts', async () => {
       await chainlink.setLatestRoundDataShouldRevert(true);
@@ -105,12 +105,12 @@ contract('OracleChainlinkMulti', () => {
     });
     it('reverts - stale period', async () => {
       await chainlink.setLatestAnswerRevert(parseEther('1'), await latestTime());
-      await expect(oracle.read()).to.be.revertedWith('37');
+      await expect(oracle.read()).to.be.revertedWith('InvalidChainlinkRate');
     });
   });
   describe('changeStalePeriod', () => {
     it('reverts - wrong sender', async () => {
-      await expect(oracle.changeStalePeriod(0)).to.be.revertedWith('2');
+      await expect(oracle.changeStalePeriod(0)).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('success - stalePeriod updated', async () => {
       await treasury.setGovernor(deployer.address);
@@ -119,12 +119,12 @@ contract('OracleChainlinkMulti', () => {
         _stalePeriod: 0,
       });
       expect(await oracle.stalePeriod()).to.be.equal(0);
-      await expect(oracle.read()).to.be.revertedWith('37');
+      await expect(oracle.read()).to.be.revertedWith('InvalidChainlinkRate');
     });
   });
   describe('setTreasury', () => {
     it('reverts - wrong sender', async () => {
-      await expect(oracle.setTreasury(ZERO_ADDRESS)).to.be.revertedWith('3');
+      await expect(oracle.setTreasury(ZERO_ADDRESS)).to.be.revertedWith('NotVaultManagerOrGovernor');
     });
     it('success - treasury updated', async () => {
       await treasury.setVaultManager(deployer.address);

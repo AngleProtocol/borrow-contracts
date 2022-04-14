@@ -93,7 +93,7 @@ contract('FlashAngle', () => {
   });
   describe('addStablecoinSupport', () => {
     it('reverts - nonCore', async () => {
-      await expect(flashAngle.addStablecoinSupport(guardian)).to.be.revertedWith('10');
+      await expect(flashAngle.addStablecoinSupport(guardian)).to.be.revertedWith('NotCore');
     });
     it('success - stablecoinSupported', async () => {
       treasury = (await new MockTreasury__factory(deployer).deploy(
@@ -112,7 +112,7 @@ contract('FlashAngle', () => {
   });
   describe('removeStablecoinSupport', () => {
     it('reverts - nonCore', async () => {
-      await expect(flashAngle.removeStablecoinSupport(treasury.address)).to.be.revertedWith('10');
+      await expect(flashAngle.removeStablecoinSupport(treasury.address)).to.be.revertedWith('NotCore');
     });
     it('success - stablecoin removed', async () => {
       await coreBorrow.removeStablecoinSupport(flashAngle.address, treasury.address);
@@ -123,7 +123,7 @@ contract('FlashAngle', () => {
   });
   describe('setCore', () => {
     it('reverts - nonCore', async () => {
-      await expect(flashAngle.setCore(treasury.address)).to.be.revertedWith('10');
+      await expect(flashAngle.setCore(treasury.address)).to.be.revertedWith('NotCore');
     });
     it('success - core updated', async () => {
       await coreBorrow.setCore(flashAngle.address, treasury.address);
@@ -132,15 +132,15 @@ contract('FlashAngle', () => {
   });
   describe('setFlashLoanParameters', () => {
     it('reverts - non existing stablecoin', async () => {
-      await expect(flashAngle.setFlashLoanParameters(ZERO_ADDRESS, 0, 0)).to.be.revertedWith('13');
+      await expect(flashAngle.setFlashLoanParameters(ZERO_ADDRESS, 0, 0)).to.be.revertedWith('UnsupportedStablecoin');
     });
     it('reverts - non governor', async () => {
-      await expect(flashAngle.setFlashLoanParameters(token.address, 0, 0)).to.be.revertedWith('2');
+      await expect(flashAngle.setFlashLoanParameters(token.address, 0, 0)).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('reverts - too high fee', async () => {
       await expect(
         flashAngle.connect(impersonatedSigners[governor]).setFlashLoanParameters(token.address, parseEther('1'), 0),
-      ).to.be.revertedWith('9');
+      ).to.be.revertedWith('TooHighParameterValue');
     });
     it('success - parameters updated', async () => {
       await flashAngle
@@ -152,7 +152,7 @@ contract('FlashAngle', () => {
   });
   describe('flashFee', () => {
     it('reverts - non existing stablecoin', async () => {
-      await expect(flashAngle.flashFee(guardian, 0)).to.be.revertedWith('13');
+      await expect(flashAngle.flashFee(guardian, 0)).to.be.revertedWith('UnsupportedStablecoin');
     });
     it('success - supported token and null flash fee', async () => {
       expect(await flashAngle.flashFee(token.address, parseEther('1'))).to.be.equal(0);
@@ -180,10 +180,10 @@ contract('FlashAngle', () => {
   });
   describe('accrueInterestToTreasury', () => {
     it('reverts - invalid stablecoin', async () => {
-      await expect(flashAngle.accrueInterestToTreasury(guardian)).to.be.revertedWith('14');
+      await expect(flashAngle.accrueInterestToTreasury(guardian)).to.be.revertedWith('NotTreasury');
     });
     it('reverts - valid stablecoin but invalid sender', async () => {
-      await expect(flashAngle.connect(alice).accrueInterestToTreasury(token.address)).to.be.revertedWith('14');
+      await expect(flashAngle.connect(alice).accrueInterestToTreasury(token.address)).to.be.revertedWith('NotTreasury');
     });
     it('success - valid stablecoin and valid sender - zero balance', async () => {
       const receipt = await (await treasury.accrueInterestToTreasury(flashAngle.address)).wait();
@@ -221,12 +221,12 @@ contract('FlashAngle', () => {
     it('reverts - unsupported token', async () => {
       await expect(
         flashAngle.flashLoan(flashLoanReceiver.address, guardian, 0, web3.utils.keccak256('test')),
-      ).to.be.revertedWith('13');
+      ).to.be.revertedWith('UnsupportedStablecoin');
     });
     it('reverts - too high amount', async () => {
       await expect(
         flashAngle.flashLoan(flashLoanReceiver.address, token.address, parseEther('1'), web3.utils.keccak256('test')),
-      ).to.be.revertedWith('4');
+      ).to.be.revertedWith('TooBigAmount');
     });
     it('reverts - wrong error message', async () => {
       await flashAngle
@@ -240,7 +240,7 @@ contract('FlashAngle', () => {
           parseEther('1001'),
           web3.utils.keccak256('test'),
         ),
-      ).to.be.revertedWith('39');
+      ).to.be.revertedWith('InvalidReturnMessage');
     });
     it('reverts - too small balance, incapable to repay fees', async () => {
       await flashAngle

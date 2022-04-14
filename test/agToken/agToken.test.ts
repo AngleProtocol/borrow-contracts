@@ -90,7 +90,7 @@ contract('AgToken', () => {
   });
   describe('setUpTreasury', () => {
     it('reverts - wrong sender', async () => {
-      await expect(agToken.setUpTreasury(ZERO_ADDRESS)).to.be.revertedWith('1');
+      await expect(agToken.setUpTreasury(ZERO_ADDRESS)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - wrong stablecoin', async () => {
       const mockTreasuryWrong = (await new MockTreasury__factory(deployer).deploy(
@@ -103,17 +103,17 @@ contract('AgToken', () => {
       )) as MockTreasury;
       await expect(
         agToken.connect(impersonatedSigners[governor]).setUpTreasury(mockTreasuryWrong.address),
-      ).to.be.revertedWith('6');
+      ).to.be.revertedWith('InvalidTreasury');
     });
     it('reverts - treasuryInitialized', async () => {
       await expect(agToken.connect(impersonatedSigners[governor]).setUpTreasury(treasury.address)).to.be.revertedWith(
-        '34',
+        'TreasuryAlreadyInitialized',
       );
     });
   });
   describe('mint', () => {
     it('reverts - wrong sender', async () => {
-      await expect(agToken.connect(alice).mint(alice.address, parseEther('1'))).to.be.revertedWith('35');
+      await expect(agToken.connect(alice).mint(alice.address, parseEther('1'))).to.be.revertedWith('NotMinter');
     });
     it('success - stableMaster mint (in the before each)', async () => {
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1'));
@@ -138,7 +138,7 @@ contract('AgToken', () => {
       await stableMaster.mint(agToken.address, bob.address, parseEther('1'));
       await expect(
         agToken.connect(alice).burnFromNoRedeem(bob.address, parseEther('0.5'), alice.address),
-      ).to.be.revertedWith('23');
+      ).to.be.revertedWith('BurnAmountExceedsAllowance');
     });
     it('success - when allowance', async () => {
       await agToken.connect(alice).approve(bob.address, parseEther('2'));
@@ -160,7 +160,7 @@ contract('AgToken', () => {
   });
   describe('burnSelf', () => {
     it('reverts - non minter', async () => {
-      await expect(agToken.connect(alice).burnSelf(parseEther('1'), alice.address)).to.be.revertedWith('35');
+      await expect(agToken.connect(alice).burnSelf(parseEther('1'), alice.address)).to.be.revertedWith('NotMinter');
     });
     it('success - when minter', async () => {
       await stableMaster.burnSelf(agToken.address, parseEther('0.4'), alice.address);
@@ -171,13 +171,13 @@ contract('AgToken', () => {
   describe('burnFrom', () => {
     it('reverts - non minter', async () => {
       await expect(agToken.connect(alice).burnFrom(parseEther('1'), bob.address, alice.address)).to.be.revertedWith(
-        '35',
+        'NotMinter',
       );
     });
     it('reverts - no approval', async () => {
       await expect(
         stableMaster.connect(bob).burnFrom(agToken.address, parseEther('1'), alice.address, bob.address),
-      ).to.be.revertedWith('23');
+      ).to.be.revertedWith('BurnAmountExceedsAllowance');
     });
     it('success - with approval', async () => {
       await agToken.connect(alice).approve(bob.address, parseEther('2'));
@@ -189,7 +189,7 @@ contract('AgToken', () => {
   });
   describe('addMinter', () => {
     it('reverts - non treasury', async () => {
-      await expect(agToken.connect(alice).addMinter(alice.address)).to.be.revertedWith('1');
+      await expect(agToken.connect(alice).addMinter(alice.address)).to.be.revertedWith('NotTreasury');
     });
     it('success - minter toggled', async () => {
       const receipt = await (await treasury.connect(alice).addMinter(agToken.address, alice.address)).wait();
@@ -206,17 +206,17 @@ contract('AgToken', () => {
   });
   describe('removeMinter', () => {
     it('reverts - non treasury', async () => {
-      await expect(agToken.connect(alice).removeMinter(bob.address)).to.be.revertedWith('36');
+      await expect(agToken.connect(alice).removeMinter(bob.address)).to.be.revertedWith('InvalidSender');
     });
     it('reverts - removing stableMaster from the treasury', async () => {
       await expect(treasury.connect(alice).removeMinter(agToken.address, stableMaster.address)).to.be.revertedWith(
-        '36',
+        'InvalidSender',
       );
     });
     it('success - minter removed after being added', async () => {
       await (await treasury.connect(alice).addMinter(agToken.address, alice.address)).wait();
       expect(await agToken.isMinter(alice.address)).to.be.true;
-      await expect(agToken.connect(bob).removeMinter(alice.address)).to.be.revertedWith('36');
+      await expect(agToken.connect(bob).removeMinter(alice.address)).to.be.revertedWith('InvalidSender');
       const receipt = await (await treasury.connect(alice).removeMinter(agToken.address, alice.address)).wait();
       inIndirectReceipt(
         receipt,
@@ -237,7 +237,7 @@ contract('AgToken', () => {
   });
   describe('setTreasury', () => {
     it('reverts - non treasury', async () => {
-      await expect(agToken.connect(alice).setTreasury(alice.address)).to.be.revertedWith('1');
+      await expect(agToken.connect(alice).setTreasury(alice.address)).to.be.revertedWith('NotTreasury');
     });
     it('success - treasury updated', async () => {
       const receipt = await (await treasury.connect(alice).setTreasury(agToken.address, alice.address)).wait();

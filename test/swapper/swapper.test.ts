@@ -65,7 +65,7 @@ contract('Swapper', () => {
           router.address,
           router.address,
         ),
-      ).to.be.revertedWith('0');
+      ).to.be.revertedWith('ZeroAddress');
       await expect(
         new Swapper__factory(deployer).deploy(
           core.address,
@@ -83,7 +83,7 @@ contract('Swapper', () => {
           router.address,
           router.address,
         ),
-      ).to.be.revertedWith('0');
+      ).to.be.revertedWith('ZeroAddress');
       await expect(
         new Swapper__factory(deployer).deploy(
           core.address,
@@ -92,7 +92,7 @@ contract('Swapper', () => {
           ZERO_ADDRESS,
           router.address,
         ),
-      ).to.be.revertedWith('0');
+      ).to.be.revertedWith('ZeroAddress');
       await expect(
         new Swapper__factory(deployer).deploy(
           core.address,
@@ -101,7 +101,7 @@ contract('Swapper', () => {
           router.address,
           ZERO_ADDRESS,
         ),
-      ).to.be.revertedWith('0');
+      ).to.be.revertedWith('ZeroAddress');
     });
   });
 
@@ -541,7 +541,7 @@ contract('Swapper', () => {
       await router.setStETHMultiplier(parseUnits('0.9', 9));
       await expect(
         swapper.swap(stETH.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data),
-      ).to.be.revertedWith('52');
+      ).to.be.revertedWith('TooSmallAmount');
     });
     it('success - leftover amount', async () => {
       await stETH.mint(swapper.address, parseEther('1'));
@@ -576,7 +576,7 @@ contract('Swapper', () => {
       );
       await expect(
         swapper.swap(stETH.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data),
-      ).to.be.revertedWith('53');
+      ).to.be.revertedWith('EmptyReturnMessage');
     });
     it('reverts - function reverts with message', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -595,7 +595,7 @@ contract('Swapper', () => {
       );
       await expect(
         swapper.swap(stETH.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data),
-      ).to.be.revertedWith('53');
+      ).to.be.revertedWith('EmptyReturnMessage');
     });
     it('reverts - 1Inch wrong revert message', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -670,7 +670,7 @@ contract('Swapper', () => {
       await router.setMultipliers(parseUnits('0.5', 9), parseUnits('1', 9));
       await expect(
         swapper.swap(collateral.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data),
-      ).to.be.revertedWith('52');
+      ).to.be.revertedWith('TooSmallAmount');
     });
     it('success - leftover available amount out', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -691,12 +691,12 @@ contract('Swapper', () => {
     it('reverts - non governor nor guardian', async () => {
       await expect(
         swapper.connect(deployer).changeAllowance([collateral.address], [router.address], [MAX_UINT256]),
-      ).to.be.revertedWith('2');
+      ).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('reverts - incorrect length', async () => {
       await core.connect(alice).toggleGuardian(alice.address);
       await expect(swapper.connect(alice).changeAllowance([], [router.address], [MAX_UINT256])).to.be.revertedWith(
-        '25',
+        'IncompatibleLengths',
       );
     });
     it('success - allowance increased on random token', async () => {

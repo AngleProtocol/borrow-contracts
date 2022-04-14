@@ -41,14 +41,13 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
         vaultID = _vaultManager.createVault(address(this));
 
-        require(
-            0 < _lowerCF &&
-                _lowerCF <= _targetCF &&
-                _targetCF <= _upperCF &&
-                _upperCF <= _vaultManager.collateralFactor() &&
-                _protocolInterestShare <= BASE_PARAMS,
-            "15"
-        );
+        if (
+            0 == _lowerCF ||
+            _lowerCF > _targetCF ||
+            _targetCF > _upperCF ||
+            _upperCF > _vaultManager.collateralFactor() ||
+            _protocolInterestShare > BASE_PARAMS
+        ) revert InvalidSetOfParameters();
         lowerCF = _lowerCF;
         targetCF = _targetCF;
         upperCF = _upperCF;
@@ -61,13 +60,13 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        require(treasury.isGovernor(msg.sender), "1");
+        if (!treasury.isGovernor(msg.sender)) revert NotGovernor();
         _;
     }
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
-        require(treasury.isGovernorOrGuardian(msg.sender), "2");
+        if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         _;
     }
 
@@ -77,7 +76,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     function deposit(uint256 assets, address to) public nonReentrant returns (uint256 shares) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         shares = _convertToShares(assets, usedAssets + looseAssets, 0);
-        require(shares != 0, "ZERO_SHARES");
+        if (shares == 0) revert ZeroShares();
         _deposit(assets, shares, to, usedAssets, looseAssets + assets);
     }
 
@@ -120,7 +119,8 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         address from
     ) public nonReentrant returns (uint256 assets) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
-        require((assets = _convertToAssets(shares, usedAssets + looseAssets, 0)) != 0, "ZERO_ASSETS");
+        assets = _convertToAssets(shares, usedAssets + looseAssets, 0);
+        if (assets == 0) revert ZeroAssets();
         _withdraw(assets, shares, to, from, usedAssets, looseAssets);
     }
 
@@ -210,7 +210,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         uint256,
         bytes memory
     ) external view returns (bytes4) {
-        require(msg.sender == address(vaultManager), "3");
+        if (msg.sender != address(vaultManager)) revert NotVaultManager();
         return this.onERC721Received.selector;
     }
 
@@ -496,7 +496,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     ) internal {
         if (msg.sender != from) {
             uint256 currentAllowance = allowance(from, msg.sender);
-            require(currentAllowance >= shares, "ERC20: transfer amount exceeds allowance");
+            if (currentAllowance < shares) revert TransferAmountExceedsAllowance();
             if (currentAllowance != type(uint256).max) {
                 unchecked {
                     _approve(from, msg.sender, currentAllowance - shares);
@@ -542,25 +542,25 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @dev This function performs the required checks when updating a parameter
     function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
         if (what == "lowerCF") {
-            require(0 < param && param <= targetCF, "18");
+            if (0 == param || param > targetCF) revert InvalidParameterValue();
             lowerCF = param;
         } else if (what == "targetCF") {
-            require(lowerCF <= param && param <= upperCF, "18");
+            if (lowerCF > param || param > upperCF) revert InvalidParameterValue();
             targetCF = param;
         } else if (what == "upperCF") {
-            require(targetCF <= param && param <= vaultManager.collateralFactor(), "18");
+            if (targetCF > param || param > vaultManager.collateralFactor()) revert InvalidParameterValue();
             upperCF = param;
         } else if (what == "protocolInterestShare") {
-            require(param <= BASE_PARAMS, "18");
+            if (param > BASE_PARAMS) revert TooHighParameterValue();
             protocolInterestShare = param;
         } else {
-            revert("43");
+            revert InvalidParameterType();
         }
         emit FiledUint64(param, what);
     }
 
     function setSurplusManager(address _newSurplusManager) external onlyGovernorOrGuardian {
-        require(_newSurplusManager != address(0), "0");
+        if (_newSurplusManager == address(0)) revert ZeroAddress();
         surplusManager = _newSurplusManager;
     }
 
@@ -575,7 +575,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         address to,
         uint256 amountToRecover
     ) external onlyGovernor {
-        require(tokenAddress != address(stablecoin), "51");
+        if (tokenAddress == address(stablecoin)) revert InvalidToken();
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }
@@ -583,9 +583,9 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Pulls the fees accumulated by the protocol from its strategies
     /// @param to Address to which tokens should be sent
     function pullProtocolFees(address to) external {
-        require(to != address(0), "0");
+        if (to == address(0)) revert ZeroAddress();
         if (to != surplusManager) {
-            require(treasury.isGovernorOrGuardian(msg.sender), "2");
+            if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         }
         uint256 amountToRecover = protocolInterestAccumulated;
         uint256 amountAvailable = _pull(amountToRecover);

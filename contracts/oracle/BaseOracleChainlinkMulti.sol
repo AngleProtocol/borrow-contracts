@@ -25,6 +25,12 @@ abstract contract BaseOracleChainlinkMulti is IOracle {
 
     event StalePeriodUpdated(uint32 _stalePeriod);
 
+    // =================================== Errors ===================================
+
+    error InvalidChainlinkRate();
+    error NotGovernorOrGuardian();
+    error NotVaultManagerOrGovernor();
+
     /// @notice Constructor for an oracle using Chainlink with multiple pools to read from
     /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
     /// @param _treasury Treasury associated to the VaultManager which reads from this feed
@@ -53,7 +59,8 @@ abstract contract BaseOracleChainlinkMulti is IOracle {
         uint256 decimals
     ) internal view returns (uint256) {
         (uint80 roundId, int256 ratio, , uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
-        require(ratio > 0 && roundId <= answeredInRound && block.timestamp - updatedAt <= stalePeriod, "37");
+        if (ratio <= 0 || roundId > answeredInRound || block.timestamp - updatedAt > stalePeriod)
+            revert InvalidChainlinkRate();
         uint256 castedRatio = uint256(ratio);
         // Checking whether we should multiply or divide by the ratio computed
         if (multiplied == 1) return (quoteAmount * castedRatio) / (10**decimals);
@@ -65,14 +72,15 @@ abstract contract BaseOracleChainlinkMulti is IOracle {
     /// @notice Changes the stale period
     /// @param _stalePeriod New stale period (in seconds)
     function changeStalePeriod(uint32 _stalePeriod) external {
-        require(treasury.isGovernorOrGuardian(msg.sender), "2");
+        if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         stalePeriod = _stalePeriod;
         emit StalePeriodUpdated(_stalePeriod);
     }
 
     /// @inheritdoc IOracle
     function setTreasury(address _treasury) external override {
-        require(treasury.isVaultManager(msg.sender) || treasury.isGovernor(msg.sender), "3");
+        if (!treasury.isVaultManager(msg.sender) && !treasury.isGovernor(msg.sender))
+            revert NotVaultManagerOrGovernor();
         treasury = ITreasury(_treasury);
     }
 }

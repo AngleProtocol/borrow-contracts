@@ -139,6 +139,32 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
     event LiquidatedVaults(uint256[] vaultIDs);
 
+    // =============================== Errors ======================================
+
+    error ApprovalToOwner();
+    error ApprovalToCaller();
+    error DustyLeftoverAmount();
+    error DebtCeilingExceeded();
+    error HealthyVault();
+    error IncompatibleLengths();
+    error InsolventVault();
+    error InvalidParameterValue();
+    error InvalidParameterType();
+    error InvalidSetOfParameters();
+    error InvalidTreasury();
+    error NonERC721Receiver();
+    error NonexistentVault();
+    error NotApproved();
+    error NotGovernor();
+    error NotGovernorOrGuardian();
+    error NotTreasury();
+    error NotWhitelisted();
+    error NotVaultManager();
+    error Paused();
+    error TooHighParameterValue();
+    error TooSmallParameterValue();
+    error ZeroAddress();
+
     /// @param _dust Minimum amount of debt a vault from this implementation can have
     /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
     /// where the health factor function is decreasing

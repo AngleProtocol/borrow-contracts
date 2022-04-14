@@ -186,7 +186,7 @@ contract('FlashAngle - End-to-end', () => {
           parseEther('10000000000'),
           web3.utils.keccak256('e2e'),
         ),
-      ).to.be.revertedWith('4');
+      ).to.be.revertedWith('TooBigAmount');
       await expect(
         flashAngle.flashLoan(
           flashLoanReceiver.address,
@@ -194,7 +194,7 @@ contract('FlashAngle - End-to-end', () => {
           parseEther('10000000000'),
           web3.utils.keccak256('e2e'),
         ),
-      ).to.be.revertedWith('13');
+      ).to.be.revertedWith('UnsupportedStablecoin');
       await flashAngle
         .connect(impersonatedSigners[guardian])
         .setFlashLoanParameters(agToken.address, parseAmount.gwei('0.5'), parseEther('100000'));
