@@ -53,7 +53,7 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
         parseEther('1'),
         3600 * 48,
         treasury,
-        web3.utils.soliditySha3('OracleBTCEUR'),
+        'BTC/EUR Oracle',
       ],
       log: !argv.ci,
     });
@@ -70,7 +70,7 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
         parseEther('1'),
         3600 * 48,
         treasury,
-        web3.utils.soliditySha3('OracleLINKEUR'),
+        'LINK/EUR Oracle',
       ],
       log: !argv.ci,
     });
@@ -87,7 +87,7 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
         parseEther('1'),
         3600 * 48,
         treasury,
-        web3.utils.soliditySha3('OracleETHEUR'),
+        'ETH/EUR Oracle',
       ],
       log: !argv.ci,
     });
