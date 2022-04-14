@@ -71,11 +71,11 @@ contract Settlement {
 
     // ================================ Errors =====================================
 
-    error ClaimPeriodForOverCollateralizedVaultsNotEnded();
-    error ClaimPeriodForCollateralAgainstStablecoinsNotStarted();
+    error GlobalClaimPeriodNotStarted();
     error InsolventVault();
     error NotGovernor();
     error NotOwner();
+    error RestrictedClaimPeriodNotEnded();
     error SettlementNotInitialized();
     error VaultAlreadyClaimed();
 
@@ -146,7 +146,7 @@ contract Settlement {
     /// a similar value of collateral can be obtained against a similar value of stablecoins
     function activateGlobalClaimPeriod() external onlyGovernor {
         if (activationTimestamp == 0 || block.timestamp <= activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION)
-            revert ClaimPeriodForOverCollateralizedVaultsNotEnded();
+            revert RestrictedClaimPeriodNotEnded();
         uint256 collateralBalance = collateral.balanceOf(address(this));
         uint256 leftOverDebt = (vaultManager.totalNormalizedDebt() * interestAccumulator) / BASE_INTEREST;
         uint256 stablecoinBalance = stablecoin.balanceOf(address(this));
@@ -191,7 +191,7 @@ contract Settlement {
         address who,
         bytes memory data
     ) external returns (uint256, uint256) {
-        if (!exchangeRateComputed) revert ClaimPeriodForCollateralAgainstStablecoinsNotStarted();
+        if (!exchangeRateComputed) revert GlobalClaimPeriodNotStarted();
         return
             _handleRepay(
                 (stablecoinAmount * collateralStablecoinExchangeRate) / BASE_STABLECOIN,
@@ -246,7 +246,7 @@ contract Settlement {
         uint256 amountToRecover
     ) external onlyGovernor {
         if (tokenAddress == address(collateral)) {
-            if (!exchangeRateComputed) revert ClaimPeriodForCollateralAgainstStablecoinsNotStarted();
+            if (!exchangeRateComputed) revert GlobalClaimPeriodNotStarted();
             leftOverCollateral -= amountToRecover;
             collateral.safeTransfer(to, amountToRecover);
         } else {

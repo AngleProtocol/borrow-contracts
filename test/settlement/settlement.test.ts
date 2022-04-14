@@ -164,13 +164,13 @@ contract('Settlement', () => {
     });
     it('reverts - not activated', async () => {
       await expect(settlement.connect(alice).activateGlobalClaimPeriod()).to.be.revertedWith(
-        'ClaimPeriodForOverCollateralizedVaultsNotEnded',
+        'RestrictedClaimPeriodNotEnded',
       );
     });
     it('reverts - time not elapsed', async () => {
       await settlement.connect(alice).activateSettlement();
       await expect(settlement.connect(alice).activateGlobalClaimPeriod()).to.be.revertedWith(
-        'ClaimPeriodForOverCollateralizedVaultsNotEnded',
+        'RestrictedClaimPeriodNotEnded',
       );
     });
     it('success - with no debt', async () => {
@@ -230,7 +230,7 @@ contract('Settlement', () => {
     it('reverts - exchange rate not computed', async () => {
       await expect(
         settlement.connect(alice).claimCollateralFromStablecoins(parseEther('1'), bob.address, bob.address, '0x'),
-      ).to.be.revertedWith('ClaimPeriodForCollateralAgainstStablecoinsNotStarted');
+      ).to.be.revertedWith('GlobalClaimPeriodNotStarted');
     });
     it('success - when exchange rate is inferior to 1', async () => {
       await settlement.connect(alice).activateSettlement();
@@ -290,7 +290,7 @@ contract('Settlement', () => {
     });
     it('reverts - collateral token and exchange rate not computed', async () => {
       await expect(settlement.connect(alice).recoverERC20(collateral.address, bob.address, 1)).to.be.revertedWith(
-        'ClaimPeriodForCollateralAgainstStablecoinsNotStarted',
+        'GlobalClaimPeriodNotStarted',
       );
     });
     it('reverts - collateral token, exchange rate computed but to big amount to recover', async () => {
