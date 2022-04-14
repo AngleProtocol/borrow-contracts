@@ -16,7 +16,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     contract: 'Swapper',
     from: deployer.address,
     args: [core, json.tokens.wstETH, json.uniswapV3Router, json.oneInchRouter, routerAddress],
-    gasLimit: 12e6,
     log: !argv.ci,
   });
 };
