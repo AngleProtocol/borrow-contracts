@@ -146,11 +146,7 @@ contract Settlement {
     /// a similar value of collateral can be obtained against a similar value of stablecoins
     function activateGlobalClaimPeriod() external onlyGovernor {
         if (activationTimestamp == 0 || block.timestamp <= activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION)
-<<<<<<< HEAD
             revert RestrictedClaimPeriodNotEnded();
-=======
-            revert ClaimPeriodForOverCollateralizedVaultsNotEnded();
->>>>>>> 89b062b (adding settlement and reactor)
         uint256 collateralBalance = collateral.balanceOf(address(this));
         uint256 leftOverDebt = (vaultManager.totalNormalizedDebt() * interestAccumulator) / BASE_INTEREST;
         uint256 stablecoinBalance = stablecoin.balanceOf(address(this));
@@ -195,11 +191,7 @@ contract Settlement {
         address who,
         bytes memory data
     ) external returns (uint256, uint256) {
-<<<<<<< HEAD
         if (!exchangeRateComputed) revert GlobalClaimPeriodNotStarted();
-=======
-        if (!exchangeRateComputed) revert ClaimPeriodForCollateralAgainstStablecoinsNotStarted();
->>>>>>> 89b062b (adding settlement and reactor)
         return
             _handleRepay(
                 (stablecoinAmount * collateralStablecoinExchangeRate) / BASE_STABLECOIN,
