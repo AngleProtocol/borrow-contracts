@@ -110,6 +110,11 @@ const config: HardhatUserConfig = {
       // gasPrice: 12e8,
       chainId: 4,
     },
+    mainnetForkRemote: {
+      live: false,
+      url: 'http://130.211.61.213:11055/',
+      chainId: 1,
+    },
     mumbai: {
       live: true,
       url: nodeUrl('mumbai'),
