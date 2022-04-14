@@ -14,7 +14,7 @@ import "./BaseOracleChainlinkMulti.sol";
 contract OracleChainlinkMultiTemplate is BaseOracleChainlinkMulti {
     // ===================== To be modified before deployment ======================
     uint256 public constant OUTBASE = 10**18;
-    bytes32 public constant DESCRIPTION = "ETH/EUR Oracle";
+    string public constant DESCRIPTION = "ETH/EUR Oracle";
 
     // =============================================================================
 

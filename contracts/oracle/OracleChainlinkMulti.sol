@@ -24,7 +24,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     /// @notice Unit of the stablecoin
     uint256 public immutable outBase;
     /// @notice Description of the assets concerned by the oracle and the price outputted
-    bytes32 public immutable description;
+    string public description;
 
     // ===================================== Error =================================
 
@@ -45,7 +45,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
         uint256 _outBase,
         uint32 _stalePeriod,
         address _treasury,
-        bytes32 _description
+        string memory _description
     ) BaseOracleChainlinkMulti(_stalePeriod, _treasury) {
         outBase = _outBase;
         description = _description;
