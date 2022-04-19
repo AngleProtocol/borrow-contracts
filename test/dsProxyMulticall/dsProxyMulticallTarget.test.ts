@@ -35,11 +35,11 @@ async function populateTx(
   contract: Contract,
   functionName: string,
   args?: any[],
-  isCallingItself = false,
+  isDelegateCall = false,
 ): Promise<{
   target: string;
   data: string;
-  isCallingItself?: boolean;
+  isDelegateCall?: boolean;
 }> {
   const tx = await contract.populateTransaction[functionName](...(args || []));
   if (!tx.to || !tx.data) {
@@ -49,7 +49,7 @@ async function populateTx(
   return {
     target: tx.to,
     data: tx.data,
-    isCallingItself: isCallingItself,
+    isDelegateCall: isDelegateCall,
   };
 }
 
@@ -232,6 +232,7 @@ describe('DSProxy', async () => {
     const log = receipt.events?.reduce((returnValue, _log) => {
       try {
         const log = KeeperMulticall__factory.createInterface().parseLog(_log);
+        if (log.eventFragment.name !== 'SentToMiner') return returnValue;
         return log;
       } catch (e) {}
       return returnValue;
@@ -286,6 +287,7 @@ describe('DSProxy', async () => {
     const log = receipt.events?.reduce((returnValue, _log) => {
       try {
         const log = KeeperMulticall__factory.createInterface().parseLog(_log);
+        if (log.name !== 'SentToMiner') return returnValue;
         return log;
       } catch (e) {}
       return returnValue;
@@ -337,6 +339,7 @@ describe('DSProxy', async () => {
     const log = receipt.events?.reduce((returnValue, _log) => {
       try {
         const log = KeeperMulticall__factory.createInterface().parseLog(_log);
+        if (log.eventFragment.name !== 'SentToMiner') return returnValue;
         return log;
       } catch (e) {}
       return returnValue;

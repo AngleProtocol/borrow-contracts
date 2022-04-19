@@ -24,10 +24,12 @@ contract KeeperMulticall is Ownable {
     struct Action {
         address target;
         bytes data;
-        bool isCallingItself;
+        bool isDelegateCall;
     }
 
+    event LogAction(address indexed target, bytes data);
     event SentToMiner(uint256 indexed value);
+    event Recovered(address indexed tokenAddress, address indexed to, uint256 amount);
 
     error InvalidLength();
     error ZeroAddress();
@@ -74,13 +76,14 @@ contract KeeperMulticall is Ownable {
         bytes memory response;
 
         // if (action.target == address(this)) {
-        if (action.isCallingItself) {
+        if (action.isDelegateCall) {
             (success, response) = action.target.delegatecall(action.data);
         } else {
             (success, response) = action.target.call(action.data);
         }
 
         require(success, RevertReasonParser.parse(response, "action reverted: "));
+        emit LogAction(action.target, action.data);
         return response;
     }
 
@@ -139,6 +142,8 @@ contract KeeperMulticall is Ownable {
         } else {
             IERC20(_token).safeTransfer(_receiver, _amount);
         }
+
+        emit Recovered(_token, _receiver, _amount);
     }
 
     /// @notice Destroy the contract
