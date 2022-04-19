@@ -16,7 +16,7 @@ and adapted to our needs:
     - added the ability to pay the miner (for private Flashbots transactions)
     - swap tokens through 1inch
 */
-contract DsProxyMulticallTarget is Ownable {
+contract KeeperMulticall is Ownable {
     using SafeERC20 for IERC20;
 
     address private constant _oneInch = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
