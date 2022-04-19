@@ -1,13 +1,19 @@
-import { ether } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import axios from 'axios';
 import { BigNumber, Contract, utils, Wallet } from 'ethers';
-import { ethers, network } from 'hardhat';
-import { task } from 'hardhat/config';
+import { artifacts, ethers, network } from 'hardhat';
 import qs from 'qs';
 
-import { IERC20, IERC20__factory, KeeperMulticall, KeeperMulticall__factory } from '../../typechain';
+import {
+  IERC20,
+  IERC20__factory,
+  KeeperMulticall,
+  KeeperMulticall__factory,
+  TransparentUpgradeableProxy,
+  TransparentUpgradeableProxy__factory,
+} from '../../typechain';
 import { expect } from '../utils/chai-setup';
+import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 export async function get1inchSwapData(
   chainId: number,
@@ -54,7 +60,7 @@ async function populateTx(
 }
 
 describe('DSProxy', async () => {
-  let deployer: SignerWithAddress, user1: SignerWithAddress, user2: SignerWithAddress;
+  let deployer: SignerWithAddress, user1: SignerWithAddress, user2: SignerWithAddress, proxyAdmin: SignerWithAddress;
   let randomUser: string;
 
   let keeperMulticall: KeeperMulticall;
@@ -74,9 +80,18 @@ describe('DSProxy', async () => {
       ],
     });
 
-    [deployer, user1, user2] = await ethers.getSigners();
+    [deployer, user1, user2, proxyAdmin] = await ethers.getSigners();
 
-    keeperMulticall = (await (await ethers.getContractFactory('KeeperMulticall')).deploy()) as KeeperMulticall;
+    const keeperMulticallImplementation = await (await ethers.getContractFactory('KeeperMulticall')).deploy();
+    const initializeData = KeeperMulticall__factory.createInterface().encodeFunctionData('initialize');
+    const proxy = await (
+      await ethers.getContractFactory('TransparentUpgradeableProxy')
+    ).deploy(keeperMulticallImplementation.address, proxyAdmin.address, initializeData);
+    keeperMulticall = new Contract(
+      proxy.address,
+      [...KeeperMulticall__factory.abi, 'function upgradeTo(address newImplementation) external'],
+      deployer,
+    ) as KeeperMulticall;
 
     expect(await keeperMulticall.owner()).to.equal(deployer.address);
 
@@ -98,6 +113,24 @@ describe('DSProxy', async () => {
     expect(keeperMulticall.connect(user1).executeActions([tx], 0)).to.be.revertedWith(
       'Ownable: caller is not the owner',
     );
+  });
+
+  it('Upgrade', async () => {
+    await deployer.sendTransaction({
+      value: utils.parseEther('10'),
+      to: keeperMulticall.address,
+    });
+    const balanceBefore = await ethers.provider.getBalance(keeperMulticall.address);
+
+    const newImplementation = await (await ethers.getContractFactory('KeeperMulticall')).deploy();
+    await expect(
+      (keeperMulticall as unknown as TransparentUpgradeableProxy).connect(user1).upgradeTo(newImplementation.address),
+    ).to.be.reverted;
+    await (keeperMulticall as unknown as TransparentUpgradeableProxy)
+      .connect(proxyAdmin)
+      .upgradeTo(newImplementation.address);
+
+    expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(balanceBefore);
   });
 
   it('Array of tasks cannot be empty', async () => {
@@ -398,5 +431,88 @@ describe('DSProxy', async () => {
     );
     txSwap = await populateTx(keeperMulticall, 'swapToken', [payload1Inch.toTokenAmount, payload1Inch.tx.data], true);
     expect(keeperMulticall.connect(deployer).executeActions([txSwap], 0)).to.be.reverted;
+  });
+
+  it('finalBalanceCheck - DAI', async () => {
+    await USDC.connect(deployer).transfer(keeperMulticall.address, utils.parseUnits('10000', 6));
+    expect(keeperMulticall.finalBalanceCheck([], [])).to.be.reverted;
+    expect(keeperMulticall.finalBalanceCheck([USDC.address], [])).to.be.reverted;
+    await keeperMulticall.finalBalanceCheck([USDC.address], [10]);
+
+    const payload1Inch = await get1inchSwapData(
+      1,
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+      keeperMulticall.address,
+      utils.parseUnits('1000', 6).toString(),
+      10,
+    );
+
+    const txApprove = await populateTx(
+      keeperMulticall,
+      'approve',
+      [
+        '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        '0x1111111254fb6c44bAC0beD2854e76F90643097d',
+        utils.parseUnits('1000', 6),
+      ],
+      true,
+    );
+    const txSwap = await populateTx(keeperMulticall, 'swapToken', [0, payload1Inch.tx.data], true);
+    let txCheck = await populateTx(
+      keeperMulticall,
+      'finalBalanceCheck',
+      [['0x6B175474E89094C44Da98b954EedeAC495271d0F'], [utils.parseEther('1000')]],
+      true,
+    );
+    expect(keeperMulticall.connect(deployer).executeActions([txApprove, txSwap, txCheck], 0)).to.be.reverted;
+
+    txCheck = await populateTx(
+      keeperMulticall,
+      'finalBalanceCheck',
+      [['0x6B175474E89094C44Da98b954EedeAC495271d0F'], [utils.parseEther('990')]],
+      true,
+    );
+    await keeperMulticall.connect(deployer).executeActions([txApprove, txSwap, txCheck], 0);
+  });
+
+  it('finalBalanceCheck - ETH', async () => {
+    await USDC.connect(deployer).transfer(keeperMulticall.address, utils.parseUnits('10000', 6));
+
+    const payload1Inch = await get1inchSwapData(
+      1,
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      keeperMulticall.address,
+      utils.parseUnits('1000', 6).toString(),
+      10,
+    );
+
+    const txApprove = await populateTx(
+      keeperMulticall,
+      'approve',
+      [
+        '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        '0x1111111254fb6c44bAC0beD2854e76F90643097d',
+        utils.parseUnits('1000', 6),
+      ],
+      true,
+    );
+    const txSwap = await populateTx(keeperMulticall, 'swapToken', [0, payload1Inch.tx.data], true);
+    let txCheck = await populateTx(
+      keeperMulticall,
+      'finalBalanceCheck',
+      [['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'], [utils.parseEther('1')]],
+      true,
+    );
+    expect(keeperMulticall.connect(deployer).executeActions([txApprove, txSwap, txCheck], 0)).to.be.reverted;
+
+    txCheck = await populateTx(
+      keeperMulticall,
+      'finalBalanceCheck',
+      [['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'], [utils.parseEther('0.3')]],
+      true,
+    );
+    await keeperMulticall.connect(deployer).executeActions([txApprove, txSwap, txCheck], 0);
   });
 });

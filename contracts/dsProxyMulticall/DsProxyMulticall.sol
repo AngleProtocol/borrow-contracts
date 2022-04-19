@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./RevertReasonParser.sol";
@@ -16,7 +17,7 @@ and adapted to our needs:
     - added the ability to pay the miner (for private Flashbots transactions)
     - swap tokens through 1inch
 */
-contract KeeperMulticall is Ownable {
+contract KeeperMulticall is Initializable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     address private constant _oneInch = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
@@ -34,8 +35,15 @@ contract KeeperMulticall is Ownable {
     error InvalidLength();
     error ZeroAddress();
     error AmountOutTooLow(uint256 amount, uint256 min);
+    error BalanceTooLow();
     error RevertBytes();
     error FlashbotsErrorPayingMiner(uint256 value);
+
+    constructor() initializer {}
+
+    function initialize() public initializer {
+        __Ownable_init();
+    }
 
     /// @notice Called directly through DsProxy to execute a task
     /// @dev This is the main entry point for Recipes/Tasks executed manually
@@ -94,6 +102,21 @@ contract KeeperMulticall is Ownable {
         if (!success) revert FlashbotsErrorPayingMiner(value);
         emit SentToMiner(value);
         return response;
+    }
+
+    function finalBalanceCheck(IERC20[] memory tokens, uint256[] memory minBalances) external returns (bool) {
+        uint256 tokensLength = tokens.length;
+        if (tokensLength == 0 || tokensLength != minBalances.length) revert InvalidLength();
+
+        for (uint256 i; i < tokensLength; ++i) {
+            if (address(tokens[i]) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+                if (address(this).balance < minBalances[i]) revert BalanceTooLow();
+            } else {
+                if (tokens[i].balanceOf(address(this)) < minBalances[i]) revert BalanceTooLow();
+            }
+        }
+
+        return true;
     }
 
     /// @notice Swap token to ETH through 1Inch
