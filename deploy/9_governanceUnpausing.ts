@@ -2,6 +2,7 @@ import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
+import { formatBytes32String } from 'ethers/lib/utils';
 import yargs from 'yargs';
 
 import { VaultManager, VaultManager__factory } from '../typechain';
@@ -51,6 +52,16 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       )) as VaultManager;
       await (await vaultManager.togglePause()).wait();
       console.log('Success');
+
+      // Set borrowFee and repayFee if needed
+      if(!vaultManagerParams.params.borrowFee.isZero()){
+        await (await vaultManager.setUint64(vaultManagerParams.params.borrowFee, formatBytes32String('BF'))).wait();
+        console.log(`BorrowFee of ${vaultManagerParams.params.borrowFee} set successfully`);
+      }
+      if(!vaultManagerParams.params.repayFee.isZero()){
+        await (await vaultManager.setUint64(vaultManagerParams.params.repayFee, formatBytes32String('RF'))).wait();
+        console.log(`RepayFee of ${vaultManagerParams.params.repayFee} set successfully`);
+      }
       console.log('');
     }
   }
