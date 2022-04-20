@@ -90,7 +90,7 @@ contract EulerReactor is BaseReactor {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         uint256 toWithdraw = _convertToAssets(balanceOf(user), usedAssets + looseAssets, 0);
         if (toWithdraw <= looseAssets) return toWithdraw;
-        else return looseAssets + _maxStablecoinsAvailable(toWithdraw, usedAssets, looseAssets);
+        else return looseAssets + _maxAmountWithdrawable(toWithdraw, usedAssets, looseAssets);
     }
 
     /// @inheritdoc IERC4626
@@ -119,8 +119,9 @@ contract EulerReactor is BaseReactor {
     /// @param amount Amount of assets wanted to be withdrawn
     /// @param usedAssets Amount of assets collateralizing the vault
     /// @param looseAssets Amount of assets directly accessible in the contract balance
+    /// @return maxAmount Max amount of stablecoins that can be withdrawn from Euler
     /// @dev If reaching the `upperCF`, users are limited in the amount to be withdrawn by liquidity on Euler contracts
-    function _maxStablecoinsAvailable(
+    function _maxAmountWithdrawable(
         uint256 amount,
         uint256 usedAssets,
         uint256 looseAssets

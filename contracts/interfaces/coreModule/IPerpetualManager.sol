@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 /// @title Interface of the contract managing perpetuals
 /// @author Angle Core Team
 /// @dev Front interface, meaning only user-facing functions
-interface IPerpetualManager  {
+interface IPerpetualManager {
     function openPerpetual(
         address owner,
         uint256 amountBrought,

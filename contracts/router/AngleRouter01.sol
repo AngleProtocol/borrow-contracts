@@ -776,10 +776,7 @@ contract AngleRouter is Initializable, ReentrancyGuardUpgradeable {
                     ActionType[] memory actionsBorrow,
                     bytes[] memory dataBorrow,
                     bytes memory repayData
-                ) = abi.decode(
-                        data[i],
-                        (address, address, address, address, address, ActionType[], bytes[], bytes)
-                    );
+                ) = abi.decode(data[i], (address, address, address, address, address, ActionType[], bytes[], bytes));
                 _changeAllowance(IERC20(collateral), address(vaultManager), type(uint256).max);
                 PaymentData memory paymentData = _angleBorrower(
                     vaultManager,

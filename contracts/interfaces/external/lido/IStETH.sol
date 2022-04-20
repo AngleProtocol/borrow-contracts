@@ -9,6 +9,7 @@ pragma solidity 0.8.12;
 /// of this module
 interface IStETH {
     function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
+
     event Submitted(address sender, uint256 amount, address referral);
 
     function submit(address) external payable returns (uint256);

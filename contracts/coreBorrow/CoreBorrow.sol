@@ -79,8 +79,8 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     /// @param treasury Contract to grant the role to
     /// @dev This function can be used to allow flash loans on a stablecoin of the protocol
     function addFlashLoanerTreasuryRole(address treasury) external {
-        address _flashLoanModule = flashLoanModule;
         grantRole(FLASHLOANER_TREASURY_ROLE, treasury);
+        address _flashLoanModule = flashLoanModule;
         if (_flashLoanModule != address(0)) {
             // This call will revert if `treasury` is the zero address or if it is not linked
             // to this `CoreBorrow` contract
@@ -117,7 +117,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     function removeGovernor(address governor) external {
         if (getRoleMemberCount(GOVERNOR_ROLE) <= 1) revert NotEnoughGovernorsLeft();
         revokeRole(GUARDIAN_ROLE, governor);
-        revokeRole(GOVERNOR_ROLE, governor);  
+        revokeRole(GOVERNOR_ROLE, governor);
     }
 
     /// @notice Changes the `flashLoanModule` of the protocol

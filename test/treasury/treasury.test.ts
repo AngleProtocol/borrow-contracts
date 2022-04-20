@@ -149,7 +149,7 @@ contract('Treasury', () => {
       const receipt = await (
         await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address)
       ).wait();
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(true);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(1);
       expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager.address);
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
@@ -191,16 +191,16 @@ contract('Treasury', () => {
     });
     it('success - only one vaultManager', async () => {
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager.address);
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(true);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(1);
       const receipt = await (
         await treasury.connect(impersonatedSigners[governor]).removeVaultManager(vaultManager.address)
       ).wait();
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
       });
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(0);
       await expect(treasury.vaultManagerList(0)).to.be.reverted;
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(0);
       expect(await stablecoin.minters(vaultManager.address)).to.be.equal(false);
     });
     it('success - several vaultManagers - first one removed', async () => {
@@ -209,16 +209,16 @@ contract('Treasury', () => {
         treasury.address,
       )) as MockVaultManager;
       await treasury.connect(impersonatedSigners[governor]).addVaultManager(vaultManager2.address);
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(true);
-      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(true);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(1);
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(1);
       const receipt = await (
         await treasury.connect(impersonatedSigners[governor]).removeVaultManager(vaultManager.address)
       ).wait();
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
       });
-      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(true);
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(1);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(0);
       expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager2.address);
       expect(await stablecoin.minters(vaultManager.address)).to.be.equal(false);
       expect(await stablecoin.minters(vaultManager2.address)).to.be.equal(true);
@@ -235,8 +235,8 @@ contract('Treasury', () => {
       inReceipt(receipt, 'VaultManagerToggled', {
         vaultManager: vaultManager.address,
       });
-      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(true);
-      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(false);
+      expect(await treasury.vaultManagerMap(vaultManager2.address)).to.be.equal(1);
+      expect(await treasury.vaultManagerMap(vaultManager.address)).to.be.equal(0);
       expect(await treasury.vaultManagerList(0)).to.be.equal(vaultManager2.address);
       expect(await stablecoin.minters(vaultManager.address)).to.be.equal(false);
       expect(await stablecoin.minters(vaultManager2.address)).to.be.equal(true);

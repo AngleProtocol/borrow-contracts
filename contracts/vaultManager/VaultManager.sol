@@ -99,7 +99,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         bytes[] memory datas,
         address from,
         address to
-    ) external payable returns (PaymentData memory) {
+    ) external returns (PaymentData memory) {
         return angle(actions, datas, from, to, address(0), new bytes(0));
     }
 
@@ -111,7 +111,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address to,
         address who,
         bytes memory repayData
-    ) public payable whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
+    ) public whenNotPaused nonReentrant returns (PaymentData memory paymentData) {
+        if (actions.length != datas.length || actions.length == 0) revert IncompatibleLengths();
         // `newInterestAccumulator` and `oracleValue` are expensive to compute. Therefore, they are computed
         // only once inside the first action where they are necessary, then they are passed forward to further actions
         uint256 newInterestAccumulator;
@@ -321,15 +322,14 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     // =================== Internal Utility View Functions =========================
 
-    /// @notice Verifies whether a given vault is solvent (i.e. should be liquidated or not)
+    /// @notice Computes the health factor of a given vault. This can later be used to check whether a given vault is solvent
+    /// (i.e. should be liquidated or not)
     /// @param vault Data of the vault to check
     /// @param oracleValue Oracle value at the time of the call (it is in the base of the stablecoin, that is for agTokens 10**18)
     /// @param newInterestAccumulator Value of the `interestAccumulator` at the time of the call
     /// @return healthFactor Health factor of the vault: if it's inferior to 1 (`BASE_PARAMS` in fact) this means that the vault can be liquidated
     /// @return currentDebt Current value of the debt of the vault (taking into account interest)
     /// @return collateralAmountInStable Collateral in the vault expressed in stablecoin value
-    /// @dev If the oracle value or the interest rate accumulator has not been called at the time of the
-    /// call, this function computes it
     function _isSolvent(
         Vault memory vault,
         uint256 oracleValue,
@@ -396,6 +396,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param vaultID ID of the vault to increase the collateral balance of
     /// @param collateralAmount Amount by which increasing the collateral balance of
     function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
+        if (!_exists(vaultID)) revert NonexistentVault();
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
     }
@@ -510,6 +511,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// computed yet, like in `getDebtOut`)
     /// @return Amount of stablecoins to be burnt to correctly repay the debt
     /// @dev If `stablecoinAmount` is `type(uint256).max`, this function will repay all the debt of the vault
+    /// @dev This function will revert if it's called on a vault that does not exist
     function _repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -542,7 +544,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param stableAmountToRepay Amount of stablecoins the contract should burn from the call
     /// @param from Address from which stablecoins should be burnt: it should be the `msg.sender` or at least
     /// approved by it
-    /// @param to Address to which stablecoins should be sent
+    /// @param to Address to which collateral should be sent
     /// @param who Address which should be notified if needed of the transfer
     /// @param data Data to pass to the `who` contract for it to successfully give the correct amount of stablecoins
     /// to the `from` address
@@ -610,7 +612,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
 
     /// @notice Liquidates an ensemble of vaults specified by their IDs
     /// @dev This function is a simplified wrapper of the function below. It is built to remove for liquidators the need to specify
-    /// a `who` and a `data` parameters
+    /// a `who` and a `data` parameter
     function liquidate(
         uint256[] memory vaultIDs,
         uint256[] memory amounts,
@@ -627,7 +629,9 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// or have received an approval
     /// @param to Address to which discounted collateral should be sent
     /// @param who Address of the contract to handle repayment of stablecoins from received collateral
-    /// @param data Data to pass to the repayment contract in case of
+    /// @param data Data to pass to the repayment contract in case of. If empty, liquidators simply have to bring the exact amount of
+    /// stablecoins to get the discounted collateral. If not, it is used by the repayment contract how to swap a portion or all
+    /// of the collateral received to stablecoins to be sent to the `from` address. More details in the `_handleRepay` function
     /// @dev This function will revert if it's called on a vault that cannot be liquidated or that does not exist
     function liquidate(
         uint256[] memory vaultIDs,
@@ -637,8 +641,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
         address who,
         bytes memory data
     ) public whenNotPaused nonReentrant returns (LiquidatorData memory liqData) {
+        if (vaultIDs.length != amounts.length || amounts.length == 0) revert IncompatibleLengths();
         // Stores all the data about an ongoing liquidation of multiple vaults
-        if (vaultIDs.length != amounts.length) revert IncompatibleLengths();
         liqData.oracleValue = oracle.read();
         liqData.newInterestAccumulator = _accrue();
         emit LiquidatedVaults(vaultIDs);
@@ -680,7 +684,6 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                 emit InternalDebtUpdated(vaultIDs[i], vault.normalizedDebt, 0);
             } else {
                 vaultData[vaultIDs[i]].collateralAmount -= collateralReleased;
-                // In the case where the full debt is being repaid, `amounts[i]` must be rounded above
                 _repayDebt(
                     vaultIDs[i],
                     (amounts[i] * liquidationSurcharge) / BASE_PARAMS,
@@ -739,10 +742,10 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
                     BASE_PARAMS *
                     liquidationDiscount) /
                 (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
-            // The quantity below tends to be rounded in the above direction, which means that governance should
+            // The quantity below tends to be rounded in the above direction, which means that governance or guardians should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt <= (maxAmountToRepay * surcharge) / BASE_PARAMS + dust) {
+            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dust * BASE_PARAMS) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
                 // We're rounding up the max amount to repay to make sure all the debt ends up being paid
                 // and we're computing again the real value of the debt to avoid propagation of rounding errors
@@ -810,7 +813,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param param Value for the parameter
     /// @param what Parameter to change
     /// @dev This function performs the required checks when updating a parameter
-    /// @dev When setting parameters governance should make sure that when `HF < CF/((1-surcharge)(1-discount))`
+    /// @dev When setting parameters governance or the guardian should make sure that when `HF < CF/((1-surcharge)(1-discount))`
     /// and hence when liquidating a vault is going to decrease its health factor, `discount = max discount`.
     /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
     /// the HF and therefore increase the discount between each time
@@ -893,7 +896,8 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// for all addresses
     function toggleWhitelist(address target) external onlyGovernor {
         if (target != address(0)) {
-            isWhitelisted[target] = !isWhitelisted[target];
+            uint256 whitelistStatus = isWhitelisted[target];
+            isWhitelisted[target] = whitelistStatus == 0 ? 1 : 0;
         } else {
             whitelistingActivated = !whitelistingActivated;
         }

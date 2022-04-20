@@ -170,6 +170,16 @@ contract('VaultManager', () => {
           ['angle(uint8[],bytes[],address,address)']([10], ['0x'], ZERO_ADDRESS, ZERO_ADDRESS),
       ).to.be.reverted;
     });
+    it('reverts - zero length action', async () => {
+      await expect(
+        vaultManager.connect(governor)['angle(uint8[],bytes[],address,address)']([], [], ZERO_ADDRESS, ZERO_ADDRESS),
+      ).to.be.revertedWith('IncompatibleLengths');
+    });
+    it('reverts - incompatible length', async () => {
+      await expect(
+        vaultManager.connect(governor)['angle(uint8[],bytes[],address,address)']([1], [], ZERO_ADDRESS, ZERO_ADDRESS),
+      ).to.be.revertedWith('IncompatibleLengths');
+    });
 
     it('success - whitelisted', async () => {
       await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
@@ -1639,6 +1649,11 @@ contract('VaultManager', () => {
         vaultManager
           .connect(bob)
           ['liquidate(uint256[],uint256[],address,address)']([2, 0], [parseEther('1')], bob.address, bob.address),
+      ).to.be.revertedWith('IncompatibleLengths');
+    });
+    it('reverts - zero length', async () => {
+      await expect(
+        vaultManager.connect(bob)['liquidate(uint256[],uint256[],address,address)']([], [], bob.address, bob.address),
       ).to.be.revertedWith('IncompatibleLengths');
     });
     it('success - no liquidation boost', async () => {

@@ -257,20 +257,20 @@ contract('VaultManager - Setters', () => {
     });
     it('success - governor', async () => {
       await vaultManager.connect(governor).toggleWhitelist(alice.address);
-      expect(await vaultManager.isWhitelisted(alice.address)).to.be.true;
+      expect(await vaultManager.isWhitelisted(alice.address)).to.be.equal(1);
 
       await vaultManager.connect(governor).toggleWhitelist(alice.address);
-      expect(await vaultManager.isWhitelisted(alice.address)).to.be.false;
+      expect(await vaultManager.isWhitelisted(alice.address)).to.be.equal(0);
     });
     it('success - governor with zero address', async () => {
       await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
       expect(await vaultManager.whitelistingActivated()).to.be.true;
 
       await vaultManager.connect(governor).toggleWhitelist(alice.address);
-      expect(await vaultManager.isWhitelisted(alice.address)).to.be.true;
+      expect(await vaultManager.isWhitelisted(alice.address)).to.be.equal(1);
       await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
       expect(await vaultManager.whitelistingActivated()).to.be.false;
-      expect(await vaultManager.isWhitelisted(alice.address)).to.be.true;
+      expect(await vaultManager.isWhitelisted(alice.address)).to.be.equal(1);
     });
   });
 

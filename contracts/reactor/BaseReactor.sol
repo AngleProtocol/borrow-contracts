@@ -228,6 +228,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Converts an amount of assets to shares of the reactor from an amount of assets controlled by the vault
     /// @param assets Amount of assets to convert
     /// @param totalAssetAmount Total amount of asset controlled by the vault
+    /// @param _supply Optional value for the total supply of the reactor, it is recomputed if zero
     /// @return Corresponding amount of shares
     function _convertToShares(
         uint256 assets,
@@ -241,7 +242,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Converts an amount of shares of the reactor to assets
     /// @param shares Amount of shares to convert
     /// @param totalAssetAmount Total amount of asset controlled by the vault
-    /// @param _supply Optional value of the total supply of the reactor
+    /// @param _supply Optional value for the total supply of the reactor, it is recomputed if zero
     /// @return Corresponding amount of assets
     /// @dev It is at the level of this function that losses from liquidations are taken into account, because this
     /// reduces the `totalAssetAmount` and hence the amount of assets you are entitled to get from your shares
@@ -403,6 +404,10 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @param looseAssets Amount of assets already in the contract
     /// @param debt Current debt owed to the `vaultManager`
     /// @param oracleRate Exchange rate from asset to stablecoin
+    /// @return futureStablecoinsInVault Future amount of stablecoins borrowed in the vault
+    /// if this vault is at `targetCF` at the end of the call
+    /// @return collateralFactor Collateral factor of the vault if its debt remains unchanged but `toWithdraw` collateral
+    /// is removed from it
     function _getFutureDebtAndCF(
         uint256 toWithdraw,
         uint256 usedAssets,

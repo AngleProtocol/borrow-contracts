@@ -25,7 +25,7 @@ import "../interfaces/governance/IVeBoostProxy.sol";
 /// @dev Variables, references, parameters and events needed in the `VaultManager` contract
 // solhint-disable-next-line max-states-count
 contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
-    /// @notice Base used for parameter computation
+    /// @notice Base used for parameter computation: almost all the parameters of this contract are set in `BASE_PARAMS`
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Base used for interest rate computation
     uint256 public constant BASE_INTEREST = 10**27;
@@ -48,16 +48,17 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     uint256 internal _collatBase;
 
     // =============================== Parameters ==================================
+    // Unless specified otherwise, parameters of this contract are expressed in `BASE_PARAMS`
 
     /// @inheritdoc IVaultManagerStorage
     uint256 public immutable dust;
-    /// @notice Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
-    /// where the health factor function is decreasing
+    /// @notice Minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
+    ///  in a vault during a liquidation where the health factor function is decreasing
     uint256 internal immutable _dustCollateral;
-    /// @notice Maximum amount of stablecoins that can be issued with this contract
+    /// @notice Maximum amount of stablecoins that can be issued with this contract (in `BASE_TOKENS`)
     uint256 public debtCeiling;
     /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
-    /// should be 2
+    /// should normally be 2. The base of the x-values in this array should be `BASE_TOKENS`
     uint256[] public xLiquidationBoost;
     /// @notice Values of the liquidation boost at the threshold values of x
     uint256[] public yLiquidationBoost;
@@ -71,7 +72,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// than the liquidation surcharge (cf below) to avoid exploits where people voluntarily get liquidated at a 0
     /// discount to pay smaller repaying fees
     uint64 public repayFee;
-    /// @notice Per second interest taken to borrowers taking agToken loans
+    /// @notice Per second interest taken to borrowers taking agToken loans. Contrarily to other parameters, it is set in `BASE_INTEREST`
+    /// that is to say in base 10**27
     uint64 public interestRate;
     /// @notice Fee taken by the protocol during a liquidation. Technically, this value is not the fee per se, it's 1 - fee.
     /// For instance for a 2% fee, `liquidationSurcharge` should be 98%
@@ -102,8 +104,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     /// @inheritdoc IVaultManagerStorage
     mapping(uint256 => Vault) public vaultData;
-    /// @notice Maps an address to whether it's whitelisted and can open or own a vault
-    mapping(address => bool) public isWhitelisted;
+    /// @notice Maps an address to 1 if it's whitelisted and can open or own a vault
+    mapping(address => uint256) public isWhitelisted;
 
     // ================================ ERC721 Data ================================
 
@@ -124,7 +126,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     mapping(uint256 => address) internal _vaultApprovals;
 
     // Mapping from owner to operator approvals
-    mapping(address => mapping(address => bool)) internal _operatorApprovals;
+    mapping(address => mapping(address => uint256)) internal _operatorApprovals;
 
     uint256[50] private __gap;
 
