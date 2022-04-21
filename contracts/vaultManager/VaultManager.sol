@@ -630,7 +630,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// @param to Address to which discounted collateral should be sent
     /// @param who Address of the contract to handle repayment of stablecoins from received collateral
     /// @param data Data to pass to the repayment contract in case of. If empty, liquidators simply have to bring the exact amount of
-    /// stablecoins to get the discounted collateral. If not, it is used by the repayment contract how to swap a portion or all
+    /// stablecoins to get the discounted collateral. If not, it is used by the repayment contract to swap a portion or all
     /// of the collateral received to stablecoins to be sent to the `from` address. More details in the `_handleRepay` function
     /// @dev This function will revert if it's called on a vault that cannot be liquidated or that does not exist
     function liquidate(
