@@ -896,8 +896,7 @@ contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
     /// for all addresses
     function toggleWhitelist(address target) external onlyGovernor {
         if (target != address(0)) {
-            uint256 whitelistStatus = isWhitelisted[target];
-            isWhitelisted[target] = whitelistStatus == 0 ? 1 : 0;
+            isWhitelisted[target] = 1 - isWhitelisted[target];
         } else {
             whitelistingActivated = !whitelistingActivated;
         }
