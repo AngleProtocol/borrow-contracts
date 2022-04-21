@@ -1318,6 +1318,7 @@ contract AngleRouter is Initializable, ReentrancyGuardUpgradeable {
                 WETH9.deposit{ value: amount }(); // wrap only what is needed to pay
             } else if (address(inToken) == address(WSTETH)) {
                 uint256 amountOut = STETH.getSharesByPooledEth(amount);
+                //solhint-disable-next-line
                 (bool success, bytes memory result) = address(WSTETH).call{ value: amount }("");
                 if (!success) _revertBytes(result);
                 amount = amountOut;
