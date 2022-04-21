@@ -34,8 +34,8 @@ contract Treasury is ITreasury, Initializable {
     address public surplusManager;
     /// @notice List of the accepted `VaultManager` of the protocol
     address[] public vaultManagerList;
-    /// @notice Maps an address to whether it was initialized as a `VaultManager` contract
-    mapping(address => bool) public vaultManagerMap;
+    /// @notice Maps an address to 1 if it was initialized as a `VaultManager` contract
+    mapping(address => uint256) public vaultManagerMap;
 
     // =============================== Variables ===================================
 
@@ -110,7 +110,7 @@ contract Treasury is ITreasury, Initializable {
 
     /// @inheritdoc ITreasury
     function isVaultManager(address _vaultManager) external view returns (bool) {
-        return vaultManagerMap[_vaultManager];
+        return vaultManagerMap[_vaultManager] == 1;
     }
 
     // ============= External Permissionless Functions =============================
@@ -250,9 +250,9 @@ contract Treasury is ITreasury, Initializable {
     /// @dev This contract should have already been initialized with a correct treasury address
     /// @dev It's this function that gives the minter right to the `VaultManager`
     function addVaultManager(address vaultManager) external onlyGovernor {
-        if (vaultManagerMap[vaultManager]) revert AlreadyVaultManager();
+        if (vaultManagerMap[vaultManager] == 1) revert AlreadyVaultManager();
         if (address(IVaultManager(vaultManager).treasury()) != address(this)) revert InvalidTreasury();
-        vaultManagerMap[vaultManager] = true;
+        vaultManagerMap[vaultManager] = 1;
         vaultManagerList.push(vaultManager);
         emit VaultManagerToggled(vaultManager);
         stablecoin.addMinter(vaultManager);
@@ -262,7 +262,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param minter Minter address to remove
     function removeMinter(address minter) external onlyGovernor {
         // To remove the minter role to a `VaultManager` you have to go through the `removeVaultManager` function
-        if (vaultManagerMap[minter]) revert InvalidAddress();
+        if (vaultManagerMap[minter] == 1) revert InvalidAddress();
         stablecoin.removeMinter(minter);
     }
 
@@ -270,7 +270,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param vaultManager `VaultManager` contract to remove
     /// @dev A removed `VaultManager` loses its minter right on the stablecoin
     function removeVaultManager(address vaultManager) external onlyGovernor {
-        if (!vaultManagerMap[vaultManager]) revert NotVaultManager();
+        if (vaultManagerMap[vaultManager] != 1) revert NotVaultManager();
         delete vaultManagerMap[vaultManager];
         // deletion from `vaultManagerList` loop
         uint256 vaultManagerListLength = vaultManagerList.length;

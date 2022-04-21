@@ -24,9 +24,11 @@ struct VaultParameters {
 
 /// @notice Data stored to track someone's loan (or equivalently called position)
 struct Vault {
-    // Amount of collateral deposited in the vault
+    // Amount of collateral deposited in the vault, in collateral decimals. For example, if the collateral
+    // is USDC with 6 decimals, then `collateralAmount` will be in base 10**6
     uint256 collateralAmount;
-    // Normalized value of the debt (that is to say of the stablecoins borrowed)
+    // Normalized value of the debt (that is to say of the stablecoins borrowed). It is expressed
+    // in the base of Angle stablecoins (i.e. `BASE_TOKENS = 10**18`)
     uint256 normalizedDebt;
 }
 
@@ -152,6 +154,9 @@ interface IVaultManagerFunctions {
     /// @return paymentData Struct containing the final transfers executed
     /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
     /// or computations (like `oracleValue`) are done only once
+    /// @dev When specifying `vaultID` in `data`, it is important to know that if you specify `vaultID = 0`, it will simply
+    /// use the latest `vaultID`. This is the default behavior, and unless you're engaging into some complex protocol actions
+    /// it is encouraged to use `vaultID = 0` only when the first action of the batch is `createVault`
     function angle(
         ActionType[] memory actions,
         bytes[] memory datas,
@@ -159,7 +164,7 @@ interface IVaultManagerFunctions {
         address to,
         address who,
         bytes memory repayData
-    ) external payable returns (PaymentData memory paymentData);
+    ) external returns (PaymentData memory paymentData);
 
     /// @notice This function is a wrapper built on top of the function above. It enables users to interact with the contract
     /// without having to provide `who` and `repayData` parameters
@@ -168,7 +173,7 @@ interface IVaultManagerFunctions {
         bytes[] memory datas,
         address from,
         address to
-    ) external payable returns (PaymentData memory paymentData);
+    ) external returns (PaymentData memory paymentData);
 
     /// @notice Initializes the `VaultManager` contract
     /// @param _treasury Treasury address handling the contract
@@ -194,7 +199,7 @@ interface IVaultManagerFunctions {
 /// @dev This interface contains getters of the contract's public variables used by other contracts
 /// of this module
 interface IVaultManagerStorage {
-    /// @notice Minimum amount of debt a vault can have
+    /// @notice Minimum amount of debt a vault can have, expressed in `BASE_TOKENS` that is to say the base of the agTokens
     function dust() external view returns (uint256);
 
     /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
@@ -213,16 +218,17 @@ interface IVaultManagerStorage {
 
     /// @notice The `interestAccumulator` variable keeps track of the interest that should accrue to the protocol.
     /// The stored value is not necessarily the true value: this one is recomputed every time an action takes place
-    /// within the protocol
+    /// within the protocol. It is in base `BASE_INTEREST`
     function interestAccumulator() external view returns (uint256);
 
     /// @notice Reference to the collateral handled by this `VaultManager`
     function collateral() external view returns (IERC20);
 
     /// @notice Total normalized amount of stablecoins borrowed, not taking into account the potential bad debt accumulated
+    /// This value is expressed in the base of Angle stablecoins (`BASE_TOKENS = 10**18`)
     function totalNormalizedDebt() external view returns (uint256);
 
-    /// @notice Maximum amount of stablecoins that can be issued with this contract
+    /// @notice Maximum amount of stablecoins that can be issued with this contract. It is expressed in `BASE_TOKENS`
     function debtCeiling() external view returns (uint256);
 
     /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)

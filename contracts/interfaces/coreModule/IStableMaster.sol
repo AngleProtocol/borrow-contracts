@@ -74,7 +74,6 @@ struct SLPData {
 /// @author Angle Core Team
 /// @notice Previous interface with additionnal getters for public variables and mappings
 interface IStableMaster {
-
     function agToken() external returns (address);
 
     function updateStocksUsers(uint256 amount, address poolManager) external;

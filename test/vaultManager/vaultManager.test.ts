@@ -138,6 +138,9 @@ contract('VaultManager', () => {
       await vaultManager.connect(guardian).togglePause();
       await expect(vaultManager.createVault(alice.address)).to.be.revertedWith('Paused');
     });
+    it('reverts - zero address', async () => {
+      await expect(vaultManager.createVault(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+    });
 
     it('success', async () => {
       await vaultManager.createVault(alice.address);
@@ -169,6 +172,16 @@ contract('VaultManager', () => {
           .connect(governor)
           ['angle(uint8[],bytes[],address,address)']([10], ['0x'], ZERO_ADDRESS, ZERO_ADDRESS),
       ).to.be.reverted;
+    });
+    it('reverts - zero length action', async () => {
+      await expect(
+        vaultManager.connect(governor)['angle(uint8[],bytes[],address,address)']([], [], ZERO_ADDRESS, ZERO_ADDRESS),
+      ).to.be.revertedWith('IncompatibleLengths');
+    });
+    it('reverts - incompatible length', async () => {
+      await expect(
+        vaultManager.connect(governor)['angle(uint8[],bytes[],address,address)']([1], [], ZERO_ADDRESS, ZERO_ADDRESS),
+      ).to.be.revertedWith('IncompatibleLengths');
     });
 
     it('success - whitelisted', async () => {
@@ -377,6 +390,15 @@ contract('VaultManager', () => {
   });
 
   describe('addCollateral', () => {
+    it('reverts - vault does not exist', async () => {
+      const amount = parseUnits('1', collatBase);
+      await collateral.connect(alice).mint(alice.address, amount);
+      await collateral.connect(alice).approve(vaultManager.address, amount);
+      await expect(
+        angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address), addCollateral(5, amount)]),
+      ).to.be.revertedWith('NonexistentVault');
+    });
+
     it('success', async () => {
       const amount = parseUnits('1', collatBase);
       await collateral.connect(alice).mint(alice.address, amount);
@@ -1639,6 +1661,11 @@ contract('VaultManager', () => {
         vaultManager
           .connect(bob)
           ['liquidate(uint256[],uint256[],address,address)']([2, 0], [parseEther('1')], bob.address, bob.address),
+      ).to.be.revertedWith('IncompatibleLengths');
+    });
+    it('reverts - zero length', async () => {
+      await expect(
+        vaultManager.connect(bob)['liquidate(uint256[],uint256[],address,address)']([], [], bob.address, bob.address),
       ).to.be.revertedWith('IncompatibleLengths');
     });
     it('success - no liquidation boost', async () => {

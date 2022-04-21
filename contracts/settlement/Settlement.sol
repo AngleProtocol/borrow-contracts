@@ -59,8 +59,8 @@ contract Settlement {
     uint256 public leftOverCollateral;
     /// @notice Whether the `collateralStablecoinExchangeRate` has been computed
     bool public exchangeRateComputed;
-    /// @notice Maps a vault to whether it was claimed or not by its owner
-    mapping(uint256 => bool) public vaultCheck;
+    /// @notice Maps a vault to 1 if it was claimed by its owner
+    mapping(uint256 => uint256) public vaultCheck;
 
     // ================================ Events =====================================
 
@@ -128,13 +128,13 @@ contract Settlement {
     ) external returns (uint256, uint256) {
         if (activationTimestamp == 0 || block.timestamp > activationTimestamp + OVER_COLLATERALIZED_CLAIM_DURATION)
             revert SettlementNotInitialized();
-        if (vaultCheck[vaultID]) revert VaultAlreadyClaimed();
+        if (vaultCheck[vaultID] == 1) revert VaultAlreadyClaimed();
         if (vaultManager.ownerOf(vaultID) != msg.sender) revert NotOwner();
         (uint256 collateralAmount, uint256 normalizedDebt) = vaultManager.vaultData(vaultID);
         uint256 vaultDebt = (normalizedDebt * interestAccumulator) / BASE_INTEREST;
         if (collateralAmount * oracleValue * collateralFactor < vaultDebt * BASE_PARAMS * _collatBase)
             revert InsolventVault();
-        vaultCheck[vaultID] = true;
+        vaultCheck[vaultID] = 1;
         emit VaultClaimed(vaultID, vaultDebt, collateralAmount);
         return _handleRepay(collateralAmount, vaultDebt, to, who, data);
     }

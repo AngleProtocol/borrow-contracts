@@ -41,7 +41,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         uint256 count;
         for (uint256 i = 1; i <= arraySize; i++) {
             owner = _owners[i];
-            if (spender == owner || _getApproved(i) == spender || _operatorApprovals[owner][spender]) {
+            if (spender == owner || _getApproved(i) == spender || _operatorApprovals[owner][spender] == 1) {
                 vaultsControlled[count] = i;
                 count += 1;
             }
@@ -106,13 +106,14 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @inheritdoc IERC721Upgradeable
     function setApprovalForAll(address operator, bool approved) external {
         if (operator == msg.sender) revert ApprovalToCaller();
-        _operatorApprovals[msg.sender][operator] = approved;
+        uint256 approval = approved ? 1 : 0;
+        _operatorApprovals[msg.sender][operator] = approval;
         emit ApprovalForAll(msg.sender, operator, approved);
     }
 
     /// @inheritdoc IERC721Upgradeable
     function isApprovedForAll(address owner, address operator) public view returns (bool) {
-        return _operatorApprovals[owner][operator];
+        return _operatorApprovals[owner][operator] == 1;
     }
 
     /// @inheritdoc IERC721Upgradeable
@@ -189,7 +190,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     function _isApprovedOrOwner(address spender, uint256 vaultID) internal view returns (bool) {
         // The following checks if the vault exists
         address owner = _ownerOf(vaultID);
-        return (spender == owner || _getApproved(vaultID) == spender || _operatorApprovals[owner][spender]);
+        return (spender == owner || _getApproved(vaultID) == spender || _operatorApprovals[owner][spender] == 1);
     }
 
     /// @notice Internal version of the `createVault` function
@@ -197,7 +198,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @dev This method is equivalent to the `_safeMint` method used in OpenZeppelin ERC721 contract
     /// @dev Emits a {Transfer} event
     function _mint(address to) internal returns (uint256 vaultID) {
-        if (whitelistingActivated && (!isWhitelisted[to] || !isWhitelisted[msg.sender])) revert NotWhitelisted();
+        if (whitelistingActivated && (isWhitelisted[to] != 1 || isWhitelisted[msg.sender] != 1))
+            revert NotWhitelisted();
+        if (to == address(0)) revert ZeroAddress();
         unchecked {
             vaultIDCount += 1;
             _balances[to] += 1;
@@ -239,7 +242,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     ) internal {
         if (_ownerOf(vaultID) != from) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
-        if (whitelistingActivated && !isWhitelisted[to]) revert NotWhitelisted();
+        if (whitelistingActivated && isWhitelisted[to] != 1) revert NotWhitelisted();
         // Clear approvals from the previous owner
         _approve(address(0), vaultID);
         unchecked {
@@ -274,7 +277,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
             try IERC721ReceiverUpgradeable(to).onERC721Received(msg.sender, from, vaultID, _data) returns (
                 bytes4 retval
             ) {
-                return retval == IERC721ReceiverUpgradeable(to).onERC721Received.selector;
+                return retval == IERC721ReceiverUpgradeable.onERC721Received.selector;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
                     revert NonERC721Receiver();

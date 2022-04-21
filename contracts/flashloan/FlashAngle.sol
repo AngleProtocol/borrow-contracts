@@ -26,12 +26,12 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
 
     /// @notice Struct encoding for a given stablecoin the parameters
     struct StablecoinData {
-        // Treasury address responsible
-        address treasury;
         // Maximum amount borrowable for this stablecoin
         uint256 maxBorrowable;
         // Flash loan fee taken by the protocol for a flash loan on this stablecoin
         uint64 flashLoanFee;
+        // Treasury address responsible of the stablecoin
+        address treasury;
     }
 
     // ======================= Parameters and References ===========================
@@ -40,6 +40,10 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     mapping(IAgToken => StablecoinData) public stablecoinMap;
     /// @inheritdoc IFlashAngle
     ICoreBorrow public core;
+
+    // =============================== Event =======================================
+
+    event FlashLoanParametersUpdated(IAgToken indexed stablecoin, uint64 _flashLoanFee, uint256 _maxBorrowable);
 
     // =============================== Errors ======================================
 
@@ -153,6 +157,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         if (_flashLoanFee > BASE_PARAMS) revert TooHighParameterValue();
         stablecoinMap[stablecoin].flashLoanFee = _flashLoanFee;
         stablecoinMap[stablecoin].maxBorrowable = _maxBorrowable;
+        emit FlashLoanParametersUpdated(stablecoin, _flashLoanFee, _maxBorrowable);
     }
 
     // =========================== CoreBorrow Only Functions =======================

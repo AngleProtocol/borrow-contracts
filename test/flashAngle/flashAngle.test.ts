@@ -17,7 +17,7 @@ import {
 } from '../../typechain';
 import { parseAmount } from '../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt } from '../utils/expectEvent';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('FlashAngle', () => {
@@ -143,9 +143,16 @@ contract('FlashAngle', () => {
       ).to.be.revertedWith('TooHighParameterValue');
     });
     it('success - parameters updated', async () => {
-      await flashAngle
-        .connect(impersonatedSigners[governor])
-        .setFlashLoanParameters(token.address, parseAmount.gwei(0.5), parseEther('100'));
+      const receipt = await (
+        await flashAngle
+          .connect(impersonatedSigners[governor])
+          .setFlashLoanParameters(token.address, parseAmount.gwei(0.5), parseEther('100'))
+      ).wait();
+      inReceipt(receipt, 'FlashLoanParametersUpdated', {
+        stablecoin: token.address,
+        _flashLoanFee: parseAmount.gwei(0.5),
+        _maxBorrowable: parseEther('100'),
+      });
       expect((await flashAngle.stablecoinMap(token.address)).maxBorrowable).to.be.equal(parseEther('100'));
       expect((await flashAngle.stablecoinMap(token.address)).flashLoanFee).to.be.equal(parseAmount.gwei(0.5));
     });
