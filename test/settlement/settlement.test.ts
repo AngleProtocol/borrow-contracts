@@ -122,7 +122,7 @@ contract('Settlement', () => {
         stablecoinAmount: parseEther('1'),
         collateralAmount: parseUnits('3', 6),
       });
-      expect(await settlement.vaultCheck(1)).to.be.true;
+      expect(await settlement.vaultCheck(1)).to.be.equal(1);
       expect(await stablecoin.balanceOf(settlement.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('3', 6));
     });
@@ -142,7 +142,7 @@ contract('Settlement', () => {
         stablecoinAmount: parseEther('1'),
         collateralAmount: parseUnits('3', 6),
       });
-      expect(await settlement.vaultCheck(1)).to.be.true;
+      expect(await settlement.vaultCheck(1)).to.be.equal(1);
       expect(await stablecoin.balanceOf(settlement.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(bob.address)).to.be.equal(parseUnits('3', 6));
       expect(await mockSwapper.counter()).to.be.equal(1);

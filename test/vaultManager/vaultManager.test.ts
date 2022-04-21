@@ -138,6 +138,9 @@ contract('VaultManager', () => {
       await vaultManager.connect(guardian).togglePause();
       await expect(vaultManager.createVault(alice.address)).to.be.revertedWith('Paused');
     });
+    it('reverts - zero address', async () => {
+      await expect(vaultManager.createVault(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+    });
 
     it('success', async () => {
       await vaultManager.createVault(alice.address);
@@ -387,6 +390,15 @@ contract('VaultManager', () => {
   });
 
   describe('addCollateral', () => {
+    it('reverts - vault does not exist', async () => {
+      const amount = parseUnits('1', collatBase);
+      await collateral.connect(alice).mint(alice.address, amount);
+      await collateral.connect(alice).approve(vaultManager.address, amount);
+      await expect(
+        angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address), addCollateral(5, amount)]),
+      ).to.be.revertedWith('NonexistentVault');
+    });
+
     it('success', async () => {
       const amount = parseUnits('1', collatBase);
       await collateral.connect(alice).mint(alice.address, amount);
