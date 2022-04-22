@@ -28,8 +28,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
-
         name = string.concat("Angle Protocol ", _symbol, " Vault");
+        __ERC721Permit_init(name);
         symbol = string.concat(_symbol, "-vault");
 
         interestAccumulator = BASE_INTEREST;
