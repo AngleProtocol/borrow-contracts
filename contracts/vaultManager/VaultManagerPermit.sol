@@ -3,12 +3,14 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerERC721.sol";
+import "../interfaces/external/IERC1271.sol";
 
 /// @title VaultManagerPermit
 /// @author Angle Core Team
 /// @dev Base Implementation of permit functions for the `VaultManager` contract
 abstract contract VaultManagerPermit is Initializable, VaultManagerERC721 {
-    
+    using Address for address;
+
     mapping(address => uint256) private _nonces;
     /* solhint-disable var-name-mixedcase */
     bytes32 private _HASHED_NAME;
@@ -63,8 +65,13 @@ abstract contract VaultManagerPermit is Initializable, VaultManagerERC721 {
                 )
             )
         );
-        address signer = ecrecover(digest, v, r, s);
-        if (signer != owner || signer == address(0)) revert InvalidSignature();
+        if (owner.isContract()) {
+            if (IERC1271(owner).isValidSignature(digest, abi.encodePacked(r, s, v)) == 0x1626ba7e) revert InvalidSignature();
+        } else {
+            address signer = ecrecover(digest, v, r, s);
+            if (signer != owner || signer == address(0)) revert InvalidSignature();
+        }
+        
         _setApprovalForAll(owner, spender, approved);
     }
 

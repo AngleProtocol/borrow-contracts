@@ -108,6 +108,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         _setApprovalForAll(msg.sender, operator, approved);
     }
 
+    /// @notice Internal version of the `setApprovalForAll` function
+    /// @dev It contains an `approver` field to be used in case someone signs a permit for a particular
+    /// address, and this signature is given to the contract by another address (like a router)
     function _setApprovalForAll(
         address approver,
         address operator,
@@ -129,7 +132,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address from,
         address to,
         uint256 vaultID
-    ) external {
+    ) external onlyApprovedOrOwner(msg.sender, vaultID) {
         _transfer(from, to, vaultID);
     }
 
@@ -148,7 +151,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address to,
         uint256 vaultID,
         bytes memory _data
-    ) public {
+    ) public onlyApprovedOrOwner(msg.sender, vaultID) {
         _safeTransfer(from, to, vaultID, _data);
     }
 
@@ -248,7 +251,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address to,
         uint256 vaultID
     ) internal {
-        if (!_isApprovedOrOwner(from, vaultID)) revert NotApproved();
+        if (_ownerOf(vaultID) != from) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
         if (whitelistingActivated && isWhitelisted[to] != 1) revert NotWhitelisted();
         // Clear approvals from the previous owner
