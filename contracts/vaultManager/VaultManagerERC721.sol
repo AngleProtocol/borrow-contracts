@@ -105,10 +105,18 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
 
     /// @inheritdoc IERC721Upgradeable
     function setApprovalForAll(address operator, bool approved) external {
-        if (operator == msg.sender) revert ApprovalToCaller();
+        _setApprovalForAll(msg.sender, operator, approved);
+    }
+
+    function _setApprovalForAll(
+        address approver,
+        address operator,
+        bool approved
+    ) internal {
+        if (operator == approver) revert ApprovalToCaller();
         uint256 approval = approved ? 1 : 0;
-        _operatorApprovals[msg.sender][operator] = approval;
-        emit ApprovalForAll(msg.sender, operator, approved);
+        _operatorApprovals[approver][operator] = approval;
+        emit ApprovalForAll(approver, operator, approved);
     }
 
     /// @inheritdoc IERC721Upgradeable
@@ -121,7 +129,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address from,
         address to,
         uint256 vaultID
-    ) external onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) external {
         _transfer(from, to, vaultID);
     }
 
@@ -140,7 +148,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address to,
         uint256 vaultID,
         bytes memory _data
-    ) public onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) public {
         _safeTransfer(from, to, vaultID, _data);
     }
 
@@ -240,7 +248,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address to,
         uint256 vaultID
     ) internal {
-        if (_ownerOf(vaultID) != from) revert NotApproved();
+        if (!_isApprovedOrOwner(from, vaultID)) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
         if (whitelistingActivated && isWhitelisted[to] != 1) revert NotWhitelisted();
         // Clear approvals from the previous owner

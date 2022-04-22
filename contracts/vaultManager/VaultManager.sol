@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.12;
 
-import "./VaultManagerERC721.sol";
+import "./VaultManagerPermit.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -10,7 +10,7 @@ import "./VaultManagerERC721.sol";
 /// logic (fees and interest rate) as well as the liquidation logic
 /// @dev This implementation only supports non-rebasing ERC20 tokens as collateral
 /// @dev This contract is encoded as a NFT contract
-contract VaultManager is VaultManagerERC721, IVaultManagerFunctions {
+contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     using SafeERC20 for IERC20;
     using Address for address;
 
