@@ -151,7 +151,9 @@ interface IVaultManagerFunctions {
     /// @param to Address to which stablecoins and/or collateral will be sent in case of
     /// @param who Address of the contract to handle in case of repayment of stablecoins from received collateral
     /// @param repayData Data to pass to the repayment contract in case of
-    /// @return paymentData Struct containing the final transfers executed
+    /// @return paymentData Struct containing the accounting changes from the protocol's perspective (like how much of collateral
+    /// or how much has been received). Note that the values in the struct are not aggregated and you could have in the output
+    /// a positive amount of stablecoins to receive as well as a positive amount of stablecoins to give
     /// @dev This function is optimized to reduce gas cost due to payment from or to the user and that expensive calls
     /// or computations (like `oracleValue`) are done only once
     /// @dev When specifying `vaultID` in `data`, it is important to know that if you specify `vaultID = 0`, it will simply

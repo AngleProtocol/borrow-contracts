@@ -145,11 +145,11 @@ contract Swapper is ISwapper {
         if (outTokenBalance <= minAmountOut) revert TooSmallAmount();
         outToken.safeTransfer(outTokenRecipient, outTokenOwed);
         if (outTokenBalance > outTokenOwed) outToken.safeTransfer(to, outTokenBalance - outTokenOwed);
-        // Reusing the `outTokenBalance` variable for the `inToken` balance
+        // Reusing the `inTokenObtained` variable for the `inToken` balance
         // Sending back the remaining amount of inTokens to the `to` address: it is possible that not the full `inTokenObtained`
         // is swapped to `outToken` if we're using the `1Inch` payload
-        outTokenBalance = inToken.balanceOf(address(this));
-        if (outTokenBalance > 0) inToken.safeTransfer(to, outTokenBalance);
+        inTokenObtained = inToken.balanceOf(address(this));
+        if (inTokenObtained > 0) inToken.safeTransfer(to, inTokenObtained);
     }
 
     // ========================= Governance Function ===============================

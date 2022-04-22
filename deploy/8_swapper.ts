@@ -12,14 +12,19 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const core = (await deployments.get('CoreBorrow')).address;
   const routerAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].AngleRouter!;
 
+  console.log('Now deploying the swapper contract');
+
   await deploy(`Swapper`, {
     contract: 'Swapper',
     from: deployer.address,
     args: [core, json.tokens.wstETH, json.uniswapV3Router, json.oneInchRouter, routerAddress],
     log: !argv.ci,
   });
+  console.log('Success');
+
+  // The only contract leftover to be deployed is the router contract which should be deployed from another repo
 };
 
 func.tags = ['swapper'];
-func.dependencies = ['router'];
+func.dependencies = ['vaultManagerProxy'];
 export default func;
