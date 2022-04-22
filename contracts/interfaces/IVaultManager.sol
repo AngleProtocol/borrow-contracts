@@ -235,6 +235,10 @@ interface IVaultManagerStorage {
 
     /// @notice Maps a `vaultID` to its data (namely collateral amount and normalized debt)
     function vaultData(uint256 vaultID) external view returns (uint256 collateralAmount, uint256 normalizedDebt);
+
+    /// @notice ID of the last vault created. The `vaultIDCount` variables serves as a counter to generate a unique
+    /// `vaultID` for each vault: it is like `tokenID` in basic ERC721 contracts
+    function vaultIDCount() external view returns (uint256);
 }
 
 /// @title IVaultManager

@@ -1,6 +1,6 @@
 import { BigNumberish, BytesLike, ethers, BigNumber } from 'ethers';
 
-type Call = {
+export type Call = {
   action: number;
   data: BytesLike;
 };
