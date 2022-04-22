@@ -1,4 +1,3 @@
-import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, Signer, utils } from 'ethers';
 import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
@@ -11,37 +10,19 @@ import {
   MockOracle__factory,
   MockStableMaster,
   MockStableMaster__factory,
-  MockSwapper,
-  MockSwapper__factory,
   MockToken,
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  MockVeBoostProxy,
-  MockVeBoostProxy__factory,
+  MockERC1271,
+  MockERC1271__factory,
   VaultManager,
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
-import {
-  addCollateral,
-  angle,
-  borrow,
-  closeVault,
-  createVault,
-  deployUpgradeable,
-  displayVaultState,
-  expectApprox,
-  getDebtIn,
-  increaseTime,
-  latestTime,
-  permit,
-  removeCollateral,
-  repayDebt,
-  ZERO_ADDRESS,
-} from '../utils/helpers';
-import { signPermitNFT } from '../utils/sigUtilsNFT';
+import { deployUpgradeable, latestTime, ZERO_ADDRESS } from '../utils/helpers';
+import { signPermitNFT, domainSeparator } from '../utils/sigUtilsNFT';
 
 contract('VaultManager - Permit', () => {
   const log = true;
@@ -51,15 +32,14 @@ contract('VaultManager - Permit', () => {
   let guardian: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
-  let charlie: SignerWithAddress;
 
   let treasury: MockTreasury;
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
   let agToken: AgToken;
+  let contractSigner: MockERC1271;
   let vaultManager: VaultManager;
-  let mockSwapper: MockSwapper;
   let name: string;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
@@ -81,7 +61,7 @@ contract('VaultManager - Permit', () => {
   };
 
   before(async () => {
-    ({ deployer, alice, bob, governor, guardian, charlie } = await ethers.getNamedSigners());
+    ({ deployer, alice, bob, governor, guardian } = await ethers.getNamedSigners());
     // add any addresses you want to impersonate here
     const impersonatedAddresses = [{ address: '0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8', name: 'governor' }];
 
@@ -120,6 +100,8 @@ contract('VaultManager - Permit', () => {
     );
     await agToken.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
     await treasury.addMinter(agToken.address, vaultManager.address);
+
+    contractSigner = (await new MockERC1271__factory(deployer).deploy()) as MockERC1271;
 
     oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
@@ -172,7 +154,7 @@ contract('VaultManager - Permit', () => {
       });
       expect(await vaultManager.isApprovedForAll(bob.address, alice.address)).to.be.equal(true);
     });
-    it('success - allowance given and then allowance revoked', async () => {
+    it('success - allowance given and then revoked', async () => {
       const permitData = await signPermitNFT(
         bob,
         0,
@@ -375,6 +357,140 @@ contract('VaultManager - Permit', () => {
           .connect(bob)
           .permit(bob.address, bob.address, true, permitData.deadline, permitData.v, permitData.r, permitData.s),
       ).to.be.revertedWith('ApprovalToCaller');
+    });
+  });
+  describe('permit - Smart Contract', () => {
+    it('reverts - when interface is not supported ', async () => {
+      const permitData = await signPermitNFT(
+        bob,
+        0,
+        vaultManager.address,
+        (await latestTime()) + 1000,
+        alice.address,
+        true,
+        name,
+      );
+      await expect(
+        vaultManager
+          .connect(bob)
+          .permit(agToken.address, alice.address, true, permitData.deadline, permitData.v, permitData.r, permitData.s),
+      ).to.be.reverted;
+    });
+    it('reverts - when signature is incorrect', async () => {
+      const permitData = await signPermitNFT(
+        bob,
+        0,
+        vaultManager.address,
+        (await latestTime()) + 1000,
+        alice.address,
+        true,
+        name,
+      );
+      await expect(
+        vaultManager
+          .connect(bob)
+          .permit(
+            contractSigner.address,
+            alice.address,
+            true,
+            permitData.deadline,
+            permitData.v,
+            permitData.r,
+            permitData.s,
+          ),
+      ).to.be.revertedWith('InvalidSignature');
+    });
+    it('success - when mode is activated', async () => {
+      await contractSigner.setMode(1);
+      // Technically, we don't need to sign the data here, but at least it's in the good format
+      const permitData = await signPermitNFT(
+        bob,
+        0,
+        vaultManager.address,
+        (await latestTime()) + 1000,
+        alice.address,
+        true,
+        name,
+      );
+      const receipt = await (
+        await vaultManager
+          .connect(alice)
+          .permit(
+            contractSigner.address,
+            alice.address,
+            true,
+            permitData.deadline,
+            permitData.v,
+            permitData.r,
+            permitData.s,
+          )
+      ).wait();
+      inReceipt(receipt, 'ApprovalForAll', {
+        owner: contractSigner.address,
+        operator: alice.address,
+        approved: true,
+      });
+      expect(await vaultManager.isApprovedForAll(contractSigner.address, alice.address)).to.be.equal(true);
+      expect(await vaultManager.nonces(contractSigner.address)).to.be.equal(1);
+    });
+    it('success - when mode is activated to revoke an approval', async () => {
+      await contractSigner.setMode(1);
+      // Technically, we don't need to sign the data here, but at least it's in the good format
+      const permitData = await signPermitNFT(
+        bob,
+        0,
+        vaultManager.address,
+        (await latestTime()) + 1000,
+        alice.address,
+        true,
+        name,
+      );
+      const receipt = await (
+        await vaultManager
+          .connect(alice)
+          .permit(
+            contractSigner.address,
+            alice.address,
+            true,
+            permitData.deadline,
+            permitData.v,
+            permitData.r,
+            permitData.s,
+          )
+      ).wait();
+      inReceipt(receipt, 'ApprovalForAll', {
+        owner: contractSigner.address,
+        operator: alice.address,
+        approved: true,
+      });
+      expect(await vaultManager.isApprovedForAll(contractSigner.address, alice.address)).to.be.equal(true);
+      expect(await vaultManager.nonces(contractSigner.address)).to.be.equal(1);
+      const receipt2 = await (
+        await vaultManager
+          .connect(alice)
+          .permit(
+            contractSigner.address,
+            alice.address,
+            false,
+            permitData.deadline,
+            permitData.v,
+            permitData.r,
+            permitData.s,
+          )
+      ).wait();
+      inReceipt(receipt2, 'ApprovalForAll', {
+        owner: contractSigner.address,
+        operator: alice.address,
+        approved: false,
+      });
+      expect(await vaultManager.isApprovedForAll(contractSigner.address, alice.address)).to.be.equal(false);
+      expect(await vaultManager.nonces(contractSigner.address)).to.be.equal(2);
+    });
+  });
+  describe('domainSeparator', () => {
+    it('success - value correctly printed', async () => {
+      const domainSeparatorOffChain = await domainSeparator(name, vaultManager.address, '1');
+      expect(await vaultManager.DOMAIN_SEPARATOR()).to.be.equal(domainSeparatorOffChain);
     });
   });
 });

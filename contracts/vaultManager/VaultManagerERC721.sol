@@ -108,20 +108,6 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         _setApprovalForAll(msg.sender, operator, approved);
     }
 
-    /// @notice Internal version of the `setApprovalForAll` function
-    /// @dev It contains an `approver` field to be used in case someone signs a permit for a particular
-    /// address, and this signature is given to the contract by another address (like a router)
-    function _setApprovalForAll(
-        address approver,
-        address operator,
-        bool approved
-    ) internal {
-        if (operator == approver) revert ApprovalToCaller();
-        uint256 approval = approved ? 1 : 0;
-        _operatorApprovals[approver][operator] = approval;
-        emit ApprovalForAll(approver, operator, approved);
-    }
-
     /// @inheritdoc IERC721Upgradeable
     function isApprovedForAll(address owner, address operator) public view returns (bool) {
         return _operatorApprovals[owner][operator] == 1;
@@ -269,6 +255,20 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     function _approve(address to, uint256 vaultID) internal {
         _vaultApprovals[vaultID] = to;
         emit Approval(_ownerOf(vaultID), to, vaultID);
+    }
+
+    /// @notice Internal version of the `setApprovalForAll` function
+    /// @dev It contains an `approver` field to be used in case someone signs a permit for a particular
+    /// address, and this signature is given to the contract by another address (like a router)
+    function _setApprovalForAll(
+        address approver,
+        address operator,
+        bool approved
+    ) internal {
+        if (operator == approver) revert ApprovalToCaller();
+        uint256 approval = approved ? 1 : 0;
+        _operatorApprovals[approver][operator] = approval;
+        emit ApprovalForAll(approver, operator, approved);
     }
 
     /// @notice Internal function to invoke {IERC721Receiver-onERC721Received} on a target address

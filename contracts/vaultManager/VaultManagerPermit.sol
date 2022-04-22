@@ -66,7 +66,7 @@ abstract contract VaultManagerPermit is Initializable, VaultManagerERC721 {
             )
         );
         if (owner.isContract()) {
-            if (IERC1271(owner).isValidSignature(digest, abi.encodePacked(r, s, v)) == 0x1626ba7e) revert InvalidSignature();
+            if (IERC1271(owner).isValidSignature(digest, abi.encodePacked(r, s, v)) != 0x1626ba7e) revert InvalidSignature();
         } else {
             address signer = ecrecover(digest, v, r, s);
             if (signer != owner || signer == address(0)) revert InvalidSignature();
