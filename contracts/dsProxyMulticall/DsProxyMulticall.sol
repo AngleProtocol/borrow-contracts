@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -17,8 +18,10 @@ and adapted to our needs:
     - added the ability to pay the miner (for private Flashbots transactions)
     - swap tokens through 1inch
 */
-contract KeeperMulticall is Initializable, OwnableUpgradeable {
+contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
+
+    bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
 
     address private constant _oneInch = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
 
@@ -32,7 +35,7 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
     event SentToMiner(uint256 indexed value);
     event Recovered(address indexed tokenAddress, address indexed to, uint256 amount);
 
-    error InvalidLength();
+    error IncompatibleLengths();
     error ZeroAddress();
     error AmountOutTooLow(uint256 amount, uint256 min);
     error BalanceTooLow();
@@ -42,7 +45,9 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
     constructor() initializer {}
 
     function initialize() public initializer {
-        __Ownable_init();
+        __AccessControl_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(KEEPER_ROLE, msg.sender);
     }
 
     /// @notice Called directly through DsProxy to execute a task
@@ -52,11 +57,11 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
     function executeActions(Action[] memory actions, uint256 percentageToMiner)
         external
         payable
-        onlyOwner
+        onlyRole(KEEPER_ROLE)
         returns (bytes[] memory)
     {
         uint256 numberOfActions = actions.length;
-        if (numberOfActions == 0) revert InvalidLength();
+        if (numberOfActions == 0) revert IncompatibleLengths();
 
         bytes[] memory returnValues = new bytes[](numberOfActions + 1);
 
@@ -97,16 +102,16 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
 
     /// @notice Ability to pay miner directly. Used for Flashbots to execute private transactions
     /// @param value Value to be sent
-    function payFlashbots(uint256 value) public payable onlyOwner returns (bytes memory) {
+    function payFlashbots(uint256 value) public payable onlyRole(KEEPER_ROLE) returns (bytes memory) {
         (bool success, bytes memory response) = block.coinbase.call{ value: value }("");
         if (!success) revert FlashbotsErrorPayingMiner(value);
         emit SentToMiner(value);
         return response;
     }
 
-    function finalBalanceCheck(IERC20[] memory tokens, uint256[] memory minBalances) external returns (bool) {
+    function finalBalanceCheck(IERC20[] memory tokens, uint256[] memory minBalances) external view returns (bool) {
         uint256 tokensLength = tokens.length;
-        if (tokensLength == 0 || tokensLength != minBalances.length) revert InvalidLength();
+        if (tokensLength == 0 || tokensLength != minBalances.length) revert IncompatibleLengths();
 
         for (uint256 i; i < tokensLength; ++i) {
             if (address(tokens[i]) == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
@@ -122,7 +127,7 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
     /// @notice Swap token to ETH through 1Inch
     /// @param minAmountOut Minimum amount of ETH to receive for the swap to happen
     /// @param payload Bytes needed for 1Inch API
-    function swapToken(uint256 minAmountOut, bytes memory payload) external onlyOwner {
+    function swapToken(uint256 minAmountOut, bytes memory payload) external onlyRole(KEEPER_ROLE) {
         (bool success, bytes memory result) = _oneInch.call(payload);
         if (!success) _revertBytes(result);
 
@@ -138,7 +143,7 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
         IERC20 token,
         address spender,
         uint256 amount
-    ) external onlyOwner {
+    ) external onlyRole(KEEPER_ROLE) {
         token.approve(spender, amount);
     }
 
@@ -159,7 +164,7 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
         address _token,
         address _receiver,
         uint256 _amount
-    ) external onlyOwner {
+    ) external onlyRole(KEEPER_ROLE) {
         if (_token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             payable(_receiver).transfer(_amount);
         } else {
@@ -167,12 +172,5 @@ contract KeeperMulticall is Initializable, OwnableUpgradeable {
         }
 
         emit Recovered(_token, _receiver, _amount);
-    }
-
-    /// @notice Destroy the contract
-    /// In case there is an issue with this implementation
-    /// we can kill it to make sure we don't call it again accidentally
-    function kill() external onlyOwner {
-        selfdestruct(payable(msg.sender));
     }
 }

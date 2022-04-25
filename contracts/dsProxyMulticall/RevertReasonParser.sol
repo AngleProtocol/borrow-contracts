@@ -2,17 +2,14 @@
 
 pragma solidity 0.8.12;
 
+// Code copied from 1Inch
+// https://docs.1inch.io/docs/limit-order-protocol/smart-contract/libraries/RevertReasonParser/
+// https://etherscan.io/address/0x1111111254fb6c44bAC0beD2854e76F90643097d#code
 library RevertReasonParser {
-    bytes4 private constant _PANIC_SELECTOR =
-        bytes4(keccak256("Panic(uint256)"));
-    bytes4 private constant _ERROR_SELECTOR =
-        bytes4(keccak256("Error(string)"));
+    bytes4 private constant _PANIC_SELECTOR = bytes4(keccak256("Panic(uint256)"));
+    bytes4 private constant _ERROR_SELECTOR = bytes4(keccak256("Error(string)"));
 
-    function parse(bytes memory data, string memory prefix)
-        internal
-        pure
-        returns (string memory)
-    {
+    function parse(bytes memory data, string memory prefix) internal pure returns (string memory) {
         if (data.length >= 4) {
             bytes4 selector;
             assembly {
@@ -37,10 +34,7 @@ library RevertReasonParser {
                     because of that we can't check for equality and instead check
                     that offset + string length + extra 36 bytes is less than overall data length
                 */
-                require(
-                    data.length >= 36 + offset + reason.length,
-                    "Invalid revert reason"
-                );
+                require(data.length >= 36 + offset + reason.length, "Invalid revert reason");
                 return string(abi.encodePacked(prefix, "Error(", reason, ")"));
             }
             // 36 = 4-byte selector + 32 bytes integer
@@ -51,10 +45,7 @@ library RevertReasonParser {
                     // 36 = 32 bytes data length + 4-byte selector
                     code := mload(add(data, 36))
                 }
-                return
-                    string(
-                        abi.encodePacked(prefix, "Panic(", _toHex(code), ")")
-                    );
+                return string(abi.encodePacked(prefix, "Panic(", _toHex(code), ")"));
             }
         }
 
