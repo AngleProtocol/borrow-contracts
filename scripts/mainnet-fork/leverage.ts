@@ -7,18 +7,9 @@ import { Signer, BigNumber, BytesLike } from 'ethers';
 import hre from 'hardhat';
 import { MAX_UINT256 } from '../../test/utils/helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import {
-  ActionType,
-  TypeTransfer,
-  TypeSwap,
-  SwapType,
-  TypePermit,
-  addCollateral,
-  borrow,
-  createVault,
-  encodeAngleBorrow,
-  Call,
-} from './utils/helpers';
+import { ActionType, TypeTransfer, TypeSwap, SwapType, encodeAngleBorrow, Call } from './utils/helpers';
+import { addCollateral, borrow, createVault } from '../../test/utils/helpers';
+import { TypePermit } from '../../test/utils/sigUtils';
 
 async function main() {
   const { deployer } = await ethers.getNamedSigners();
