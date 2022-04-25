@@ -458,6 +458,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 oracleValue,
         uint256 newInterestAccumulator
     ) internal onlyApprovedOrOwner(msg.sender, srcVaultID) {
+        emit DebtTransferred(srcVaultID, dstVaultID, address(vaultManager), stablecoinAmount);
         // The `stablecoinAmount` needs to be rounded down in the `_increaseDebt` function to reduce the room for exploits
         stablecoinAmount = _increaseDebt(srcVaultID, stablecoinAmount, oracleValue, newInterestAccumulator);
         if (address(vaultManager) == address(this)) {
