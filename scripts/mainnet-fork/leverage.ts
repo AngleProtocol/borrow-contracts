@@ -1,6 +1,6 @@
 import { deployments, ethers } from 'hardhat';
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
-import { AngleRouter, AngleRouter__factory, VaultManager, VaultManager__factory } from '../../typechain';
+import { ChainId, CONTRACTS_ADDRESSES, Interfaces } from '@angleprotocol/sdk';
+import { VaultManager, VaultManager__factory } from '../../typechain';
 import { expect } from '../../test/utils/chai-setup';
 import { ERC20_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
 import { Signer, BigNumber, BytesLike } from 'ethers';
@@ -15,7 +15,7 @@ async function main() {
   const { deployer } = await ethers.getNamedSigners();
   let routerAddress: string;
   let swapperAddress;
-  let router: AngleRouter;
+  let router;
   let vaultManagerAddress: string;
   let vaultManager: VaultManager;
   let wstETHAddress: string;
@@ -46,7 +46,7 @@ async function main() {
   vaultManagerAddress = (await deployments.get('VaultManager_wStETH_EUR')).address;
   swapperAddress = (await deployments.get('Swapper')).address;
   routerAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].AngleRouter!;
-  router = new ethers.Contract(routerAddress, AngleRouter__factory.createInterface(), signer) as AngleRouter;
+  router = new ethers.Contract(routerAddress, Interfaces.AngleRouter_Interface, signer);
   vaultManager = new ethers.Contract(
     vaultManagerAddress,
     VaultManager__factory.createInterface(),

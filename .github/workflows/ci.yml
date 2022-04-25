@@ -42,14 +42,6 @@ jobs:
       - name: Run eslint
         run: yarn lint:js:fix
 
-      # - name: Discord notification
-      #   if: failure()
-      #   uses: Ilshidur/action-discord@master
-      #   env:
-      #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      #   with:
-      #     args: '⛔️ Error in project {{EVENT_PAYLOAD.repository.full_name}}. See here: https://github.com/AngleProtocol/angle-borrow/actions'
-
   unit-tests:
     if: ${{ github.ref == 'refs/heads/main' || github.event.inputs.workflow_to_run == 'all' || github.event.inputs.workflow_to_run == 'unit_tests' }}
     runs-on: ubuntu-latest
@@ -81,10 +73,3 @@ jobs:
           CI: true
       - name: Print gas report
         run: cat gas-report.txt
-      # - name: Discord notification
-      #   if: failure()
-      #   uses: Ilshidur/action-discord@master
-      #   env:
-      #     DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      #   with:
-      #     args: '⛔️ Error in project {{EVENT_PAYLOAD.repository.full_name}}. See here: https://github.com/AngleProtocol/angle-borrow/actions'
