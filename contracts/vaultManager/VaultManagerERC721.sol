@@ -105,10 +105,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
 
     /// @inheritdoc IERC721Upgradeable
     function setApprovalForAll(address operator, bool approved) external {
-        if (operator == msg.sender) revert ApprovalToCaller();
-        uint256 approval = approved ? 1 : 0;
-        _operatorApprovals[msg.sender][operator] = approval;
-        emit ApprovalForAll(msg.sender, operator, approved);
+        _setApprovalForAll(msg.sender, operator, approved);
     }
 
     /// @inheritdoc IERC721Upgradeable
@@ -258,6 +255,20 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     function _approve(address to, uint256 vaultID) internal {
         _vaultApprovals[vaultID] = to;
         emit Approval(_ownerOf(vaultID), to, vaultID);
+    }
+
+    /// @notice Internal version of the `setApprovalForAll` function
+    /// @dev It contains an `approver` field to be used in case someone signs a permit for a particular
+    /// address, and this signature is given to the contract by another address (like a router)
+    function _setApprovalForAll(
+        address approver,
+        address operator,
+        bool approved
+    ) internal {
+        if (operator == approver) revert ApprovalToCaller();
+        uint256 approval = approved ? 1 : 0;
+        _operatorApprovals[approver][operator] = approval;
+        emit ApprovalForAll(approver, operator, approved);
     }
 
     /// @notice Internal function to invoke {IERC721Receiver-onERC721Received} on a target address
