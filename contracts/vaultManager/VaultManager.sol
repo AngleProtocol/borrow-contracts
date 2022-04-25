@@ -633,6 +633,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param data Data to pass to the repayment contract in case of. If empty, liquidators simply have to bring the exact amount of
     /// stablecoins to get the discounted collateral. If not, it is used by the repayment contract to swap a portion or all
     /// of the collateral received to stablecoins to be sent to the `from` address. More details in the `_handleRepay` function
+    /// @return liqData Data about the liquidation process for the liquidator to track everything that has been going on (like how much
+    /// stablecoins have been repaid, how much collateral has been received)
     /// @dev This function will revert if it's called on a vault that cannot be liquidated or that does not exist
     function liquidate(
         uint256[] memory vaultIDs,

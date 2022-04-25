@@ -30,10 +30,12 @@ async function main() {
 
   testUpgradeability('AgToken', 'contracts/agToken/AgToken.sol');
   testUpgradeability('AgTokenIntermediateUpgrade', 'contracts/agToken/AgTokenIntermediateUpgrade.sol');
-  testUpgradeability('FlashAngle', 'contracts/flashloan/FlashAngle.sol');
-  testUpgradeability('EulerReactor', 'contracts/reactor/EulerReactor.sol');
-  testUpgradeability('VaultManager', 'contracts/vaultManager/VaultManager.sol');
-  testUpgradeability('Treasury', 'contracts/treasury/Treasury.sol');
+  testStorage(
+    'AgTokenIntermediateUpgrade',
+    'contracts/agToken/AgTokenIntermediateUpgrade.sol',
+    'AgToken',
+    'contracts/agToken/AgToken.sol',
+  );
 }
 
 main().catch(error => {

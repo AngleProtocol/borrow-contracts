@@ -109,8 +109,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     // ================================ ERC721 Data ================================
 
-    /// @notice Counter to generate a unique `vaultID` for each vault: `vaultID` acts as `tokenID` in basic ERC721
-    /// contracts
+    /// @inheritdoc IVaultManagerStorage
     uint256 public vaultIDCount;
 
     /// @notice URI
