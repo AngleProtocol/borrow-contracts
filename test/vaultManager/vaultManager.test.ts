@@ -826,7 +826,13 @@ contract('VaultManager', () => {
         addCollateral(1, collatAmount),
       ]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
-      await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))]);
+      const receipt = await (await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))])).wait();
+      inReceipt(receipt, 'DebtTransferred', {
+        srcVaultID: BigNumber.from(1),
+        dstVaultID: BigNumber.from(2),
+        dstVaultManager: vaultManager.address,
+        amount: parseEther('1'),
+      });
       expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1'), 0.1);
       expectApprox(await vaultManager.getVaultDebt(1), parseEther('1'), 0.1);
