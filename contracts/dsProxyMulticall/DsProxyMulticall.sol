@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GNU-3
+// SPDX-License-Identifier: GPL-3.0
 
 pragma solidity 0.8.12;
 
@@ -46,8 +46,9 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
 
     function initialize() public initializer {
         __AccessControl_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(KEEPER_ROLE, msg.sender);
+
+        _setupRole(KEEPER_ROLE, msg.sender);
+        _setRoleAdmin(KEEPER_ROLE, KEEPER_ROLE);
     }
 
     /// @notice Called directly through DsProxy to execute a task

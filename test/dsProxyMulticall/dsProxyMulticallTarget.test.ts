@@ -2,13 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Contract, utils, Wallet } from 'ethers';
 import { ethers, network } from 'hardhat';
 
-import {
-  IERC20,
-  KeeperMulticall,
-  KeeperMulticall__factory,
-  MockToken,
-  TransparentUpgradeableProxy,
-} from '../../typechain';
+import { KeeperMulticall, KeeperMulticall__factory, MockToken, TransparentUpgradeableProxy } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 
 async function populateTx(
@@ -40,6 +34,7 @@ describe('DSProxy', async () => {
   let keeperMulticall: KeeperMulticall;
   let Token1: MockToken;
   let Token2: MockToken;
+  let swapper;
 
   beforeEach(async () => {
     await network.provider.request({
@@ -114,6 +109,27 @@ describe('DSProxy', async () => {
 
   it('Array of tasks cannot be empty', async () => {
     expect(keeperMulticall.connect(deployer).executeActions([], 0)).to.be.reverted;
+  });
+
+  it('Roles', async () => {
+    const KEEPER_ROLE = await keeperMulticall.KEEPER_ROLE();
+
+    expect(await keeperMulticall.hasRole(KEEPER_ROLE, deployer.address)).to.be.true;
+    expect(await keeperMulticall.hasRole(KEEPER_ROLE, user1.address)).to.be.false;
+    expect(await keeperMulticall.hasRole(KEEPER_ROLE, randomUser)).to.be.false;
+    await keeperMulticall.connect(deployer).grantRole(KEEPER_ROLE, user1.address);
+    expect(await keeperMulticall.hasRole(KEEPER_ROLE, user1.address)).to.be.true;
+
+    await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
+    const tx1 = await populateTx(Token1, 'transfer', [user2.address, utils.parseEther('2')]);
+    expect(await Token1.balanceOf(user2.address)).to.equal(0);
+
+    expect(keeperMulticall.connect(user2).executeActions([tx1], 0)).to.be.revertedWith(
+      `AccessControl: account ${user2.address.toLowerCase()} is missing role ${KEEPER_ROLE.toLowerCase()}`,
+    );
+
+    await keeperMulticall.connect(user1).executeActions([tx1], 0);
+    expect(await Token1.balanceOf(user2.address)).to.equal(utils.parseEther('2'));
   });
 
   it('withdrawStuckFunds', async () => {
@@ -193,6 +209,81 @@ describe('DSProxy', async () => {
       true,
     );
     await keeperMulticall.connect(deployer).executeActions([txCheck], 0);
+  });
+
+  it('Pay miner', async () => {
+    const mockSwapper1Inch = await (await ethers.getContractFactory('Mock1Inch')).deploy();
+    const bribe = utils.parseEther('5');
+    await user1.sendTransaction({
+      to: mockSwapper1Inch.address,
+      value: bribe,
+    });
+
+    await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
+    const tx1 = await populateTx(Token1, 'transfer', [user2.address, utils.parseEther('2')]);
+    const tx2 = await populateTx(Token1, 'approve', [mockSwapper1Inch.address, utils.parseEther('2000')]);
+
+    const tx3 = await populateTx(mockSwapper1Inch, 'swap', [
+      Token1.address,
+      utils.parseEther('50'),
+      randomUser,
+      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      bribe,
+    ]);
+    const receipt = await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2, tx3], 1000)).wait();
+
+    const miner = (await ethers.provider.getBlock(receipt.blockHash)).miner;
+    const balanceBefore = await ethers.provider.getBalance(miner, receipt.blockNumber - 1);
+    const currentBalance = await ethers.provider.getBalance(miner, receipt.blockNumber);
+
+    expect(currentBalance.sub(balanceBefore).sub(utils.parseEther('2'))).to.be.closeTo(
+      utils.parseEther('0.5'),
+      utils.parseEther('0.01'),
+    );
+    expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(utils.parseEther('4.5'));
+  });
+
+  it('payFlashbots', async () => {
+    const mockSwapper1Inch = await (await ethers.getContractFactory('Mock1Inch')).deploy();
+    await user1.sendTransaction({
+      to: mockSwapper1Inch.address,
+      value: utils.parseEther('10'),
+    });
+    await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
+
+    const tx1 = await populateTx(Token1, 'approve', [mockSwapper1Inch.address, utils.parseEther('2000')]);
+    const tx2 = await populateTx(mockSwapper1Inch, 'swap', [
+      Token1.address,
+      utils.parseEther('50'),
+      randomUser,
+      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      utils.parseEther('2'),
+    ]);
+    const tx3 = await populateTx(keeperMulticall, 'payFlashbots', [utils.parseEther('0.123')], true);
+    const receipt = await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2, tx3], 0)).wait();
+
+    const miner = (await ethers.provider.getBlock(receipt.blockHash)).miner;
+    const balanceBefore = await ethers.provider.getBalance(miner, receipt.blockNumber - 1);
+    const currentBalance = await ethers.provider.getBalance(miner, receipt.blockNumber);
+
+    const log = receipt.events?.reduce((returnValue, _log) => {
+      try {
+        const log = KeeperMulticall__factory.createInterface().parseLog(_log);
+        if (log.eventFragment.name !== 'SentToMiner') return returnValue;
+        return log;
+      } catch (e) {}
+      return returnValue;
+    }, {} as utils.LogDescription | undefined);
+
+    expect(log?.args.value).to.equal(utils.parseEther('0.123'));
+
+    // the block reward is around 2ETH, so we subtract it
+    expect(currentBalance.sub(balanceBefore).sub(utils.parseEther('2'))).to.be.closeTo(
+      log?.args.value,
+      utils.parseEther('0.01'),
+    );
+
+    expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(utils.parseEther('1.877'));
   });
 
   it('finalBalanceCheck - ETH', async () => {
