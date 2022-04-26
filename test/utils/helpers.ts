@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Signer } from 'ethers';
+import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, ContractTransaction, Signer } from 'ethers';
 import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
@@ -270,7 +270,7 @@ async function angle(
   to: string = from,
   who: string = ZERO_ADDRESS,
   repayData = '0x',
-): Promise<void> {
+): Promise<ContractTransaction> {
   const actions: number[] = [];
   const datas: BytesLike[] = [];
   calls.forEach(o => {
@@ -278,11 +278,11 @@ async function angle(
     datas.push(o.data);
   });
   if (who !== ZERO_ADDRESS) {
-    await vaultManager
+    return await vaultManager
       .connect(signer)
       ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
   } else {
-    await vaultManager.connect(signer)['angle(uint8[],bytes[],address,address)'](actions, datas, from, to);
+    return await vaultManager.connect(signer)['angle(uint8[],bytes[],address,address)'](actions, datas, from, to);
   }
 }
 

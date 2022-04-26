@@ -139,6 +139,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event DebtCeilingUpdated(uint256 debtCeiling);
     event LiquidationBoostParametersUpdated(address indexed _veBoostProxy, uint256[] xBoost, uint256[] yBoost);
     event LiquidatedVaults(uint256[] vaultIDs);
+    event DebtTransferred(uint256 srcVaultID, uint256 dstVaultID, address dstVaultManager, uint256 amount);
 
     // =============================== Errors ======================================
 
