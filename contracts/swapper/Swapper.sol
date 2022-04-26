@@ -98,6 +98,7 @@ contract Swapper is ISwapper {
     /// or/and combining it with a UniV3 or 1Inch swap
     /// @dev No slippage checks are performed at the end of each operation, only one slippage check is performed
     /// at the end of the call
+    /// @dev In this implementation, the function
     function swap(
         IERC20 inToken,
         IERC20 outToken,
@@ -125,6 +126,8 @@ contract Swapper is ISwapper {
             (address, address, uint256, uint128, uint128, bytes)
         );
 
+        to = (to == address(0)) ? outTokenRecipient : to;
+
         if (mintOrBurn == 1) {
             // First performing burn transactions as you may usually get stablecoins first
             _checkAngleRouterAllowance(inToken);
@@ -132,7 +135,7 @@ contract Swapper is ISwapper {
             inToken = IERC20(intermediateToken);
             inTokenObtained = inToken.balanceOf(address(this));
         }
-        console.log("InToken balance", inToken.balanceOf(address(this)));
+        console.log("In token balance", inToken.balanceOf(address(this)));
         // Reusing the `inTokenObtained` variable
         inTokenObtained = _swap(inToken, inTokenObtained, SwapType(swapType), data);
 
@@ -149,12 +152,13 @@ contract Swapper is ISwapper {
         // The `outTokenRecipient` may already have enough in balance, in which case there's no need to transfer
         //  this address the token and everything can be given already to the `to` address
         uint256 outTokenBalanceRecipient = outToken.balanceOf(outTokenRecipient);
-        if (outTokenBalanceRecipient >= outTokenOwed) outToken.safeTransfer(to, outTokenBalance);
+        console.log("Out token balance contract", outTokenBalance);
+        console.log("Out token balance recipient", outTokenBalanceRecipient);
+        if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient) outToken.safeTransfer(to, outTokenBalance);
         else {
             // The `outTokenRecipient` should receive the delta to make sure its end balance is equal to `outTokenOwed`
-            // The function reverts if the end balance is inferior to `outTokenOwed` 
             outToken.safeTransfer(outTokenRecipient, outTokenOwed - outTokenBalanceRecipient);
-            if (outTokenBalanceRecipient + outTokenBalance > outTokenOwed)
+            // The function reverts if the end balance is inferior to `outTokenOwed - outTokenBalanceRecipient` 
             outToken.safeTransfer(to, outTokenBalanceRecipient + outTokenBalance - outTokenOwed);
         }
         // Reusing the `inTokenObtained` variable for the `inToken` balance
