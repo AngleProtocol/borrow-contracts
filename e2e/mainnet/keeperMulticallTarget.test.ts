@@ -51,8 +51,8 @@ async function populateTx(
   };
 }
 
-describe('DSProxy', async () => {
-  let deployer: SignerWithAddress, user1: SignerWithAddress, user2: SignerWithAddress, proxyAdmin: SignerWithAddress;
+describe('Keeper Multicall', async () => {
+  let deployer: SignerWithAddress, keeper: SignerWithAddress, proxyAdmin: SignerWithAddress;
   let randomUser: string;
 
   let keeperMulticall: KeeperMulticall;
@@ -72,10 +72,12 @@ describe('DSProxy', async () => {
       ],
     });
 
-    [deployer, proxyAdmin] = await ethers.getSigners();
+    [deployer, keeper, proxyAdmin] = await ethers.getSigners();
 
     const keeperMulticallImplementation = await (await ethers.getContractFactory('KeeperMulticall')).deploy();
-    const initializeData = KeeperMulticall__factory.createInterface().encodeFunctionData('initialize');
+    const initializeData = KeeperMulticall__factory.createInterface().encodeFunctionData('initialize', [
+      keeper.address,
+    ]);
     const proxy = await (
       await ethers.getContractFactory('TransparentUpgradeableProxy')
     ).deploy(keeperMulticallImplementation.address, proxyAdmin.address, initializeData);
@@ -85,7 +87,8 @@ describe('DSProxy', async () => {
       deployer,
     ) as KeeperMulticall;
 
-    expect(await keeperMulticall.hasRole(await keeperMulticall.KEEPER_ROLE(), deployer.address)).to.be.true;
+    expect(await keeperMulticall.hasRole(await keeperMulticall.KEEPER_ROLE(), deployer.address)).to.be.false;
+    expect(await keeperMulticall.hasRole(await keeperMulticall.KEEPER_ROLE(), keeper.address)).to.be.true;
 
     // SETUP
     await network.provider.send('hardhat_setStorageAt', [
@@ -127,7 +130,7 @@ describe('DSProxy', async () => {
 
     expect(await ethers.provider.getBalance(randomUser)).to.equal(0);
 
-    const receipt = await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2, tx3], 0)).wait();
+    const receipt = await (await keeperMulticall.connect(keeper).executeActions([tx1, tx2, tx3], 0)).wait();
 
     const miner = (await ethers.provider.getBlock(receipt.blockHash)).miner;
     const balanceBefore = await ethers.provider.getBalance(miner, receipt.blockNumber - 1);
@@ -186,7 +189,7 @@ describe('DSProxy', async () => {
 
     expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(0);
 
-    const receipt = await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2], 1000)).wait();
+    const receipt = await (await keeperMulticall.connect(keeper).executeActions([tx1, tx2], 1000)).wait();
 
     const miner = (await ethers.provider.getBlock(receipt.blockHash)).miner;
     const balanceBefore = await ethers.provider.getBalance(miner, receipt.blockNumber - 1);
@@ -244,7 +247,7 @@ describe('DSProxy', async () => {
     );
     const tx2 = await populateTx(keeperMulticall, 'swapToken', [0, payload1Inch.data], true);
 
-    const receipt = await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2], 625)).wait();
+    const receipt = await (await keeperMulticall.connect(keeper).executeActions([tx1, tx2], 625)).wait();
 
     const miner = (await ethers.provider.getBlock(receipt.blockHash)).miner;
     const balanceBefore = await ethers.provider.getBalance(miner, receipt.blockNumber - 1);
@@ -302,10 +305,10 @@ describe('DSProxy', async () => {
     );
     let txSwap = await populateTx(keeperMulticall, 'swapToken', [0, payload1Inch.data], true);
 
-    expect(keeperMulticall.connect(deployer).executeActions([txSwap], 0)).to.be.revertedWith(
+    expect(keeperMulticall.connect(keeper).executeActions([txSwap], 0)).to.be.revertedWith(
       'action reverted: Error(ERC20: transfer amount exceeds allowance)',
     );
-    await keeperMulticall.connect(deployer).executeActions([txApprove, txSwap], 0);
+    await keeperMulticall.connect(keeper).executeActions([txApprove, txSwap], 0);
 
     // payload1Inch = await get1inchSwapData(
     //   1,
@@ -320,6 +323,6 @@ describe('DSProxy', async () => {
       toTokenAmount: '333960745854521861',
     };
     txSwap = await populateTx(keeperMulticall, 'swapToken', [payload1Inch.toTokenAmount, payload1Inch.data], true);
-    expect(keeperMulticall.connect(deployer).executeActions([txSwap], 0)).to.be.reverted;
+    expect(keeperMulticall.connect(keeper).executeActions([txSwap], 0)).to.be.reverted;
   });
 });

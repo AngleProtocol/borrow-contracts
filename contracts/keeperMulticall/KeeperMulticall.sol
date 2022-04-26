@@ -11,13 +11,11 @@ import "./RevertReasonParser.sol";
 
 import "hardhat/console.sol";
 
-/*
-Inspired from DeFiSaver `TaskExecutor` https://etherscan.io/address/0xb3e5371d55e1e84bffe7d0b57bd9c6a4c6b3c635
-and adapted to our needs:
-    - adapted the multicall to be able to call the DsProxyMulticallTarget in order to avoid deploying multiple contracts
-    - added the ability to pay the miner (for private Flashbots transactions)
-    - swap tokens through 1inch
-*/
+/// @notice Allows an authorized caller (keeper) to execute multiple actions in a single tx.
+/// @notice Special features:
+/// @notice     - ability to pay the miner (for private Flashbots transactions)
+/// @notice     - swap tokens through 1inch
+/// @dev Tx need to be encoded as an array of Action. The flag `isDelegateCall` is used for calling functions within this same contract
 contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -35,26 +33,27 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     event SentToMiner(uint256 indexed value);
     event Recovered(address indexed tokenAddress, address indexed to, uint256 amount);
 
-    error IncompatibleLengths();
-    error ZeroAddress();
     error AmountOutTooLow(uint256 amount, uint256 min);
     error BalanceTooLow();
-    error RevertBytes();
     error FlashbotsErrorPayingMiner(uint256 value);
+    error IncompatibleLengths();
+    error RevertBytes();
+    error ZeroAddress();
 
     constructor() initializer {}
 
-    function initialize() public initializer {
+    function initialize(address keeper) public initializer {
         __AccessControl_init();
 
-        _setupRole(KEEPER_ROLE, msg.sender);
+        _setupRole(KEEPER_ROLE, keeper);
         _setRoleAdmin(KEEPER_ROLE, KEEPER_ROLE);
     }
 
-    /// @notice Called directly through DsProxy to execute a task
-    /// @dev This is the main entry point for Recipes/Tasks executed manually
+    /// @notice Allows an authorized keeper to execute multiple actions in a single step
     /// @param actions Actions to be executed
     /// @param percentageToMiner Percentage to pay to miner expressed in bps (10000)
+    /// @dev This is the main entry point for Actions to be executed. The `isDelegateCall` flag is used for calling function inside this `KeeperMulticall` contract.
+    /// @dev if we call other contracts, the flag should be false
     function executeActions(Action[] memory actions, uint256 percentageToMiner)
         external
         payable
@@ -89,7 +88,6 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         bool success;
         bytes memory response;
 
-        // if (action.target == address(this)) {
         if (action.isDelegateCall) {
             (success, response) = action.target.delegatecall(action.data);
         } else {
@@ -110,6 +108,9 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         return response;
     }
 
+    /// @notice Used to check the balances the token holds for each token. If we don't have enough of a token, we revert the tx
+    /// @param tokens Array of tokens to check
+    /// @param minBalances Array of balances for each token
     function finalBalanceCheck(IERC20[] memory tokens, uint256[] memory minBalances) external view returns (bool) {
         uint256 tokensLength = tokens.length;
         if (tokensLength == 0 || tokensLength != minBalances.length) revert IncompatibleLengths();
@@ -125,8 +126,8 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         return true;
     }
 
-    /// @notice Swap token to ETH through 1Inch
-    /// @param minAmountOut Minimum amount of ETH to receive for the swap to happen
+    /// @notice Swap token to another through 1Inch
+    /// @param minAmountOut Minimum amount of `out` token to receive for the swap to happen
     /// @param payload Bytes needed for 1Inch API
     function swapToken(uint256 minAmountOut, bytes memory payload) external onlyRole(KEEPER_ROLE) {
         (bool success, bytes memory result) = _oneInch.call(payload);
@@ -134,6 +135,17 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
 
         uint256 amountOut = abi.decode(result, (uint256));
         if (amountOut < minAmountOut) revert AmountOutTooLow(amountOut, minAmountOut);
+    }
+
+    /// @notice Copied from 1Inch contract, used to revert if there is an error
+    function _revertBytes(bytes memory errMsg) internal pure {
+        if (errMsg.length > 0) {
+            //solhint-disable-next-line
+            assembly {
+                revert(add(32, errMsg), mload(errMsg))
+            }
+        }
+        revert RevertBytes();
     }
 
     /// @notice Approve a `spender` for `token`
@@ -148,30 +160,23 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         token.approve(spender, amount);
     }
 
-    function _revertBytes(bytes memory errMsg) internal pure {
-        if (errMsg.length > 0) {
-            //solhint-disable-next-line
-            assembly {
-                revert(add(32, errMsg), mload(errMsg))
-            }
-        }
-        revert RevertBytes();
-    }
-
     receive() external payable {}
 
-    /// @notice withdraw stuck funds
+    /// @notice Withdraw stuck funds
+    /// @param token Address of the token to recover
+    /// @param receiver Address where to send the tokens
+    /// @param amount Amount to recover
     function withdrawStuckFunds(
-        address _token,
-        address _receiver,
-        uint256 _amount
+        address token,
+        address receiver,
+        uint256 amount
     ) external onlyRole(KEEPER_ROLE) {
-        if (_token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            payable(_receiver).transfer(_amount);
+        if (token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            payable(receiver).transfer(amount);
         } else {
-            IERC20(_token).safeTransfer(_receiver, _amount);
+            IERC20(token).safeTransfer(receiver, amount);
         }
 
-        emit Recovered(_token, _receiver, _amount);
+        emit Recovered(token, receiver, amount);
     }
 }

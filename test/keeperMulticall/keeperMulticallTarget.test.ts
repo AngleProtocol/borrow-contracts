@@ -27,14 +27,17 @@ async function populateTx(
   };
 }
 
-describe('DSProxy', async () => {
-  let deployer: SignerWithAddress, user1: SignerWithAddress, user2: SignerWithAddress, proxyAdmin: SignerWithAddress;
+describe('Keeper Multicall', async () => {
+  let deployer: SignerWithAddress,
+    user1: SignerWithAddress,
+    user2: SignerWithAddress,
+    keeper: SignerWithAddress,
+    proxyAdmin: SignerWithAddress;
   let randomUser: string;
 
   let keeperMulticall: KeeperMulticall;
   let Token1: MockToken;
   let Token2: MockToken;
-  let swapper;
 
   beforeEach(async () => {
     await network.provider.request({
@@ -49,10 +52,12 @@ describe('DSProxy', async () => {
       ],
     });
 
-    [deployer, user1, user2, proxyAdmin] = await ethers.getSigners();
+    [deployer, user1, user2, keeper, proxyAdmin] = await ethers.getSigners();
 
     const keeperMulticallImplementation = await (await ethers.getContractFactory('KeeperMulticall')).deploy();
-    const initializeData = KeeperMulticall__factory.createInterface().encodeFunctionData('initialize');
+    const initializeData = KeeperMulticall__factory.createInterface().encodeFunctionData('initialize', [
+      keeper.address,
+    ]);
     const proxy = await (
       await ethers.getContractFactory('TransparentUpgradeableProxy')
     ).deploy(keeperMulticallImplementation.address, proxyAdmin.address, initializeData);
@@ -62,7 +67,8 @@ describe('DSProxy', async () => {
       deployer,
     ) as KeeperMulticall;
 
-    expect(await keeperMulticall.hasRole(await keeperMulticall.KEEPER_ROLE(), deployer.address)).to.be.true;
+    expect(await keeperMulticall.hasRole(await keeperMulticall.KEEPER_ROLE(), deployer.address)).to.be.false;
+    expect(await keeperMulticall.hasRole(await keeperMulticall.KEEPER_ROLE(), keeper.address)).to.be.true;
 
     // SETUP
     await network.provider.send('hardhat_setStorageAt', [
@@ -108,16 +114,18 @@ describe('DSProxy', async () => {
   });
 
   it('Array of tasks cannot be empty', async () => {
-    expect(keeperMulticall.connect(deployer).executeActions([], 0)).to.be.reverted;
+    expect(keeperMulticall.connect(keeper).executeActions([], 0)).to.be.reverted;
   });
 
   it('Roles', async () => {
     const KEEPER_ROLE = await keeperMulticall.KEEPER_ROLE();
 
-    expect(await keeperMulticall.hasRole(KEEPER_ROLE, deployer.address)).to.be.true;
+    expect(await keeperMulticall.hasRole(KEEPER_ROLE, deployer.address)).to.be.false;
+    expect(await keeperMulticall.hasRole(KEEPER_ROLE, keeper.address)).to.be.true;
     expect(await keeperMulticall.hasRole(KEEPER_ROLE, user1.address)).to.be.false;
     expect(await keeperMulticall.hasRole(KEEPER_ROLE, randomUser)).to.be.false;
-    await keeperMulticall.connect(deployer).grantRole(KEEPER_ROLE, user1.address);
+    expect(keeperMulticall.connect(deployer).grantRole(KEEPER_ROLE, user1.address)).to.be.reverted;
+    await keeperMulticall.connect(keeper).grantRole(KEEPER_ROLE, user1.address);
     expect(await keeperMulticall.hasRole(KEEPER_ROLE, user1.address)).to.be.true;
 
     await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
@@ -153,9 +161,9 @@ describe('DSProxy', async () => {
     expect(await ethers.provider.getBalance(randomUser)).to.equal(0);
     expect(await Token1.connect(deployer).balanceOf(randomUser)).to.equal(0);
 
-    await keeperMulticall.connect(deployer).withdrawStuckFunds(Token1.address, randomUser, utils.parseUnits('1000', 6));
+    await keeperMulticall.connect(keeper).withdrawStuckFunds(Token1.address, randomUser, utils.parseUnits('1000', 6));
     await keeperMulticall
-      .connect(deployer)
+      .connect(keeper)
       .withdrawStuckFunds('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', randomUser, utils.parseEther('10'));
     expect(await ethers.provider.getBalance(randomUser)).to.equal(utils.parseEther('10'));
     expect(await Token1.connect(deployer).balanceOf(randomUser)).to.equal(utils.parseUnits('1000', 6));
@@ -177,7 +185,7 @@ describe('DSProxy', async () => {
     const tx1 = await populateTx(Token1, 'transfer', [user2.address, utils.parseEther('2')]);
     const tx2 = await populateTx(Token2, 'approve', [deployer.address, utils.parseEther('20')]);
     const tx3 = await populateTx(Token2, 'transfer', [randomUser, utils.parseEther('1')]);
-    await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2, tx3], 0)).wait();
+    await (await keeperMulticall.connect(keeper).executeActions([tx1, tx2, tx3], 0)).wait();
 
     await Token2.connect(deployer).transferFrom(keeperMulticall.address, randomUser, utils.parseEther('12'));
     expect(await Token2.balanceOf(keeperMulticall.address)).to.equal(utils.parseEther('87'));
@@ -200,7 +208,7 @@ describe('DSProxy', async () => {
       true,
     );
 
-    expect(keeperMulticall.connect(deployer).executeActions([txFail], 0)).to.be.reverted;
+    expect(keeperMulticall.connect(keeper).executeActions([txFail], 0)).to.be.reverted;
 
     const txCheck = await populateTx(
       keeperMulticall,
@@ -208,7 +216,7 @@ describe('DSProxy', async () => {
       [[Token1.address], [utils.parseEther('99')]],
       true,
     );
-    await keeperMulticall.connect(deployer).executeActions([txCheck], 0);
+    await keeperMulticall.connect(keeper).executeActions([txCheck], 0);
   });
 
   it('Pay miner', async () => {
@@ -230,7 +238,7 @@ describe('DSProxy', async () => {
       '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
       bribe,
     ]);
-    const receipt = await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2, tx3], 1000)).wait();
+    const receipt = await (await keeperMulticall.connect(keeper).executeActions([tx1, tx2, tx3], 1000)).wait();
 
     const miner = (await ethers.provider.getBlock(receipt.blockHash)).miner;
     const balanceBefore = await ethers.provider.getBalance(miner, receipt.blockNumber - 1);
@@ -260,7 +268,7 @@ describe('DSProxy', async () => {
       utils.parseEther('2'),
     ]);
     const tx3 = await populateTx(keeperMulticall, 'payFlashbots', [utils.parseEther('0.123')], true);
-    const receipt = await (await keeperMulticall.connect(deployer).executeActions([tx1, tx2, tx3], 0)).wait();
+    const receipt = await (await keeperMulticall.connect(keeper).executeActions([tx1, tx2, tx3], 0)).wait();
 
     const miner = (await ethers.provider.getBlock(receipt.blockHash)).miner;
     const balanceBefore = await ethers.provider.getBalance(miner, receipt.blockNumber - 1);
@@ -298,7 +306,7 @@ describe('DSProxy', async () => {
       [['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'], [utils.parseEther('101')]],
       true,
     );
-    expect(keeperMulticall.connect(deployer).executeActions([txFail], 0)).to.be.reverted;
+    expect(keeperMulticall.connect(keeper).executeActions([txFail], 0)).to.be.reverted;
 
     const txCheck = await populateTx(
       keeperMulticall,
@@ -306,6 +314,6 @@ describe('DSProxy', async () => {
       [['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'], [utils.parseEther('99')]],
       true,
     );
-    await keeperMulticall.connect(deployer).executeActions([txCheck], 0);
+    await keeperMulticall.connect(keeper).executeActions([txCheck], 0);
   });
 });
