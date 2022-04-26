@@ -11,6 +11,8 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
+import "hardhat/console.sol";
+
 /// @title Swapper
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
@@ -130,6 +132,7 @@ contract Swapper is ISwapper {
             inToken = IERC20(intermediateToken);
             inTokenObtained = inToken.balanceOf(address(this));
         }
+        console.log("InToken balance", inToken.balanceOf(address(this)));
         // Reusing the `inTokenObtained` variable
         inTokenObtained = _swap(inToken, inTokenObtained, SwapType(swapType), data);
 
@@ -139,12 +142,21 @@ contract Swapper is ISwapper {
             angleRouter.mint(address(this), inTokenObtained, 0, address(outToken), intermediateToken);
         }
 
-        // A final slippage check is performed at the end of the call
-        // The function reverts anyway if the end balance is inferior to `outTokenOwed`
+        // A final slippage check is performed after the swaps
         uint256 outTokenBalance = outToken.balanceOf(address(this));
         if (outTokenBalance <= minAmountOut) revert TooSmallAmount();
-        outToken.safeTransfer(outTokenRecipient, outTokenOwed);
-        if (outTokenBalance > outTokenOwed) outToken.safeTransfer(to, outTokenBalance - outTokenOwed);
+
+        // The `outTokenRecipient` may already have enough in balance, in which case there's no need to transfer
+        //  this address the token and everything can be given already to the `to` address
+        uint256 outTokenBalanceRecipient = outToken.balanceOf(outTokenRecipient);
+        if (outTokenBalanceRecipient >= outTokenOwed) outToken.safeTransfer(to, outTokenBalance);
+        else {
+            // The `outTokenRecipient` should receive the delta to make sure its end balance is equal to `outTokenOwed`
+            // The function reverts if the end balance is inferior to `outTokenOwed` 
+            outToken.safeTransfer(outTokenRecipient, outTokenOwed - outTokenBalanceRecipient);
+            if (outTokenBalanceRecipient + outTokenBalance > outTokenOwed)
+            outToken.safeTransfer(to, outTokenBalanceRecipient + outTokenBalance - outTokenOwed);
+        }
         // Reusing the `inTokenObtained` variable for the `inToken` balance
         // Sending back the remaining amount of inTokens to the `to` address: it is possible that not the full `inTokenObtained`
         // is swapped to `outToken` if we're using the `1Inch` payload

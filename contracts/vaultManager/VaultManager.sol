@@ -249,8 +249,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                             IERC20(address(stablecoin)),
                             collateral,
                             msg.sender,
-                            stablecoinPayment,
                             collateralPayment,
+                            stablecoinPayment,
                             repayData
                         );
                     }

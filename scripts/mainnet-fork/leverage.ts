@@ -1,13 +1,22 @@
 import { deployments, ethers } from 'hardhat';
 import { ChainId, CONTRACTS_ADDRESSES, Interfaces } from '@angleprotocol/sdk';
 import { VaultManager, VaultManager__factory } from '../../typechain';
+import { parseEther } from 'ethers/lib/utils';
 import { expect } from '../../test/utils/chai-setup';
 import { ERC20_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
 import { Signer, BigNumber, BytesLike } from 'ethers';
 import hre from 'hardhat';
-import { MAX_UINT256 } from '../../test/utils/helpers';
+import { MAX_UINT256, ZERO_ADDRESS } from '../../test/utils/helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ActionType, TypeTransfer, TypeSwap, SwapType, encodeAngleBorrow, Call } from './utils/helpers';
+import {
+  ActionType,
+  TypeTransfer,
+  TypeSwap,
+  SwapType,
+  encodeAngleBorrow,
+  Call,
+  encodeSwapperCall,
+} from './utils/helpers';
 import { addCollateral, borrow, createVault } from '../../test/utils/helpers';
 import { TypePermit } from '../../test/utils/sigUtils';
 
@@ -27,6 +36,7 @@ async function main() {
   let swaps: TypeSwap[];
   let callsBorrow: Call[];
   let dataBorrow: BytesLike;
+  let repayData: BytesLike;
   let actions: ActionType[];
   let dataMixer: BytesLike[];
 
@@ -85,6 +95,7 @@ async function main() {
   // In order to borrow you need to give approval to the `router` to interact with your vault
 
   console.log('Giving approval to the router');
+  // Here we're not doing a permit to simplify the flow
   await vaultManager.connect(signer).setApprovalForAll(routerAddress, true);
   console.log('Success');
 
@@ -100,6 +111,34 @@ async function main() {
     signer.address,
     swapperAddress,
     '0x',
+    callsBorrow,
+  );
+  actions = [ActionType.borrower];
+  dataMixer = [dataBorrow];
+
+  await router.connect(signer).mixer(permits, transfers, swaps, actions, dataMixer);
+  console.log(
+    `Success, added: ${(await vaultManager.vaultData(2)).collateralAmount.toString()} of wstETH in the vault`,
+  );
+  console.log(`Stablecoin balance of the borrower is: ${(await agEUR.balanceOf(signer.address)).toString()}`);
+
+  console.log('Performing a deposit and a swap in a just created vault');
+
+  permits = [];
+  transfers = [{ inToken: wstETHAddress, amountIn: UNIT.mul(100) }];
+  swaps = [];
+  callsBorrow = [createVault(signer.address), addCollateral(0, UNIT.mul(106)), borrow(0, UNIT.mul(20000))];
+  const oneInchData =
+    '0xe449022e00000000000000000000000000000000000000000000043c33c19375647fffff000000000000000000000000000000000000000000000000535e5d9db6ef5e0000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000003000000000000000000000000735a26a57a0a0069dfabd41595a970faf5e1ee8b00000000000000000000000088e6a0c2ddd26feeb64f039a2c41296fcb3f5640800000000000000000000000d340b57aacdd10f96fc1cf10e15921936f41e29ccfee7c08';
+  repayData = await encodeSwapperCall(ZERO_ADDRESS, routerAddress, parseEther('0'), 1, 0, oneInchData);
+
+  dataBorrow = await encodeAngleBorrow(
+    wstETHAddress,
+    agEURAddress,
+    vaultManagerAddress,
+    swapperAddress,
+    swapperAddress,
+    repayData,
     callsBorrow,
   );
   actions = [ActionType.borrower];
