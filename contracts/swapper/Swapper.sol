@@ -11,8 +11,6 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
-import "hardhat/console.sol";
-
 /// @title Swapper
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
@@ -136,7 +134,6 @@ contract Swapper is ISwapper {
             angleRouter.burn(address(this), inTokenObtained, 0, address(inToken), intermediateToken);
             inToken = IERC20(intermediateToken);
             inTokenObtained = inToken.balanceOf(address(this));
-            console.log("Balance intermediate token", inTokenObtained);
         }
         // Reusing the `inTokenObtained` variable
         inTokenObtained = _swap(inToken, inTokenObtained, SwapType(swapType), data);
