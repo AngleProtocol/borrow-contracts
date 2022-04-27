@@ -276,7 +276,69 @@ describe('Keeper Multicall', async () => {
     expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(utils.parseEther('4.5'));
   });
 
-  it('payFlashbots', async () => {
+  it('Pay miner - revert', async () => {
+    const mockSwapper1Inch = await (await ethers.getContractFactory('Mock1Inch')).deploy();
+    const bribe = utils.parseEther('5');
+    await user1.sendTransaction({
+      to: mockSwapper1Inch.address,
+      value: bribe,
+    });
+
+    await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
+    const tx1 = await populateTx(Token1, 'transfer', [user2.address, utils.parseEther('2')]);
+
+    await expect(keeperMulticall.connect(keeper).executeActions([tx1], 11000)).to.be.revertedWith('WrongAmount()');
+  });
+
+  it('Pay miner - balance at end lower than start', async () => {
+    await user1.sendTransaction({
+      to: keeperMulticall.address,
+      value: utils.parseEther('5'),
+    });
+    const tx = await populateTx(keeperMulticall, 'payFlashbots', [utils.parseEther('0.123')], true);
+    await keeperMulticall.connect(keeper).executeActions([tx], 5000);
+    expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(utils.parseEther('4.877'));
+  });
+
+  it('Pay miner', async () => {
+    const mockSwapper1Inch = await (await ethers.getContractFactory('Mock1Inch')).deploy();
+    const bribe = utils.parseEther('5');
+    await user1.sendTransaction({
+      to: mockSwapper1Inch.address,
+      value: bribe,
+    });
+
+    await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
+    const tx1 = await populateTx(Token1, 'transfer', [user2.address, utils.parseEther('2')]);
+    const tx2 = await populateTx(Token1, 'approve', [mockSwapper1Inch.address, utils.parseEther('2000')]);
+
+    const tx3 = await populateTx(mockSwapper1Inch, 'swap', [
+      Token1.address,
+      utils.parseEther('50'),
+      randomUser,
+      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+      bribe,
+    ]);
+    const tx4 = await populateTx(keeperMulticall, 'payFlashbots', [utils.parseEther('5')], true);
+
+    expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(0);
+    await keeperMulticall.connect(keeper).executeActions([tx1, tx2, tx3, tx4], 1000);
+    expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(0);
+  });
+
+  it('payFlashbots - revert', async () => {
+    await user1.sendTransaction({
+      to: keeperMulticall.address,
+      value: utils.parseEther('5'),
+    });
+
+    const tx = await populateTx(keeperMulticall, 'payFlashbots', [utils.parseEther('6')], true);
+    await expect(keeperMulticall.connect(keeper).executeActions([tx], 1000)).to.be.revertedWith(
+      '0xc3c57d1d00000000000000000000000000000000000000000000000053444835ec580000',
+    );
+  });
+
+  it('payFlashbots - success', async () => {
     const mockSwapper1Inch = await (await ethers.getContractFactory('Mock1Inch')).deploy();
     await user1.sendTransaction({
       to: mockSwapper1Inch.address,
@@ -340,5 +402,47 @@ describe('Keeper Multicall', async () => {
       true,
     );
     await keeperMulticall.connect(keeper).executeActions([txCheck], 0);
+  });
+
+  it('approve - fail not keeper', async () => {
+    await expect(keeperMulticall.approve(Token1.address, randomUser, utils.parseEther('100'))).to.be.revertedWith(
+      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${(
+        await keeperMulticall.KEEPER_ROLE()
+      ).toLowerCase()}`,
+    );
+  });
+
+  it('approve - increase allowance', async () => {
+    const allowance = utils.parseEther('100');
+    await keeperMulticall.connect(keeper).approve(Token1.address, user1.address, allowance);
+    expect(await Token1.allowance(keeperMulticall.address, user1.address)).to.equal(allowance);
+  });
+
+  it('approve - decrease allowance', async () => {
+    const allowance = utils.parseEther('80');
+    await keeperMulticall.connect(keeper).approve(Token1.address, user1.address, allowance);
+    expect(await Token1.allowance(keeperMulticall.address, user1.address)).to.equal(allowance);
+
+    await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
+    expect(await Token1.balanceOf(randomUser)).to.equal(0);
+    await expect(
+      Token1.connect(user1).transferFrom(keeperMulticall.address, randomUser, utils.parseEther('85')),
+    ).to.be.revertedWith('ERC20: transfer amount exceeds allowance');
+    await Token1.connect(user1).transferFrom(keeperMulticall.address, randomUser, utils.parseEther('60'));
+    expect(await Token1.balanceOf(randomUser)).to.equal(utils.parseEther('60'));
+
+    expect(await Token1.allowance(keeperMulticall.address, user1.address)).to.equal(utils.parseEther('20'));
+
+    const newAllowance = utils.parseEther('30');
+    await keeperMulticall.connect(keeper).approve(Token1.address, user1.address, newAllowance);
+    expect(await Token1.allowance(keeperMulticall.address, user1.address)).to.equal(newAllowance);
+  });
+
+  it('swapToken - revert not keeper', async () => {
+    await expect(keeperMulticall.swapToken(utils.parseEther('100'), '0x')).to.be.revertedWith(
+      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${(
+        await keeperMulticall.KEEPER_ROLE()
+      ).toLowerCase()}`,
+    );
   });
 });

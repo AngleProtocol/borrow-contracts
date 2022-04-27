@@ -39,6 +39,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     error FlashbotsErrorPayingMiner(uint256 value);
     error IncompatibleLengths();
     error RevertBytes();
+    error WrongAmount();
     error ZeroAddress();
 
     constructor() initializer {}
@@ -73,6 +74,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         }
 
         if (percentageToMiner > 0) {
+            if (percentageToMiner >= 10000) revert WrongAmount();
             uint256 balanceAfter = address(this).balance;
             if (balanceAfter > balanceBefore) {
                 uint256 amountToMiner = ((balanceAfter - balanceBefore) * percentageToMiner) / 10000;
@@ -158,7 +160,12 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         address spender,
         uint256 amount
     ) external onlyRole(KEEPER_ROLE) {
-        token.approve(spender, amount);
+        uint256 currentAllowance = token.allowance(address(this), spender);
+        if (currentAllowance < amount) {
+            token.safeIncreaseAllowance(spender, amount - currentAllowance);
+        } else if (currentAllowance > amount) {
+            token.safeDecreaseAllowance(spender, currentAllowance - amount);
+        }
     }
 
     receive() external payable {}
