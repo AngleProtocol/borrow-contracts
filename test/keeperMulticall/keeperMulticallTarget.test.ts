@@ -77,7 +77,7 @@ describe('Keeper Multicall', async () => {
   it('AccessControl', async () => {
     await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseUnits('10000', 6));
     const tx = await populateTx(Token1, 'transfer', [user2.address, 10]);
-    expect(keeperMulticall.connect(user1).executeActions([tx], 0)).to.be.revertedWith(
+    await expect(keeperMulticall.connect(user1).executeActions([tx], 0)).to.be.revertedWith(
       `AccessControl: account ${user1.address.toLowerCase()} is missing role ${await (
         await keeperMulticall.KEEPER_ROLE()
       ).toLowerCase()}`,
@@ -139,7 +139,7 @@ describe('Keeper Multicall', async () => {
   });
 
   it('Array of tasks cannot be empty', async () => {
-    expect(keeperMulticall.connect(keeper).executeActions([], 0)).to.be.reverted;
+    await expect(keeperMulticall.connect(keeper).executeActions([], 0)).to.be.reverted;
   });
 
   it('Roles', async () => {
@@ -149,7 +149,7 @@ describe('Keeper Multicall', async () => {
     expect(await keeperMulticall.hasRole(KEEPER_ROLE, keeper.address)).to.be.true;
     expect(await keeperMulticall.hasRole(KEEPER_ROLE, user1.address)).to.be.false;
     expect(await keeperMulticall.hasRole(KEEPER_ROLE, randomUser)).to.be.false;
-    expect(keeperMulticall.connect(deployer).grantRole(KEEPER_ROLE, user1.address)).to.be.reverted;
+    await expect(keeperMulticall.connect(deployer).grantRole(KEEPER_ROLE, user1.address)).to.be.reverted;
     await keeperMulticall.connect(keeper).grantRole(KEEPER_ROLE, user1.address);
     expect(await keeperMulticall.hasRole(KEEPER_ROLE, user1.address)).to.be.true;
 
@@ -157,7 +157,7 @@ describe('Keeper Multicall', async () => {
     const tx1 = await populateTx(Token1, 'transfer', [user2.address, utils.parseEther('2')]);
     expect(await Token1.balanceOf(user2.address)).to.equal(0);
 
-    expect(keeperMulticall.connect(user2).executeActions([tx1], 0)).to.be.revertedWith(
+    await expect(keeperMulticall.connect(user2).executeActions([tx1], 0)).to.be.revertedWith(
       `AccessControl: account ${user2.address.toLowerCase()} is missing role ${KEEPER_ROLE.toLowerCase()}`,
     );
 
@@ -203,7 +203,7 @@ describe('Keeper Multicall', async () => {
     expect(await Token1.connect(deployer).balanceOf(keeperMulticall.address)).to.equal(utils.parseEther('100'));
     expect(await Token1.connect(deployer).balanceOf(user2.address)).to.equal(0);
 
-    expect(
+    await expect(
       Token2.connect(deployer).transferFrom(keeperMulticall.address, randomUser, utils.parseEther('10')),
     ).to.be.revertedWith('ERC20: transfer amount exceeds allowance');
 
@@ -222,8 +222,8 @@ describe('Keeper Multicall', async () => {
 
   it('finalBalanceCheck - DAI', async () => {
     await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseEther('100'));
-    expect(keeperMulticall.finalBalanceCheck([], [])).to.be.reverted;
-    expect(keeperMulticall.finalBalanceCheck([Token1.address], [])).to.be.reverted;
+    await expect(keeperMulticall.finalBalanceCheck([], [])).to.be.reverted;
+    await expect(keeperMulticall.finalBalanceCheck([Token1.address], [])).to.be.reverted;
     await keeperMulticall.finalBalanceCheck([Token1.address], [10]);
 
     const txFail = await populateTx(
@@ -233,7 +233,7 @@ describe('Keeper Multicall', async () => {
       true,
     );
 
-    expect(keeperMulticall.connect(keeper).executeActions([txFail], 0)).to.be.reverted;
+    await expect(keeperMulticall.connect(keeper).executeActions([txFail], 0)).to.be.reverted;
 
     const txCheck = await populateTx(
       keeperMulticall,
@@ -331,7 +331,7 @@ describe('Keeper Multicall', async () => {
       [['0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'], [utils.parseEther('101')]],
       true,
     );
-    expect(keeperMulticall.connect(keeper).executeActions([txFail], 0)).to.be.reverted;
+    await expect(keeperMulticall.connect(keeper).executeActions([txFail], 0)).to.be.reverted;
 
     const txCheck = await populateTx(
       keeperMulticall,
