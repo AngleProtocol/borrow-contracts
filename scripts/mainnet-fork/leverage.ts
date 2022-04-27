@@ -2,21 +2,12 @@ import { deployments, ethers } from 'hardhat';
 import { ChainId, CONTRACTS_ADDRESSES, Interfaces } from '@angleprotocol/sdk';
 import { VaultManager, VaultManager__factory, AgToken, AgToken__factory } from '../../typechain';
 import { parseEther } from 'ethers/lib/utils';
-import { expect } from '../../test/utils/chai-setup';
 import { ERC20_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
-import { Signer, BigNumber, BytesLike } from 'ethers';
+import { BigNumber, BytesLike } from 'ethers';
 import hre from 'hardhat';
 import { MAX_UINT256, ZERO_ADDRESS } from '../../test/utils/helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import {
-  ActionType,
-  TypeTransfer,
-  TypeSwap,
-  SwapType,
-  encodeAngleBorrow,
-  Call,
-  encodeSwapperCall,
-} from './utils/helpers';
+import { ActionType, TypeTransfer, TypeSwap, encodeAngleBorrow, Call, encodeSwapperCall } from './utils/helpers';
 import { addCollateral, borrow, createVault } from '../../test/utils/helpers';
 import { TypePermit } from '../../test/utils/sigUtils';
 import { formatAmount } from '../../utils/bignumber';
