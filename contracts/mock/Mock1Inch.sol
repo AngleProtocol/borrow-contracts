@@ -17,7 +17,9 @@ contract Mock1Inch {
     ) external {
         IERC20(tokenIn).safeTransferFrom(msg.sender, to, amountIn);
         if (tokenOut == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            //solhint-disable-next-line
             (bool sent, bytes memory data) = msg.sender.call{ value: amountOut }("");
+            data;
             require(sent, "Failed to send Ether");
         } else {
             IERC20(tokenOut).safeTransferFrom(to, msg.sender, amountOut);

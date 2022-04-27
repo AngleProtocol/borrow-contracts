@@ -286,9 +286,30 @@ async function angle(
   }
 }
 
+async function angleUnprotected(
+  vaultManager: VaultManager,
+  signer: SignerWithAddress,
+  calls: Call[],
+  from: string = signer.address,
+  to: string = from,
+  who: string = ZERO_ADDRESS,
+  repayData = '0x',
+): Promise<ContractTransaction> {
+  const actions: number[] = [];
+  const datas: BytesLike[] = [];
+  calls.forEach(o => {
+    actions.push(o.action);
+    datas.push(o.data);
+  });
+  return await vaultManager
+    .connect(signer)
+    ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
+}
+
 export {
   addCollateral,
   angle,
+  angleUnprotected,
   balance,
   BASE_PARAMS,
   borrow,
