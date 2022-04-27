@@ -7,6 +7,7 @@ module.exports = {
     'agToken/AgTokenIntermediateUpgrade.sol',
     'external',
     'interfaces',
+    'keeperMulticall/RevertReasonParser.sol',
     'mock',
     'oracle/OracleChainlinkMultiTemplate.sol',
     'oracle/implementations/OracleWSTETHEURChainlink.sol',
