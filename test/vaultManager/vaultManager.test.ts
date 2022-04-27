@@ -826,7 +826,9 @@ contract('VaultManager', () => {
         addCollateral(1, collatAmount),
       ]);
       expectApprox(await vaultManager.getVaultDebt(2), parseEther('1.9989'), 0.1);
-      const receipt = await (await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))])).wait();
+      const receipt = await (
+        await angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('1'))])
+      ).wait();
       inReceipt(receipt, 'DebtTransferred', {
         srcVaultID: BigNumber.from(1),
         dstVaultID: BigNumber.from(2),
