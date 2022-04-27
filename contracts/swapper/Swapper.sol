@@ -98,7 +98,8 @@ contract Swapper is ISwapper {
     /// or/and combining it with a UniV3 or 1Inch swap
     /// @dev No slippage checks are performed at the end of each operation, only one slippage check is performed
     /// at the end of the call
-    /// @dev In this implementation, the function
+    /// @dev In this implementation, the function tries to make sure that the `outTokenRecipient` address has at the end
+    /// of the call `outTokenOwed`, leftover tokens are sent to a `to` address which by default is the `outTokenRecipient`
     function swap(
         IERC20 inToken,
         IERC20 outToken,
@@ -131,11 +132,12 @@ contract Swapper is ISwapper {
         if (mintOrBurn == 1) {
             // First performing burn transactions as you may usually get stablecoins first
             _checkAngleRouterAllowance(inToken);
+            // In this case there cannot be any leftover `inToken`
             angleRouter.burn(address(this), inTokenObtained, 0, address(inToken), intermediateToken);
             inToken = IERC20(intermediateToken);
             inTokenObtained = inToken.balanceOf(address(this));
+            console.log("Balance intermediate token", inTokenObtained);
         }
-        console.log("In token balance", inToken.balanceOf(address(this)));
         // Reusing the `inTokenObtained` variable
         inTokenObtained = _swap(inToken, inTokenObtained, SwapType(swapType), data);
 
@@ -150,21 +152,21 @@ contract Swapper is ISwapper {
         if (outTokenBalance <= minAmountOut) revert TooSmallAmount();
 
         // The `outTokenRecipient` may already have enough in balance, in which case there's no need to transfer
-        //  this address the token and everything can be given already to the `to` address
+        // this address the token and everything can be given already to the `to` address
         uint256 outTokenBalanceRecipient = outToken.balanceOf(outTokenRecipient);
-        console.log("Out token balance contract", outTokenBalance);
-        console.log("Out token balance recipient and owed", outTokenBalanceRecipient, outTokenOwed);
-        console.log("Recipients", to, outTokenRecipient);
         if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient) outToken.safeTransfer(to, outTokenBalance);
         else {
             // The `outTokenRecipient` should receive the delta to make sure its end balance is equal to `outTokenOwed`
+            // Any leftover in this case is sent to the `to` address
+            // The function reverts if it did not obtain more than `outTokenOwed - outTokenBalanceRecipient` from the swap
             outToken.safeTransfer(outTokenRecipient, outTokenOwed - outTokenBalanceRecipient);
-            // The function reverts if the end balance is inferior to `outTokenOwed - outTokenBalanceRecipient` 
             outToken.safeTransfer(to, outTokenBalanceRecipient + outTokenBalance - outTokenOwed);
         }
         // Reusing the `inTokenObtained` variable for the `inToken` balance
         // Sending back the remaining amount of inTokens to the `to` address: it is possible that not the full `inTokenObtained`
         // is swapped to `outToken` if we're using the `1Inch` payload
+        // If there has been a burn, the whole `inToken` balance is burnt, but in this case the `inToken` variable has the 
+        // `intermediateToken` reference and what is sent back to the `to` address is the leftover balance of this token
         inTokenObtained = inToken.balanceOf(address(this));
         if (inTokenObtained > 0) inToken.safeTransfer(to, inTokenObtained);
     }

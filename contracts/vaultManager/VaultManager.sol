@@ -249,6 +249,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                             IERC20(address(stablecoin)),
                             collateral,
                             msg.sender,
+                            // As per the `ISwapper` interface, we must first give the amount of token owed before
+                            // the amount of token obtained
                             collateralPayment,
                             stablecoinPayment,
                             repayData
