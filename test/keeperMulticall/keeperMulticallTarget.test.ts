@@ -1,6 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { SolcInput, SolcOutput, UpgradeableContract } from '@openzeppelin/upgrades-core';
 import { Contract, utils, Wallet } from 'ethers';
-import { ethers, network } from 'hardhat';
+import { artifacts, ethers, network } from 'hardhat';
 
 import { KeeperMulticall, KeeperMulticall__factory, MockToken, TransparentUpgradeableProxy } from '../../typechain';
 import { expect } from '../utils/chai-setup';
@@ -102,7 +103,7 @@ describe('Keeper Multicall', async () => {
     });
     const balanceBefore = await ethers.provider.getBalance(keeperMulticall.address);
 
-    const newImplementation = await (await ethers.getContractFactory('KeeperMulticall')).deploy();
+    const newImplementation = await (await ethers.getContractFactory('MockKeeperMulticall')).deploy();
     await expect(
       (keeperMulticall as unknown as TransparentUpgradeableProxy).connect(user1).upgradeTo(newImplementation.address),
     ).to.be.reverted;
@@ -111,6 +112,42 @@ describe('Keeper Multicall', async () => {
       .upgradeTo(newImplementation.address);
 
     expect(await ethers.provider.getBalance(keeperMulticall.address)).to.equal(balanceBefore);
+  });
+
+  it('Upgrade OZ - success', async () => {
+    const buildInfo = await artifacts.getBuildInfo('contracts/keeperMulticall/KeeperMulticall.sol:KeeperMulticall');
+    const baseContract = new UpgradeableContract(
+      'KeeperMulticall',
+      buildInfo?.input as SolcInput,
+      buildInfo?.output as SolcOutput,
+    );
+
+    const upgradeBuildInfo = await artifacts.getBuildInfo('contracts/mock/MockKeeperMulticall.sol:MockKeeperMulticall');
+    const upgradeContract = new UpgradeableContract(
+      'MockKeeperMulticall',
+      upgradeBuildInfo?.input as SolcInput,
+      upgradeBuildInfo?.output as SolcOutput,
+    );
+    expect(baseContract.getStorageUpgradeReport(upgradeContract).ok).to.be.true;
+  });
+
+  it('Upgrade OZ - fail', async () => {
+    const buildInfo = await artifacts.getBuildInfo('contracts/keeperMulticall/KeeperMulticall.sol:KeeperMulticall');
+    const baseContract = new UpgradeableContract(
+      'KeeperMulticall',
+      buildInfo?.input as SolcInput,
+      buildInfo?.output as SolcOutput,
+    );
+
+    const upgradeBuildInfo = await artifacts.getBuildInfo(
+      'contracts/mock/MockKeeperMulticall2.sol:MockKeeperMulticall2',
+    );
+    const upgradeContract = new UpgradeableContract(
+      'MockKeeperMulticall2',
+      upgradeBuildInfo?.input as SolcInput,
+      upgradeBuildInfo?.output as SolcOutput,
+    );
+    expect(baseContract.getStorageUpgradeReport(upgradeContract).ok).to.be.false;
   });
 
   it('Array of tasks cannot be empty', async () => {

@@ -1,5 +1,4 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
-import { Contract } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { KeeperMulticall__factory } from '../typechain';
@@ -40,6 +39,9 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   });
 
   console.log(`Successfully deployed KeeperMulticall at the address ${keeperMulticall.address}\n`);
+
+  // Next step: change Keeper to this new keeper contract where needed (strategy, ...)
+  // see: scripts/mainnet-fork/changeKeeper.ts
 };
 
 func.tags = ['keeper_multicall'];
