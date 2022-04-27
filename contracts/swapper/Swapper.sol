@@ -153,7 +153,8 @@ contract Swapper is ISwapper {
         //  this address the token and everything can be given already to the `to` address
         uint256 outTokenBalanceRecipient = outToken.balanceOf(outTokenRecipient);
         console.log("Out token balance contract", outTokenBalance);
-        console.log("Out token balance recipient", outTokenBalanceRecipient);
+        console.log("Out token balance recipient and owed", outTokenBalanceRecipient, outTokenOwed);
+        console.log("Recipients", to, outTokenRecipient);
         if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient) outToken.safeTransfer(to, outTokenBalance);
         else {
             // The `outTokenRecipient` should receive the delta to make sure its end balance is equal to `outTokenOwed`
