@@ -6,6 +6,8 @@ import hre, { contract, ethers, web3 } from 'hardhat';
 import {
   AgToken,
   AgToken__factory,
+  MockERC1271,
+  MockERC1271__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
@@ -14,15 +16,13 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  MockERC1271,
-  MockERC1271__factory,
   VaultManager,
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, latestTime, ZERO_ADDRESS } from '../utils/helpers';
-import { signPermitNFT, domainSeparator } from '../utils/sigUtilsNFT';
+import { domainSeparator, signPermitNFT } from '../utils/sigUtilsNFT';
 
 contract('VaultManager - Permit', () => {
   const log = true;

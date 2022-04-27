@@ -9,7 +9,7 @@ import { expect } from '../utils/chai-setup';
 async function populateTx(
   contract: Contract,
   functionName: string,
-  args?: any[],
+  args?: unknown[],
   isDelegateCall = false,
 ): Promise<{
   target: string;
@@ -41,18 +41,6 @@ describe('Keeper Multicall', async () => {
   let Token2: MockToken;
 
   beforeEach(async () => {
-    await network.provider.request({
-      method: 'hardhat_reset',
-      params: [
-        {
-          forking: {
-            jsonRpcUrl: process.env.ETH_NODE_URI_FORK,
-            blockNumber: 14578338,
-          },
-        },
-      ],
-    });
-
     [deployer, user1, user2, keeper, proxyAdmin] = await ethers.getSigners();
 
     const keeperMulticallImplementation = await (await ethers.getContractFactory('KeeperMulticall')).deploy();
