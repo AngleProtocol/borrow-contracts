@@ -2,9 +2,10 @@
 
 pragma solidity 0.8.12;
 
-// Code copied from 1Inch
-// https://docs.1inch.io/docs/limit-order-protocol/smart-contract/libraries/RevertReasonParser/
-// https://etherscan.io/address/0x1111111254fb6c44bAC0beD2854e76F90643097d#code
+/// @title RevertReasonParser
+/// @author 1Inch team, taken from:
+///     - https://docs.1inch.io/docs/limit-order-protocol/smart-contract/libraries/RevertReasonParser/
+///     - https://etherscan.io/address/0x1111111254fb6c44bAC0beD2854e76F90643097d#code
 library RevertReasonParser {
     bytes4 private constant _PANIC_SELECTOR = bytes4(keccak256("Panic(uint256)"));
     bytes4 private constant _ERROR_SELECTOR = bytes4(keccak256("Error(string)"));

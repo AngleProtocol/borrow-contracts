@@ -9,16 +9,19 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./RevertReasonParser.sol";
 
+/// @title KeeperMulticall
 /// @notice Allows an authorized caller (keeper) to execute multiple actions in a single tx.
-/// @notice Special features:
-/// @notice     - ability to pay the miner (for private Flashbots transactions)
-/// @notice     - swap tokens through 1inch
+/// @author Angle Core Team
+/// @dev Special features:
+///         - ability to pay the miner (for private Flashbots transactions)
+///         - swap tokens through 1inch
 /// @dev Tx need to be encoded as an array of Action. The flag `isDelegateCall` is used for calling functions within this same contract
 contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
 
     bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
 
+    //solhint-disable-next-line
     address private constant _oneInch = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
 
     struct Action {
@@ -50,8 +53,8 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     /// @notice Allows an authorized keeper to execute multiple actions in a single step
     /// @param actions Actions to be executed
     /// @param percentageToMiner Percentage to pay to miner expressed in bps (10000)
-    /// @dev This is the main entry point for Actions to be executed. The `isDelegateCall` flag is used for calling function inside this `KeeperMulticall` contract.
-    /// @dev if we call other contracts, the flag should be false
+    /// @dev This is the main entry point for actions to be executed. The `isDelegateCall` flag is used for calling function inside this `KeeperMulticall` contract,
+    /// if we call other contracts, the flag should be false
     function executeActions(Action[] memory actions, uint256 percentageToMiner)
         external
         payable
