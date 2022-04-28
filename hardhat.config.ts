@@ -112,7 +112,7 @@ const config: HardhatUserConfig = {
     },
     mainnetForkRemote: {
       live: false,
-      url: 'http://130.211.61.213:11055/',
+      url: 'http://34.78.103.39:11055/',
       chainId: 1,
     },
     mumbai: {
