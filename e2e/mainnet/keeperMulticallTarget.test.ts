@@ -325,4 +325,34 @@ describe('Keeper Multicall (mainnet fork)', async () => {
     txSwap = await populateTx(keeperMulticall, 'swapToken', [payload1Inch.toTokenAmount, payload1Inch.data], true);
     expect(keeperMulticall.connect(keeper).executeActions([txSwap], 0)).to.be.reverted;
   });
+
+  it('swapToken - fail: amountOut < minAmountOut', async () => {
+    await USDC.connect(deployer).transfer(keeperMulticall.address, utils.parseUnits('10000', 6));
+    const payload1Inch = {
+      data: '0xe449022e000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000000000000000000000000000042b56aa1bc38f470000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000120000000000000000000000088e6a0c2ddd26feeb64f039a2c41296fcb3f5640cfee7c08', // eslint-disable-line
+      toTokenAmount: '333810098622777822',
+    };
+
+    const txApprove = await populateTx(
+      keeperMulticall,
+      'approve',
+      [
+        '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        '0x1111111254fb6c44bAC0beD2854e76F90643097d',
+        utils.parseUnits('10000', 6),
+      ],
+      true,
+    );
+    const txSwap = await populateTx(
+      keeperMulticall,
+      'swapToken',
+      [BigNumber.from(payload1Inch.toTokenAmount).mul(2), payload1Inch.data],
+      true,
+    );
+
+    // this reverts with error `AmountOutTooLow(amountOut, minAmountOut)`
+    await expect(keeperMulticall.connect(keeper).executeActions([txApprove, txSwap], 0)).to.be.revertedWith(
+      '0x57a55c7400000000000000000000000000000000000000000000000004a14e62e248a7a10000000000000000000000000000000000000000000000000943dd083db293bc',
+    );
+  });
 });
