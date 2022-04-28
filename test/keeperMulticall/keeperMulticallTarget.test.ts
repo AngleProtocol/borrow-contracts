@@ -333,6 +333,7 @@ describe('Keeper Multicall', async () => {
     });
 
     const tx = await populateTx(keeperMulticall, 'payFlashbots', [utils.parseEther('6')], true);
+    // this reverts with error `FlashbotsErrorPayingMiner(uint256 value)`
     await expect(keeperMulticall.connect(keeper).executeActions([tx], 1000)).to.be.revertedWith(
       '0xc3c57d1d00000000000000000000000000000000000000000000000053444835ec580000',
     );
