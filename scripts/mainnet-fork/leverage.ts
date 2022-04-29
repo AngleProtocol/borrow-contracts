@@ -13,7 +13,6 @@ import { TypePermit } from '../../test/utils/sigUtils';
 import { formatAmount } from '../../utils/bignumber';
 
 async function main() {
-  const { deployer } = await ethers.getNamedSigners();
   let routerAddress: string;
   let swapperAddress;
   let router;
@@ -80,6 +79,11 @@ async function main() {
     console.log('Burning the stablecoin to start from good balances');
     await agEUR.connect(signer).burnStablecoin(initBalance);
   }
+
+  // ----------------------------------------------------------------
+  // In the script, we test actions on vaults from the router one after another, from the most complex ones,
+  // to the least obvious ones
+  // The first action we perform is simply a vault creation and adding collateral to it
   console.log('');
   console.log('Performing a simple deposit in a just created vault');
   permits = [];
@@ -104,6 +108,11 @@ async function main() {
 
   console.log(`Success, added: ${(await vaultManager.vaultData(vaultIDCount)).collateralAmount.toString()} of wstETH`);
   console.log('');
+
+  // ----------------------------------------------------------------
+  // Below, we try to add collateral from a vault, and borrow stablecoins against it, without trying to get leverage
+  // or to swap the borrowed stablecoins for collateral
+
   console.log('Performing a deposit and borrow in a just created vault');
   permits = [];
   transfers = [{ inToken: wstETHAddress, amountIn: UNIT.mul(100) }];
@@ -130,6 +139,12 @@ async function main() {
   );
   console.log(`Stablecoin balance of the borrower is: ${(await agEUR.balanceOf(signer.address)).toString()}`);
   console.log('');
+
+  // ----------------------------------------------------------------
+  // Here is the first example of transaction in which we are taking leverage: the idea is to send only 100
+  // wstETH to the router but to perform a transaction in which 106 of wstETH is added to the vault: the 6 leftover
+  // wstETH are obtained from a swap of borrowed agEUR to wstETH
+
   console.log('Performing a deposit and a swap in a just created vault');
   const collateralBalancePrior = await wstETH.balanceOf(signer.address);
 
@@ -137,6 +152,8 @@ async function main() {
   transfers = [{ inToken: wstETHAddress, amountIn: UNIT.mul(100) }];
   swaps = [];
   callsBorrow = [createVault(signer.address), addCollateral(0, UNIT.mul(106)), borrow(0, UNIT.mul(20000))];
+  // Swaps 20000 agEUR (or more exactly 20000 * 10**18 -1) to wstETH, payload obtained at the block of the mainnet fork
+  // through a 1Inch call
   const oneInchData =
     '0xe449022e00000000000000000000000000000000000000000000043c33c19375647fffff000000000000000000000000000000000000000000000000535e5d9db6ef5e0000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000003000000000000000000000000735a26a57a0a0069dfabd41595a970faf5e1ee8b00000000000000000000000088e6a0c2ddd26feeb64f039a2c41296fcb3f5640800000000000000000000000d340b57aacdd10f96fc1cf10e15921936f41e29ccfee7c08';
   repayData = await encodeSwapperCall(ZERO_ADDRESS, ZERO_ADDRESS, parseEther('0'), 1, 0, oneInchData);
@@ -173,6 +190,11 @@ async function main() {
   console.log(`Initially brought ${UNIT.mul(100)}`);
   console.log(`Stablecoin balance of the borrower is: ${(await agEUR.balanceOf(signer.address)).toString()}`);
   console.log('');
+
+  // ----------------------------------------------------------------
+  // In this transaction, we try to take a more significant amount of leverage: we are performing a bigger swap
+  // We just add 100 wstETH and try to get exposed to 290 in the vault through a swap of 600001 agEUR to at least 190 wstETH
+  // Payload has been obtained by querying 1Inch API
 
   console.log('Taking a leveraged position using mint/burn from the protocol');
   const collateralBalancePrior2 = await wstETH.balanceOf(signer.address);
@@ -224,6 +246,11 @@ async function main() {
   console.log(`Initially brought ${UNIT.mul(100)}`);
   console.log(`Stablecoin balance of the borrower is: ${(await agEUR.balanceOf(signer.address)).toString()}`);
   console.log('');
+
+  // ----------------------------------------------------------------
+  // This last transaction intends again to enable getting a leveraged position, but this time the transaction
+  // to swap agEUR -> wstETH is not simply a swap, it involves first a burn of agEUR to USDC and then a swap from USDC to wstETH
+  // It is built to stress test the Swapper contract and see if beyond unit tests it functions as intended in a real case scenario
 
   console.log('Getting leverage using burn from the protocol and then a swap');
   // We burn agEUR for USDC and then swap USDC to wstETH
