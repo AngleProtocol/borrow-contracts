@@ -1,14 +1,13 @@
 import { ethers } from 'hardhat';
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
-import { AngleRouter, AngleRouter__factory } from '../../typechain';
+import { ChainId, CONTRACTS_ADDRESSES, Interfaces } from '@angleprotocol/sdk';
 import { expect } from '../../test/utils/chai-setup';
 
 async function main() {
   const { deployer } = await ethers.getNamedSigners();
   let routerAddress: string;
-  let router: AngleRouter;
+  let router;
   routerAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].AngleRouter!;
-  router = new ethers.Contract(routerAddress, AngleRouter__factory.createInterface(), deployer) as AngleRouter;
+  router = new ethers.Contract(routerAddress, Interfaces.AngleRouter_Interface, deployer);
   expect(await router.governor()).to.be.equal(CONTRACTS_ADDRESSES[ChainId.MAINNET].GovernanceMultiSig!);
   expect(await router.guardian()).to.be.equal(CONTRACTS_ADDRESSES[ChainId.MAINNET].Guardian!);
   expect(await router.uniswapV3Router()).to.be.equal('0xE592427A0AEce92De3Edee1F18E0157C05861564');

@@ -92,7 +92,7 @@ const config: HardhatUserConfig = {
         // For Polygon
         // blockNumber: 26536036,
         // For mainnet
-        blockNumber: 14578338,
+        blockNumber: 14665543,
       },
       mining: argv.disableAutoMining
         ? {
@@ -112,7 +112,7 @@ const config: HardhatUserConfig = {
     },
     mainnetForkRemote: {
       live: false,
-      url: 'http://130.211.61.213:11055/',
+      url: 'http://34.78.103.39:11055/',
       chainId: 1,
     },
     mumbai: {

@@ -13,6 +13,8 @@ import {
   MockStableMaster__factory,
   MockSwapper,
   MockSwapper__factory,
+  MockSwapperWithSwap,
+  MockSwapperWithSwap__factory,
   MockToken,
   MockToken__factory,
   MockTreasury,
@@ -27,6 +29,7 @@ import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import {
   addCollateral,
   angle,
+  angleUnprotected,
   borrow,
   closeVault,
   createVault,
@@ -60,6 +63,7 @@ contract('VaultManager', () => {
   let agToken: AgToken;
   let vaultManager: VaultManager;
   let mockSwapper: MockSwapper;
+  let mockSwapperWithSwap: MockSwapperWithSwap;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -125,7 +129,6 @@ contract('VaultManager', () => {
     await vaultManager.connect(guardian).togglePause();
     await vaultManager.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
   });
-
   describe('oracle', () => {
     it('success - read', async () => {
       const oracle = (await ethers.getContractAt(Oracle__factory.abi, await vaultManager.oracle())) as Oracle;
@@ -1124,10 +1127,40 @@ contract('VaultManager', () => {
       expect(await vaultManager2.surplus()).to.be.equal(parseEther('0.55'));
     });
   });
-
   describe('getDebtOut', () => {
     it('reverts - invalid sender', async () => {
       await expect(vaultManager.getDebtOut(1, 0, 0, 0)).to.be.revertedWith('NotVaultManager');
+    });
+    it('reverts - paused', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1.999');
+      await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+      ]);
+      const vaultManager2 = (await deployUpgradeable(
+        new VaultManager__factory(deployer),
+        0.1e9,
+        0.1e9,
+      )) as VaultManager;
+      await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
+      await vaultManager2.connect(governor).togglePause();
+      await vaultManager2.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
+      await treasury.setVaultManager2(vaultManager2.address);
+      await treasury.addMinter(agToken.address, vaultManager2.address);
+      await collateral.connect(alice).approve(vaultManager2.address, collatAmount.mul(10));
+      await angle(vaultManager2, alice, [
+        createVault(alice.address),
+        addCollateral(1, collatAmount),
+        borrow(1, borrowAmount),
+      ]);
+      await vaultManager2.connect(governor).togglePause();
+      await expect(
+        angle(vaultManager, alice, [getDebtIn(1, vaultManager2.address, 1, parseEther('1'))]),
+      ).to.be.revertedWith('Paused');
     });
   });
   describe('permit', () => {
@@ -1199,6 +1232,7 @@ contract('VaultManager', () => {
       await collateral.connect(alice).mint(alice.address, collatAmount.mul(10));
       await collateral.connect(alice).approve(vaultManager.address, collatAmount.mul(10));
       mockSwapper = (await new MockSwapper__factory(deployer).deploy()) as MockSwapper;
+      mockSwapperWithSwap = (await new MockSwapperWithSwap__factory(deployer).deploy()) as MockSwapperWithSwap;
       await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount.mul(1000));
       await angle(vaultManager, alice, [
         createVault(alice.address),
@@ -1443,6 +1477,51 @@ contract('VaultManager', () => {
       expect(await agToken.balanceOf(alice.address)).to.be.equal(aliceStablecoinBalance);
       expectApprox(await agToken.balanceOf(bob.address), bobStablecoinBalance.sub(parseEther('1')), 0.1);
     });
+    it('success - handle repay with an approved address and a who contract which has the collateral', async () => {
+      const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
+      const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const bobStablecoinBalance = await agToken.balanceOf(bob.address);
+      const bobCollateralBalance = await collateral.balanceOf(bob.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
+      await agToken.connect(bob).approve(alice.address, parseEther('10'));
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(mockSwapperWithSwap.address, parseEther('10'));
+      await angle(
+        vaultManager,
+        alice,
+        [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
+        bob.address,
+        mockSwapperWithSwap.address,
+        mockSwapperWithSwap.address,
+        web3.utils.keccak256('test'),
+      );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.sub(collatAmount));
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
+      expect(await mockSwapperWithSwap.counter()).to.be.equal(1);
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('0.9989'), 0.1);
+      expect(await collateral.balanceOf(bob.address)).to.be.equal(bobCollateralBalance);
+      expect(await collateral.balanceOf(mockSwapperWithSwap.address)).to.be.equal(collatAmount);
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(aliceCollateralBalance);
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(aliceStablecoinBalance);
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(bobStablecoinBalance);
+      expectApprox(await agToken.balanceOf(mockSwapperWithSwap.address), parseEther('10').sub(parseEther('1')), 0.1);
+    });
+    it('reverts - handle repay with repay data but no who contract', async () => {
+      await agToken.connect(bob).approve(alice.address, parseEther('10'));
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(mockSwapperWithSwap.address, parseEther('10'));
+      await expect(
+        angleUnprotected(
+          vaultManager,
+          alice,
+          [repayDebt(2, parseEther('1')), removeCollateral(2, collatAmount)],
+          bob.address,
+          mockSwapperWithSwap.address,
+          ZERO_ADDRESS,
+          web3.utils.keccak256('test'),
+        ),
+      ).to.be.reverted;
+    });
     it('success - swapToCollateral with the same from and to address', async () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
@@ -1463,7 +1542,7 @@ contract('VaultManager', () => {
       expect(await collateral.balanceOf(alice.address)).to.be.equal(aliceCollateralBalance.sub(collatAmount));
       expectApprox(await agToken.balanceOf(alice.address), aliceStablecoinBalance.add(adjustedBorrowAmount), 0.1);
     });
-    it('success - swapToCollateral different from address has no impact', async () => {
+    it('success - swapToCollateral different from address has no impact 1/2', async () => {
       const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
       const bobStablecoinBalance = await agToken.balanceOf(bob.address);
@@ -1486,6 +1565,63 @@ contract('VaultManager', () => {
       expectApprox(await agToken.balanceOf(alice.address), aliceStablecoinBalance.add(adjustedBorrowAmount), 0.1);
       expect(await collateral.balanceOf(bob.address)).to.be.equal(bobCollateralBalance);
       expect(await agToken.balanceOf(bob.address)).to.be.equal(bobStablecoinBalance);
+    });
+    it('success - swapToCollateral and from address change has no impact 2/2', async () => {
+      const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
+      const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
+      await angle(
+        vaultManager,
+        alice,
+        [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
+        ZERO_ADDRESS,
+        alice.address,
+        mockSwapper.address,
+        web3.utils.keccak256('test'),
+      );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.add(collatAmount));
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('3.9989'), 0.1);
+      expect(await mockSwapper.counter()).to.be.equal(1);
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(aliceCollateralBalance.sub(collatAmount));
+      expectApprox(await agToken.balanceOf(alice.address), aliceStablecoinBalance.add(adjustedBorrowAmount), 0.1);
+    });
+    it('success - swapToCollateral with a mockSwapperWithSwap contract', async () => {
+      const aliceStablecoinBalance = await agToken.balanceOf(alice.address);
+      const aliceCollateralBalance = await collateral.balanceOf(alice.address);
+      const vaultManagerBalance = await collateral.balanceOf(vaultManager.address);
+      await collateral.connect(alice).mint(mockSwapperWithSwap.address, collatAmount.mul(100));
+      await angle(
+        vaultManager,
+        alice,
+        [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
+        alice.address,
+        mockSwapperWithSwap.address,
+        mockSwapperWithSwap.address,
+        web3.utils.keccak256('test'),
+      );
+      expect(await collateral.balanceOf(vaultManager.address)).to.be.equal(vaultManagerBalance.add(collatAmount));
+      expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount.mul(3));
+      expectApprox(await vaultManager.getVaultDebt(2), parseEther('3.9989'), 0.1);
+      expect(await mockSwapperWithSwap.counter()).to.be.equal(1);
+      expect(await collateral.balanceOf(alice.address)).to.be.equal(aliceCollateralBalance);
+      expect(await collateral.balanceOf(mockSwapperWithSwap.address)).to.be.equal(collatAmount.mul(99));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(aliceStablecoinBalance);
+      expectApprox(await agToken.balanceOf(mockSwapperWithSwap.address), adjustedBorrowAmount, 0.1);
+    });
+    it('reverts - swapToCollateral with repayData but no who contract', async () => {
+      await collateral.connect(alice).mint(mockSwapperWithSwap.address, collatAmount.mul(100));
+      await expect(
+        angleUnprotected(
+          vaultManager,
+          alice,
+          [addCollateral(2, collatAmount), borrow(2, borrowAmount)],
+          alice.address,
+          mockSwapperWithSwap.address,
+          ZERO_ADDRESS,
+          web3.utils.keccak256('test'),
+        ),
+      ).to.be.reverted;
     });
     it('reverts - swapToCollateral Swapper fails to put the correct balance', async () => {
       const aliceCollateralBalance = await collateral.balanceOf(alice.address);
@@ -1676,6 +1812,24 @@ contract('VaultManager', () => {
         vaultManager.connect(bob)['liquidate(uint256[],uint256[],address,address)']([], [], bob.address, bob.address),
       ).to.be.revertedWith('IncompatibleLengths');
     });
+    it('reverts - paused', async () => {
+      await vaultManager.connect(governor).togglePause();
+      await expect(
+        vaultManager.connect(bob)['liquidate(uint256[],uint256[],address,address)']([1], [1], bob.address, bob.address),
+      ).to.be.revertedWith('Paused');
+      await expect(
+        vaultManager
+          .connect(bob)
+          ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
+            [1],
+            [1],
+            bob.address,
+            bob.address,
+            ZERO_ADDRESS,
+            '0x',
+          ),
+      ).to.be.revertedWith('Paused');
+    });
     it('success - no liquidation boost', async () => {
       const rate = 0.99;
       await oracle.update(parseEther(rate.toString()));
@@ -1722,7 +1876,112 @@ contract('VaultManager', () => {
         0.001,
       );
     });
+    it('success - no liquidation boost and base swapper contract', async () => {
+      const rate = 0.99;
+      await oracle.update(parseEther(rate.toString()));
 
+      // Target health factor is 1.1
+      // discount: `collateralAmountInStable * collateralFactor) / currentDebt`
+      const discount = (2 * rate * 0.5) / 1;
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.5) / (0.9 * 1.1 - 0.5 / discount);
+      mockSwapper = (await new MockSwapper__factory(deployer).deploy()) as MockSwapper;
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+
+      const receipt = await (
+        await vaultManager
+          .connect(bob)
+          ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            bob.address,
+            bob.address,
+            mockSwapper.address,
+            web3.utils.keccak256('test'),
+          )
+      ).wait();
+      expect(await mockSwapper.counter()).to.be.equal(1);
+
+      inReceipt(receipt, 'LiquidatedVaults', {
+        vaultIDs: [BigNumber.from(2)],
+      });
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expectApprox(
+        await vaultManager.totalNormalizedDebt(),
+        borrowAmount.sub(parseEther(maxStablecoinAmountToRepay.toString()).mul(params.liquidationSurcharge).div(1e9)),
+        0.001,
+      );
+    });
+    it('success - no liquidation boost and more advanced swapper contract', async () => {
+      const rate = 0.99;
+      await oracle.update(parseEther(rate.toString()));
+
+      // Target health factor is 1.1
+      // discount: `collateralAmountInStable * collateralFactor) / currentDebt`
+      const discount = (2 * rate * 0.5) / 1;
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.5) / (0.9 * 1.1 - 0.5 / discount);
+      mockSwapperWithSwap = (await new MockSwapperWithSwap__factory(deployer).deploy()) as MockSwapperWithSwap;
+      await treasury.connect(alice).addMinter(agToken.address, alice.address);
+      await agToken.connect(alice).mint(mockSwapperWithSwap.address, parseEther('10'));
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+
+      const receipt = await (
+        await vaultManager
+          .connect(bob)
+          ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            bob.address,
+            mockSwapperWithSwap.address,
+            mockSwapperWithSwap.address,
+            web3.utils.keccak256('test'),
+          )
+      ).wait();
+      expect(await mockSwapperWithSwap.counter()).to.be.equal(1);
+      expectApprox(
+        await agToken.balanceOf(mockSwapperWithSwap.address),
+        parseEther('10').sub(parseEther(maxStablecoinAmountToRepay.toString())),
+        0.1,
+      );
+
+      inReceipt(receipt, 'LiquidatedVaults', {
+        vaultIDs: [BigNumber.from(2)],
+      });
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expectApprox(
+        await vaultManager.totalNormalizedDebt(),
+        borrowAmount.sub(parseEther(maxStablecoinAmountToRepay.toString()).mul(params.liquidationSurcharge).div(1e9)),
+        0.001,
+      );
+    });
     it('success - case 2 without boost', async () => {
       const rate = 0.9;
       await oracle.update(parseEther(rate.toString()));

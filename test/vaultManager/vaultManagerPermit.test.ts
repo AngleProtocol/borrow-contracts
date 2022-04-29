@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, Signer, utils } from 'ethers';
-import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
-import hre, { contract, ethers, web3 } from 'hardhat';
+import { Signer } from 'ethers';
+import { parseEther, parseUnits } from 'ethers/lib/utils';
+import hre, { contract, ethers } from 'hardhat';
 
 import {
   AgToken,
@@ -20,13 +20,11 @@ import {
   VaultManager__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
+import { inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, latestTime, ZERO_ADDRESS } from '../utils/helpers';
 import { domainSeparator, signPermitNFT } from '../utils/sigUtilsNFT';
 
 contract('VaultManager - Permit', () => {
-  const log = true;
-
   let deployer: SignerWithAddress;
   let governor: SignerWithAddress;
   let guardian: SignerWithAddress;
