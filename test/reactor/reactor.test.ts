@@ -542,22 +542,22 @@ contract('Reactor', () => {
     });
   });
 
-  describe('pullProtocolFees', () => {
+  describe('pushProtocolFees', () => {
     it('reverts - zero address', async () => {
-      await expect(reactor.pullProtocolFees(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+      await expect(reactor.pushProtocolFees(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
     });
     it('reverts - not guardian', async () => {
-      await expect(reactor.connect(alice).pullProtocolFees(alice.address)).to.be.revertedWith('NotGovernorOrGuardian');
+      await expect(reactor.connect(alice).pushProtocolFees(alice.address)).to.be.revertedWith('NotGovernorOrGuardian');
     });
     it('success - when zero available', async () => {
-      await reactor.connect(guardian).pullProtocolFees(alice.address);
+      await reactor.connect(guardian).pushProtocolFees(alice.address);
     });
     it('success - when some available and guardian', async () => {
       await reactorClaimable.increaseAccumulator(parseEther('1'));
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
       await treasury.addMinter(agEUR.address, alice.address);
       await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
-      await reactorClaimable.connect(guardian).pullProtocolFees(alice.address);
+      await reactorClaimable.connect(guardian).pushProtocolFees(alice.address);
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(0);
       expect(await agEUR.balanceOf(alice.address)).to.be.equal(parseEther('1'));
     });
@@ -567,7 +567,7 @@ contract('Reactor', () => {
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
       await treasury.addMinter(agEUR.address, alice.address);
       await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
-      await reactorClaimable.connect(alice).pullProtocolFees(bob.address);
+      await reactorClaimable.connect(alice).pushProtocolFees(bob.address);
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(0);
       expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('1'));
     });
@@ -577,7 +577,7 @@ contract('Reactor', () => {
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
       await treasury.addMinter(agEUR.address, alice.address);
       await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
-      await reactorClaimable.connect(guardian).pullProtocolFees(bob.address);
+      await reactorClaimable.connect(guardian).pushProtocolFees(bob.address);
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(0);
       expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('1'));
     });
@@ -587,7 +587,7 @@ contract('Reactor', () => {
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
       await treasury.addMinter(agEUR.address, alice.address);
       await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('0.5'));
-      await expect(reactorClaimable.connect(guardian).pullProtocolFees(bob.address)).to.be.reverted;
+      await expect(reactorClaimable.connect(guardian).pushProtocolFees(bob.address)).to.be.reverted;
     });
     it('success - when less is pulled than interest accumulated', async () => {
       await reactorClaimable.connect(guardian).setSurplusManager(bob.address);
@@ -596,7 +596,7 @@ contract('Reactor', () => {
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('1'));
       await treasury.addMinter(agEUR.address, alice.address);
       await agEUR.connect(alice).mint(reactorClaimable.address, parseEther('1'));
-      await reactorClaimable.connect(guardian).pullProtocolFees(bob.address);
+      await reactorClaimable.connect(guardian).pushProtocolFees(bob.address);
       expect(await reactorClaimable.protocolInterestAccumulated()).to.be.equal(parseEther('0.7'));
       expect(await agEUR.balanceOf(bob.address)).to.be.equal(parseEther('0.3'));
     });

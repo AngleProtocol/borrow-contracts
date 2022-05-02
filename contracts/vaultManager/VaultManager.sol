@@ -249,8 +249,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                             IERC20(address(stablecoin)),
                             collateral,
                             msg.sender,
-                            // As per the `ISwapper` interface, we must first give the amount of token owed before
-                            // the amount of token obtained
+                            // As per the `ISwapper` interface, we must first give the amount of token owed by the address before
+                            // the amount of token it (or another related address) obtained
                             collateralPayment,
                             stablecoinPayment,
                             repayData
@@ -284,8 +284,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         if (senderBorrowFee > borrowFee) {
             _borrowFee = senderBorrowFee - borrowFee;
         }
-        // Getting debt out of a vault is equivalent to repaying a portion of your debt: a fee should be paid for this
-        // We're taking the highest of the two repay fees to avoid exploits
+
         uint256 stablecoinAmountLessFeePaid = (stablecoinAmount *
             (BASE_PARAMS - _repayFee) *
             (BASE_PARAMS - _borrowFee)) / (BASE_PARAMS**2);

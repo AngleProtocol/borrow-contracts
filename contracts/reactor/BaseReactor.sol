@@ -587,7 +587,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
 
     /// @notice Pulls the fees accumulated by the protocol from its strategies
     /// @param to Address to which tokens should be sent
-    function pullProtocolFees(address to) external {
+    function pushProtocolFees(address to) external {
         if (to == address(0)) revert ZeroAddress();
         if (to != surplusManager) {
             if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();

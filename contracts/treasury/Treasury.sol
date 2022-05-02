@@ -346,9 +346,7 @@ contract Treasury is ITreasury, Initializable {
     /// protocol
     /// @param _surplusManager New address responsible for handling the surplus
     function setSurplusManager(address _surplusManager) external onlyGovernor {
-        if (_surplusManager == address(0)) {
-            revert ZeroAddress();
-        }
+        if (_surplusManager == address(0)) revert ZeroAddress();
         surplusManager = _surplusManager;
         emit SurplusManagerUpdated(_surplusManager);
     }
