@@ -855,6 +855,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Sets `debtCeiling`
     /// @param _debtCeiling New value for `debtCeiling`
+    /// @dev `debtCeiling` should not be bigger than `type(uint256).max / 10**27` otherwise there could be overflows
     function setDebtCeiling(uint256 _debtCeiling) external onlyGovernorOrGuardian {
         debtCeiling = _debtCeiling;
         emit DebtCeilingUpdated(_debtCeiling);
