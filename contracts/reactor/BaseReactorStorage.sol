@@ -56,9 +56,9 @@ contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {
     // =============================== Variables ===================================
 
     /// @notice Protocol fee surplus: the protocol should only accumulate yield from the strategies and not make a gain
-    /// in situations where there are liquidations or so
+    /// in situations where there are liquidations or so.
     uint256 public protocolInterestAccumulated;
-    /// @notice Loss accumulated that should be going to the protocol
+    /// @notice Loss accumulated to be taken from the protocol
     uint256 public protocolDebt;
     /// @notice Rewards (in stablecoin) claimable by depositors of the reactor
     uint256 public claimableRewards;

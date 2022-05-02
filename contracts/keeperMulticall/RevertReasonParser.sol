@@ -13,8 +13,8 @@ library RevertReasonParser {
     function parse(bytes memory data, string memory prefix) internal pure returns (string memory) {
         if (data.length >= 4) {
             bytes4 selector;
+            //solhint-disable-next-line
             assembly {
-                // solhint-disable-line no-inline-assembly
                 selector := mload(add(data, 0x20))
             }
 

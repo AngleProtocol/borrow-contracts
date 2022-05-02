@@ -13,6 +13,7 @@ contract MockKeeperMulticall is Initializable, AccessControlUpgradeable {
 
     bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
 
+    //solhint-disable-next-line
     address private constant _oneInch = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
 
     struct Action {

@@ -92,8 +92,10 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         bytes memory response;
 
         if (action.isDelegateCall) {
+            //solhint-disable-next-line
             (success, response) = action.target.delegatecall(action.data);
         } else {
+            //solhint-disable-next-line
             (success, response) = action.target.call(action.data);
         }
 
@@ -105,6 +107,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     /// @notice Ability to pay miner directly. Used for Flashbots to execute private transactions
     /// @param value Value to be sent
     function payFlashbots(uint256 value) public payable onlyRole(KEEPER_ROLE) returns (bytes memory) {
+        //solhint-disable-next-line
         (bool success, bytes memory response) = block.coinbase.call{ value: value }("");
         if (!success) revert FlashbotsErrorPayingMiner(value);
         emit SentToMiner(value);
@@ -133,6 +136,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     /// @param minAmountOut Minimum amount of `out` token to receive for the swap to happen
     /// @param payload Bytes needed for 1Inch API
     function swapToken(uint256 minAmountOut, bytes memory payload) external onlyRole(KEEPER_ROLE) {
+        //solhint-disable-next-line
         (bool success, bytes memory result) = _oneInch.call(payload);
         if (!success) _revertBytes(result);
 
