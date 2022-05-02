@@ -368,6 +368,7 @@ contract Treasury is ITreasury, Initializable {
     function setFlashLoanModule(address _flashLoanModule) external {
         if (msg.sender != address(core)) revert NotCore();
         address oldFlashLoanModule = address(flashLoanModule);
+        flashLoanModule = IFlashAngle(_flashLoanModule);
         if (oldFlashLoanModule != address(0)) {
             stablecoin.removeMinter(oldFlashLoanModule);
         }
@@ -375,6 +376,5 @@ contract Treasury is ITreasury, Initializable {
         if (_flashLoanModule != address(0)) {
             stablecoin.addMinter(_flashLoanModule);
         }
-        flashLoanModule = IFlashAngle(_flashLoanModule);
     }
 }
