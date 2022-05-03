@@ -183,6 +183,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
         address receiver,
         uint256 amount
     ) external onlyRole(KEEPER_ROLE) {
+        if (receiver == address(0)) revert ZeroAddress();
         if (token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             payable(receiver).transfer(amount);
         } else {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.12;
 
-import "./utils/ERC20Upgradeable.sol";
+import "./utils/ERC20UpgradeableCustom.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
@@ -19,7 +19,7 @@ interface IChildToken {
 
 contract TokenPolygonUpgradeable is
     Initializable,
-    ERC20Upgradeable,
+    ERC20UpgradeableCustom,
     AccessControlUpgradeable,
     EIP712Upgradeable,
     IChildToken

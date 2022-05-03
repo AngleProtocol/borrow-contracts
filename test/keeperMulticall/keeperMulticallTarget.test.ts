@@ -186,6 +186,11 @@ describe('Keeper Multicall', async () => {
     expect(await ethers.provider.getBalance(randomUser)).to.equal(0);
     expect(await Token1.connect(deployer).balanceOf(randomUser)).to.equal(0);
 
+    await expect(
+      keeperMulticall
+        .connect(keeper)
+        .withdrawStuckFunds(Token1.address, ethers.constants.AddressZero, utils.parseUnits('1000', 6)),
+    ).to.be.revertedWith('ZeroAddress');
     await keeperMulticall.connect(keeper).withdrawStuckFunds(Token1.address, randomUser, utils.parseUnits('1000', 6));
     await keeperMulticall
       .connect(keeper)
