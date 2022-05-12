@@ -407,16 +407,16 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param vaultID ID of the vault to decrease the collateral balance of
     /// @param collateralAmount Amount of collateral to reduce the balance of
     /// @param oracleValue Oracle value at the start of the call (given here to avoid double computations)
-    /// @param interestAccumulator Value of the interest rate accumulator (potentially zero if it has not been
+    /// @param interestAccumulator_ Value of the interest rate accumulator (potentially zero if it has not been
     /// computed yet)
     function _removeCollateral(
         uint256 vaultID,
         uint256 collateralAmount,
         uint256 oracleValue,
-        uint256 interestAccumulator
+        uint256 interestAccumulator_
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
         vaultData[vaultID].collateralAmount -= collateralAmount;
-        (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator);
+        (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
         emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
     }
@@ -494,7 +494,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestAccumulator;
         // if there was no previous debt, we have to check that the debt creation will be higher than `dust`
         if (vaultData[vaultID].normalizedDebt == 0)
-            if (changeAmount * newInterestAccumulator <= dust * BASE_INTEREST) revert DustyLeftoverAmount();
+            if (stablecoinAmount <= dust) revert DustyLeftoverAmount();
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
         if (totalNormalizedDebt * newInterestAccumulator > debtCeiling * BASE_INTEREST) revert DebtCeilingExceeded();
@@ -514,7 +514,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// computed yet, like in `getDebtOut`)
     /// @return Amount of stablecoins to be burnt to correctly repay the debt
     /// @dev If `stablecoinAmount` is `type(uint256).max`, this function will repay all the debt of the vault
-    /// @dev This function will revert if it's called on a vault that does not exist
     function _repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -583,6 +582,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _accrue();
         surplusValue = surplus;
         badDebtValue = badDebt;
+        surplus = 0;
+        badDebt = 0;
         if (surplusValue >= badDebtValue) {
             surplusValue -= badDebtValue;
             badDebtValue = 0;
@@ -591,8 +592,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             badDebtValue -= surplusValue;
             surplusValue = 0;
         }
-        surplus = 0;
-        badDebt = 0;
         emit AccruedToTreasury(surplusValue, badDebtValue);
     }
 
@@ -855,6 +854,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Sets `debtCeiling`
     /// @param _debtCeiling New value for `debtCeiling`
+    /// @dev `debtCeiling` should not be bigger than `type(uint256).max / 10**27` otherwise there could be overflows
     function setDebtCeiling(uint256 _debtCeiling) external onlyGovernorOrGuardian {
         debtCeiling = _debtCeiling;
         emit DebtCeilingUpdated(_debtCeiling);

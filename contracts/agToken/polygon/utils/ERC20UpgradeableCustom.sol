@@ -32,7 +32,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20Upgradeable is Initializable, ContextUpgradeable, IERC20Upgradeable, IERC20MetadataUpgradeable {
+contract ERC20UpgradeableCustom is Initializable, ContextUpgradeable, IERC20Upgradeable, IERC20MetadataUpgradeable {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;

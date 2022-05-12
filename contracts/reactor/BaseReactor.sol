@@ -19,6 +19,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @param _lowerCF Lower Collateral Factor accepted without rebalancing
     /// @param _targetCF Target Collateral Factor
     /// @param _upperCF Upper Collateral Factor accepted without rebalancing
+    /// @param _protocolInterestShare Share of the profit (or losses) from strategies going to the protocol
     function _initialize(
         string memory _name,
         string memory _symbol,
@@ -73,7 +74,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     // ========================= External Access Functions =========================
 
     /// @inheritdoc IERC4626
-    function deposit(uint256 assets, address to) public nonReentrant returns (uint256 shares) {
+    function deposit(uint256 assets, address to) external nonReentrant returns (uint256 shares) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         shares = _convertToShares(assets, usedAssets + looseAssets, 0);
         if (shares == 0) revert ZeroShares();
@@ -81,7 +82,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    function mint(uint256 shares, address to) public nonReentrant returns (uint256 assets) {
+    function mint(uint256 shares, address to) external nonReentrant returns (uint256 assets) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         uint256 totalSupply = totalSupply();
         assets = _convertToAssets(shares, usedAssets + looseAssets, totalSupply);
@@ -97,7 +98,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         uint256 assets,
         address to,
         address from
-    ) public nonReentrant returns (uint256 shares) {
+    ) external nonReentrant returns (uint256 shares) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         uint256 totalSupply = totalSupply();
         shares = _convertToShares(assets, usedAssets + looseAssets, totalSupply);
@@ -117,7 +118,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         uint256 shares,
         address to,
         address from
-    ) public nonReentrant returns (uint256 assets) {
+    ) external nonReentrant returns (uint256 assets) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         assets = _convertToAssets(shares, usedAssets + looseAssets, 0);
         if (assets == 0) revert ZeroAssets();
@@ -127,7 +128,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Claims earned rewards
     /// @param from Address to claim for
     /// @return Amount claimed
-    function claim(address from) public nonReentrant returns (uint256) {
+    function claim(address from) external nonReentrant returns (uint256) {
         _updateAccumulator(from);
         return _claim(from);
     }
@@ -151,12 +152,12 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    function previewDeposit(uint256 assets) public view returns (uint256) {
+    function previewDeposit(uint256 assets) external view returns (uint256) {
         return convertToShares(assets);
     }
 
     /// @inheritdoc IERC4626
-    function previewMint(uint256 shares) public view returns (uint256) {
+    function previewMint(uint256 shares) external view returns (uint256) {
         uint256 totalAssetAmount = totalAssets();
         uint256 totalSupply = totalSupply();
         uint256 assets = _convertToAssets(shares, totalAssetAmount, totalSupply);
@@ -166,7 +167,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Computes how many shares one would need to withdraw assets
     /// @param assets Amount of asset to withdraw
     /// @inheritdoc IERC4626
-    function previewWithdraw(uint256 assets) public view returns (uint256) {
+    function previewWithdraw(uint256 assets) external view returns (uint256) {
         uint256 totalAssetAmount = totalAssets();
         uint256 totalSupply = totalSupply();
         uint256 shares = _convertToShares(assets, totalAssetAmount, totalSupply);
@@ -176,7 +177,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @notice Computes how many assets one would get by burning shares
     /// @param shares Amount of shares to burn
     /// @inheritdoc IERC4626
-    function previewRedeem(uint256 shares) public view returns (uint256) {
+    function previewRedeem(uint256 shares) external view returns (uint256) {
         return convertToAssets(shares);
     }
 
@@ -189,7 +190,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address) public view virtual returns (uint256) {
+    function maxMint(address) external view virtual returns (uint256) {
         return type(uint256).max;
     }
 
@@ -199,7 +200,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     }
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address user) public view virtual returns (uint256) {
+    function maxRedeem(address user) external view virtual returns (uint256) {
         return balanceOf(user);
     }
 
@@ -510,11 +511,11 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         }
 
         _updateAccumulator(from);
+        _burn(from, shares);
+
         _rebalance(assets, usedAssets, looseAssets);
 
         _claim(from);
-
-        _burn(from, shares);
 
         emit Withdraw(from, to, assets, shares);
         asset.safeTransfer(to, assets);

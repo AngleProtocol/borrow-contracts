@@ -55,7 +55,8 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// @notice Minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
     ///  in a vault during a liquidation where the health factor function is decreasing
     uint256 internal immutable _dustCollateral;
-    /// @notice Maximum amount of stablecoins that can be issued with this contract (in `BASE_TOKENS`)
+    /// @notice Maximum amount of stablecoins that can be issued with this contract (in `BASE_TOKENS`). This parameter should
+    /// not be bigger than `type(uint256).max / BASE_INTEREST` otherwise there may be some overflows in the `increaseDebt` function
     uint256 public debtCeiling;
     /// @notice Threshold veANGLE balance values for the computation of the boost for liquidators: the length of this array
     /// should normally be 2. The base of the x-values in this array should be `BASE_TOKENS`

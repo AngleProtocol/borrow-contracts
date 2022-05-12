@@ -23,7 +23,7 @@ solidity-flattenedContracts
 typechain
 slither-audit.txt
 slither
-
+slither.db.json
 
 # Test output
 coverage
