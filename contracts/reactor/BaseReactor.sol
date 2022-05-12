@@ -19,6 +19,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
     /// @param _lowerCF Lower Collateral Factor accepted without rebalancing
     /// @param _targetCF Target Collateral Factor
     /// @param _upperCF Upper Collateral Factor accepted without rebalancing
+    /// @param _protocolInterestShare Share of the profit (or losses) from strategies going to the protocol
     function _initialize(
         string memory _name,
         string memory _symbol,

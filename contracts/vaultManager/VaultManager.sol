@@ -514,7 +514,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// computed yet, like in `getDebtOut`)
     /// @return Amount of stablecoins to be burnt to correctly repay the debt
     /// @dev If `stablecoinAmount` is `type(uint256).max`, this function will repay all the debt of the vault
-    /// @dev This function will revert if it's called on a vault that does not exist
     function _repayDebt(
         uint256 vaultID,
         uint256 stablecoinAmount,
