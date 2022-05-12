@@ -14,7 +14,7 @@ interface ISwapper {
     /// @param inToken Address of the token received
     /// @param outToken Address of the token to obtain
     /// @param outTokenRecipient Address to which the outToken should be sent
-    /// @param outTokenOwed Minimum amount of outToken this address should have at the end of the call
+    /// @param outTokenOwed Minimum amount of outToken the `outTokenRecipient` address should have at the end of the call
     /// @param inTokenObtained Amount of collateral obtained by a related address prior
     /// to the call to this function
     /// @param data Extra data needed (to encode Uniswap swaps for instance)
