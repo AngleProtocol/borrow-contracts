@@ -84,8 +84,7 @@ contract EulerReactor is BaseReactor {
 
     /// @inheritdoc IERC4626
     /// @dev Users are limited in the amount to be withdrawn by liquidity on Euler contracts
-    /// @dev We do not take into account the claim(amount) call in these computation - as it
-    /// would asks to estimate
+    /// @dev We do not take into account the `claim(amount)` call in these computations
     function maxWithdraw(address user) public view virtual override returns (uint256) {
         (uint256 usedAssets, uint256 looseAssets) = _getAssets();
         uint256 toWithdraw = _convertToAssets(balanceOf(user), usedAssets + looseAssets, 0);
@@ -119,7 +118,8 @@ contract EulerReactor is BaseReactor {
     /// @param amount Amount of assets wanted to be withdrawn
     /// @param usedAssets Amount of assets collateralizing the vault
     /// @param looseAssets Amount of assets directly accessible in the contract balance
-    /// @return maxAmount Max amount of stablecoins that can be withdrawn from Euler
+    /// @return maxAmount Max amount of assets that can be withdrawn from the reactor considering Euler liquidity
+    /// for the stablecoin
     /// @dev If reaching the `upperCF`, users are limited in the amount to be withdrawn by liquidity on Euler contracts
     function _maxAmountWithdrawable(
         uint256 amount,
@@ -149,7 +149,7 @@ contract EulerReactor is BaseReactor {
         // If the collateral factor after a withdraw goes above upperCF, we need to repay stablecoins to free collateral,
         // and therefore we need to withdraw liquidity on Euler.
         // If both the reactor balance on Euler and poolSize (available liquidity on Euler) are larger than the needed
-        // stablecoins --> users can withdraw toWithdraw, in the other case it's not possible
+        // stablecoins --> users can withdraw `toWithdraw`, in the other case it's not possible
         // Computation here mimics the `_rebalance()` function in a case of a withdraw
         if (collateralFactor >= upperCF) {
             stablecoinsValueToRedeem = debt - futureStablecoinsInVault;
