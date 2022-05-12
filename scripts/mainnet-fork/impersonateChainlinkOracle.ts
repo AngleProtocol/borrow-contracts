@@ -5,7 +5,7 @@ Pass the Chainlink Oracle address, and the value you want the Oracle to have.
 !!! And don't forget to update the `provider`
 
 Ex:
-await updateOracle('0x0606Be69451B1C9861Ac6b3626b99093b713E801', utils.parseUnits('3200', 6));
+await updateOracle('0x0606Be69451B1C9861Ac6b3626b99093b713E801', utils.parseUnits('1.0253', 8));
 */
 
 import { BigNumber, Contract, providers, utils } from 'ethers';
@@ -14,7 +14,7 @@ import { BigNumber, Contract, providers, utils } from 'ethers';
 const provider = new providers.JsonRpcProvider('http://127.0.0.1:8545');
 
 // We use this function to find the slot for Transmission struct
-export async function findTransmissionSlot(_aggregator: string): Promise<number> {
+async function findTransmissionSlot(_aggregator: string): Promise<number> {
   //   struct Transmission {
   //     int192 answer; // 192 bits ought to be enough for anyone
   //     uint64 timestamp;
@@ -72,9 +72,12 @@ export async function updateOracle(oracle: string, value: BigNumber): Promise<vo
   //   console.log('slot', await findTransmissionSlot(aggregator.address));
 
   const roundId = (await aggregator.latestRoundData()).roundId;
-  const timestamp = Math.ceil(Date.now() / 1000);
+
+  const timestamp = (await provider.getBlock('latest')).timestamp;
 
   const slot = utils.keccak256(utils.defaultAbiCoder.encode(['uint32', 'uint'], [roundId, 43]));
+
+  console.log('before', await feed.latestRoundData());
 
   /*
   This sets the storage for the mapping s_transmissions
@@ -111,4 +114,11 @@ export async function updateOracle(oracle: string, value: BigNumber): Promise<vo
       32,
     ),
   ]);
+
+  console.log('after', await feed.latestRoundData());
 }
+
+// (async () => {
+//   await updateOracle('0xb49f677943BC038e9857d61E7d053CaA2C1734C1', utils.parseUnits('1.08', 8));
+//   console.log('updated oracle');
+// })();
