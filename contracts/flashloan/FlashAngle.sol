@@ -43,6 +43,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
 
     // =============================== Event =======================================
 
+    event FlashLoan(address indexed stablecoin, uint256 amount, IERC3156FlashBorrower indexed receiver);
     event FlashLoanParametersUpdated(IAgToken indexed stablecoin, uint64 _flashLoanFee, uint256 _maxBorrowable);
 
     // =============================== Errors ======================================
@@ -114,6 +115,7 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
         // to use `safeTransferFrom` here
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount + fee);
         IAgToken(token).burnSelf(amount, address(this));
+        emit FlashLoan(token, amount, receiver);
         return true;
     }
 
