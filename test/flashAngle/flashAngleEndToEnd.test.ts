@@ -147,6 +147,11 @@ contract('FlashAngle - End-to-end', () => {
       ).wait();
       expect(await agToken.balanceOf(flashAngle.address)).to.be.equal(parseEther('5'));
       expect(await agToken.balanceOf(flashLoanReceiver.address)).to.be.equal(parseEther('0'));
+      inReceipt(receipt, 'FlashLoan', {
+        stablecoin: agToken.address,
+        amount: parseEther('10'),
+        receiver: flashLoanReceiver.address,
+      });
       inIndirectReceipt(
         receipt,
         new utils.Interface(['event Transfer(address indexed from, address indexed to, uint256 value)']),
