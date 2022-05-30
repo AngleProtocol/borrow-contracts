@@ -278,6 +278,11 @@ contract('FlashAngle', () => {
       expect(await token.balanceOf(flashLoanReceiver.address)).to.be.equal(parseEther('0'));
       expect(await token.balanceOf(flashAngle.address)).to.be.equal(parseEther('50'));
 
+      inReceipt(receipt, 'FlashLoan', {
+        stablecoin: token.address,
+        amount: parseEther('100'),
+        receiver: flashLoanReceiver.address,
+      });
       inIndirectReceipt(
         receipt,
         new utils.Interface(['event Minting(address indexed _to, address indexed _minter, uint256 _amount)']),
