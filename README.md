@@ -1,18 +1,30 @@
-# borrow-contracts
+# <img src="logo.svg" alt="Angle Borrow Contracts" height="40px"> Angle Borrowing Module
 
-Borrowing Module of the Angle Protocol
+[![CI](https://github.com/AngleProtocol/angle-borrow/workflows/CI/badge.svg)](https://github.com/AngleProtocol/angle-borrow/actions?query=workflow%3ACI)
+[![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-blue)](https://docs.angle.money/angle-borrowing-module/borrowing-module)
+[![Developers](https://img.shields.io/badge/developers-%F0%9F%93%84-pink)](https://developers.angle.money)
 
 ## Documentation
 
+Angle is a decentralized stablecoin protocol, designed to be both over-collateralized and capital-efficient. For more information about the protocol, you can refer to [Angle Documentation](https://docs.angle.money).
+
+The protocol is made of different modules, each with their own set of smart contracts. This repo contains the Borrowing module smart contracts.
+
 Documentation to understand Angle Protocol's Borrowing Module is available [here](https://docs.angle.money).
 
-Developers documentation to understand the smart contract architecture is available [here](https://developers.angle.money/borrowing-module-contracts/architecture-overview).
+Developers documentation to understand how these smart contracts work together is available [here](https://developers.angle.money/borrowing-module-contracts/architecture-overview).
 
 Whitepaper for the module can be found [here](https://docs.angle.money/overview/whitepapers).
 
 ## Module Architecture
 
 ![Module Architecture](AngleBorrowingArchitecture.png)
+
+## Audits
+
+The contracts of this module have been audited by [Chainsecurity](https://chainsecurity.com/security-audit/angle-protocol-borrowing-module/). The audit reports can be found in the `audits/` folder of this repo.
+
+All Angle Protocol related audits can be found in [this page](https://docs.angle.money/resources/audits) of our docs.
 
 ## Some Remarks on the Code
 
@@ -113,3 +125,13 @@ We will promise the following:
 - If you so wish we will keep you informed of the progress towards resolving the problem;
 - In the public information concerning the problem reported, we will give your name as the discoverer of the problem (unless you desire otherwise); and
 - As a token of our gratitude for your assistance, we offer a reward for every report of a security problem that was not yet known to us. The amount of the reward will be determined based on the severity of the leak, the quality of the report and any additional assistance you provide.
+
+## Further Information
+
+For a broader overview of the protocol and its different modules, you can also check [this overview page](https://developers.angle.money) of our developers documentation.
+
+Other Angle-related smart contracts can be found in the following repositories:
+
+- [Angle Core module contracts](https://github.com/AngleProtocol/angle-core)
+
+Otherwise, for more info about the protocol, check out [this portal](https://linktr.ee/angleprotocol) of resources.

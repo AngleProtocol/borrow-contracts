@@ -47,6 +47,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       const oracle = (await ethers.getContract(`Oracle_${vaultManagerParams.oracle}`)).address;
 
       console.log('Now deploying the Proxy for:', name);
+      console.log(`The params for this vaultManager are`);
+      console.log(vaultManagerParams.params);
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),
