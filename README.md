@@ -2,9 +2,11 @@
 
 [![CI](https://github.com/AngleProtocol/angle-borrow/workflows/CI/badge.svg)](https://github.com/AngleProtocol/angle-borrow/actions?query=workflow%3ACI)
 [![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-blue)](https://docs.angle.money/angle-borrowing-module/borrowing-module)
-[![Developers](https://img.shields.io/badge/developers-%F0%9F%93%84-pink)](https://developers.angle.money)
+[![Developers](https://img.shields.io/badge/developers-%F0%9F%93%84-pink)](https://developers.angle.money/borrowing-module-contracts/architecture-overview)
 
 ## Documentation
+
+### To Start With
 
 Angle is a decentralized stablecoin protocol, designed to be both over-collateralized and capital-efficient. For more information about the protocol, you can refer to [Angle Documentation](https://docs.angle.money).
 
@@ -16,9 +18,36 @@ Developers documentation to understand how these smart contracts work together i
 
 Whitepaper for the module can be found [here](https://docs.angle.money/overview/whitepapers).
 
+### Further Information
+
+For a broader overview of the protocol and its different modules, you can also check [this overview page](https://developers.angle.money) of our developers documentation.
+
+Other Angle-related smart contracts can be found in the following repositories:
+
+- [Angle Core module contracts](https://github.com/AngleProtocol/angle-core)
+- [Angle Strategies](https://github.com/AngleProtocol/angle-strategies)
+
+Otherwise, for more info about the protocol, check out [this portal](https://linktr.ee/angleprotocol) of resources.
+
 ## Module Architecture
 
 ![Module Architecture](AngleBorrowingArchitecture.png)
+
+### Remarks
+
+### Cross-module Contracts
+
+Some smart contracts of the protocol are used across the different modules of Angle (like the `agToken` contract) and you'll sometimes see different versions across the different repositories of the protocol.
+
+Here are some cross-module contracts and the repos in which you should look for their correct and latest version:
+
+- [`angle-core`](https://github.com/AngleProtocol/angle-core): All DAO-related contracts (`ANGLE`, `veANGLE`, gauges, surplus distribution, ...), `AngleRouter` contract
+- [`angle-borrow`](https://github.com/AngleProtocol/angle-borrow): `agToken` contract
+- [`angle-strategies`](https://github.com/AngleProtocol/angle-strategies): Yield strategies of the protocol
+
+### Error Messages
+
+Some smart contracts use error messages. These error messages are sometimes encoded in numbers rather than as custom errors like done most of the time. The conversion from numbers to error messages can be found in `errorMessages.json`.
 
 ## Setup
 
@@ -93,10 +122,6 @@ yarn generate-types-from-abis
 
 You can also delete `node_modules`, `cache`, and then re-install dependancies with `yarn install --frozen-lockfile`.
 
-### Remarks
-
-Some smart contracts use error messages. These error messages are sometimes encoded in numbers rather than as custom errors like done most of the time. The conversion from numbers to error messages can be found in `errorMessages.json`.
-
 ## Audits
 
 The contracts of this module have been audited by [Chainsecurity](https://chainsecurity.com/security-audit/angle-protocol-borrowing-module/). The audit reports can be found in the `audits/` folder of this repo.
@@ -123,14 +148,3 @@ For more details, please refer to the [official page of the bounty on Immunefi](
 | Medium   | USD \$2,500         |
 
 All bug reports must include a Proof of Concept demonstrating how the vulnerability can be exploited to be eligible for a reward. This may be a smart contract itself or a transaction.
-
-## Further Information
-
-For a broader overview of the protocol and its different modules, you can also check [this overview page](https://developers.angle.money) of our developers documentation.
-
-Other Angle-related smart contracts can be found in the following repositories:
-
-- [Angle Core module contracts](https://github.com/AngleProtocol/angle-core)
-- [Angle Strategies](https://github.com/AngleProtocol/angle-strategies)
-
-Otherwise, for more info about the protocol, check out [this portal](https://linktr.ee/angleprotocol) of resources.
