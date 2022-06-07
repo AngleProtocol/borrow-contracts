@@ -112,7 +112,7 @@ const config: HardhatUserConfig = {
     },
     mainnetForkRemote: {
       live: false,
-      url: process.env.LOCAL_MAINNET_FORK_IP,
+      url: nodeUrl('mainnetForkRemote'),
       chainId: 1,
     },
     mumbai: {
