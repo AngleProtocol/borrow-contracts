@@ -39,7 +39,7 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
       log: !argv.ci,
     });
     const oracle3 = (await deployments.get('Oracle_WSTETH_EUR')).address;
-    console.log(`Successfully deployed Oracle wStETH/EUR at the address ${oracle3}`);
+    console.log(`Successfully deployed Oracle wstETH/EUR at the address ${oracle3}`);
     console.log('');
   } else if (network.config.chainId === ChainId.RINKEBY) {
     const json = await import('./networks/' + network.name + '.json');
