@@ -47,8 +47,19 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       const oracle = (await ethers.getContract(`Oracle_${vaultManagerParams.oracle}`)).address;
 
       console.log('Now deploying the Proxy for:', name);
-      console.log(`The params for this vaultManager are`);
-      console.log(vaultManagerParams.params);
+      console.log(`The params for this vaultManager are:`);
+      console.log(`debtCeiling: ${vaultManagerParams.params.debtCeiling.toString()}`);
+      console.log(`collateralFactor: ${vaultManagerParams.params.collateralFactor.toString()}`);
+      console.log(`targetHealthFactor: ${vaultManagerParams.params.targetHealthFactor.toString()}`);
+      console.log(`borrowFee: ${vaultManagerParams.params.borrowFee.toString()}`);
+      console.log(`repayFee: ${vaultManagerParams.params.repayFee.toString()}`);
+      console.log(`interestRate: ${vaultManagerParams.params.interestRate.toString()}`);
+      console.log(`liquidationSurcharge: ${vaultManagerParams.params.liquidationSurcharge.toString()}`);
+      console.log(`maxLiquidationDiscount: ${vaultManagerParams.params.maxLiquidationDiscount.toString()}`);
+      console.log(`baseBoost: ${vaultManagerParams.params.baseBoost.toString()}`);
+      console.log(`whitelistingActivated: ${vaultManagerParams.params.whitelistingActivated.toString()}`);
+      console.log('');
+
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),
