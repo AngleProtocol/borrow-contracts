@@ -1,5 +1,5 @@
 import { deployments, ethers } from 'hardhat';
-import { VaultManager, VaultManager__factory } from '../../typechain';
+import { VaultManager, VaultManager__factory, FlashAngle, FlashAngle__factory } from '../../typechain';
 import { CONSTANTS } from '@angleprotocol/sdk';
 // import params from '../../deploy/networks';
 import { expect } from '../../test/utils/chai-setup';
@@ -7,6 +7,7 @@ import { parseEther } from 'ethers/lib/utils';
 
 async function main() {
   let vaultManager: VaultManager;
+  let flashAngle: FlashAngle;
   const symbols = ['wETH_EUR', 'wstETH_EUR', 'wBTC_EUR'];
   const { deployer } = await ethers.getNamedSigners();
   const params = CONSTANTS(1);
@@ -17,11 +18,17 @@ async function main() {
       const name = `VaultManager_${collat}_${stable}`;
       console.log(`Looking at the params of VaultManager ${vaultManagerParams.symbol}`);
       const vaultManagerAddress = (await deployments.get(name)).address;
+      const flashAngleAddress = (await deployments.get('FlashAngle')).address;
       vaultManager = new ethers.Contract(
         vaultManagerAddress,
         VaultManager__factory.createInterface(),
         deployer,
       ) as VaultManager;
+      flashAngle = new ethers.Contract(
+        flashAngleAddress,
+        FlashAngle__factory.createInterface(),
+        deployer,
+      ) as FlashAngle;
       expect(await vaultManager.debtCeiling()).to.be.equal(vaultManagerParams.params.debtCeiling);
       expect(await vaultManager.collateralFactor()).to.be.equal(vaultManagerParams.params.collateralFactor);
       expect(await vaultManager.targetHealthFactor()).to.be.equal(vaultManagerParams.params.targetHealthFactor);
@@ -44,6 +51,10 @@ async function main() {
       console.log((await vaultManager.yLiquidationBoost(0)).toString());
       console.log((await vaultManager.whitelistingActivated()).toString());
       console.log((await vaultManager.dust()).toString());
+
+      console.log('Flash loan and core');
+      console.log((await deployments.get('CoreBorrow')).address);
+      console.log(await flashAngle.core());
     }
   }
 }
