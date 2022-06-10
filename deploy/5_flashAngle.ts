@@ -1,6 +1,7 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
+import { expect } from '../test/utils/chai-setup';
 
 import { FlashAngle__factory } from '../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
@@ -17,6 +18,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
   }
+
+  expect(proxyAdmin).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
 
   console.log('Now deploying FlashAngle');
   console.log('Starting with the implementation');

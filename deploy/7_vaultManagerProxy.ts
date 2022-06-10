@@ -4,6 +4,7 @@ import { Contract } from 'ethers';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
+import { expect } from '../test/utils/chai-setup';
 
 import { Treasury__factory, VaultManager__factory } from '../typechain';
 import params from './networks';
@@ -34,6 +35,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdminAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
     signer = deployer;
   }
+
+  expect(proxyAdminAddress).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
 
   const treasury = new Contract(treasuryAddress, Treasury__factory.abi, signer);
 

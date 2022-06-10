@@ -1,6 +1,7 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
+import { expect } from '../test/utils/chai-setup';
 
 import { AgTokenSideChain, AgTokenSideChain__factory, Treasury__factory } from '../typechain';
 
@@ -22,6 +23,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
     agTokenAddress = (await deployments.get('AgToken')).address;
   }
+  expect(proxyAdmin).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
+  expect(agTokenAddress).to.be.equal('0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8');
 
   console.log('Now deploying Treasury');
   console.log('Starting with the implementation');
@@ -39,10 +42,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const coreBorrow = await deployments.get('CoreBorrow');
 
-  const dataTreasury = new ethers.Contract(treasuryImplementation, treasuryInterface).interface.encodeFunctionData(
-    'initialize',
-    [coreBorrow.address, agTokenAddress],
-  );
+  const dataTreasury = new ethers.Contract(
+    treasuryImplementation,
+    treasuryInterface,
+  ).interface.encodeFunctionData('initialize', [coreBorrow.address, agTokenAddress]);
 
   console.log('Now deploying the Proxy');
   await deploy('Treasury', {
