@@ -44,8 +44,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
-      const collat = vaultManagerParams.symbol.split('/')[0];
-      const stable = vaultManagerParams.symbol.split('/')[1];
+      const collat = vaultManagerParams.symbol.split('-')[0];
+      const stable = vaultManagerParams.symbol.split('-')[1];
       const name = `VaultManager_${collat}_${stable}`;
       const oracle = (await ethers.getContract(`Oracle_${vaultManagerParams.oracle}`)).address;
 
