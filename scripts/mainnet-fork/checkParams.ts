@@ -8,27 +8,21 @@ import { parseEther } from 'ethers/lib/utils';
 async function main() {
   let vaultManager: VaultManager;
   let flashAngle: FlashAngle;
-  const symbols = ['wETH_EUR', 'wstETH_EUR', 'wBTC_EUR'];
   const { deployer } = await ethers.getNamedSigners();
   const params = CONSTANTS(1);
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
-      const collat = vaultManagerParams.symbol.split('/')[0];
-      const stable = vaultManagerParams.symbol.split('/')[1];
+      const collat = vaultManagerParams.symbol.split('-')[0];
+      const stable = vaultManagerParams.symbol.split('-')[1];
       const name = `VaultManager_${collat}_${stable}`;
       console.log(`Looking at the params of VaultManager ${vaultManagerParams.symbol}`);
       const vaultManagerAddress = (await deployments.get(name)).address;
-      const flashAngleAddress = (await deployments.get('FlashAngle')).address;
+
       vaultManager = new ethers.Contract(
         vaultManagerAddress,
         VaultManager__factory.createInterface(),
         deployer,
       ) as VaultManager;
-      flashAngle = new ethers.Contract(
-        flashAngleAddress,
-        FlashAngle__factory.createInterface(),
-        deployer,
-      ) as FlashAngle;
       expect(await vaultManager.debtCeiling()).to.be.equal(vaultManagerParams.params.debtCeiling);
       expect(await vaultManager.collateralFactor()).to.be.equal(vaultManagerParams.params.collateralFactor);
       expect(await vaultManager.targetHealthFactor()).to.be.equal(vaultManagerParams.params.targetHealthFactor);
@@ -51,11 +45,12 @@ async function main() {
       console.log((await vaultManager.yLiquidationBoost(0)).toString());
       console.log((await vaultManager.whitelistingActivated()).toString());
       console.log((await vaultManager.dust()).toString());
-
-      console.log('Flash loan and core');
-      console.log((await deployments.get('CoreBorrow')).address);
-      console.log(await flashAngle.core());
     }
+    const flashAngleAddress = (await deployments.get('FlashAngle')).address;
+    flashAngle = new ethers.Contract(flashAngleAddress, FlashAngle__factory.createInterface(), deployer) as FlashAngle;
+    console.log('Flash loan and core');
+    console.log((await deployments.get('CoreBorrow')).address);
+    console.log(await flashAngle.core());
   }
 }
 
