@@ -28,12 +28,16 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log('Now deploying CoreBorrow');
   console.log('Starting with the implementation');
+  /*
   await deploy('CoreBorrow_Implementation', {
     contract: 'CoreBorrow',
     from: deployer.address,
     log: !argv.ci,
   });
-  const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
+  */
+  // const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
+
+  const coreBorrowImplementation = '0x4D144B7355bC2C33FA091339279e9D77261461fE';
 
   console.log(`Successfully deployed the implementation for CoreBorrow at ${coreBorrowImplementation}`);
   console.log('');
