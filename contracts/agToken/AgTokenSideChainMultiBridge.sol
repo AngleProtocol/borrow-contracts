@@ -103,12 +103,13 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @param bridgeToken Bridge token to use to mint
     /// @param amount Amount of bridge tokens to send
     /// @param to Address to which the stablecoin should be sent
+    /// @return Amount of the canonical stablecoin actually minted
     /// @dev Some fees may be taken by the protocol depending on the token used and on the address calling
     function swapIn(
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
@@ -119,18 +120,20 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
             canonicalOut -= (canonicalOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         _mint(to, canonicalOut);
+        return canonicalOut;
     }
 
     /// @notice Burns the canonical token in exchange for a bridge token
     /// @param bridgeToken Bridge token required
     /// @param amount Amount of canonical tokens to burn
     /// @param to Address to which the bridge token should be sent
+    /// @return Amount of bridge tokens actually sent back
     /// @dev Some fees may be taken by the protocol depending on the token used and on the address calling
     function swapOut(
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         _burn(msg.sender, amount);
@@ -139,6 +142,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
             bridgeOut -= (bridgeOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         IERC20(bridgeToken).safeTransfer(to, bridgeOut);
+        return bridgeOut;
     }
 
     // ======================= Governance Functions ================================
