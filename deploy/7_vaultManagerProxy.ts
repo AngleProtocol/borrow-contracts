@@ -36,8 +36,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     signer = deployer;
   }
 
-  expect(proxyAdminAddress).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
-
   const treasury = new Contract(treasuryAddress, Treasury__factory.abi, signer);
 
   console.log('Deploying proxies for vaultManager');

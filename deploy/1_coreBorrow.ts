@@ -24,8 +24,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log('Let us get started with deployment');
 
-  expect(proxyAdmin).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
-
   console.log('Now deploying CoreBorrow');
   console.log('Starting with the implementation');
 

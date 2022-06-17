@@ -19,8 +19,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
   }
 
-  expect(proxyAdmin).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
-
   console.log('Now deploying FlashAngle');
   console.log('Starting with the implementation');
   await deploy('FlashAngle_Implementation', {

@@ -23,8 +23,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
     agTokenAddress = (await deployments.get('AgToken')).address;
   }
-  expect(proxyAdmin).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
-  expect(agTokenAddress).to.be.equal('0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8');
 
   console.log('Now deploying Treasury');
   console.log('Starting with the implementation');
