@@ -4,6 +4,7 @@ import { Contract } from 'ethers';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
+import { expect } from '../test/utils/chai-setup';
 
 import { Treasury__factory, VaultManager__factory } from '../typechain';
 import params from './networks';
@@ -35,20 +36,33 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     signer = deployer;
   }
 
+  expect(proxyAdminAddress).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
+
   const treasury = new Contract(treasuryAddress, Treasury__factory.abi, signer);
 
   console.log('Deploying proxies for vaultManager');
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
-      const collat = vaultManagerParams.symbol.split('/')[0];
-      const stable = vaultManagerParams.symbol.split('/')[1];
+      const collat = vaultManagerParams.symbol.split('-')[0];
+      const stable = vaultManagerParams.symbol.split('-')[1];
       const name = `VaultManager_${collat}_${stable}`;
       const oracle = (await ethers.getContract(`Oracle_${vaultManagerParams.oracle}`)).address;
 
       console.log('Now deploying the Proxy for:', name);
-      console.log(`The params for this vaultManager are`);
-      console.log(vaultManagerParams.params);
+      console.log(`The params for this vaultManager are:`);
+      console.log(`debtCeiling: ${vaultManagerParams.params.debtCeiling.toString()}`);
+      console.log(`collateralFactor: ${vaultManagerParams.params.collateralFactor.toString()}`);
+      console.log(`targetHealthFactor: ${vaultManagerParams.params.targetHealthFactor.toString()}`);
+      console.log(`borrowFee: ${vaultManagerParams.params.borrowFee.toString()}`);
+      console.log(`repayFee: ${vaultManagerParams.params.repayFee.toString()}`);
+      console.log(`interestRate: ${vaultManagerParams.params.interestRate.toString()}`);
+      console.log(`liquidationSurcharge: ${vaultManagerParams.params.liquidationSurcharge.toString()}`);
+      console.log(`maxLiquidationDiscount: ${vaultManagerParams.params.maxLiquidationDiscount.toString()}`);
+      console.log(`baseBoost: ${vaultManagerParams.params.baseBoost.toString()}`);
+      console.log(`whitelistingActivated: ${vaultManagerParams.params.whitelistingActivated.toString()}`);
+      console.log('');
+
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),

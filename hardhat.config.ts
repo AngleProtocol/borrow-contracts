@@ -79,6 +79,7 @@ const config: HardhatUserConfig = {
     },
   },
   defaultNetwork: 'hardhat',
+  // For the lists of Chain ID: https://chainlist.org
   networks: {
     hardhat: {
       accounts: accounts('mainnet'),
@@ -126,6 +127,7 @@ const config: HardhatUserConfig = {
       url: nodeUrl('polygon'),
       accounts: accounts('polygon'),
       gas: 'auto',
+      chainId: 137,
     },
     mainnet: {
       live: true,
@@ -134,6 +136,34 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       gasMultiplier: 1.3,
       chainId: 1,
+    },
+    optimism: {
+      live: true,
+      url: nodeUrl('optimism'),
+      accounts: accounts('optimism'),
+      gas: 'auto',
+      chainId: 10,
+    },
+    arbitrum: {
+      live: true,
+      url: nodeUrl('arbitrum'),
+      accounts: accounts('arbitrum'),
+      gas: 'auto',
+      chainId: 42161,
+    },
+    avalanche: {
+      live: true,
+      url: nodeUrl('avalanche'),
+      accounts: accounts('avalanche'),
+      gas: 'auto',
+      chainId: 43114,
+    },
+    aurora: {
+      live: true,
+      url: nodeUrl('aurora'),
+      accounts: accounts('aurora'),
+      gas: 'auto',
+      chainId: 1313161554,
     },
   },
   paths: {

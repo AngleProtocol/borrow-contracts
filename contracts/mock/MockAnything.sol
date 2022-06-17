@@ -9,6 +9,7 @@ contract MockAnything {
     error CustomErrorWithValue(uint256);
 
     function fail(uint256 value) external view returns (uint256) {
+        stateVar;
         if (value < 10) {
             revert CustomError();
         }

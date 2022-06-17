@@ -3,6 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { CoreBorrow__factory } from '../typechain';
+import { expect } from '../test/utils/chai-setup';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
@@ -21,14 +22,21 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
   }
 
+  console.log('Let us get started with deployment');
+
+  expect(proxyAdmin).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
+
   console.log('Now deploying CoreBorrow');
   console.log('Starting with the implementation');
+
   await deploy('CoreBorrow_Implementation', {
     contract: 'CoreBorrow',
     from: deployer.address,
     log: !argv.ci,
   });
   const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
+
+  // const coreBorrowImplementation = '0x4D144B7355bC2C33FA091339279e9D77261461fE';
 
   console.log(`Successfully deployed the implementation for CoreBorrow at ${coreBorrowImplementation}`);
   console.log('');

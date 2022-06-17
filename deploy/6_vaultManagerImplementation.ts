@@ -11,7 +11,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   await deploy('VaultManager_Implementation', {
     contract: 'VaultManager',
     from: deployer.address,
-    args: [parseEther('10000'), parseEther('10000')], // TODO Dust Parameters
+    args: [parseEther('10000'), parseEther('10000')],
     log: !argv.ci,
   });
 
