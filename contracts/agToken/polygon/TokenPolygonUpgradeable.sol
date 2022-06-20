@@ -259,7 +259,7 @@ contract TokenPolygonUpgradeable is
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
@@ -270,6 +270,7 @@ contract TokenPolygonUpgradeable is
             canonicalOut -= (canonicalOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         _mint(to, canonicalOut);
+        return canonicalOut;
     }
 
     /// @notice Burns the canonical token in exchange for a bridge token
@@ -281,7 +282,7 @@ contract TokenPolygonUpgradeable is
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         _burnCustom(msg.sender, amount);
@@ -290,6 +291,7 @@ contract TokenPolygonUpgradeable is
             bridgeOut -= (bridgeOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         IERC20(bridgeToken).safeTransfer(to, bridgeOut);
+        return bridgeOut;
     }
 
     // ======================= Governance Functions ================================
