@@ -208,10 +208,64 @@ contract('AgTokenSideChainMultiBridge', () => {
       });
     });
   });
-  describe('setLimit', () => {
+  describe('addKeeper', () => {
     it('reverts - non governor and non guardian', async () => {
+      await expect(agToken.connect(alice).addKeeper(bridgeToken.address)).to.be.revertedWith('NotGovernorOrGuardian');
+    });
+    it('reverts - zero address', async () => {
+      await expect(agToken.connect(deployer).addKeeper(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+    });
+    it('success - keeper role granted', async () => {
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      const receipt = await (await agToken.connect(deployer).addKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: true,
+      });
+      await expect(agToken.connect(alice).addKeeper(bridgeToken.address)).to.be.revertedWith('NotGovernorOrGuardian');
+    });
+  });
+  describe('removeKeeper', () => {
+    it('reverts - non governor and non guardian', async () => {
+      await expect(agToken.connect(alice).removeKeeper(bridgeToken.address)).to.be.revertedWith(
+        'NotGovernorOrGuardianOrKeeper',
+      );
+    });
+    it('success - from governor or guardian', async () => {
+      await agToken.connect(deployer).addKeeper(alice.address);
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
+      const receipt = await (await agToken.connect(deployer).removeKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: false,
+      });
+    });
+    it('success - from keeper', async () => {
+      await agToken.connect(deployer).addKeeper(alice.address);
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
+      const receipt = await (await agToken.connect(alice).removeKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: false,
+      });
+    });
+    it('success - from a random address that is not keeper', async () => {
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      const receipt = await (await agToken.connect(alice).removeKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: false,
+      });
+    });
+  });
+  describe('setLimit', () => {
+    it('reverts - non governor and non guardian and non keeper', async () => {
       await expect(agToken.connect(alice).setLimit(bridgeToken.address, parseEther('1'))).to.be.revertedWith(
-        'NotGovernorOrGuardian',
+        'NotGovernorOrGuardianOrKeeper',
       );
     });
     it('reverts - non allowed token', async () => {
@@ -221,6 +275,15 @@ contract('AgTokenSideChainMultiBridge', () => {
     });
     it('success - value updated', async () => {
       const receipt = await (await agToken.connect(deployer).setLimit(bridgeToken.address, parseEther('1000'))).wait();
+      inReceipt(receipt, 'BridgeTokenLimitUpdated', {
+        bridgeToken: bridgeToken.address,
+        limit: parseEther('1000'),
+      });
+      expect((await agToken.bridges(bridgeToken.address)).limit).to.be.equal(parseEther('1000'));
+    });
+    it('success - value updated from keeper', async () => {
+      await agToken.connect(deployer).addKeeper(alice.address);
+      const receipt = await (await agToken.connect(alice).setLimit(bridgeToken.address, parseEther('1000'))).wait();
       inReceipt(receipt, 'BridgeTokenLimitUpdated', {
         bridgeToken: bridgeToken.address,
         limit: parseEther('1000'),
@@ -258,7 +321,7 @@ contract('AgTokenSideChainMultiBridge', () => {
   describe('toggleBridge', () => {
     it('reverts - non governor and non guardian', async () => {
       await expect(agToken.connect(alice).toggleBridge(bridgeToken.address)).to.be.revertedWith(
-        'NotGovernorOrGuardian',
+        'NotGovernorOrGuardianOrKeeper',
       );
     });
     it('reverts - non existing bridge', async () => {
@@ -281,6 +344,15 @@ contract('AgTokenSideChainMultiBridge', () => {
       });
       expect((await agToken.bridges(bridgeToken.address)).paused).to.be.equal(false);
     });
+    it('success - when keeper is calling', async () => {
+      await agToken.connect(deployer).addKeeper(alice.address);
+      const receipt = await (await agToken.connect(alice).toggleBridge(bridgeToken.address)).wait();
+      inReceipt(receipt, 'BridgeTokenToggled', {
+        bridgeToken: bridgeToken.address,
+        toggleStatus: true,
+      });
+      expect((await agToken.bridges(bridgeToken.address)).paused).to.be.equal(true);
+    });
   });
   describe('toggleFeesForAddress', () => {
     it('reverts - non governor and non guardian', async () => {
@@ -292,18 +364,18 @@ contract('AgTokenSideChainMultiBridge', () => {
       const receipt = await (await agToken.connect(deployer).toggleFeesForAddress(alice.address)).wait();
       inReceipt(receipt, 'FeeToggled', {
         theAddress: alice.address,
-        toggleStatus: true,
+        toggleStatus: 1,
       });
-      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(true);
+      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(1);
     });
     it('success - address unexempted', async () => {
       await agToken.connect(deployer).toggleFeesForAddress(alice.address);
       const receipt = await (await agToken.connect(deployer).toggleFeesForAddress(alice.address)).wait();
       inReceipt(receipt, 'FeeToggled', {
         theAddress: alice.address,
-        toggleStatus: false,
+        toggleStatus: 0,
       });
-      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(false);
+      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(0);
     });
   });
 

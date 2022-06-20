@@ -84,15 +84,15 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Struct with some data about a specific bridge token
     struct BridgeDetails {
-        // Whether the associated token is allowed or not
-        bool allowed;
-        // Whether swapping in and out from the associated token is paused or not
-        bool paused;
         // Limit on the balance of bridge token held by the contract: it is designed
         // to reduce the exposure of the system to hacks
         uint256 limit;
         // Fee taken for swapping in and out the token
         uint64 fee;
+        // Whether the associated token is allowed or not
+        bool allowed;
+        // Whether swapping in and out from the associated token is paused or not
+        bool paused;
     }
 
     /// @notice Maps a bridge token to data
