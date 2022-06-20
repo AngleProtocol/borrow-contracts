@@ -13,11 +13,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const core = (await deployments.get('CoreBorrow')).address;
   const routerAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].AngleRouter!;
 
-  expect(routerAddress).to.be.equal('0xBB755240596530be0c1DE5DFD77ec6398471561d');
-  expect(json.tokens.wstETH).to.be.equal('0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0');
-  expect(json.uniswapV3Router).to.be.equal('0xE592427A0AEce92De3Edee1F18E0157C05861564');
-  expect(json.oneInchRouter).to.be.equal('0x1111111254fb6c44bAC0beD2854e76F90643097d');
-
   console.log('Now deploying the swapper contract');
 
   await deploy(`Swapper`, {

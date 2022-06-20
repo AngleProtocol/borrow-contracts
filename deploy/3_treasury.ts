@@ -22,6 +22,13 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // Otherwise, we're using the proxy admin address from the desired network and the newly deployed agToken
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
     agTokenAddress = (await deployments.get('AgToken')).address;
+    /* TODO Uncomment for real Polygon deployment
+    if (network.config.chainId !== ChainId.POLYGON) {
+      agTokenAddress = (await deployments.get('AgToken')).address;
+    } else {
+      agTokenAddress = CONTRACTS_ADDRESSES[ChainId.POLYGON].agEUR?.AgToken!;
+    }
+    */
   }
 
   console.log('Now deploying Treasury');

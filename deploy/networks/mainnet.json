@@ -5,5 +5,6 @@
     "wstETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
   },
   "uniswapV3Router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
-  "oneInchRouter": "0x1111111254fb6c44bAC0beD2854e76F90643097d"
+  "oneInchRouter": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+  "dust": "10000"
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
-    "deploy:mainnet": "hardhat deploy --network mainnet --tags swapper",
+    "deploy:mainnet": "hardhat deploy --network mainnet --tags multicall_with_failure",
     "deploy:rinkeby": "hardhat deploy --network rinkeby --tags unpausing",
     "deploy:optimism": "hardhat deploy --network optimism --tags proxyAdmin",
     "deploy:arbitrum": "hardhat deploy --network arbitrum --tags proxyAdmin",
@@ -21,7 +21,7 @@
     "lint:sol": "solhint --fix --max-warnings 20 \"contracts/**/*.sol\"",
     "mainnetForkRemote:deploy": "rm -rf ./deployments/mainnetForkRemote && hardhat deploy --network mainnetForkRemote --tags unpausing",
     "node:instant": "FORK=true hardhat node --tags instant",
-    "node:fork:implems": "FORK=true hardhat node --tags unpausing",
+    "node:fork:implems": "FORK=true hardhat node --tags multicall_with_failure",
     "node:fork:agTokenUpgrade": "FORK=true hardhat node --tags agTokenUpgrade",
     "node:fork:swapper": "FORK=true hardhat node --tags swapper",
     "prettier": "yarn prettier:js && yarn prettier:sol",
