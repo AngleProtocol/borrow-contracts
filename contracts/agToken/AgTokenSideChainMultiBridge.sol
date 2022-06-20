@@ -126,7 +126,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
-        if (isFeeExempt[msg.sender] > 0) {
+        if (isFeeExempt[msg.sender] == 0) {
             canonicalOut -= (canonicalOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         _mint(to, canonicalOut);
@@ -148,7 +148,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         _burn(msg.sender, amount);
         uint256 bridgeOut = amount;
-        if (isFeeExempt[msg.sender] > 0) {
+        if (isFeeExempt[msg.sender] == 0) {
             bridgeOut -= (bridgeOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         IERC20(bridgeToken).safeTransfer(to, bridgeOut);

@@ -100,7 +100,11 @@ contract TokenPolygonUpgradeable is
     /// @notice List of all bridge tokens
     address[] public bridgeTokensList;
     /// @notice Maps an address to whether it is exempt of fees for when it comes to swapping in and out
-    mapping(address => bool) public isFeeExempt;
+    mapping(address => uint256) public isFeeExempt;
+    /// @notice Maps an address to whether it is a keeper or not
+    mapping(address => uint256) public isKeeper;
+
+    uint256[44] private __gap;
 
     // ================================== Events ===================================
 
@@ -109,11 +113,12 @@ contract TokenPolygonUpgradeable is
     event BridgeTokenRemoved(address indexed bridgeToken);
     event BridgeTokenFeeUpdated(address indexed bridgeToken, uint64 fee);
     event BridgeTokenLimitUpdated(address indexed bridgeToken, uint256 limit);
-    event Recovered(address indexed token, address indexed to, uint256 amount);
-    event FeeToggled(address indexed theAddress, bool toggleStatus);
-    event TreasuryUpdated(address indexed _treasury);
+    event FeeToggled(address indexed theAddress, uint256 toggleStatus);
+    event KeeperToggled(address indexed keeper, bool toggleStatus);
     event MinterToggled(address indexed minter);
-
+    event Recovered(address indexed token, address indexed to, uint256 amount);
+    event TreasuryUpdated(address indexed _treasury);
+    
     // ================================== Errors ===================================
 
     error AssetStillControlledInReserves();
@@ -123,11 +128,13 @@ contract TokenPolygonUpgradeable is
     error InvalidTreasury();
     error NotGovernor();
     error NotGovernorOrGuardian();
+    error NotGovernorOrGuardianOrKeeper();
     error NotMinter();
     error NotTreasury();
     error TooBigAmount();
     error TooHighParameterValue();
     error TreasuryAlreadyInitialized();
+    error ZeroAddress();
 
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
@@ -151,6 +158,12 @@ contract TokenPolygonUpgradeable is
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
         if (!ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        _;
+    }
+
+    /// @notice Checks whether the `msg.sender` has the governor role, the guardian role or the keeper role
+    modifier onlyGovernorOrGuardianOrKeeper() {
+        if ((isKeeper[msg.sender] == 0) && !ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardianOrKeeper();
         _;
     }
 
@@ -253,7 +266,7 @@ contract TokenPolygonUpgradeable is
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
-        if (!isFeeExempt[msg.sender]) {
+        if (isFeeExempt[msg.sender] == 0) {
             canonicalOut -= (canonicalOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         _mint(to, canonicalOut);
@@ -273,7 +286,7 @@ contract TokenPolygonUpgradeable is
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         _burnCustom(msg.sender, amount);
         uint256 bridgeOut = amount;
-        if (!isFeeExempt[msg.sender]) {
+        if (isFeeExempt[msg.sender] == 0) {
             bridgeOut -= (bridgeOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         IERC20(bridgeToken).safeTransfer(to, bridgeOut);
@@ -323,6 +336,24 @@ contract TokenPolygonUpgradeable is
         emit BridgeTokenRemoved(bridgeToken);
     }
 
+    /// @notice Adds a keeper able to pause a bridge token or to set the limit for a `bridgeToken`
+    /// @param keeperAddress Address with a keeper right
+    /// @dev `keeperAddress` should be bots measuring anormal activity at the bridge level
+    function addKeeper(address keeperAddress) external onlyGovernorOrGuardian {
+        if(keeperAddress == address(0)) revert ZeroAddress();
+        isKeeper[keeperAddress] = 1;
+        emit KeeperToggled(keeperAddress, true);
+    }
+
+    /// @notice Removes the keeper role to an address
+    /// @param keeperAddress Address with a keeper right
+    /// @dev A keeper can self revoke itself, just like the governor and guardian can revoke any keeper
+    function removeKeeper(address keeperAddress) external {
+        if (msg.sender!=keeperAddress && !ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardianOrKeeper();
+        isKeeper[keeperAddress] = 0;
+        emit KeeperToggled(keeperAddress, false);
+    }
+
     /// @notice Recovers any ERC20 token
     /// @dev Can be used to withdraw bridge tokens for them to be de-bridged on mainnet
     function recoverERC20(
@@ -335,7 +366,7 @@ contract TokenPolygonUpgradeable is
     }
 
     /// @notice Updates the `limit` amount for `bridgeToken`
-    function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardian {
+    function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardianOrKeeper {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bridges[bridgeToken].limit = limit;
         emit BridgeTokenLimitUpdated(bridgeToken, limit);
@@ -350,7 +381,7 @@ contract TokenPolygonUpgradeable is
     }
 
     /// @notice Pauses or unpauses swapping in and out for a token
-    function toggleBridge(address bridgeToken) external onlyGovernorOrGuardian {
+    function toggleBridge(address bridgeToken) external onlyGovernorOrGuardianOrKeeper {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bool pausedStatus = bridges[bridgeToken].paused;
         bridges[bridgeToken].paused = !pausedStatus;
@@ -359,10 +390,8 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Toggles fees for the address `theAddress`
     function toggleFeesForAddress(address theAddress) external onlyGovernorOrGuardian {
-        bool feeExemptStatus = isFeeExempt[theAddress];
-        isFeeExempt[theAddress] = !feeExemptStatus;
-        emit FeeToggled(theAddress, !feeExemptStatus);
+        uint256 feeExemptStatus = 1-isFeeExempt[theAddress];
+        isFeeExempt[theAddress] = feeExemptStatus;
+        emit FeeToggled(theAddress, feeExemptStatus);
     }
-
-    uint256[49] private __gap;
 }
