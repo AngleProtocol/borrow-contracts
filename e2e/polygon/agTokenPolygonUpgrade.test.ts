@@ -141,7 +141,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       expect(await coreBorrow.isGovernorOrGuardian(governor)).to.be.equal(true);
       expect(await coreBorrow.isFlashLoanerTreasury(treasury.address)).to.be.equal(true);
       expect(await coreBorrow.isFlashLoanerTreasury(guardian)).to.be.equal(false);
-      expect(await coreBorrow.getRoleAdmin(guardianRole)).to.be.equal(guardianRole);
+      expect(await coreBorrow.getRoleAdmin(guardianRole)).to.be.equal(governorRole);
       expect(await coreBorrow.getRoleAdmin(governorRole)).to.be.equal(governorRole);
       expect(await coreBorrow.getRoleAdmin(flashloanerTreasuryRole)).to.be.equal(governorRole);
       expect(await coreBorrow.hasRole(guardianRole, guardian)).to.be.equal(true);
@@ -487,6 +487,60 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
         .addBridgeToken(bridgeToken.address, parseEther('100'), parseAmount.gwei(0.03), true);
     });
   });
+  describe('addKeeper', () => {
+    it('reverts - non governor and non guardian', async () => {
+      await expect(agToken.connect(alice).addKeeper(bridgeToken.address)).to.be.revertedWith('NotGovernorOrGuardian');
+    });
+    it('reverts - zero address', async () => {
+      await expect(agToken.connect(deployer).addKeeper(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+    });
+    it('success - keeper role granted', async () => {
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      const receipt = await (await agToken.connect(deployer).addKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: true,
+      });
+      await expect(agToken.connect(alice).addKeeper(bridgeToken.address)).to.be.revertedWith('NotGovernorOrGuardian');
+    });
+  });
+  describe('removeKeeper', () => {
+    it('reverts - non governor and non guardian', async () => {
+      await expect(agToken.connect(alice).removeKeeper(bridgeToken.address)).to.be.revertedWith(
+        'NotGovernorOrGuardianOrKeeper',
+      );
+    });
+    it('success - from governor or guardian', async () => {
+      await agToken.connect(deployer).addKeeper(alice.address);
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
+      const receipt = await (await agToken.connect(deployer).removeKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: false,
+      });
+    });
+    it('success - from keeper', async () => {
+      await agToken.connect(deployer).addKeeper(alice.address);
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
+      const receipt = await (await agToken.connect(alice).removeKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: false,
+      });
+    });
+    it('success - from a random address that is not keeper', async () => {
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      const receipt = await (await agToken.connect(alice).removeKeeper(alice.address)).wait();
+      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
+      inReceipt(receipt, 'KeeperToggled', {
+        keeper: alice.address,
+        toggleStatus: false,
+      });
+    });
+  });
 
   describe('recoverERC20', () => {
     it('reverts - non governor', async () => {
@@ -519,7 +573,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   describe('setLimit', () => {
     it('reverts - non governor and non guardian', async () => {
       await expect(agToken.connect(alice).setLimit(bridgeToken.address, parseEther('1'))).to.be.revertedWith(
-        'NotGovernorOrGuardian',
+        'NotGovernorOrGuardianOrKeeper',
       );
     });
     it('reverts - non allowed token', async () => {
@@ -570,7 +624,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   describe('toggleBridge', () => {
     it('reverts - non governor and non guardian', async () => {
       await expect(agToken.connect(alice).toggleBridge(bridgeToken.address)).to.be.revertedWith(
-        'NotGovernorOrGuardian',
+        'NotGovernorOrGuardianOrKeeper',
       );
     });
     it('reverts - non existing bridge', async () => {
@@ -613,9 +667,9 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       ).wait();
       inReceipt(receipt, 'FeeToggled', {
         theAddress: alice.address,
-        toggleStatus: true,
+        toggleStatus: 1,
       });
-      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(true);
+      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(1);
     });
     it('success - address unexempted', async () => {
       const receipt = await (
@@ -623,9 +677,9 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       ).wait();
       inReceipt(receipt, 'FeeToggled', {
         theAddress: alice.address,
-        toggleStatus: false,
+        toggleStatus: 0,
       });
-      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(false);
+      expect(await agToken.isFeeExempt(alice.address)).to.be.equal(0);
     });
   });
 
