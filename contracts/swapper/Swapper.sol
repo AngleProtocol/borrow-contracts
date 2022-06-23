@@ -151,7 +151,8 @@ contract Swapper is ISwapper {
         // The `outTokenRecipient` may already have enough in balance, in which case there's no need to transfer
         // this address the token and everything can be given already to the `to` address
         uint256 outTokenBalanceRecipient = outToken.balanceOf(outTokenRecipient);
-        if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient) outToken.safeTransfer(to, outTokenBalance);
+        if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient)
+            outToken.safeTransfer(to, outTokenBalance);
         else {
             // The `outTokenRecipient` should receive the delta to make sure its end balance is equal to `outTokenOwed`
             // Any leftover in this case is sent to the `to` address
@@ -162,7 +163,7 @@ contract Swapper is ISwapper {
         // Reusing the `inTokenObtained` variable for the `inToken` balance
         // Sending back the remaining amount of inTokens to the `to` address: it is possible that not the full `inTokenObtained`
         // is swapped to `outToken` if we're using the `1Inch` payload
-        // If there has been a burn, the whole `inToken` balance is burnt, but in this case the `inToken` variable has the 
+        // If there has been a burn, the whole `inToken` balance is burnt, but in this case the `inToken` variable has the
         // `intermediateToken` reference and what is sent back to the `to` address is the leftover balance of this token
         inTokenObtained = inToken.balanceOf(address(this));
         if (inTokenObtained > 0) inToken.safeTransfer(to, inTokenObtained);

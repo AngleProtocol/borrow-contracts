@@ -131,10 +131,10 @@ contract('VaultManager', () => {
   });
   describe('oracle', () => {
     it('success - read', async () => {
-      const oracle = ((await ethers.getContractAt(
+      const oracle = (await ethers.getContractAt(
         Oracle__factory.abi,
         await vaultManager.oracle(),
-      )) as unknown) as Oracle;
+      )) as unknown as Oracle;
       expect(await oracle.read()).to.be.equal(parseUnits('2', 18));
     });
   });

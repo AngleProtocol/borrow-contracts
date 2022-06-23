@@ -118,7 +118,7 @@ contract TokenPolygonUpgradeable is
     event MinterToggled(address indexed minter);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event TreasuryUpdated(address indexed _treasury);
-    
+
     // ================================== Errors ===================================
 
     error AssetStillControlledInReserves();
@@ -163,7 +163,8 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Checks whether the `msg.sender` has the governor role, the guardian role or the keeper role
     modifier onlyGovernorOrGuardianOrKeeper() {
-        if ((isKeeper[msg.sender] == 0) && !ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardianOrKeeper();
+        if ((isKeeper[msg.sender] == 0) && !ITreasury(treasury).isGovernorOrGuardian(msg.sender))
+            revert NotGovernorOrGuardianOrKeeper();
         _;
     }
 
@@ -342,7 +343,7 @@ contract TokenPolygonUpgradeable is
     /// @param keeperAddress Address with a keeper right
     /// @dev `keeperAddress` should be bots measuring anormal activity at the bridge level
     function addKeeper(address keeperAddress) external onlyGovernorOrGuardian {
-        if(keeperAddress == address(0)) revert ZeroAddress();
+        if (keeperAddress == address(0)) revert ZeroAddress();
         isKeeper[keeperAddress] = 1;
         emit KeeperToggled(keeperAddress, true);
     }
@@ -351,7 +352,8 @@ contract TokenPolygonUpgradeable is
     /// @param keeperAddress Address with a keeper right
     /// @dev A keeper can self revoke itself, just like the governor and guardian can revoke any keeper
     function removeKeeper(address keeperAddress) external {
-        if (msg.sender!=keeperAddress && !ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardianOrKeeper();
+        if (msg.sender != keeperAddress && !ITreasury(treasury).isGovernorOrGuardian(msg.sender))
+            revert NotGovernorOrGuardianOrKeeper();
         isKeeper[keeperAddress] = 0;
         emit KeeperToggled(keeperAddress, false);
     }
@@ -392,7 +394,7 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Toggles fees for the address `theAddress`
     function toggleFeesForAddress(address theAddress) external onlyGovernorOrGuardian {
-        uint256 feeExemptStatus = 1-isFeeExempt[theAddress];
+        uint256 feeExemptStatus = 1 - isFeeExempt[theAddress];
         isFeeExempt[theAddress] = feeExemptStatus;
         emit FeeToggled(theAddress, feeExemptStatus);
     }

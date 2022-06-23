@@ -15,7 +15,6 @@ import "../interfaces/external/uniswap/IUniswapRouter.sol";
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
 contract SwapperSidechain is ISwapper {
-
     using SafeERC20 for IERC20;
 
     // ================ Constants and Immutable Variables ==========================
@@ -94,10 +93,7 @@ contract SwapperSidechain is ISwapper {
         uint128 swapType;
         // We're reusing the `data` variable (it can be `path` on UniswapV3, a payload for 1Inch or like encoded actions
         // for a router call)
-        (to, minAmountOut, swapType, data) = abi.decode(
-            data,
-            (address, uint256, uint128, bytes)
-        );
+        (to, minAmountOut, swapType, data) = abi.decode(data, (address, uint256, uint128, bytes));
 
         to = (to == address(0)) ? outTokenRecipient : to;
 
@@ -105,12 +101,13 @@ contract SwapperSidechain is ISwapper {
 
         // A final slippage check is performed after the swaps
         uint256 outTokenBalance = outToken.balanceOf(address(this));
-        if (outTokenBalance <= minAmountOut) revert TooSmallAmountOut();
+        if (outTokenBalance < minAmountOut) revert TooSmallAmountOut();
 
         // The `outTokenRecipient` may already have enough in balance, in which case there's no need to transfer
         // this address the token and everything can be given already to the `to` address
         uint256 outTokenBalanceRecipient = outToken.balanceOf(outTokenRecipient);
-        if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient) outToken.safeTransfer(to, outTokenBalance);
+        if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient)
+            outToken.safeTransfer(to, outTokenBalance);
         else {
             // The `outTokenRecipient` should receive the delta to make sure its end balance is equal to `outTokenOwed`
             // Any leftover in this case is sent to the `to` address
@@ -159,6 +156,19 @@ contract SwapperSidechain is ISwapper {
         }
     }
 
+    /// @notice Checks the allowance for a contract and updates it to the max if it is not big enough
+    /// @param token Token for which allowance should be checked
+    /// @param spender Address to grant allowance to
+    /// @param amount Minimum amount of tokens needed for the allowance
+    function _checkAllowance(
+        IERC20 token,
+        address spender,
+        uint256 amount
+    ) internal {
+        uint256 currentAllowance = token.allowance(address(this), spender);
+        if (currentAllowance < amount) token.safeIncreaseAllowance(spender, type(uint256).max - currentAllowance);
+    }
+
     /// @notice Performs a swap using either Uniswap, 1Inch. This function can also stake stETH to wstETH
     /// @param inToken Token to swap
     /// @param amount Amount of tokens to swap
@@ -174,7 +184,7 @@ contract SwapperSidechain is ISwapper {
     ) internal {
         if (swapType == SwapType.UniswapV3) _swapOnUniswapV3(inToken, amount, args);
         else if (swapType == SwapType.oneInch) _swapOn1Inch(inToken, args);
-        else if (swapType == SwapType.AngleRouter) _angleRouterActions(inToken,args);
+        else if (swapType == SwapType.AngleRouter) _angleRouterActions(inToken, args);
     }
 
     /// @notice Performs a UniswapV3 swap
@@ -190,7 +200,8 @@ contract SwapperSidechain is ISwapper {
         uint256 amount,
         bytes memory path
     ) internal returns (uint256 amountOut) {
-        _changeAllowance(inToken, address(uniV3Router), type(uint256).max);
+        // We need more than `amount` of allowance to the contract
+        _checkAllowance(inToken, address(uniV3Router), amount);
         amountOut = uniV3Router.exactInput(ExactInputParams(path, address(this), block.timestamp, amount, 0));
     }
 
@@ -207,10 +218,12 @@ contract SwapperSidechain is ISwapper {
         amountOut = abi.decode(result, (uint256));
     }
 
+    /// @notice Performs actions with the router contract of the protocol on the corresponding chain
+    /// @param inToken Token concerned by the action and for which
     function _angleRouterActions(IERC20 inToken, bytes memory args) internal {
-        (uint128[] memory actions, bytes[] memory actionData) = abi.decode(args, (uint128[], bytes[]));
+        (ActionType[] memory actions, bytes[] memory actionData) = abi.decode(args, (ActionType[], bytes[]));
         _changeAllowance(inToken, address(angleRouter), type(uint256).max);
-        uint128[] memory permits;
+        PermitType[] memory permits;
         angleRouter.mixer(permits, actions, actionData);
     }
 

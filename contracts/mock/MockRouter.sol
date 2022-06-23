@@ -17,6 +17,7 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     uint256 public counter1Inch;
     uint256 public counterUni;
     uint256 public counterWrap;
+    uint256 public counterMixer;
     uint256 public amountOutUni;
     uint256 public multiplierMintBurn;
     uint256 public stETHMultiplier;
@@ -42,7 +43,6 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
         gaugeDeposit,
         borrower
     }
-
 
     /// @notice Data needed to get permits
     struct PermitType {
@@ -91,6 +91,7 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
         bytes[] calldata data
     ) public payable virtual {
         paramsPermit;
+        counterMixer += 1;
         for (uint256 i = 0; i < actions.length; i++) {
             if (actions[i] == ActionType.transfer) {
                 (address transferToken, uint256 amount) = abi.decode(data[i], (address, uint256));

@@ -19,5 +19,4 @@ contract MockERC1271 is IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4 magicValue) {
         if (mode == 1) magicValue = 0x1626ba7e;
     }
-
 }

@@ -23,7 +23,9 @@ abstract contract VaultManagerPermit is Initializable, VaultManagerERC721 {
 
     //solhint-disable-next-line
     function __ERC721Permit_init(string memory _name) internal onlyInitializing {
-        _PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,bool approved,uint256 nonce,uint256 deadline)");
+        _PERMIT_TYPEHASH = keccak256(
+            "Permit(address owner,address spender,bool approved,uint256 nonce,uint256 deadline)"
+        );
         _HASHED_NAME = keccak256(bytes(_name));
         _HASHED_VERSION = keccak256(bytes("1"));
     }
@@ -66,12 +68,13 @@ abstract contract VaultManagerPermit is Initializable, VaultManagerERC721 {
             )
         );
         if (owner.isContract()) {
-            if (IERC1271(owner).isValidSignature(digest, abi.encodePacked(r, s, v)) != 0x1626ba7e) revert InvalidSignature();
+            if (IERC1271(owner).isValidSignature(digest, abi.encodePacked(r, s, v)) != 0x1626ba7e)
+                revert InvalidSignature();
         } else {
             address signer = ecrecover(digest, v, r, s);
             if (signer != owner || signer == address(0)) revert InvalidSignature();
         }
-        
+
         _setApprovalForAll(owner, spender, approved);
     }
 
@@ -101,7 +104,7 @@ abstract contract VaultManagerPermit is Initializable, VaultManagerERC721 {
             );
     }
 
-    /// @notice Consumes a nonce for an address: returns the current value and increments it 
+    /// @notice Consumes a nonce for an address: returns the current value and increments it
     function _useNonce(address owner) internal returns (uint256 current) {
         current = _nonces[owner];
         _nonces[owner] = current + 1;
