@@ -811,6 +811,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('2'));
       await bridgeToken.mint(deployer.address, parseEther('3'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
+      await time.increase(3600);
       await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), alice.address);
       expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
       await expect(
@@ -825,12 +826,12 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('2'));
       await bridgeToken.mint(deployer.address, parseEther('3'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
+      await time.increase(3600);
       await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), bob.address)).wait();
       expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
       await time.increase(3600);
-      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('0'));
       await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), bob.address)).wait();
-      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('3'));
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('2'));
     });
   });
 
