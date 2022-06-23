@@ -110,11 +110,12 @@ contract TokenPolygonUpgradeable is
 
     // ================================== Events ===================================
 
-    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint64 fee, bool paused);
+    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint256 hourlyLimit, uint64 fee, bool paused);
     event BridgeTokenToggled(address indexed bridgeToken, bool toggleStatus);
     event BridgeTokenRemoved(address indexed bridgeToken);
     event BridgeTokenFeeUpdated(address indexed bridgeToken, uint64 fee);
     event BridgeTokenLimitUpdated(address indexed bridgeToken, uint256 limit);
+    event BridgeTokenHourlyLimitUpdated(address indexed bridgeToken, uint256 hourlyLimit);
     event FeeToggled(address indexed theAddress, uint256 toggleStatus);
     event KeeperToggled(address indexed keeper, bool toggleStatus);
     event MinterToggled(address indexed minter);
@@ -134,6 +135,7 @@ contract TokenPolygonUpgradeable is
     error NotMinter();
     error NotTreasury();
     error TooBigAmount();
+    error HourlyLimitExceeded();
     error TooHighParameterValue();
     error TreasuryAlreadyInitialized();
     error ZeroAddress();
@@ -160,13 +162,6 @@ contract TokenPolygonUpgradeable is
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
         if (!ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
-        _;
-    }
-
-    /// @notice Checks whether the `msg.sender` has the governor role, the guardian role or the keeper role
-    modifier onlyGovernorOrGuardianOrKeeper() {
-        if ((isKeeper[msg.sender] == 0) && !ITreasury(treasury).isGovernorOrGuardian(msg.sender))
-            revert NotGovernorOrGuardianOrKeeper();
         _;
     }
 
@@ -253,6 +248,12 @@ contract TokenPolygonUpgradeable is
         return bridgeTokensList;
     }
 
+    /// @notice Returns the current volume for a bridge, for the current hour
+    /// @dev Helpful for UIs
+    function currentUsage(address bridge) external view returns (uint256) {
+        return usage[bridge][block.timestamp / 3600];
+    }
+
     /// @notice Mints the canonical token from a supported bridge token
     /// @param bridgeToken Bridge token to use to mint
     /// @param amount Amount of bridge tokens to send
@@ -266,6 +267,13 @@ contract TokenPolygonUpgradeable is
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
+
+        // Checking requirement on the hourly volume
+        uint256 hour = block.timestamp / 3600;
+        uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
+        if (hourlyUsage > bridgeDetails.hourlyLimit) revert HourlyLimitExceeded();
+        usage[bridgeToken][hour] = hourlyUsage;
+
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
@@ -307,6 +315,7 @@ contract TokenPolygonUpgradeable is
     function addBridgeToken(
         address bridgeToken,
         uint256 limit,
+        uint256 hourlyLimit,
         uint64 fee,
         bool paused
     ) external onlyGovernor {
@@ -314,12 +323,13 @@ contract TokenPolygonUpgradeable is
         if (fee > BASE_PARAMS) revert TooHighParameterValue();
         BridgeDetails memory _bridge;
         _bridge.limit = limit;
+        _bridge.hourlyLimit = hourlyLimit;
         _bridge.paused = paused;
         _bridge.fee = fee;
         _bridge.allowed = true;
         bridges[bridgeToken] = _bridge;
         bridgeTokensList.push(bridgeToken);
-        emit BridgeTokenAdded(bridgeToken, limit, fee, paused);
+        emit BridgeTokenAdded(bridgeToken, limit, hourlyLimit, fee, paused);
     }
 
     /// @notice Removes support for a token
@@ -341,25 +351,6 @@ contract TokenPolygonUpgradeable is
         emit BridgeTokenRemoved(bridgeToken);
     }
 
-    /// @notice Adds a keeper able to pause a bridge token or to set the limit for a `bridgeToken`
-    /// @param keeperAddress Address with a keeper right
-    /// @dev `keeperAddress` should be bots measuring anormal activity at the bridge level
-    function addKeeper(address keeperAddress) external onlyGovernorOrGuardian {
-        if (keeperAddress == address(0)) revert ZeroAddress();
-        isKeeper[keeperAddress] = 1;
-        emit KeeperToggled(keeperAddress, true);
-    }
-
-    /// @notice Removes the keeper role to an address
-    /// @param keeperAddress Address with a keeper right
-    /// @dev A keeper can self revoke itself, just like the governor and guardian can revoke any keeper
-    function removeKeeper(address keeperAddress) external {
-        if (msg.sender != keeperAddress && !ITreasury(treasury).isGovernorOrGuardian(msg.sender))
-            revert NotGovernorOrGuardianOrKeeper();
-        isKeeper[keeperAddress] = 0;
-        emit KeeperToggled(keeperAddress, false);
-    }
-
     /// @notice Recovers any ERC20 token
     /// @dev Can be used to withdraw bridge tokens for them to be de-bridged on mainnet
     function recoverERC20(
@@ -372,10 +363,17 @@ contract TokenPolygonUpgradeable is
     }
 
     /// @notice Updates the `limit` amount for `bridgeToken`
-    function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardianOrKeeper {
+    function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardian {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bridges[bridgeToken].limit = limit;
         emit BridgeTokenLimitUpdated(bridgeToken, limit);
+    }
+
+    /// @notice Updates the `hourlyLimit` amount for `bridgeToken`
+    function setHourlyLimit(address bridgeToken, uint256 hourlyLimit) external onlyGovernorOrGuardian {
+        if (!bridges[bridgeToken].allowed) revert InvalidToken();
+        bridges[bridgeToken].hourlyLimit = hourlyLimit;
+        emit BridgeTokenHourlyLimitUpdated(bridgeToken, hourlyLimit);
     }
 
     /// @notice Updates the `fee` value for `bridgeToken`
@@ -387,7 +385,7 @@ contract TokenPolygonUpgradeable is
     }
 
     /// @notice Pauses or unpauses swapping in and out for a token
-    function toggleBridge(address bridgeToken) external onlyGovernorOrGuardianOrKeeper {
+    function toggleBridge(address bridgeToken) external onlyGovernorOrGuardian {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bool pausedStatus = bridges[bridgeToken].paused;
         bridges[bridgeToken].paused = !pausedStatus;

@@ -3,23 +3,23 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
-// import { fromRpcSig } from 'ethereumjs-util';
 
+// import { fromRpcSig } from 'ethereumjs-util';
 import { expect } from '../../test/utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../../test/utils/expectEvent';
-import { deployUpgradeable, ZERO_ADDRESS } from '../../test/utils/helpers';
+import { deployUpgradeable, time, ZERO_ADDRESS } from '../../test/utils/helpers';
 import {
   CoreBorrow,
   CoreBorrow__factory,
   FlashAngle,
   FlashAngle__factory,
-  ProxyAdmin,
-  Treasury,
-  Treasury__factory,
-  TokenPolygonUpgradeable,
-  TokenPolygonUpgradeable__factory,
   MockToken,
   MockToken__factory,
+  ProxyAdmin,
+  TokenPolygonUpgradeable,
+  TokenPolygonUpgradeable__factory,
+  Treasury,
+  Treasury__factory,
 } from '../../typechain';
 import { parseAmount } from '../../utils/bignumber';
 // import { domainSeparator, signPermit } from '../../test/utils/sigUtils';
@@ -108,7 +108,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     // adding bridge token
     await agToken
       .connect(impersonatedSigners[governor])
-      .addBridgeToken(bridgeToken.address, parseEther('10'), parseAmount.gwei(0.5), false);
+      .addBridgeToken(bridgeToken.address, parseEther('10'), parseEther('1'), parseAmount.gwei(0.5), false);
   });
 
   describe('upgrade - old References & Variables', () => {
@@ -371,35 +371,37 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     });
     it('reverts - non governor', async () => {
       await expect(
-        agToken.connect(bob).addBridgeToken(bridgeToken.address, parseEther('1'), parseAmount.gwei(0.5), false),
+        agToken
+          .connect(bob)
+          .addBridgeToken(bridgeToken.address, parseEther('1'), parseEther('0.1'), parseAmount.gwei(0.5), false),
       ).to.be.revertedWith('NotGovernor');
     });
     it('reverts - too high parameter value', async () => {
       await expect(
         agToken
           .connect(impersonatedSigners[governor])
-          .addBridgeToken(bridgeToken2.address, parseEther('1'), parseAmount.gwei(2), false),
+          .addBridgeToken(bridgeToken2.address, parseEther('1'), parseEther('0.1'), parseAmount.gwei(2), false),
       ).to.be.revertedWith('TooHighParameterValue');
     });
     it('reverts - zero address', async () => {
       await expect(
         agToken
           .connect(impersonatedSigners[governor])
-          .addBridgeToken(ZERO_ADDRESS, parseEther('1'), parseAmount.gwei(0.5), false),
+          .addBridgeToken(ZERO_ADDRESS, parseEther('1'), parseEther('0.1'), parseAmount.gwei(0.5), false),
       ).to.be.revertedWith('InvalidToken');
     });
     it('reverts - already added', async () => {
       await expect(
         agToken
           .connect(impersonatedSigners[governor])
-          .addBridgeToken(bridgeToken.address, parseEther('1'), parseAmount.gwei(0.5), false),
+          .addBridgeToken(bridgeToken.address, parseEther('1'), parseEther('0.1'), parseAmount.gwei(0.5), false),
       ).to.be.revertedWith('InvalidToken');
     });
     it('success - second token added', async () => {
       const receipt = await (
         await agToken
           .connect(impersonatedSigners[governor])
-          .addBridgeToken(bridgeToken2.address, parseEther('100'), parseAmount.gwei(0.03), true)
+          .addBridgeToken(bridgeToken2.address, parseEther('100'), parseEther('10'), parseAmount.gwei(0.03), true)
       ).wait();
       inReceipt(receipt, 'BridgeTokenAdded', {
         bridgeToken: bridgeToken2.address,
@@ -443,12 +445,12 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       // Adding it again to reset state
       await agToken
         .connect(impersonatedSigners[governor])
-        .addBridgeToken(bridgeToken.address, parseEther('100'), parseAmount.gwei(0.03), true);
+        .addBridgeToken(bridgeToken.address, parseEther('100'), parseEther('10'), parseAmount.gwei(0.03), true);
     });
     it('success - when there are two tokens and first one is removed', async () => {
       await agToken
         .connect(impersonatedSigners[governor])
-        .addBridgeToken(bridgeToken2.address, parseEther('100'), parseAmount.gwei(0.03), true);
+        .addBridgeToken(bridgeToken2.address, parseEther('100'), parseEther('10'), parseAmount.gwei(0.03), true);
       const receipt = await (
         await agToken.connect(impersonatedSigners[governor]).removeBridgeToken(bridgeToken.address)
       ).wait();
@@ -464,7 +466,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       // Adding it again to reset state
       await agToken
         .connect(impersonatedSigners[governor])
-        .addBridgeToken(bridgeToken.address, parseEther('100'), parseAmount.gwei(0.03), true);
+        .addBridgeToken(bridgeToken.address, parseEther('100'), parseEther('10'), parseAmount.gwei(0.03), true);
     });
     it('success - when there are two tokens and second one is removed', async () => {
       // bridgeToken2 is still here
@@ -484,61 +486,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       // Adding it again to reset state
       await agToken
         .connect(impersonatedSigners[governor])
-        .addBridgeToken(bridgeToken.address, parseEther('100'), parseAmount.gwei(0.03), true);
-    });
-  });
-  describe('addKeeper', () => {
-    it('reverts - non governor and non guardian', async () => {
-      await expect(agToken.connect(alice).addKeeper(bridgeToken.address)).to.be.revertedWith('NotGovernorOrGuardian');
-    });
-    it('reverts - zero address', async () => {
-      await expect(agToken.connect(deployer).addKeeper(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
-    });
-    it('success - keeper role granted', async () => {
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
-      const receipt = await (await agToken.connect(deployer).addKeeper(alice.address)).wait();
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
-      inReceipt(receipt, 'KeeperToggled', {
-        keeper: alice.address,
-        toggleStatus: true,
-      });
-      await expect(agToken.connect(alice).addKeeper(bridgeToken.address)).to.be.revertedWith('NotGovernorOrGuardian');
-    });
-  });
-  describe('removeKeeper', () => {
-    it('reverts - non governor and non guardian', async () => {
-      await expect(agToken.connect(alice).removeKeeper(bridgeToken.address)).to.be.revertedWith(
-        'NotGovernorOrGuardianOrKeeper',
-      );
-    });
-    it('success - from governor or guardian', async () => {
-      await agToken.connect(deployer).addKeeper(alice.address);
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
-      const receipt = await (await agToken.connect(deployer).removeKeeper(alice.address)).wait();
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
-      inReceipt(receipt, 'KeeperToggled', {
-        keeper: alice.address,
-        toggleStatus: false,
-      });
-    });
-    it('success - from keeper', async () => {
-      await agToken.connect(deployer).addKeeper(alice.address);
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(1);
-      const receipt = await (await agToken.connect(alice).removeKeeper(alice.address)).wait();
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
-      inReceipt(receipt, 'KeeperToggled', {
-        keeper: alice.address,
-        toggleStatus: false,
-      });
-    });
-    it('success - from a random address that is not keeper', async () => {
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
-      const receipt = await (await agToken.connect(alice).removeKeeper(alice.address)).wait();
-      expect(await agToken.isKeeper(alice.address)).to.be.equal(0);
-      inReceipt(receipt, 'KeeperToggled', {
-        keeper: alice.address,
-        toggleStatus: false,
-      });
+        .addBridgeToken(bridgeToken.address, parseEther('100'), parseEther('10'), parseAmount.gwei(0.03), true);
     });
   });
 
@@ -573,7 +521,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   describe('setLimit', () => {
     it('reverts - non governor and non guardian', async () => {
       await expect(agToken.connect(alice).setLimit(bridgeToken.address, parseEther('1'))).to.be.revertedWith(
-        'NotGovernorOrGuardianOrKeeper',
+        'NotGovernorOrGuardian',
       );
     });
     it('reverts - non allowed token', async () => {
@@ -590,6 +538,29 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
         limit: parseEther('1000'),
       });
       expect((await agToken.bridges(bridgeToken.address)).limit).to.be.equal(parseEther('1000'));
+    });
+  });
+
+  describe('setHourlyLimit', () => {
+    it('reverts - non governor and non guardian and non keeper', async () => {
+      await expect(agToken.connect(alice).setHourlyLimit(bridgeToken.address, parseEther('1'))).to.be.revertedWith(
+        'NotGovernorOrGuardian',
+      );
+    });
+    it('reverts - non allowed token', async () => {
+      await expect(
+        agToken.connect(impersonatedSigners[governor]).setHourlyLimit(alice.address, parseEther('1')),
+      ).to.be.revertedWith('InvalidToken');
+    });
+    it('success - value updated', async () => {
+      const receipt = await (
+        await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('1000'))
+      ).wait();
+      inReceipt(receipt, 'BridgeTokenHourlyLimitUpdated', {
+        bridgeToken: bridgeToken.address,
+        hourlyLimit: parseEther('1000'),
+      });
+      expect((await agToken.bridges(bridgeToken.address)).hourlyLimit).to.be.equal(parseEther('1000'));
     });
   });
 
@@ -624,7 +595,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   describe('toggleBridge', () => {
     it('reverts - non governor and non guardian', async () => {
       await expect(agToken.connect(alice).toggleBridge(bridgeToken.address)).to.be.revertedWith(
-        'NotGovernorOrGuardianOrKeeper',
+        'NotGovernorOrGuardian',
       );
     });
     it('reverts - non existing bridge', async () => {
@@ -720,9 +691,21 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       // Resetting state
       await bridgeToken.burn(deployer.address, parseEther('10'));
     });
+    it('reverts - amount greater than hourlyLimit', async () => {
+      await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('10'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('1'));
+      await bridgeToken.mint(deployer.address, parseEther('2'));
+      await bridgeToken.connect(deployer).approve(agToken.address, parseEther('2'));
+      await expect(
+        agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), alice.address),
+      ).to.be.revertedWith('HourlyLimitExceeded');
+      // Resetting state
+      await bridgeToken.burn(deployer.address, parseEther('2'));
+    });
     it('success - with some transaction fees', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'));
       await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('100'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('100'));
       await bridgeToken.mint(deployer.address, parseEther('10'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('10'));
       const agTokenBalance = await bridgeToken.balanceOf(agToken.address);
@@ -747,6 +730,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await agToken.connect(impersonatedSigners[governor]).toggleFeesForAddress(deployer.address);
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'));
       await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('100'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('100'));
       await bridgeToken.mint(deployer.address, parseEther('10'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('10'));
       const agTokenBalance = await bridgeToken.balanceOf(agToken.address);
@@ -773,6 +757,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     it('success - with no transaction fees and non exempt address', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0'));
       await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('100'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('100'));
       await bridgeToken.mint(deployer.address, parseEther('10'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('10'));
 
@@ -799,6 +784,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     it('success - with weird transaction fees', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.0004'));
       await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('1000'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('1000'));
       await bridgeToken.mint(deployer.address, parseEther('100'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('100'));
       const agTokenBalance = await bridgeToken.balanceOf(agToken.address);
@@ -819,6 +805,32 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
           value: parseEther('100'),
         },
       );
+    });
+    it('reverts - total amount greater than hourlyLimit', async () => {
+      await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('1000'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('2'));
+      await bridgeToken.mint(deployer.address, parseEther('3'));
+      await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
+      await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), alice.address);
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
+      await expect(
+        agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), alice.address),
+      ).to.be.revertedWith('HourlyLimitExceeded');
+      // Resetting state
+      await bridgeToken.burn(deployer.address, parseEther('2'));
+    });
+    it('success - hourlyLimit over 2 hours', async () => {
+      await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0'));
+      await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('1000'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('2'));
+      await bridgeToken.mint(deployer.address, parseEther('3'));
+      await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
+      await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), bob.address)).wait();
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
+      await time.increase(3600);
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('0'));
+      await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), bob.address)).wait();
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('3'));
     });
   });
 

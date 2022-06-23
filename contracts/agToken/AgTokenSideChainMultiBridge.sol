@@ -127,6 +127,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
 
+        // Checking requirement on the hourly volume
         uint256 hour = block.timestamp / 3600;
         uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
         if (hourlyUsage > bridgeDetails.hourlyLimit) revert HourlyLimitExceeded();
