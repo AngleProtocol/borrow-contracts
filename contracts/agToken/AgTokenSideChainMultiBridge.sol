@@ -39,10 +39,10 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
 
     /// @notice Maps a bridge token to data
     mapping(address => BridgeDetails) public bridges;
-    /// @notice Maps a bridge token to data
-    mapping(address => mapping(uint256 => uint256)) public usage;
     /// @notice List of all bridge tokens
     address[] public bridgeTokensList;
+    /// @notice Maps a bridge token to the associated hourly volume
+    mapping(address => mapping(uint256 => uint256)) public usage;
     /// @notice Maps an address to whether it is exempt of fees for when it comes to swapping in and out
     mapping(address => uint256) public isFeeExempt;
 

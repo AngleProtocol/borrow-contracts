@@ -87,6 +87,8 @@ contract TokenPolygonUpgradeable is
         // Limit on the balance of bridge token held by the contract: it is designed
         // to reduce the exposure of the system to hacks
         uint256 limit;
+        // Limit on the hourly volume of token minted through this bridge
+        uint256 hourlyLimit;
         // Fee taken for swapping in and out the token
         uint64 fee;
         // Whether the associated token is allowed or not
@@ -99,10 +101,10 @@ contract TokenPolygonUpgradeable is
     mapping(address => BridgeDetails) public bridges;
     /// @notice List of all bridge tokens
     address[] public bridgeTokensList;
+    /// @notice Maps a bridge token to the associated hourly volume
+    mapping(address => mapping(uint256 => uint256)) public usage;
     /// @notice Maps an address to whether it is exempt of fees for when it comes to swapping in and out
     mapping(address => uint256) public isFeeExempt;
-    /// @notice Maps an address to whether it is a keeper or not
-    mapping(address => uint256) public isKeeper;
 
     uint256[44] private __gap;
 
