@@ -28,6 +28,8 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         // to reduce the exposure of the system to hacks
         uint256 limit;
         // Limit on the hourly volume of token minted through this bridge
+        // Technically the limit over a rolling hour is hourlyLimit x2 as hourly limit
+        // is enforced only between x:00 and x+1:00
         uint256 hourlyLimit;
         // Fee taken for swapping in and out the token
         uint64 fee;
@@ -63,7 +65,6 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     error InvalidToken();
     error NotGovernor();
     error NotGovernorOrGuardian();
-    error NotGovernorOrGuardianOrKeeper();
     error TooBigAmount();
     error HourlyLimitExceeded();
     error TooHighParameterValue();
