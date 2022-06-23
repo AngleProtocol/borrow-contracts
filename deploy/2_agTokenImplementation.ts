@@ -17,6 +17,13 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     implementationName = 'AgTokenSideChain';
   }
+  /* TODO Uncomment for real Polygon deployment
+    else if (network.config.chainId !== ChainId.POLYGON) {
+      implementationName = 'TokenPolygonUpgradeable';
+    } else {
+      implementationName = 'AgTokenSideChain';
+    }
+  */
 
   console.log('Now deploying the implementation for AgToken');
   await deploy(`${implementationName}_Implementation`, {
@@ -30,6 +37,9 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('');
 
   if (network.config.chainId != 1 && network.live) {
+    /* TODO Uncomment for real Polygon deployment
+    if (network.config.chainId != 1 && network.config.chainId!= ChainId.POLYGON && network.live) {
+  */
     console.log(
       'Deploying the proxy for the agToken contract because chain is not mainnet not mainnet fork and we need a new contract',
     );

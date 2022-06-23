@@ -1,26 +1,13 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { SolcInput, SolcOutput, UpgradeableContract } from '@openzeppelin/upgrades-core';
-import { Contract, utils, Wallet } from 'ethers';
-import { artifacts, ethers, network } from 'hardhat';
+import { ethers } from 'hardhat';
 
-import {
-  MockAnything,
-  MockToken,
-  MultiCallWithFailure,
-  MultiCallWithFailure__factory,
-  TransparentUpgradeableProxy,
-} from '../../typechain';
+import { MockAnything, MultiCallWithFailure } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 
 describe('MulticallWithFailure', async () => {
-  let deployer: SignerWithAddress, user1: SignerWithAddress;
-
   let multiCallWithFailure: MultiCallWithFailure;
   let mockAnything: MockAnything;
 
   beforeEach(async () => {
-    [deployer, user1] = await ethers.getSigners();
-
     multiCallWithFailure = (await (
       await ethers.getContractFactory('MultiCallWithFailure')
     ).deploy()) as MultiCallWithFailure;
