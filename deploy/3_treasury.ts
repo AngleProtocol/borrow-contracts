@@ -22,7 +22,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     // Otherwise, we're using the proxy admin address from the desired network and the newly deployed agToken
     proxyAdmin = (await ethers.getContract('ProxyAdmin')).address;
-    agTokenAddress = (await deployments.get('AgToken')).address;
+    agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
     /* TODO Uncomment for real Polygon deployment
     if (network.config.chainId !== ChainId.POLYGON) {
       agTokenAddress = (await deployments.get('AgToken')).address;
