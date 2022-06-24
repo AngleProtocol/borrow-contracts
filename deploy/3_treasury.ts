@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 import { expect } from '../test/utils/chai-setup';
 
-import { AgTokenSideChain, AgTokenSideChain__factory, Treasury__factory } from '../typechain';
+import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../typechain';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -64,14 +64,17 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log(`Successfully deployed Treasury at the address ${treasury}`);
   console.log('');
   if (network.config.chainId != 1 && network.live) {
+    /* TODO Uncomment for real Polygon deployment
+    if (network.config.chainId != 1 && network.config.chainId!= ChainId.POLYGON && network.live) {
+  */
     console.log(
       "Because we're in a specific network (not mainnet or mainnet fork) and now that treasury is ready, initializing the agToken contract",
     );
     const agToken = new ethers.Contract(
       agTokenAddress,
-      AgTokenSideChain__factory.createInterface(),
+      AgTokenSideChainMultiBridge__factory.createInterface(),
       deployer,
-    ) as AgTokenSideChain;
+    ) as AgTokenSideChainMultiBridge;
     await (await agToken.connect(deployer).initialize(agTokenName, agTokenName, treasury)).wait();
     console.log('Success: agToken successfully initialized');
   }

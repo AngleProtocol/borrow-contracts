@@ -31,6 +31,17 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
     const oracle = (await deployments.get('Oracle_MATIC_EUR')).address;
     console.log(`Successfully deployed Oracle MATIC/EUR at the address ${oracle}`);
     console.log('');
+    // TODO change before Polygon deployment
+    await deploy('Oracle_ETH_EUR', {
+      contract: 'MockOracle',
+      from: deployer.address,
+      // Entry rate for ETH, we can update the rate as we wish
+      args: ['1086509677194259882891', treasury],
+      log: !argv.ci,
+    });
+    const oracle2 = (await deployments.get('Oracle_ETH_EUR')).address;
+    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle2}`);
+    console.log('');
   }
 };
 

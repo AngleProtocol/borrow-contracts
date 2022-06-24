@@ -19,7 +19,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
+    // proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
+    proxyAdmin = (await deployments.get('ProxyAdmin')).address;
   }
 
   console.log('Let us get started with deployment');
@@ -32,6 +33,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     from: deployer.address,
     log: !argv.ci,
   });
+
   const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
 
   // const coreBorrowImplementation = '0x4D144B7355bC2C33FA091339279e9D77261461fE';
@@ -47,6 +49,9 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   ).interface.encodeFunctionData('initialize', [governor, guardian]);
 
   console.log('Now deploying the Proxy');
+  console.log('The contract will be initialized with the following governor and guardian addresses');
+  console.log(governor, guardian);
+
   await deploy('CoreBorrow', {
     contract: 'TransparentUpgradeableProxy',
     from: deployer.address,
@@ -56,6 +61,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const coreBorrow = (await deployments.get('CoreBorrow')).address;
   console.log(`Successfully deployed CoreBorrow at the address ${coreBorrow}`);
+
+  console.log(`${coreBorrow} ${coreBorrowImplementation} ${proxyAdmin} ${dataCoreBorrow} `);
   console.log('');
 };
 

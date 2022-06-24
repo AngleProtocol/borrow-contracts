@@ -15,7 +15,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // If we're in mainnet fork or on mainnet, we're using the agToken implementation address for mainnet
     implementationName = 'AgToken';
   } else {
-    implementationName = 'AgTokenSideChain';
+    implementationName = 'AgTokenSideChainMultiBridge';
   }
   /* TODO Uncomment for real Polygon deployment
     else if (network.config.chainId !== ChainId.POLYGON) {

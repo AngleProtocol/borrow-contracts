@@ -1,4 +1,5 @@
 {
   "governor": "0x43a7947A1288e65fAF30D8dDb3ca61Eaabd41613",
-  "guardian": "0xCcD44983f597aE4d4E2B70CF979597D63a10870D"
+  "guardian": "0xCcD44983f597aE4d4E2B70CF979597D63a10870D",
+  "dust": "0.01"
 }

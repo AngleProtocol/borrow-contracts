@@ -3,5 +3,5 @@
   "guardian": "0x55F01DDaE74b60e3c255BD2f619FEbdFce560a9C",
   "uniswapV3Router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
   "oneInchRouter": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
-  "dust": "50"
+  "dust": "0.01"
 }

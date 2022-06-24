@@ -94,12 +94,12 @@ contract('VaultManager - ERC721', () => {
     await agToken.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
     await treasury.addMinter(agToken.address, vaultManager.address);
 
-    oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, collatBase, treasury.address);
+    oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, treasury.address);
   });
 
   describe('initializer', () => {
     it('reverts - oracle treasury differs', async () => {
-      oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, collatBase, ZERO_ADDRESS);
+      oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, ZERO_ADDRESS);
       const tx = vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
       await expect(tx).to.be.revertedWith('InvalidTreasury');
     });

@@ -104,7 +104,7 @@ contract('ReactorEuler', () => {
     await treasury.addMinter(agEUR.address, bob.address);
     await agEUR.connect(bob).mint(bob.address, parseUnits('10000000', 18));
 
-    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
+    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 

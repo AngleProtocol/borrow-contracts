@@ -101,7 +101,7 @@ contract('VaultManager - Permit', () => {
 
     contractSigner = (await new MockERC1271__factory(deployer).deploy()) as MockERC1271;
 
-    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
+    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
     name = await vaultManager.name();

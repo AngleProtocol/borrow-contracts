@@ -124,17 +124,17 @@ contract('VaultManager', () => {
     await agToken.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
     await treasury.addMinter(agToken.address, vaultManager.address);
 
-    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
+    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
     await vaultManager.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
   });
   describe('oracle', () => {
     it('success - read', async () => {
-      const oracle = (await ethers.getContractAt(
+      const oracle = ((await ethers.getContractAt(
         Oracle__factory.abi,
         await vaultManager.oracle(),
-      )) as unknown as Oracle;
+      )) as unknown) as Oracle;
       expect(await oracle.read()).to.be.equal(parseUnits('2', 18));
     });
   });
@@ -1183,7 +1183,7 @@ contract('VaultManager', () => {
       );
       await agToken.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
       await treasury.addMinter(agToken.address, vaultManager.address);
-      oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
+      oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
       await vaultManager.initialize(treasury.address, agToken.address, oracle.address, params, 'USDC/agEUR');
       await vaultManager.connect(guardian).togglePause();
     });
