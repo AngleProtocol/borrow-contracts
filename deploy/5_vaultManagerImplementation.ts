@@ -25,5 +25,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['vaultManagerImplementation'];
-func.dependencies = ['flashAngle'];
+func.dependencies = ['oracle'];
 export default func;
