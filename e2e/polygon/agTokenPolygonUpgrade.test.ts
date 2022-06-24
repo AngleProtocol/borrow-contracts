@@ -7,7 +7,7 @@ import hre, { contract, ethers, web3 } from 'hardhat';
 // import { fromRpcSig } from 'ethereumjs-util';
 import { expect } from '../../test/utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../../test/utils/expectEvent';
-import { deployUpgradeable, time, ZERO_ADDRESS } from '../../test/utils/helpers';
+import { deployUpgradeable, mine, time, ZERO_ADDRESS } from '../../test/utils/helpers';
 import {
   CoreBorrow,
   CoreBorrow__factory,
@@ -364,6 +364,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     it('success - token added', async () => {
       expect((await agToken.bridges(bridgeToken.address)).paused).to.be.equal(false);
       expect((await agToken.bridges(bridgeToken.address)).limit).to.be.equal(parseEther('10'));
+      expect((await agToken.bridges(bridgeToken.address)).hourlyLimit).to.be.equal(parseEther('1'));
       expect((await agToken.bridges(bridgeToken.address)).allowed).to.be.equal(true);
       expect((await agToken.bridges(bridgeToken.address)).fee).to.be.equal(parseAmount.gwei(0.5));
       expect(await agToken.bridgeTokensList(0)).to.be.equal(bridgeToken.address);
@@ -411,6 +412,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       });
       expect((await agToken.bridges(bridgeToken2.address)).paused).to.be.equal(true);
       expect((await agToken.bridges(bridgeToken2.address)).limit).to.be.equal(parseEther('100'));
+      expect((await agToken.bridges(bridgeToken2.address)).hourlyLimit).to.be.equal(parseEther('10'));
       expect((await agToken.bridges(bridgeToken2.address)).allowed).to.be.equal(true);
       expect((await agToken.bridges(bridgeToken2.address)).fee).to.be.equal(parseAmount.gwei(0.03));
       expect(await agToken.bridgeTokensList(1)).to.be.equal(bridgeToken2.address);
@@ -828,10 +830,19 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
       await time.increase(3600);
       await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), bob.address)).wait();
+      let hour = Math.floor((await time.latest()) / 3600);
+      console.log((await agToken.usage(bridgeToken.address, hour - 1))?.toString());
+      console.log((await agToken.usage(bridgeToken.address, hour))?.toString());
+      console.log((await agToken.usage(bridgeToken.address, hour + 1))?.toString());
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('1'));
       expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
       await time.increase(3600);
+      hour = Math.floor((await time.latest()) / 3600);
+      expect(await agToken.usage(bridgeToken.address, hour - 1)).to.be.equal(parseEther('1'));
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('0'));
       await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), bob.address)).wait();
       expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('2'));
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('2'));
     });
   });
 

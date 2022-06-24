@@ -76,6 +76,7 @@ contract('AgTokenSideChainMultiBridge', () => {
     it('success - token added', async () => {
       expect((await agToken.bridges(bridgeToken.address)).paused).to.be.equal(false);
       expect((await agToken.bridges(bridgeToken.address)).limit).to.be.equal(parseEther('10'));
+      expect((await agToken.bridges(bridgeToken.address)).hourlyLimit).to.be.equal(parseEther('1'));
       expect((await agToken.bridges(bridgeToken.address)).allowed).to.be.equal(true);
       expect((await agToken.bridges(bridgeToken.address)).fee).to.be.equal(parseAmount.gwei(0.5));
       expect(await agToken.bridgeTokensList(0)).to.be.equal(bridgeToken.address);
@@ -129,6 +130,7 @@ contract('AgTokenSideChainMultiBridge', () => {
       });
       expect((await agToken.bridges(bridgeToken2.address)).paused).to.be.equal(true);
       expect((await agToken.bridges(bridgeToken2.address)).limit).to.be.equal(parseEther('100'));
+      expect((await agToken.bridges(bridgeToken2.address)).hourlyLimit).to.be.equal(parseEther('10'));
       expect((await agToken.bridges(bridgeToken2.address)).allowed).to.be.equal(true);
       expect((await agToken.bridges(bridgeToken2.address)).fee).to.be.equal(parseAmount.gwei(0.03));
       expect(await agToken.bridgeTokensList(1)).to.be.equal(bridgeToken2.address);
@@ -403,9 +405,15 @@ contract('AgTokenSideChainMultiBridge', () => {
       expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('2'));
       expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('1'));
       expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
+      let hour = Math.floor((await time.latest()) / 3600);
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('1'));
       await time.increase(3600);
+      hour = Math.floor((await time.latest()) / 3600);
+      expect(await agToken.usage(bridgeToken.address, hour - 1)).to.be.equal(parseEther('1'));
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('0'));
       expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('0'));
       await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), bob.address)).wait();
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('2'));
       expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(parseEther('3'));
       expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
       expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('3'));
