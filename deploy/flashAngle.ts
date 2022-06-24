@@ -16,20 +16,23 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
+    proxyAdmin = (await ethers.getContract('ProxyAdmin')).address;
   }
 
   console.log('Now deploying FlashAngle');
-  console.log('Starting with the implementation');
-  await deploy('FlashAngle_Implementation', {
-    contract: 'FlashAngle',
-    from: deployer.address,
-    log: !argv.ci,
-  });
-  const flashAngleImplementation = (await ethers.getContract('FlashAngle_Implementation')).address;
-
-  console.log(`Successfully deployed the implementation for FlashAngle at ${flashAngleImplementation}`);
-  console.log('');
+  let flashAngleImplementation;
+  try {
+    flashAngleImplementation = (await ethers.getContract('FlashAngle_Implementation')).address;
+    console.log(`FlashAngle implementation has already been deployed at ${flashAngleImplementation}`);
+  } catch {
+    await deploy('FlashAngle_Implementation', {
+      contract: 'FlashAngle',
+      from: deployer.address,
+      log: !argv.ci,
+    });
+    flashAngleImplementation = (await ethers.getContract('FlashAngle_Implementation')).address;
+    console.log(`Successfully deployed the implementation for FlashAngle at ${flashAngleImplementation}`);
+  }
 
   const flashAngleInterface = FlashAngle__factory.createInterface();
 
@@ -50,9 +53,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const flashAngle = (await deployments.get('FlashAngle')).address;
   console.log(`Successfully deployed FlashAngle at the address ${flashAngle}`);
+
+  console.log(`${flashAngle} ${flashAngleImplementation} ${proxyAdmin} ${dataFlashAngle} `);
+  console.log('');
   console.log('');
 };
 
 func.tags = ['flashAngle'];
-func.dependencies = ['oracle'];
+// func.dependencies = ['coreBorrow'];
 export default func;

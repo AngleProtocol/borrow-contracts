@@ -19,7 +19,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    // proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
   }
 

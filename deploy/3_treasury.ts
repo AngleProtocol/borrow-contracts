@@ -12,7 +12,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdmin: string;
   let agTokenAddress: string;
-  const agTokenName = 'agEUR';
+  const stableName = 'EUR';
+  const agTokenName = `ag${stableName}`;
 
   if (!network.live || network.config.chainId == 1) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -20,7 +21,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     agTokenAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].agEUR?.AgToken!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network and the newly deployed agToken
-    proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
+    proxyAdmin = (await ethers.getContract('ProxyAdmin')).address;
     agTokenAddress = (await deployments.get('AgToken')).address;
     /* TODO Uncomment for real Polygon deployment
     if (network.config.chainId !== ChainId.POLYGON) {
@@ -33,14 +34,19 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log('Now deploying Treasury');
   console.log('Starting with the implementation');
-  await deploy('Treasury_Implementation', {
-    contract: 'Treasury',
-    from: deployer.address,
-    log: !argv.ci,
-  });
-  const treasuryImplementation = (await ethers.getContract('Treasury_Implementation')).address;
-
-  console.log(`Successfully deployed the implementation for Treasury at ${treasuryImplementation}`);
+  let treasuryImplementation;
+  try {
+    treasuryImplementation = (await ethers.getContract('Treasury_Implementation')).address;
+    console.log(`Treasury implementation has already been deployed at ${treasuryImplementation}`);
+  } catch {
+    await deploy('Treasury_Implementation', {
+      contract: 'Treasury',
+      from: deployer.address,
+      log: !argv.ci,
+    });
+    treasuryImplementation = (await ethers.getContract('Treasury_Implementation')).address;
+    console.log(`Successfully deployed the implementation for Treasury at ${treasuryImplementation}`);
+  }
   console.log('');
 
   const treasuryInterface = Treasury__factory.createInterface();
@@ -63,12 +69,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const treasury = (await deployments.get('Treasury')).address;
   console.log(`Successfully deployed Treasury at the address ${treasury}`);
   console.log('');
-  if (network.config.chainId != 1 && network.live) {
+  if (network.config.chainId != 1) {
     /* TODO Uncomment for real Polygon deployment
-    if (network.config.chainId != 1 && network.config.chainId!= ChainId.POLYGON && network.live) {
+    if (network.config.chainId != 1 && network.config.chainId!= ChainId.POLYGON) {
   */
     console.log(
-      "Because we're in a specific network (not mainnet or mainnet fork) and now that treasury is ready, initializing the agToken contract",
+      "Because we're in a specific network (not mainnet) and now that treasury is ready, initializing the agToken contract",
     );
     const agToken = new ethers.Contract(
       agTokenAddress,

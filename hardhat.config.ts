@@ -210,7 +210,6 @@ const config: HardhatUserConfig = {
     username: process.env.TENDERLY_USERNAME || '',
   },
   etherscan: {
-    /*
     // @ts-ignore
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY,
@@ -219,8 +218,8 @@ const config: HardhatUserConfig = {
       avalanche: process.env.AVALANCHE_ETHERSCAN_API_KEY,
       polygon: process.env.POLYGON_ETHERSCAN_API_KEY,
     },
-    */
-    apiKey: process.env.ETHERSCAN_API_KEY,
+
+    // apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'typechain',

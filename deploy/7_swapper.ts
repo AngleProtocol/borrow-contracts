@@ -11,19 +11,28 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const json = await import('./networks/' + network.name + '.json');
 
   const core = (await deployments.get('CoreBorrow')).address;
-  const routerAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].AngleRouter!;
 
   console.log('Now deploying the swapper contract');
 
-  await deploy(`Swapper`, {
-    contract: 'Swapper',
-    from: deployer.address,
-    args: [core, json.tokens.wstETH, json.uniswapV3Router, json.oneInchRouter, routerAddress],
-    log: !argv.ci,
-  });
-  console.log('Success');
-
-  // The only contract leftover to be deployed is the router contract which should be deployed from another repo
+  if (network.live && network.config.chainId == 1) {
+    const routerAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].AngleRouter!;
+    await deploy(`Swapper`, {
+      contract: 'Swapper',
+      from: deployer.address,
+      args: [core, json.tokens.wstETH, json.uniswapV3Router, json.oneInchRouter, routerAddress],
+      log: !argv.ci,
+    });
+    console.log('Success');
+  } else {
+    // In mainnet fork now we test deploying on other chains
+    await deploy(`Swapper`, {
+      contract: 'SwapperSidechain',
+      from: deployer.address,
+      args: [core, json.uniswapV3Router, json.oneInchRouter, json.angleRouter],
+      log: !argv.ci,
+    });
+    console.log('Success');
+  }
 };
 
 func.tags = ['swapper'];
