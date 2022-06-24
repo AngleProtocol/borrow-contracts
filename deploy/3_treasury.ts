@@ -87,5 +87,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['treasury'];
-func.dependencies = ['agTokenImplementation'];
+// func.dependencies = ['agTokenImplementation'];
 export default func;
