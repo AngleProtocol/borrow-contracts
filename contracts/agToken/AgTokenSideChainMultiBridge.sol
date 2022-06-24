@@ -27,6 +27,10 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         // Limit on the balance of bridge token held by the contract: it is designed
         // to reduce the exposure of the system to hacks
         uint256 limit;
+        // Limit on the hourly volume of token minted through this bridge
+        // Technically the limit over a rolling hour is hourlyLimit x2 as hourly limit
+        // is enforced only between x:00 and x+1:00
+        uint256 hourlyLimit;
         // Fee taken for swapping in and out the token
         uint64 fee;
         // Whether the associated token is allowed or not
@@ -39,19 +43,19 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     mapping(address => BridgeDetails) public bridges;
     /// @notice List of all bridge tokens
     address[] public bridgeTokensList;
+    /// @notice Maps a bridge token to the associated hourly volume
+    mapping(address => mapping(uint256 => uint256)) public usage;
     /// @notice Maps an address to whether it is exempt of fees for when it comes to swapping in and out
     mapping(address => uint256) public isFeeExempt;
-    /// @notice Maps an address to whether it is a keeper or not
-    mapping(address => uint256) public isKeeper;
 
     // ================================== Events ===================================
 
-    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint64 fee, bool paused);
+    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint256 hourlyLimit, uint64 fee, bool paused);
     event BridgeTokenToggled(address indexed bridgeToken, bool toggleStatus);
     event BridgeTokenRemoved(address indexed bridgeToken);
     event BridgeTokenFeeUpdated(address indexed bridgeToken, uint64 fee);
     event BridgeTokenLimitUpdated(address indexed bridgeToken, uint256 limit);
-    event KeeperToggled(address indexed keeper, bool toggleStatus);
+    event BridgeTokenHourlyLimitUpdated(address indexed bridgeToken, uint256 hourlyLimit);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event FeeToggled(address indexed theAddress, uint256 toggleStatus);
 
@@ -61,8 +65,8 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     error InvalidToken();
     error NotGovernor();
     error NotGovernorOrGuardian();
-    error NotGovernorOrGuardianOrKeeper();
     error TooBigAmount();
+    error HourlyLimitExceeded();
     error TooHighParameterValue();
     error ZeroAddress();
 
@@ -95,19 +99,18 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         _;
     }
 
-    /// @notice Checks whether the `msg.sender` has the governor role, the guardian role or the keeper role
-    modifier onlyGovernorOrGuardianOrKeeper() {
-        if ((isKeeper[msg.sender] == 0) && !ITreasury(treasury).isGovernorOrGuardian(msg.sender))
-            revert NotGovernorOrGuardianOrKeeper();
-        _;
-    }
-
     // ==================== External Permissionless Functions ======================
 
     /// @notice Returns the list of all supported bridge tokens
     /// @dev Helpful for UIs
     function allBridgeTokens() external view returns (address[] memory) {
         return bridgeTokensList;
+    }
+
+    /// @notice Returns the current volume for a bridge, for the current hour
+    /// @dev Helpful for UIs
+    function currentUsage(address bridge) external view returns (uint256) {
+        return usage[bridge][block.timestamp / 3600];
     }
 
     /// @notice Mints the canonical token from a supported bridge token
@@ -124,6 +127,13 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
+
+        // Checking requirement on the hourly volume
+        uint256 hour = block.timestamp / 3600;
+        uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
+        if (hourlyUsage > bridgeDetails.hourlyLimit) revert HourlyLimitExceeded();
+        usage[bridgeToken][hour] = hourlyUsage;
+
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
@@ -166,6 +176,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     function addBridgeToken(
         address bridgeToken,
         uint256 limit,
+        uint256 hourlyLimit,
         uint64 fee,
         bool paused
     ) external onlyGovernor {
@@ -173,12 +184,13 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         if (fee > BASE_PARAMS) revert TooHighParameterValue();
         BridgeDetails memory _bridge;
         _bridge.limit = limit;
+        _bridge.hourlyLimit = hourlyLimit;
         _bridge.paused = paused;
         _bridge.fee = fee;
         _bridge.allowed = true;
         bridges[bridgeToken] = _bridge;
         bridgeTokensList.push(bridgeToken);
-        emit BridgeTokenAdded(bridgeToken, limit, fee, paused);
+        emit BridgeTokenAdded(bridgeToken, limit, hourlyLimit, fee, paused);
     }
 
     /// @notice Removes support for a token
@@ -200,25 +212,6 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         emit BridgeTokenRemoved(bridgeToken);
     }
 
-    /// @notice Adds a keeper able to pause a bridge token or to set the limit for a `bridgeToken`
-    /// @param keeperAddress Address with a keeper right
-    /// @dev `keeperAddress` should be bots measuring anormal activity at the bridge level
-    function addKeeper(address keeperAddress) external onlyGovernorOrGuardian {
-        if (keeperAddress == address(0)) revert ZeroAddress();
-        isKeeper[keeperAddress] = 1;
-        emit KeeperToggled(keeperAddress, true);
-    }
-
-    /// @notice Removes the keeper role to an address
-    /// @param keeperAddress Address with a keeper right
-    /// @dev A keeper can self revoke itself, just like the governor and guardian can revoke any keeper
-    function removeKeeper(address keeperAddress) external {
-        if (msg.sender != keeperAddress && !ITreasury(treasury).isGovernorOrGuardian(msg.sender))
-            revert NotGovernorOrGuardianOrKeeper();
-        isKeeper[keeperAddress] = 0;
-        emit KeeperToggled(keeperAddress, false);
-    }
-
     /// @notice Recovers any ERC20 token
     /// @dev Can be used to withdraw bridge tokens for them to be de-bridged on mainnet
     function recoverERC20(
@@ -231,10 +224,17 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     }
 
     /// @notice Updates the `limit` amount for `bridgeToken`
-    function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardianOrKeeper {
+    function setLimit(address bridgeToken, uint256 limit) external onlyGovernorOrGuardian {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bridges[bridgeToken].limit = limit;
         emit BridgeTokenLimitUpdated(bridgeToken, limit);
+    }
+
+    /// @notice Updates the `hourlyLimit` amount for `bridgeToken`
+    function setHourlyLimit(address bridgeToken, uint256 hourlyLimit) external onlyGovernorOrGuardian {
+        if (!bridges[bridgeToken].allowed) revert InvalidToken();
+        bridges[bridgeToken].hourlyLimit = hourlyLimit;
+        emit BridgeTokenHourlyLimitUpdated(bridgeToken, hourlyLimit);
     }
 
     /// @notice Updates the `fee` value for `bridgeToken`
@@ -246,7 +246,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     }
 
     /// @notice Pauses or unpauses swapping in and out for a token
-    function toggleBridge(address bridgeToken) external onlyGovernorOrGuardianOrKeeper {
+    function toggleBridge(address bridgeToken) external onlyGovernorOrGuardian {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bool pausedStatus = bridges[bridgeToken].paused;
         bridges[bridgeToken].paused = !pausedStatus;
