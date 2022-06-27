@@ -24,7 +24,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     });
     console.log('Success');
   } else {
-    // In mainnet fork now we test deploying on other chains
     await deploy(`Swapper`, {
       contract: 'SwapperSidechain',
       from: deployer.address,
