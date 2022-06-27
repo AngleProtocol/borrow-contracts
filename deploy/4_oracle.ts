@@ -10,6 +10,8 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   const treasury = (await deployments.get('Treasury')).address;
 
+  const chainName = network.name.charAt(0).toUpperCase() + network.name.substring(1);
+
   if (!network.live || network.config.chainId === ChainId.MAINNET) {
     console.log('Now deploying the Oracle ETH/EUR');
     await deploy('Oracle_ETH_EUR', {
@@ -21,26 +23,27 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
     const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
     console.log(`Successfully deployed Oracle wBTC/EUR at the address ${oracle}`);
     console.log('');
-  } else if (network.config.chainId === ChainId.POLYGON) {
-    await deploy('Oracle_MATIC_EUR', {
-      contract: 'OracleMATICEURChainlinkPolygon',
+  } else {
+    // TODO change before real deployments
+    await deploy('Oracle_ETH_EUR', {
+      contract: `OracleETHEURChainlink${chainName}`,
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle = (await deployments.get('Oracle_MATIC_EUR')).address;
-    console.log(`Successfully deployed Oracle MATIC/EUR at the address ${oracle}`);
+    const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
+    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
     console.log('');
-    // TODO change before Polygon deployment
-    await deploy('Oracle_ETH_EUR', {
+
+    await deploy('Oracle_MATIC_EUR', {
       contract: 'MockOracle',
       from: deployer.address,
-      // Entry rate for ETH, we can update the rate as we wish
-      args: ['1086509677194259882891', treasury],
+      // Entry rate for MATIC, we can update the rate as we wish
+      args: ['555179000000000000', treasury],
       log: !argv.ci,
     });
-    const oracle2 = (await deployments.get('Oracle_ETH_EUR')).address;
-    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle2}`);
+    const oracle2 = (await deployments.get('Oracle_MATIC_EUR')).address;
+    console.log(`Successfully deployed Oracle MATIC/EUR at the address ${oracle2}`);
     console.log('');
   }
 };

@@ -17,8 +17,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   let proxyAdminAddress: string;
   const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
   const treasuryAddress = (await ethers.getContract('Treasury')).address;
-
-  const vaultsList = ['wMATIC', 'wETH'];
+  const json = await import('./networks/' + network.name + '.json');
+  const vaultsList = json.vaultsList;
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
