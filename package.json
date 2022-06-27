@@ -11,7 +11,7 @@
     "deploy:arbitrum": "hardhat deploy --network arbitrum --tags flashAngle",
     "deploy:avalanche": "hardhat deploy --network avalanche --tags flashAngle",
     "deploy:optimism": "hardhat deploy --network optimism --tags flashAngle",
-    "deploy:polygon": "hardhat deploy --network polygon --tags flashAngle",
+    "deploy:polygon": "hardhat deploy --network polygon --tags vaultManagerProxy",
     "deploy:upgrade": "hardhat deploy --network mainnet --tags agTokenUpgrade",
     "etherscan:mainnet": "hardhat --network mainnet etherscan-verify",
     "etherscan:rinkeby": "hardhat --network rinkeby etherscan-verify",
@@ -49,7 +49,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "^1.0.87",
+    "@angleprotocol/sdk": "1.0.93",
     "@chainlink/contracts": "0.2.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "3.1.0",

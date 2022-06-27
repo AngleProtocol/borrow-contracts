@@ -30,7 +30,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
-  console.log('Deploying proxies for vaultManager');
+  console.log(`Deploying proxies for the following vaultManager ${vaultsList}`);
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {

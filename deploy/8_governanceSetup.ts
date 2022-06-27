@@ -2,18 +2,7 @@ import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
-import {
-  AgToken,
-  AgToken__factory,
-  CoreBorrow,
-  CoreBorrow__factory,
-  FlashAngle,
-  FlashAngle__factory,
-  ProxyAdmin,
-  ProxyAdmin__factory,
-  Treasury,
-  Treasury__factory,
-} from '../typechain';
+import { AgToken, AgToken__factory, ProxyAdmin, ProxyAdmin__factory, Treasury, Treasury__factory } from '../typechain';
 import params from './networks';
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
@@ -26,8 +15,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   let treasuryContract: Treasury;
   let signer: SignerWithAddress;
   let agToken: AgToken;
-  let coreBorrow: CoreBorrow;
-  let flashAngle: FlashAngle;
+
+  const stableName = 'EUR';
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -43,13 +32,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdminAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
     signer = deployer;
-    agTokenAddress = (await deployments.get('AgToken')).address;
+    agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
   }
+  const vaultsList = json.vaultsList;
   proxyAdmin = new ethers.Contract(proxyAdminAddress, ProxyAdmin__factory.createInterface(), signer) as ProxyAdmin;
   const treasury = await deployments.get('Treasury');
   treasuryContract = new ethers.Contract(treasury.address, Treasury__factory.createInterface(), signer) as Treasury;
-
-  const coreBorrowAddress = await deployments.get('CoreBorrow');
 
   if (!network.live) {
     // We're just upgrading the agToken in mainnet fork
@@ -67,10 +55,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   }
   if (!network.live || network.config.chainId != 1) {
     console.log('Setting new vaultManager contracts on the treasury');
+
     if (params.stablesParameters.EUR.vaultManagers) {
       for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
-        const collat = vaultManagerParams.symbol.split('/')[0];
-        const stable = vaultManagerParams.symbol.split('/')[1];
+        const collat = vaultManagerParams.symbol.split('-')[0];
+        const stable = vaultManagerParams.symbol.split('-')[1];
+        if (!vaultsList.includes(collat)) continue;
         const name = `VaultManager_${collat}_${stable}`;
         const vaultManagerAddress = (await deployments.get(name)).address;
         console.log(`Now setting ${name} ...`);
@@ -80,46 +70,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       }
     }
   }
-
-  coreBorrow = new ethers.Contract(
-    coreBorrowAddress.address,
-    CoreBorrow__factory.createInterface(),
-    signer,
-  ) as CoreBorrow;
-
-  console.log('Setting up the flash loan module parameter');
-  if (params.stablesParameters.EUR.flashloan) {
-    const flashLoanParams = params.stablesParameters.EUR.flashloan;
-    const flashAngleAddress = await deployments.get('FlashAngle');
-    flashAngle = (await new ethers.Contract(
-      flashAngleAddress.address,
-      FlashAngle__factory.createInterface(),
-      signer,
-    )) as FlashAngle;
-
-    console.log('Setting up the flashAngle on the coreBorrow');
-    await (await coreBorrow.setFlashLoanModule(flashAngle.address)).wait();
-    console.log('Success');
-    console.log('');
-
-    console.log('Setting up the treasury on the flashAngle');
-    await (await coreBorrow.connect(signer).addFlashLoanerTreasuryRole(treasury.address)).wait();
-    console.log('Success');
-    console.log('');
-
-    console.log('Setting up flash loan parameters');
-    await (
-      await flashAngle.setFlashLoanParameters(
-        agTokenAddress,
-        flashLoanParams.flashLoanFee,
-        flashLoanParams.maxBorrowable,
-      )
-    ).wait();
-  }
-  console.log('Success');
-  console.log('');
 };
 
-func.tags = ['governanceFlashLoan'];
+func.tags = ['governanceSetup'];
 func.dependencies = ['swapper'];
 export default func;
