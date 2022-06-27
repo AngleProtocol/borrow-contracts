@@ -3,6 +3,7 @@
   "guardian": "0xD245678e417aEE2d91763F6f4eFE570FF52fD080",
   "uniswapV3Router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
   "oneInchRouter": "0x1111111254760F7ab3F16433eea9304126DCd199",
+  "angleRouter": "0x2859a4eBcB58c8Dd5cAC1419C4F63A071b642B20",
   "dust": "0.01",
   "vaultsList": ["wETH"]
 }
