@@ -2,27 +2,33 @@
 
 pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "../../interfaces/external/layerZero/ILayerZeroReceiver.sol";
-import "../../interfaces/external/layerZero/ILayerZeroUserApplicationConfig.sol";
-import "../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
-import "../../interfaces/ITreasury.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "../../../interfaces/external/layerZero/ILayerZeroReceiver.sol";
+import "../../../interfaces/external/layerZero/ILayerZeroUserApplicationConfig.sol";
+import "../../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
+import "../../../interfaces/ITreasury.sol";
 
-/// @title LzApp
+/// @title NonblockingLzApp
 /// @author Angle Core Team, forked from LayerZero
-abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
+abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     /// @notice Layer Zero endpoint
-    ILayerZeroEndpoint public immutable lzEndpoint;
+    ILayerZeroEndpoint public lzEndpoint;
+
+    /// @notice Maps chainIds to failed messages to retry them
+    mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
 
     /// @notice Maps chainIds to their OFT address
     mapping(uint16 => bytes) public trustedRemoteLookup;
 
     /// @notice Reference to the treasury contract to fetch access control
-    address public immutable treasury;
+    address public treasury;
+
+    uint256[46] private __gap;
 
     // ================================== Events ===================================
 
     event SetTrustedRemote(uint16 _srcChainId, bytes _srcAddress);
+    event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload);
 
     // =============================== Errors ================================
 
@@ -30,10 +36,12 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     error NotGovernorOrGuardian();
     error InvalidEndpoint();
     error InvalidSource();
+    error InvalidCaller();
+    error InvalidPayload();
 
     // ============================= Constructor ===================================
 
-    constructor(address _endpoint, address _treasury) {
+    function __LzAppUpgradeable_init(address _endpoint, address _treasury) internal {
         lzEndpoint = ILayerZeroEndpoint(_endpoint);
         treasury = _treasury;
     }
@@ -71,13 +79,54 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
         _blockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
-    // abstract function - the default behaviour of LayerZero is blocking. See: NonblockingLzApp if you dont need to enforce ordered messaging
-    function _blockingLzReceive(
+    function retryMessage(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) public payable virtual {
+        // assert there is message to retry
+        bytes32 payloadHash = failedMessages[_srcChainId][_srcAddress][_nonce];
+        if (payloadHash == bytes32(0) || keccak256(_payload) != payloadHash) revert InvalidPayload();
+        // clear the stored message
+        failedMessages[_srcChainId][_srcAddress][_nonce] = bytes32(0);
+        // execute the message. revert if it fails again
+        _nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+    }
+
+    function nonblockingLzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) public virtual {
+        // only internal transaction
+        if (msg.sender != address(this)) revert InvalidCaller();
+        _nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+    }
+
+    function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
         uint64 _nonce,
         bytes memory _payload
     ) internal virtual;
+
+    function _blockingLzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) internal {
+        // try-catch all errors/exceptions
+        try this.nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload) {
+            // do nothing
+        } catch {
+            // error / exception
+            failedMessages[_srcChainId][_srcAddress][_nonce] = keccak256(_payload);
+            emit MessageFailed(_srcChainId, _srcAddress, _nonce, _payload);
+        }
+    }
 
     function _lzSend(
         uint16 _dstChainId,

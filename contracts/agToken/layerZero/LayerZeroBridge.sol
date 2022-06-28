@@ -2,55 +2,60 @@
 
 pragma solidity 0.8.12;
 
-import "./OFTCore.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./utils/OFTCore.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
 // TODO
 // Tests
-// Pass upgradeable
-// Add Permit ?
 // Admin functions to remove ownable and use our access control
 // Sweep functions to tackle eventual issues
-contract AngleETHOFT is OFTCore, Pausable {
+contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Address of the bridgeable token
-    IERC20 public immutable token;
+    IERC20 public token;
 
     /// @notice Maps an address to the amount of token bridged but not received
     mapping(address => uint256) public credit;
 
-    // =============================== Errors ================================
-
-    error InvalidSpender();
+    uint256[48] private __gap;
 
     // ============================= Constructor ===================================
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        address _lzEndpoint,
-        address _treasury
-    ) OFTCore(_lzEndpoint, _treasury) {
+    function initialize(address _lzEndpoint, address _treasury) external initializer {
+        __LzAppUpgradeable_init(_lzEndpoint, _treasury);
         token = IERC20(address(ITreasury(_treasury).stablecoin()));
     }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IOFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function pauseSendTokens(bool pause) external onlyGovernorOrGuardian {
-        pause ? _pause() : _unpause();
+    function sendWithPermit(
+        uint16 _dstChainId,
+        bytes memory _toAddress,
+        uint256 _amount,
+        address payable _refundAddress,
+        address _zroPaymentAddress,
+        bytes memory _adapterParams,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public payable {
+        IERC20Permit(address(token)).permit(msg.sender, address(this), _amount, deadline, v, r, s);
+        _send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
     }
 
     function _debitFrom(
-        address _from,
         uint16,
         bytes memory,
         uint256 _amount
     ) internal override whenNotPaused returns (uint256) {
-        if (_from != msg.sender) revert InvalidSpender();
         // No need to use safeTransferFrom as we know this implementation reverts on failure
-        token.transferFrom(_from, address(this), _amount);
+        token.transferFrom(msg.sender, address(this), _amount);
         return _amount;
     }
 
@@ -63,6 +68,7 @@ contract AngleETHOFT is OFTCore, Pausable {
         // this contract
         uint256 balance = token.balanceOf(address(this));
         if (balance < _amount) {
+            // TODO case where no transfer needed
             credit[_toAddress] = _amount - balance;
             token.transfer(_toAddress, balance);
         } else {
@@ -77,6 +83,10 @@ contract AngleETHOFT is OFTCore, Pausable {
     }
 
     // ======================= Governance Functions ================================
+
+    function pauseSendTokens(bool pause) external onlyGovernorOrGuardian {
+        pause ? _pause() : _unpause();
+    }
 
     function sweep(uint256 amount, address recipient) external onlyGovernorOrGuardian {
         credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big

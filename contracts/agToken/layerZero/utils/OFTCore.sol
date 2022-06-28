@@ -4,12 +4,18 @@ pragma solidity 0.8.12;
 
 import "./NonblockingLzApp.sol";
 import "./IOFTCore.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
-abstract contract OFTCore is NonblockingLzApp, ERC165, IOFTCore {
-    constructor(address _lzEndpoint, address _treasury) NonblockingLzApp(_lzEndpoint, _treasury) {}
+abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
+    uint256[50] private __gap;
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC165Upgradeable, IERC165)
+        returns (bool)
+    {
         return interfaceId == type(IOFTCore).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -25,16 +31,15 @@ abstract contract OFTCore is NonblockingLzApp, ERC165, IOFTCore {
         return lzEndpoint.estimateFees(_dstChainId, address(this), payload, _useZro, _adapterParams);
     }
 
-    function sendFrom(
-        address _from,
+    function send(
         uint16 _dstChainId,
         bytes memory _toAddress,
         uint256 _amount,
         address payable _refundAddress,
         address _zroPaymentAddress,
         bytes memory _adapterParams
-    ) public payable virtual override {
-        _send(_from, _dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
+    ) public payable virtual {
+        _send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
     }
 
     function _nonblockingLzReceive(
@@ -56,7 +61,6 @@ abstract contract OFTCore is NonblockingLzApp, ERC165, IOFTCore {
     }
 
     function _send(
-        address _from,
         uint16 _dstChainId,
         bytes memory _toAddress,
         uint256 _amount,
@@ -64,17 +68,16 @@ abstract contract OFTCore is NonblockingLzApp, ERC165, IOFTCore {
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) internal virtual {
-        _amount = _debitFrom(_from, _dstChainId, _toAddress, _amount);
+        _amount = _debitFrom(_dstChainId, _toAddress, _amount);
 
         bytes memory payload = abi.encode(_toAddress, _amount);
         _lzSend(_dstChainId, payload, _refundAddress, _zroPaymentAddress, _adapterParams);
 
         uint64 nonce = lzEndpoint.getOutboundNonce(_dstChainId, address(this));
-        emit SendToChain(_from, _dstChainId, _toAddress, _amount, nonce);
+        emit SendToChain(msg.sender, _dstChainId, _toAddress, _amount, nonce);
     }
 
     function _debitFrom(
-        address _from,
         uint16 _dstChainId,
         bytes memory _toAddress,
         uint256 _amount

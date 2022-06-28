@@ -1,4 +1,3 @@
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { BigNumber, Contract } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
@@ -79,7 +78,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     contract: 'AngleETHOFT',
     from: deployer.address,
     log: !argv.ci,
-    args: ['AgEUR_LayerZero_TEST', 'AgEUR_LayerZero_TEST', endpointAddr, treasury],
+    args: [endpointAddr, treasury],
   });
   const angleOFT = (await ethers.getContract('Mock_AngleOFT')).address;
   console.log(`Successfully deployed AngleOFT at ${angleOFT}`);

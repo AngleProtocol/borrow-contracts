@@ -1,4 +1,4 @@
-import { ChainId, ether } from '@angleprotocol/sdk';
+import { ether } from '@angleprotocol/sdk';
 import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
 

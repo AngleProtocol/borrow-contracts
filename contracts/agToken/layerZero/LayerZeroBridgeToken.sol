@@ -2,18 +2,18 @@
 
 pragma solidity 0.8.12;
 
-import "./OFTCore.sol";
+import "./utils/OFTCore.sol";
 import "../../interfaces/IAgTokenSideChainMultiBridge.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 // TODO
 // Tests
-// Pass upgradeable
-// Add Permit ?
 // Sweep functions to tackle eventual issues
-contract AngleOFT is OFTCore, ERC20, Pausable {
-    IAgTokenSideChainMultiBridge public immutable canonicalToken;
+contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable {
+    IAgTokenSideChainMultiBridge public canonicalToken;
+
+    uint256[49] private __gap;
 
     // =============================== Errors ================================
 
@@ -21,17 +21,24 @@ contract AngleOFT is OFTCore, ERC20, Pausable {
 
     // ============================= Constructor ===================================
 
-    constructor(
+    function initialize(
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
         address _treasury,
         uint256 initialSupply
-    ) ERC20(_name, _symbol) OFTCore(_lzEndpoint, _treasury) {
+    ) external initializer {
+        __ERC20_init_unchained(_name, _symbol);
+        __LzAppUpgradeable_init(_lzEndpoint, _treasury);
+
         canonicalToken = IAgTokenSideChainMultiBridge(address(ITreasury(_treasury).stablecoin()));
         _approve(address(this), address(canonicalToken), type(uint256).max);
+        // Set the initial amount that could be bridged using this OFT
         _mint(address(canonicalToken), initialSupply);
     }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return
@@ -40,23 +47,33 @@ contract AngleOFT is OFTCore, ERC20, Pausable {
             super.supportsInterface(interfaceId);
     }
 
+    function sendWithPermit(
+        uint16 _dstChainId,
+        bytes memory _toAddress,
+        uint256 _amount,
+        address payable _refundAddress,
+        address _zroPaymentAddress,
+        bytes memory _adapterParams,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public payable {
+        canonicalToken.permit(msg.sender, address(this), _amount, deadline, v, r, s);
+        _send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
+    }
+
+    // ============================= Internal Functions ===================================
+
     function _debitFrom(
-        address _from,
         uint16,
         bytes memory,
         uint256 _amount
     ) internal override whenNotPaused returns (uint256) {
-        address spender = _msgSender();
-        // Otherwise a simple allowance for the canonical token to this address could be exploited
-        if (_from != spender) {
-            uint256 currentAllowance = allowance(_from, _msgSender());
-            if (currentAllowance < _amount) revert InvalidAllowance();
-            unchecked {
-                _approve(_from, _msgSender(), currentAllowance - _amount);
-            }
-        }
         // No need to use safeTransferFrom as we know this implementation reverts on failure
-        canonicalToken.transferFrom(_from, address(this), _amount);
+        canonicalToken.transferFrom(msg.sender, address(this), _amount);
+
+        // Swap canonical for this bridge token. There may be some fees
         uint256 amountSwapped = canonicalToken.swapOut(address(this), _amount, address(this));
         _burn(address(this), amountSwapped);
         return amountSwapped;
