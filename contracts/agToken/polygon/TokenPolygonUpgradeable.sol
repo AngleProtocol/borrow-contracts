@@ -5,9 +5,9 @@ import "./utils/ERC20UpgradeableCustom.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "../../interfaces/IAgToken.sol";
 import "../../interfaces/ITreasury.sol";
 
@@ -26,7 +26,7 @@ contract TokenPolygonUpgradeable is
 {
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
 
-    /// @dev emitted when the child chain manager changes
+    /// @dev Emitted when the child chain manager changes
     event ChildChainManagerAdded(address newAddress);
     event ChildChainManagerRevoked(address oldAddress);
 
@@ -46,9 +46,9 @@ contract TokenPolygonUpgradeable is
     }
 
     /**
-     * @notice called when the bridge has tokens to mint
-     * @param user address to mint the token to
-     * @param depositData encoded amount to mint
+     * @notice Called when the bridge has tokens to mint
+     * @param user Address to mint the token to
+     * @param depositData Encoded amount to mint
      */
     function deposit(address user, bytes calldata depositData) external override {
         require(hasRole(DEPOSITOR_ROLE, msg.sender));
@@ -57,9 +57,9 @@ contract TokenPolygonUpgradeable is
     }
 
     /**
-     * @notice called when user wants to withdraw tokens back to root chain
+     * @notice Called when user wants to withdraw tokens back to root chain
      * @dev Should burn user's tokens. This transaction will be verified when exiting on root chain
-     * @param amount amount of tokens to withdraw
+     * @param amount Amount of tokens to withdraw
      */
     function withdraw(uint256 amount) external override {
         _burn(_msgSender(), amount);
@@ -128,6 +128,7 @@ contract TokenPolygonUpgradeable is
 
     error AssetStillControlledInReserves();
     error BurnAmountExceedsAllowance();
+    error HourlyLimitExceeded();
     error InvalidSender();
     error InvalidToken();
     error InvalidTreasury();
@@ -136,7 +137,6 @@ contract TokenPolygonUpgradeable is
     error NotMinter();
     error NotTreasury();
     error TooBigAmount();
-    error HourlyLimitExceeded();
     error TooHighParameterValue();
     error TreasuryAlreadyInitialized();
     error ZeroAddress();
