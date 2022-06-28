@@ -7,7 +7,7 @@ import "./IOFTCore.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 abstract contract OFTCore is NonblockingLzApp, ERC165, IOFTCore {
-    constructor(address _lzEndpoint) NonblockingLzApp(_lzEndpoint) {}
+    constructor(address _lzEndpoint, address _treasury) NonblockingLzApp(_lzEndpoint, _treasury) {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IOFTCore).interfaceId || super.supportsInterface(interfaceId);

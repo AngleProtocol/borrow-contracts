@@ -10,11 +10,19 @@ import "./LzApp.sol";
  * NOTE: if the srcAddress is not configured properly, it will still block the message pathway from (srcChainId, srcAddress)
  */
 abstract contract NonblockingLzApp is LzApp {
-    constructor(address _endpoint) LzApp(_endpoint) {}
-
     mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
 
+    // ================================== Events ===================================
+
     event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload);
+
+    // =============================== Errors ================================
+
+    error InvalidCaller();
+    error InvalidPayload();
+
+    // ============================= Constructor ===================================
+    constructor(address _endpoint, address _treasury) LzApp(_endpoint, _treasury) {}
 
     // overriding the virtual function in LzReceiver
     function _blockingLzReceive(
@@ -40,7 +48,7 @@ abstract contract NonblockingLzApp is LzApp {
         bytes memory _payload
     ) public virtual {
         // only internal transaction
-        require(_msgSender() == address(this), "NonblockingLzApp: caller must be LzApp");
+        if (msg.sender != address(this)) revert InvalidCaller();
         _nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
@@ -60,8 +68,7 @@ abstract contract NonblockingLzApp is LzApp {
     ) public payable virtual {
         // assert there is message to retry
         bytes32 payloadHash = failedMessages[_srcChainId][_srcAddress][_nonce];
-        require(payloadHash != bytes32(0), "NonblockingLzApp: no stored message");
-        require(keccak256(_payload) == payloadHash, "NonblockingLzApp: invalid payload");
+        if (payloadHash == bytes32(0) || keccak256(_payload) != payloadHash) revert InvalidPayload();
         // clear the stored message
         failedMessages[_srcChainId][_srcAddress][_nonce] = bytes32(0);
         // execute the message. revert if it fails again

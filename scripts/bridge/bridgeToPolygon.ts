@@ -1,8 +1,8 @@
 import { ChainId, ether } from '@angleprotocol/sdk';
 import { Contract } from 'ethers';
-import { parseEther } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 
+import LZ_CHAINIDS from '../../deploy/constants/layerzeroChainIds.json';
 import { ZERO_ADDRESS } from '../../test/utils/helpers';
 import {
   AgTokenSideChainMultiBridge,
@@ -27,33 +27,32 @@ async function main() {
   const contractTreasury = new Contract(treasury, MockTreasury__factory.abi, deployer) as MockTreasury;
 
   // await (await contractTreasury.addMinter(agToken, deployer.address)).wait();
-  await (await contractAgToken.mint(deployer.address, ether(1))).wait();
+  // await (await contractAgToken.mint(deployer.address, ether(1))).wait();
 
   const angleOFT = (await ethers.getContract('Mock_AngleOFT')).address;
   const contractAngleOFT = new Contract(angleOFT, AngleOFT__factory.abi, deployer) as AngleOFT;
 
-  // console.log(
-  //   await contractAngleOFT.estimateSendFee(
-  //     ChainId.POLYGON,
-  //     ethers.utils.solidityPack(['address'], [deployer.address]),
-  //     parseEther('1'),
-  //     false,
-  //     ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
-  //     { gasLimit: 12e6 },
-  //   ),
-  // );
+  const estimate = await contractAngleOFT.estimateSendFee(
+    LZ_CHAINIDS.polygon,
+    ethers.utils.solidityPack(['address'], [deployer.address]),
+    ether('1'),
+    false,
+    ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
+    { gasLimit: 12e6 },
+  );
+  console.log(estimate[0]?.toString());
 
-  await (await contractAgToken.approve(contractAngleOFT.address, ether(1), { gasLimit: 5e5, gasPrice: 10e9 })).wait();
+  // await (await contractAgToken.approve(contractAngleOFT.address, ethers.constants.MaxUint256)).wait();
 
   const tx = await contractAngleOFT.sendFrom(
     deployer.address,
-    ChainId.POLYGON,
+    LZ_CHAINIDS.polygon,
     ethers.utils.solidityPack(['address'], [deployer.address]),
     ether(1),
     deployer.address,
     ZERO_ADDRESS,
     ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
-    { gasLimit: 5e5, gasPrice: 10e9 },
+    { gasLimit: 5e5, gasPrice: 10e9, value: estimate[0] },
   );
   console.log(tx);
 

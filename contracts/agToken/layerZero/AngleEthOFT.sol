@@ -19,22 +19,26 @@ contract AngleETHOFT is OFTCore, Pausable {
     /// @notice Maps an address to the amount of token bridged but not received
     mapping(address => uint256) public credit;
 
+    // =============================== Errors ================================
+
+    error InvalidSpender();
+
+    // ============================= Constructor ===================================
+
     constructor(
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        IERC20 _token,
-        address _owner
-    ) OFTCore(_lzEndpoint) {
-        token = _token;
-        _transferOwnership(_owner);
+        address _treasury
+    ) OFTCore(_lzEndpoint, _treasury) {
+        token = IERC20(address(ITreasury(_treasury).stablecoin()));
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IOFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function pauseSendTokens(bool pause) external onlyOwner {
+    function pauseSendTokens(bool pause) external onlyGovernorOrGuardian {
         pause ? _pause() : _unpause();
     }
 
@@ -44,7 +48,7 @@ contract AngleETHOFT is OFTCore, Pausable {
         bytes memory,
         uint256 _amount
     ) internal override whenNotPaused returns (uint256) {
-        require(_from == msg.sender, "AngleETHOFT: Invalid spender");
+        if (_from != msg.sender) revert InvalidSpender();
         // No need to use safeTransferFrom as we know this implementation reverts on failure
         token.transferFrom(_from, address(this), _amount);
         return _amount;

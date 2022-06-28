@@ -11,20 +11,26 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // Tests
 // Pass upgradeable
 // Add Permit ?
-// Admin functions to remove ownable and use our access control
 // Sweep functions to tackle eventual issues
 contract AngleOFT is OFTCore, ERC20, Pausable {
     IAgTokenSideChainMultiBridge public immutable canonicalToken;
+
+    // =============================== Errors ================================
+
+    error InvalidAllowance();
+
+    // ============================= Constructor ===================================
 
     constructor(
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        address _treasury
+        address _treasury,
+        uint256 initialSupply
     ) ERC20(_name, _symbol) OFTCore(_lzEndpoint, _treasury) {
-        canonicalToken = IAgTokenSideChainMultiBridge(ITreasury(_treasury).stablecoin());
-        setupAllowance();
-        _transferOwnership(_owner);
+        canonicalToken = IAgTokenSideChainMultiBridge(address(ITreasury(_treasury).stablecoin()));
+        _approve(address(this), address(canonicalToken), type(uint256).max);
+        _mint(address(canonicalToken), initialSupply);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
@@ -32,14 +38,6 @@ contract AngleOFT is OFTCore, ERC20, Pausable {
             interfaceId == type(IOFT).interfaceId ||
             interfaceId == type(IERC20).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    function setupAllowance() public onlyOwner {
-        _approve(address(this), address(canonicalToken), type(uint256).max);
-    }
-
-    function pauseSendTokens(bool pause) external onlyOwner {
-        pause ? _pause() : _unpause();
     }
 
     function _debitFrom(
@@ -52,7 +50,7 @@ contract AngleOFT is OFTCore, ERC20, Pausable {
         // Otherwise a simple allowance for the canonical token to this address could be exploited
         if (_from != spender) {
             uint256 currentAllowance = allowance(_from, _msgSender());
-            require(currentAllowance >= _amount, "ERC20: transfer amount exceeds allowance");
+            if (currentAllowance < _amount) revert InvalidAllowance();
             unchecked {
                 _approve(_from, _msgSender(), currentAllowance - _amount);
             }
@@ -73,5 +71,23 @@ contract AngleOFT is OFTCore, ERC20, Pausable {
         uint256 amountMinted = canonicalToken.swapIn(address(this), _amount, _toAddress);
         transfer(_toAddress, balanceOf(address(this)));
         return amountMinted;
+    }
+
+    // ======================= Governance Functions ================================
+
+    function mint(uint256 amount) external onlyGovernorOrGuardian {
+        _mint(address(canonicalToken), amount);
+    }
+
+    function burn(uint256 amount) external onlyGovernorOrGuardian {
+        _burn(address(canonicalToken), amount);
+    }
+
+    function setupAllowance() public onlyGovernorOrGuardian {
+        _approve(address(this), address(canonicalToken), type(uint256).max);
+    }
+
+    function pauseSendTokens(bool pause) external onlyGovernorOrGuardian {
+        pause ? _pause() : _unpause();
     }
 }

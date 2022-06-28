@@ -90,5 +90,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   ).wait();
 };
 
-func.tags = ['mockLayerZero'];
+func.tags = ['mockLayerZeroPolygon'];
 export default func;

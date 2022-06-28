@@ -18,7 +18,7 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     mapping(uint16 => bytes) public trustedRemoteLookup;
 
     /// @notice Reference to the treasury contract to fetch access control
-    address public treasury;
+    address public immutable treasury;
 
     // ================================== Events ===================================
 
@@ -28,6 +28,8 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
 
     error NotGovernor();
     error NotGovernorOrGuardian();
+    error InvalidEndpoint();
+    error InvalidSource();
 
     // ============================= Constructor ===================================
 
@@ -50,6 +52,8 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
         _;
     }
 
+    // ==================== External Permissionless Functions ======================
+
     function lzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -57,14 +61,12 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
         bytes memory _payload
     ) public virtual override {
         // lzReceive must be called by the endpoint for security
-        require(msg.sender == address(lzEndpoint), "LzApp: invalid endpoint caller");
+        if (msg.sender != address(lzEndpoint)) revert InvalidEndpoint();
 
         bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
         // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
-        require(
-            _srcAddress.length == trustedRemote.length && keccak256(_srcAddress) == keccak256(trustedRemote),
-            "LzApp: invalid source sending contract"
-        );
+        if (_srcAddress.length != trustedRemote.length || keccak256(_srcAddress) != keccak256(trustedRemote))
+            revert InvalidSource();
 
         _blockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
@@ -85,7 +87,7 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
         bytes memory _adapterParams
     ) internal virtual {
         bytes memory trustedRemote = trustedRemoteLookup[_dstChainId];
-        require(trustedRemote.length != 0, "LzApp: destination chain is not a trusted source");
+        if (trustedRemote.length == 0) revert InvalidSource();
         lzEndpoint.send{ value: msg.value }(
             _dstChainId,
             trustedRemote,
@@ -96,7 +98,8 @@ abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
         );
     }
 
-    //---------------------------UserApplication config----------------------------------------
+    // ======================= Governance Functions ================================
+
     function getConfig(
         uint16 _version,
         uint16 _chainId,

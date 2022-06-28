@@ -126,10 +126,10 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
-        if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) {
+        uint256 balance = IERC20(bridgeToken).balanceOf(address(this));
+        if (balance + amount > bridgeDetails.limit) {
             // In case someone maliciously sends tokens to this contract
-            if (bridgeDetails.limit > IERC20(bridgeToken).balanceOf(address(this)))
-                amount = bridgeDetails.limit - IERC20(bridgeToken).balanceOf(address(this));
+            if (bridgeDetails.limit > balance) amount = bridgeDetails.limit - balance;
             else {
                 amount = 0;
             }
