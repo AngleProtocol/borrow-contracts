@@ -6,19 +6,48 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../../interfaces/external/layerZero/ILayerZeroReceiver.sol";
 import "../../interfaces/external/layerZero/ILayerZeroUserApplicationConfig.sol";
 import "../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
+import "../../interfaces/ITreasury.sol";
 
-/*
- * a generic LzReceiver implementation
- */
-abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
+/// @title LzApp
+/// @author Angle Core Team, forked from LayerZero
+abstract contract LzApp is ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
+    /// @notice Layer Zero endpoint
     ILayerZeroEndpoint public immutable lzEndpoint;
 
+    /// @notice Maps chainIds to their OFT address
     mapping(uint16 => bytes) public trustedRemoteLookup;
+
+    /// @notice Reference to the treasury contract to fetch access control
+    address public treasury;
+
+    // ================================== Events ===================================
 
     event SetTrustedRemote(uint16 _srcChainId, bytes _srcAddress);
 
-    constructor(address _endpoint) {
+    // =============================== Errors ================================
+
+    error NotGovernor();
+    error NotGovernorOrGuardian();
+
+    // ============================= Constructor ===================================
+
+    constructor(address _endpoint, address _treasury) {
         lzEndpoint = ILayerZeroEndpoint(_endpoint);
+        treasury = _treasury;
+    }
+
+    // =============================== Modifiers ===================================
+
+    /// @notice Checks whether the `msg.sender` has the governor role or not
+    modifier onlyGovernor() {
+        if (!ITreasury(treasury).isGovernor(msg.sender)) revert NotGovernor();
+        _;
+    }
+
+    /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
+    modifier onlyGovernorOrGuardian() {
+        if (!ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        _;
     }
 
     function lzReceive(
@@ -28,7 +57,7 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         bytes memory _payload
     ) public virtual override {
         // lzReceive must be called by the endpoint for security
-        require(_msgSender() == address(lzEndpoint), "LzApp: invalid endpoint caller");
+        require(msg.sender == address(lzEndpoint), "LzApp: invalid endpoint caller");
 
         bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
         // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
@@ -83,24 +112,28 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         uint16 _chainId,
         uint256 _configType,
         bytes calldata _config
-    ) external override onlyOwner {
+    ) external override onlyGovernorOrGuardian {
         lzEndpoint.setConfig(_version, _chainId, _configType, _config);
     }
 
-    function setSendVersion(uint16 _version) external override onlyOwner {
+    function setSendVersion(uint16 _version) external override onlyGovernorOrGuardian {
         lzEndpoint.setSendVersion(_version);
     }
 
-    function setReceiveVersion(uint16 _version) external override onlyOwner {
+    function setReceiveVersion(uint16 _version) external override onlyGovernorOrGuardian {
         lzEndpoint.setReceiveVersion(_version);
     }
 
-    function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress) external override onlyOwner {
+    function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress)
+        external
+        override
+        onlyGovernorOrGuardian
+    {
         lzEndpoint.forceResumeReceive(_srcChainId, _srcAddress);
     }
 
     // allow owner to set it multiple times.
-    function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress) external onlyOwner {
+    function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress) external onlyGovernorOrGuardian {
         trustedRemoteLookup[_srcChainId] = _srcAddress;
         emit SetTrustedRemote(_srcChainId, _srcAddress);
     }

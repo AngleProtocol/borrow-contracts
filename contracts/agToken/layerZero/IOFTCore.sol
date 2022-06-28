@@ -46,11 +46,6 @@ interface IOFTCore is IERC165 {
     ) external payable;
 
     /**
-     * @dev returns the circulating amount of tokens on current chain
-     */
-    function circulatingSupply() external view returns (uint256);
-
-    /**
      * @dev Emitted when `_amount` tokens are moved from the `_sender` to (`_dstChainId`, `_toAddress`)
      * `_nonce` is the outbound nonce
      */

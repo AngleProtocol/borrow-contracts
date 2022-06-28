@@ -20,16 +20,11 @@ contract AngleOFT is OFTCore, ERC20, Pausable {
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        IAgTokenSideChainMultiBridge _canonicalToken,
-        address _owner
-    ) ERC20(_name, _symbol) OFTCore(_lzEndpoint) {
-        canonicalToken = _canonicalToken;
+        address _treasury
+    ) ERC20(_name, _symbol) OFTCore(_lzEndpoint, _treasury) {
+        canonicalToken = IAgTokenSideChainMultiBridge(ITreasury(_treasury).stablecoin());
         setupAllowance();
         _transferOwnership(_owner);
-    }
-
-    function circulatingSupply() public view virtual override returns (uint256) {
-        return totalSupply();
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {

@@ -12,8 +12,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // Add Permit ?
 // Admin functions to remove ownable and use our access control
 // Sweep functions to tackle eventual issues
-contract AngleETHOFT is OFTCore, ERC20, Pausable {
+contract AngleETHOFT is OFTCore, Pausable {
+    /// @notice Address of the bridgeable token
     IERC20 public immutable token;
+
+    /// @notice Maps an address to the amount of token bridged but not received
+    mapping(address => uint256) public credit;
 
     constructor(
         string memory _name,
@@ -21,20 +25,13 @@ contract AngleETHOFT is OFTCore, ERC20, Pausable {
         address _lzEndpoint,
         IERC20 _token,
         address _owner
-    ) ERC20(_name, _symbol) OFTCore(_lzEndpoint) {
+    ) OFTCore(_lzEndpoint) {
         token = _token;
         _transferOwnership(_owner);
     }
 
-    function circulatingSupply() public view virtual override returns (uint256) {
-        return totalSupply();
-    }
-
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            interfaceId == type(IOFT).interfaceId ||
-            interfaceId == type(IERC20).interfaceId ||
-            super.supportsInterface(interfaceId);
+        return interfaceId == type(IOFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function pauseSendTokens(bool pause) external onlyOwner {
@@ -60,7 +57,24 @@ contract AngleETHOFT is OFTCore, ERC20, Pausable {
     ) internal override whenNotPaused returns (uint256) {
         // Should never revert as all the LayerZero bridge tokens come from
         // this contract
-        transfer(_toAddress, _amount);
+        uint256 balance = token.balanceOf(address(this));
+        if (balance < _amount) {
+            credit[_toAddress] = _amount - balance;
+            token.transfer(_toAddress, balance);
+        } else {
+            token.transfer(_toAddress, _amount);
+        }
         return _amount;
+    }
+
+    function withdraw(uint256 amount, address recipient) external whenNotPaused {
+        credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big
+        token.transfer(recipient, amount);
+    }
+
+    // ======================= Governance Functions ================================
+
+    function sweep(uint256 amount, address recipient) external onlyGovernorOrGuardian {
+        credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big
     }
 }
