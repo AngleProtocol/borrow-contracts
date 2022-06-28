@@ -131,6 +131,13 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       chainId: 137,
     },
+    fantom: {
+      live: true,
+      url: nodeUrl('fantom'),
+      accounts: accounts('fantom'),
+      gas: 'auto',
+      chainId: 250,
+    },
     mainnet: {
       live: true,
       url: nodeUrl('mainnet'),
