@@ -66,9 +66,8 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         // this contract
         uint256 balance = token.balanceOf(address(this));
         if (balance < _amount) {
-            // TODO case where no transfer needed
             credit[_toAddress] = _amount - balance;
-            token.transfer(_toAddress, balance);
+            if (balance > 0) token.transfer(_toAddress, balance);
         } else {
             token.transfer(_toAddress, _amount);
         }
