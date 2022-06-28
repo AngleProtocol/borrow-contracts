@@ -9,7 +9,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 // TODO
 // Tests
-// Sweep functions to tackle eventual issues
 contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable {
     IAgTokenSideChainMultiBridge public canonicalToken;
 

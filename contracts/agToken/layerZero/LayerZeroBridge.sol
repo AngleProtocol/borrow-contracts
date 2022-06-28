@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
 // TODO
 // Tests
-// Admin functions to remove ownable and use our access control
-// Sweep functions to tackle eventual issues
 contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Address of the bridgeable token
     IERC20 public token;
