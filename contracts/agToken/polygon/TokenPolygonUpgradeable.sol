@@ -84,35 +84,45 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Struct with some data about a specific bridge token
     struct BridgeDetails {
+        // Limit on the balance of bridge token held by the contract: it is designed
+        // to reduce the exposure of the system to hacks
+        uint256 limit;
+        // Limit on the hourly volume of token minted through this bridge
+        // Technically the limit over a rolling hour is hourlyLimit x2 as hourly limit
+        // is enforced only between x:00 and x+1:00
+        uint256 hourlyLimit;
+        // Fee taken for swapping in and out the token
+        uint64 fee;
         // Whether the associated token is allowed or not
         bool allowed;
         // Whether swapping in and out from the associated token is paused or not
         bool paused;
-        // Limit on the balance of bridge token held by the contract: it is designed
-        // to reduce the exposure of the system to hacks
-        uint256 limit;
-        // Fee taken for swapping in and out the token
-        uint64 fee;
     }
 
     /// @notice Maps a bridge token to data
     mapping(address => BridgeDetails) public bridges;
     /// @notice List of all bridge tokens
     address[] public bridgeTokensList;
+    /// @notice Maps a bridge token to the associated hourly volume
+    mapping(address => mapping(uint256 => uint256)) public usage;
     /// @notice Maps an address to whether it is exempt of fees for when it comes to swapping in and out
-    mapping(address => bool) public isFeeExempt;
+    mapping(address => uint256) public isFeeExempt;
+
+    uint256[44] private __gap;
 
     // ================================== Events ===================================
 
-    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint64 fee, bool paused);
+    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint256 hourlyLimit, uint64 fee, bool paused);
     event BridgeTokenToggled(address indexed bridgeToken, bool toggleStatus);
     event BridgeTokenRemoved(address indexed bridgeToken);
     event BridgeTokenFeeUpdated(address indexed bridgeToken, uint64 fee);
     event BridgeTokenLimitUpdated(address indexed bridgeToken, uint256 limit);
-    event Recovered(address indexed token, address indexed to, uint256 amount);
-    event FeeToggled(address indexed theAddress, bool toggleStatus);
-    event TreasuryUpdated(address indexed _treasury);
+    event BridgeTokenHourlyLimitUpdated(address indexed bridgeToken, uint256 hourlyLimit);
+    event FeeToggled(address indexed theAddress, uint256 toggleStatus);
+    event KeeperToggled(address indexed keeper, bool toggleStatus);
     event MinterToggled(address indexed minter);
+    event Recovered(address indexed token, address indexed to, uint256 amount);
+    event TreasuryUpdated(address indexed _treasury);
 
     // ================================== Errors ===================================
 
@@ -126,8 +136,10 @@ contract TokenPolygonUpgradeable is
     error NotMinter();
     error NotTreasury();
     error TooBigAmount();
+    error HourlyLimitExceeded();
     error TooHighParameterValue();
     error TreasuryAlreadyInitialized();
+    error ZeroAddress();
 
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
@@ -237,6 +249,12 @@ contract TokenPolygonUpgradeable is
         return bridgeTokensList;
     }
 
+    /// @notice Returns the current volume for a bridge, for the current hour
+    /// @dev Helpful for UIs
+    function currentUsage(address bridge) external view returns (uint256) {
+        return usage[bridge][block.timestamp / 3600];
+    }
+
     /// @notice Mints the canonical token from a supported bridge token
     /// @param bridgeToken Bridge token to use to mint
     /// @param amount Amount of bridge tokens to send
@@ -246,17 +264,25 @@ contract TokenPolygonUpgradeable is
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
+
+        // Checking requirement on the hourly volume
+        uint256 hour = block.timestamp / 3600;
+        uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
+        if (hourlyUsage > bridgeDetails.hourlyLimit) revert HourlyLimitExceeded();
+        usage[bridgeToken][hour] = hourlyUsage;
+
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
-        if (!isFeeExempt[msg.sender]) {
+        if (isFeeExempt[msg.sender] == 0) {
             canonicalOut -= (canonicalOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         _mint(to, canonicalOut);
+        return canonicalOut;
     }
 
     /// @notice Burns the canonical token in exchange for a bridge token
@@ -268,15 +294,16 @@ contract TokenPolygonUpgradeable is
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         _burnCustom(msg.sender, amount);
         uint256 bridgeOut = amount;
-        if (!isFeeExempt[msg.sender]) {
+        if (isFeeExempt[msg.sender] == 0) {
             bridgeOut -= (bridgeOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         IERC20(bridgeToken).safeTransfer(to, bridgeOut);
+        return bridgeOut;
     }
 
     // ======================= Governance Functions ================================
@@ -289,6 +316,7 @@ contract TokenPolygonUpgradeable is
     function addBridgeToken(
         address bridgeToken,
         uint256 limit,
+        uint256 hourlyLimit,
         uint64 fee,
         bool paused
     ) external onlyGovernor {
@@ -296,12 +324,13 @@ contract TokenPolygonUpgradeable is
         if (fee > BASE_PARAMS) revert TooHighParameterValue();
         BridgeDetails memory _bridge;
         _bridge.limit = limit;
+        _bridge.hourlyLimit = hourlyLimit;
         _bridge.paused = paused;
         _bridge.fee = fee;
         _bridge.allowed = true;
         bridges[bridgeToken] = _bridge;
         bridgeTokensList.push(bridgeToken);
-        emit BridgeTokenAdded(bridgeToken, limit, fee, paused);
+        emit BridgeTokenAdded(bridgeToken, limit, hourlyLimit, fee, paused);
     }
 
     /// @notice Removes support for a token
@@ -341,6 +370,13 @@ contract TokenPolygonUpgradeable is
         emit BridgeTokenLimitUpdated(bridgeToken, limit);
     }
 
+    /// @notice Updates the `hourlyLimit` amount for `bridgeToken`
+    function setHourlyLimit(address bridgeToken, uint256 hourlyLimit) external onlyGovernorOrGuardian {
+        if (!bridges[bridgeToken].allowed) revert InvalidToken();
+        bridges[bridgeToken].hourlyLimit = hourlyLimit;
+        emit BridgeTokenHourlyLimitUpdated(bridgeToken, hourlyLimit);
+    }
+
     /// @notice Updates the `fee` value for `bridgeToken`
     function setSwapFee(address bridgeToken, uint64 fee) external onlyGovernorOrGuardian {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
@@ -359,10 +395,8 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Toggles fees for the address `theAddress`
     function toggleFeesForAddress(address theAddress) external onlyGovernorOrGuardian {
-        bool feeExemptStatus = isFeeExempt[theAddress];
-        isFeeExempt[theAddress] = !feeExemptStatus;
-        emit FeeToggled(theAddress, !feeExemptStatus);
+        uint256 feeExemptStatus = 1 - isFeeExempt[theAddress];
+        isFeeExempt[theAddress] = feeExemptStatus;
+        emit FeeToggled(theAddress, feeExemptStatus);
     }
-
-    uint256[49] private __gap;
 }

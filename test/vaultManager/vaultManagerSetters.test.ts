@@ -90,7 +90,7 @@ contract('VaultManager - Setters', () => {
     await agToken.connect(impersonatedSigners.governor).setUpTreasury(treasury.address);
     await treasury.addMinter(agToken.address, vaultManager.address);
 
-    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), collatBase, treasury.address);
+    oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
   });
@@ -212,7 +212,7 @@ contract('VaultManager - Setters', () => {
 
   describe('setOracle', () => {
     beforeEach(async () => {
-      oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), 1, treasury.address);
+      oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
     });
     it('reverts - access control', async () => {
       await expect(vaultManager.connect(alice).setOracle(oracle.address)).to.be.revertedWith('NotGovernor');
@@ -221,7 +221,7 @@ contract('VaultManager - Setters', () => {
       await expect(vaultManager.connect(guardian).setOracle(oracle.address)).to.be.revertedWith('NotGovernor');
     });
     it('reverts - wrong treasury', async () => {
-      oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), 1, agToken.address);
+      oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), agToken.address);
       await expect(vaultManager.connect(governor).setOracle(oracle.address)).to.be.revertedWith('InvalidTreasury');
     });
     it('success - governor', async () => {

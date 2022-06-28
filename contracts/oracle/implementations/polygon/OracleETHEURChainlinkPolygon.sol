@@ -4,12 +4,13 @@ pragma solidity 0.8.12;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-import "../BaseOracleChainlinkMulti.sol";
+import "../../BaseOracleChainlinkMulti.sol";
 
-/// @title OracleETHEURChainlink
+/// @title OracleETHEURChainlinkPolygon
 /// @author Angle Core Team
 /// @notice Gives the price of ETH in Euro in base 18
-contract OracleETHEURChainlink is BaseOracleChainlinkMulti {
+/// @dev This contract is built to be deployed on Polygon
+contract OracleETHEURChainlinkPolygon is BaseOracleChainlinkMulti {
     uint256 public constant OUTBASE = 10**18;
     string public constant DESCRIPTION = "ETH/EUR Oracle";
 
@@ -23,9 +24,9 @@ contract OracleETHEURChainlink is BaseOracleChainlinkMulti {
         quoteAmount = OUTBASE;
         AggregatorV3Interface[2] memory circuitChainlink = [
             // Oracle ETH/USD
-            AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419),
+            AggregatorV3Interface(0xF9680D99D6C9589e2a93a78A04A279e509205945),
             // Oracle EUR/USD
-            AggregatorV3Interface(0xb49f677943BC038e9857d61E7d053CaA2C1734C1)
+            AggregatorV3Interface(0x73366Fe0AA0Ded304479862808e02506FE556a98)
         ];
         uint8[2] memory circuitChainIsMultiplied = [1, 0];
         uint8[2] memory chainlinkDecimals = [8, 8];

@@ -11,10 +11,12 @@ import params from './networks';
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   const json = await import('./networks/' + network.name + '.json');
+  const vaultsList = json.vaultsList;
   const governor = json.governor;
   let agTokenAddress: string;
   let signer: SignerWithAddress;
-  const symbols = ['wETH/EUR', 'wBTC/EUR', 'LINK/EUR'];
+
+  const stableName = 'EUR';
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -28,19 +30,16 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
     signer = deployer;
-    agTokenAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].agEUR?.AgToken!;
+    agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
   }
 
   console.log('Unpausing vaultManager contracts');
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
-      if (vaultManagerParams.symbol in symbols) {
-        console.log('Supported VaultManager');
-        // This is an example to show that we can filter vaultManager contracts by their symbol
-      }
-      const collat = vaultManagerParams.symbol.split('/')[0];
-      const stable = vaultManagerParams.symbol.split('/')[1];
+      const collat = vaultManagerParams.symbol.split('-')[0];
+      const stable = vaultManagerParams.symbol.split('-')[1];
+      if (!vaultsList.includes(collat)) continue;
       const name = `VaultManager_${collat}_${stable}`;
 
       const vaultManagerAddress = (await deployments.get(name)).address;
@@ -54,20 +53,20 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       console.log('Success');
 
       // Set borrowFee and repayFee if needed
-      if(!vaultManagerParams.params.borrowFee.isZero()){
+      if (!vaultManagerParams.params.borrowFee.isZero()) {
         await (await vaultManager.setUint64(vaultManagerParams.params.borrowFee, formatBytes32String('BF'))).wait();
         console.log(`BorrowFee of ${vaultManagerParams.params.borrowFee} set successfully`);
       }
-      if(!vaultManagerParams.params.repayFee.isZero()){
+      if (!vaultManagerParams.params.repayFee.isZero()) {
         await (await vaultManager.setUint64(vaultManagerParams.params.repayFee, formatBytes32String('RF'))).wait();
         console.log(`RepayFee of ${vaultManagerParams.params.repayFee} set successfully`);
       }
       console.log('');
     }
   }
-  console.log('Success, all desired vaultManager contracts have been unpaused');
+  console.log('Success, all desired vaultManager contracts have been unpaused and fees have been set');
 };
 
 func.tags = ['unpausing'];
-func.dependencies = ['governanceFlashLoan'];
+func.dependencies = ['governanceSetup'];
 export default func;

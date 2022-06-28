@@ -49,4 +49,3 @@ contract MockSwapperWithSwap is ISwapper {
         data;
     }
 }
-

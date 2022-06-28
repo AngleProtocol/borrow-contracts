@@ -10,9 +10,7 @@ module.exports = {
     'keeperMulticall/RevertReasonParser.sol',
     'mock',
     'oracle/OracleChainlinkMultiTemplate.sol',
-    'oracle/implementations/OracleWSTETHEURChainlink.sol',
-    'oracle/implementations/OracleBTCEURChainlink.sol',
-    'oracle/implementations/OracleETHEURChainlink.sol',
+    'oracle/implementations/',
     // Router here is a copy pasta of the router in another repo
     'router',
     'reactor/BaseReactorStorage.sol',

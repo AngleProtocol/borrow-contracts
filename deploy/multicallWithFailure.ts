@@ -4,8 +4,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
-  console.log('Now deploying KeeperMulticall');
-  console.log('Starting with the implementation');
+  console.log('Now deploying Multicall with failure');
   const multicallWithFailure = await deploy('MultiCallWithFailure', {
     contract: 'MultiCallWithFailure',
     from: deployer.address,

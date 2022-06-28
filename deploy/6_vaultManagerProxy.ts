@@ -13,39 +13,30 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const json = await import('./networks/' + network.name + '.json');
-  const governor = json.governor;
 
   let proxyAdminAddress: string;
   const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
   const treasuryAddress = (await ethers.getContract('Treasury')).address;
-  let signer: SignerWithAddress;
+  const json = await import('./networks/' + network.name + '.json');
+  const vaultsList = json.vaultsList;
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
     proxyAdminAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
-    await hre.network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [governor],
-    });
-    await hre.network.provider.send('hardhat_setBalance', [governor, '0x10000000000000000000000000000']);
-    signer = await ethers.getSigner(governor);
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    proxyAdminAddress = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
-    signer = deployer;
+    proxyAdminAddress = (await ethers.getContract('ProxyAdmin')).address;
   }
 
-  expect(proxyAdminAddress).to.be.equal('0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b');
+  const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
-  const treasury = new Contract(treasuryAddress, Treasury__factory.abi, signer);
-
-  console.log('Deploying proxies for vaultManager');
+  console.log(`Deploying proxies for the following vaultManager ${vaultsList}`);
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
       const collat = vaultManagerParams.symbol.split('-')[0];
       const stable = vaultManagerParams.symbol.split('-')[1];
+      if (!vaultsList.includes(collat)) continue;
       const name = `VaultManager_${collat}_${stable}`;
       const oracle = (await ethers.getContract(`Oracle_${vaultManagerParams.oracle}`)).address;
 

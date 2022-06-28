@@ -17,6 +17,7 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     uint256 public counter1Inch;
     uint256 public counterUni;
     uint256 public counterWrap;
+    uint256 public counterMixer;
     uint256 public amountOutUni;
     uint256 public multiplierMintBurn;
     uint256 public stETHMultiplier;
@@ -24,6 +25,35 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
     address public outToken;
 
     address public stETH;
+
+    /// @notice Action types
+    enum ActionType {
+        transfer,
+        wrap,
+        wrapNative,
+        sweep,
+        sweepNative,
+        unwrap,
+        unwrapNative,
+        swapIn,
+        swapOut,
+        uniswapV3,
+        oneInch,
+        claimRewards,
+        gaugeDeposit,
+        borrower
+    }
+
+    /// @notice Data needed to get permits
+    struct PermitType {
+        address token;
+        address owner;
+        uint256 value;
+        uint256 deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
 
     constructor() {}
 
@@ -53,6 +83,21 @@ contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
         counterAngleBurn += 1;
         IERC20(stablecoin).safeTransferFrom(msg.sender, address(this), amount);
         IERC20(collateral).safeTransfer(user, (amount * multiplierMintBurn) / 10**9);
+    }
+
+    function mixer(
+        PermitType[] memory paramsPermit,
+        ActionType[] memory actions,
+        bytes[] calldata data
+    ) public payable virtual {
+        paramsPermit;
+        counterMixer += 1;
+        for (uint256 i = 0; i < actions.length; i++) {
+            if (actions[i] == ActionType.transfer) {
+                (address transferToken, uint256 amount) = abi.decode(data[i], (address, uint256));
+                IERC20(transferToken).safeTransferFrom(msg.sender, address(this), amount);
+            }
+        }
     }
 
     function wrap(uint256 amount) external returns (uint256 amountOut) {
