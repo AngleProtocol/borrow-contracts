@@ -6,16 +6,16 @@ import "./utils/OFTCore.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
-// TODO
-// Tests
+/// @title LayerZeroBridge
+/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
+/// @notice Contract for bridging an AgToken using LayerZero
 contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Address of the bridgeable token
+    /// @dev Immutable
     IERC20 public token;
 
     /// @notice Maps an address to the amount of token bridged but not received
     mapping(address => uint256) public credit;
-
-    uint256[48] private __gap;
 
     // ============================= Constructor ===================================
 
@@ -27,10 +27,9 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IOFT).interfaceId || super.supportsInterface(interfaceId);
-    }
+    // ==================== External Permissionless Functions ======================
 
+    /// @inheritdoc OFTCore
     function sendWithPermit(
         uint16 _dstChainId,
         bytes memory _toAddress,
@@ -42,11 +41,22 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable {
+    ) public payable override {
         IERC20Permit(address(token)).permit(msg.sender, address(this), _amount, deadline, v, r, s);
-        _send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
+        send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
     }
 
+    /// @notice Withdraw amount of token from and to the recipient
+    /// @param amount Amount to withdraw
+    /// @param recipient Address to withdraw for
+    function withdraw(uint256 amount, address recipient) external whenNotPaused {
+        credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big
+        token.transfer(recipient, amount);
+    }
+
+    // ============================= Internal Functions ===================================
+
+    /// @inheritdoc OFTCore
     function _debitFrom(
         uint16,
         bytes memory,
@@ -57,6 +67,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
+    /// @inheritdoc OFTCore
     function _creditTo(
         uint16,
         address _toAddress,
@@ -74,18 +85,27 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
-    function withdraw(uint256 amount, address recipient) external whenNotPaused {
-        credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big
-        token.transfer(recipient, amount);
+    // ======================= View Functions ================================
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IOFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ======================= Governance Functions ================================
 
+    /// @notice Pauses bridging through the contract
+    /// @param pause Future pause status
     function pauseSendTokens(bool pause) external onlyGovernorOrGuardian {
         pause ? _pause() : _unpause();
     }
 
+    /// @notice Decreases credit of an address
+    /// @param amount Amount to withdraw from credit
+    /// @param recipient Address to withdraw from
     function sweep(uint256 amount, address recipient) external onlyGovernorOrGuardian {
         credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big
     }
+
+    uint256[48] private __gap;
 }

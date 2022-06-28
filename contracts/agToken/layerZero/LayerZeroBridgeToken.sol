@@ -7,12 +7,13 @@ import "../../interfaces/IAgTokenSideChainMultiBridge.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-// TODO
-// Tests
+/// @title LayerZeroBridgeToken
+/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
+/// @notice Contract for bridging an AgToken using a bridge intermediate token and LayerZero
 contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable {
+    /// @notice Address of the bridgeable token
+    /// @dev Immutable
     IAgTokenSideChainMultiBridge public canonicalToken;
-
-    uint256[49] private __gap;
 
     // =============================== Errors ================================
 
@@ -39,13 +40,9 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            interfaceId == type(IOFT).interfaceId ||
-            interfaceId == type(IERC20).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
+    // ==================== External Permissionless Functions ======================
 
+    /// @inheritdoc OFTCore
     function sendWithPermit(
         uint16 _dstChainId,
         bytes memory _toAddress,
@@ -57,13 +54,14 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable {
+    ) public payable override {
         canonicalToken.permit(msg.sender, address(this), _amount, deadline, v, r, s);
-        _send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
+        send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
     }
 
     // ============================= Internal Functions ===================================
 
+    /// @inheritdoc OFTCore
     function _debitFrom(
         uint16,
         bytes memory,
@@ -78,6 +76,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         return amountSwapped;
     }
 
+    /// @inheritdoc OFTCore
     function _creditTo(
         uint16,
         address _toAddress,
@@ -89,21 +88,40 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         return amountMinted;
     }
 
+    // ======================= View Functions ================================
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return
+            interfaceId == type(IOFT).interfaceId ||
+            interfaceId == type(IERC20).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
     // ======================= Governance Functions ================================
 
+    /// @notice Mints the intermediate contract to the `canonicalToken`
+    /// @dev Used to increase the bridging capacity
     function mint(uint256 amount) external onlyGovernorOrGuardian {
         _mint(address(canonicalToken), amount);
     }
 
+    /// @notice Burns the intermediate contract from the `canonicalToken`
+    /// @dev Used to decrease the bridging capacity
     function burn(uint256 amount) external onlyGovernorOrGuardian {
         _burn(address(canonicalToken), amount);
     }
 
+    /// @notice Increases allowance of the `canonicalToken`
     function setupAllowance() public onlyGovernorOrGuardian {
         _approve(address(this), address(canonicalToken), type(uint256).max);
     }
 
+    /// @notice Pauses bridging through the contract
+    /// @param pause Future pause status
     function pauseSendTokens(bool pause) external onlyGovernorOrGuardian {
         pause ? _pause() : _unpause();
     }
+
+    uint256[49] private __gap;
 }

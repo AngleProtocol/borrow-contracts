@@ -9,7 +9,8 @@ import "../../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
 import "../../../interfaces/ITreasury.sol";
 
 /// @title NonblockingLzApp
-/// @author Angle Core Team, forked from LayerZero
+/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/
+/// @notice Base contract for for bridging using LayerZero
 abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     /// @notice Layer Zero endpoint
     ILayerZeroEndpoint public lzEndpoint;
@@ -22,8 +23,6 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
 
     /// @notice Reference to the treasury contract to fetch access control
     address public treasury;
-
-    uint256[46] private __gap;
 
     // ================================== Events ===================================
 
@@ -62,6 +61,11 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
 
     // ==================== External Permissionless Functions ======================
 
+    /// @notice Receives a message from the LZ endpoint and process it
+    /// @param _srcChainId ChainId of the source chain - LayerZero standard
+    /// @param _srcAddress Sender of the source chain
+    /// @param _nonce Nounce of the message
+    /// @param _payload Data: recipient address and amount
     function lzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -79,6 +83,11 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         _blockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
+    /// @notice Retries a message that previously failed and was stored
+    /// @param _srcChainId ChainId of the source chain - LayerZero standard
+    /// @param _srcAddress Sender of the source chain
+    /// @param _nonce Nounce of the message
+    /// @param _payload Data: recipient address and amount
     function retryMessage(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -94,6 +103,14 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         _nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
+    // ============================= Internal Functions ===================================
+
+    /// @notice Handles message receptions in a non blocking way
+    /// @param _srcChainId ChainId of the source chain - LayerZero standard
+    /// @param _srcAddress Sender of the source chain
+    /// @param _nonce Nounce of the message
+    /// @param _payload Data: recipient address and amount
+    /// @dev public for the needs of try / catch but effectively internal
     function nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -105,6 +122,11 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         _nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
+    /// @notice Handles message receptions in a non blocking way
+    /// @param _srcChainId ChainId of the source chain - LayerZero standard
+    /// @param _srcAddress Sender of the source chain
+    /// @param _nonce Nounce of the message
+    /// @param _payload Data: recipient address and amount
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -112,6 +134,11 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         bytes memory _payload
     ) internal virtual;
 
+    /// @notice Handles message receptions in a blocking way
+    /// @param _srcChainId ChainId of the source chain - LayerZero standard
+    /// @param _srcAddress Sender of the source chain
+    /// @param _nonce Nounce of the message
+    /// @param _payload Data: recipient address and amount
     function _blockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -128,6 +155,12 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         }
     }
 
+    /// @notice Sends a message to the LZ endpoint and process it
+    /// @param _dstChainId L0 defined chain id to send tokens too
+    /// @param _payload Data: recipient address and amount
+    /// @param _refundAddress Address LayerZero refunds if too much message fee is sent
+    /// @param _zroPaymentAddress Set to address(0x0) if not paying in ZRO (LayerZero Token)
+    /// @param _adapterParams Flexible bytes array to indicate messaging adapter services in L0
     function _lzSend(
         uint16 _dstChainId,
         bytes memory _payload,
@@ -149,6 +182,18 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
 
     // ======================= Governance Functions ================================
 
+    /// @notice Sets the corresponding address on an other chain.
+    /// @param _srcChainId ChainId of the source chain - LayerZero standard
+    /// @param _srcAddress Address on the source chain
+    /// @dev Used for both receiving and sending message
+    /// @dev There can only be one trusted source per chain
+    /// @dev Allows owner to set it multiple times.
+    function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress) external onlyGovernorOrGuardian {
+        trustedRemoteLookup[_srcChainId] = _srcAddress;
+        emit SetTrustedRemote(_srcChainId, _srcAddress);
+    }
+
+    /// @notice Fetches the default LZ config
     function getConfig(
         uint16 _version,
         uint16 _chainId,
@@ -158,7 +203,7 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         return lzEndpoint.getConfig(_version, _chainId, address(this), _configType);
     }
 
-    // generic config for LayerZero user Application
+    /// @notice Overrides the default LZ config
     function setConfig(
         uint16 _version,
         uint16 _chainId,
@@ -168,14 +213,17 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         lzEndpoint.setConfig(_version, _chainId, _configType, _config);
     }
 
+    /// @notice Overrides the default LZ config
     function setSendVersion(uint16 _version) external override onlyGovernorOrGuardian {
         lzEndpoint.setSendVersion(_version);
     }
 
+    /// @notice Overrides the default LZ config
     function setReceiveVersion(uint16 _version) external override onlyGovernorOrGuardian {
         lzEndpoint.setReceiveVersion(_version);
     }
 
+    /// @notice Unpauses the receive functionalities
     function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress)
         external
         override
@@ -184,16 +232,13 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         lzEndpoint.forceResumeReceive(_srcChainId, _srcAddress);
     }
 
-    // allow owner to set it multiple times.
-    function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress) external onlyGovernorOrGuardian {
-        trustedRemoteLookup[_srcChainId] = _srcAddress;
-        emit SetTrustedRemote(_srcChainId, _srcAddress);
-    }
+    // ======================= View Functions ================================
 
-    //--------------------------- VIEW FUNCTION ----------------------------------------
-
+    /// @notice Checks if the `_srcAddress` corresponds to the trusted source
     function isTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (bool) {
         bytes memory trustedSource = trustedRemoteLookup[_srcChainId];
         return keccak256(trustedSource) == keccak256(_srcAddress);
     }
+
+    uint256[46] private __gap;
 }
