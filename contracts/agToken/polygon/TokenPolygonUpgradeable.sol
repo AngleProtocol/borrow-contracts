@@ -267,13 +267,20 @@ contract TokenPolygonUpgradeable is
     ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
-        if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
+        if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) {
+            // In case someone maliciously sends tokens to this contract
+            if (bridgeDetails.limit > IERC20(bridgeToken).balanceOf(address(this)))
+                amount = bridgeDetails.limit - IERC20(bridgeToken).balanceOf(address(this));
+            else {
+                amount = 0;
+            }
+        }
 
         // Checking requirement on the hourly volume
         uint256 hour = block.timestamp / 3600;
         uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
-        if (hourlyUsage > bridgeDetails.hourlyLimit) revert HourlyLimitExceeded();
-        usage[bridgeToken][hour] = hourlyUsage;
+        if (hourlyUsage > bridgeDetails.hourlyLimit) amount = bridgeDetails.hourlyLimit - usage[bridgeToken][hour];
+        usage[bridgeToken][hour] = usage[bridgeToken][hour] + amount;
 
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
@@ -311,6 +318,7 @@ contract TokenPolygonUpgradeable is
     /// @notice Adds support for a bridge token
     /// @param bridgeToken Bridge token to add: it should be a version of the stablecoin from another bridge
     /// @param limit Limit on the balance of bridge token this contract could hold
+    /// @param hourlyLimit Limit on the hourly volume for this bridge
     /// @param paused Whether swapping for this token should be paused or not
     /// @param fee Fee taken upon swapping for or against this token
     function addBridgeToken(
