@@ -114,6 +114,7 @@ contract('LayerZeroBridge', () => {
   });
   describe('setTrustedRemote', () => {
     it('success - trusted remote setup', async () => {
+      expect(await lzBridge.isTrustedRemote(1, remote.address)).to.be.equal(false);
       const receipt = await (
         await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address)
       ).wait();
@@ -122,6 +123,28 @@ contract('LayerZeroBridge', () => {
         _srcChainId: 1,
         _srcAddress: remote.address.toLowerCase(),
       });
+      expect(await lzBridge.isTrustedRemote(1, remote.address)).to.be.equal(true);
+    });
+  });
+  describe('estimateSendFee', () => {
+    it('success - mock contract is called', async () => {
+      const receipt = await lzBridge.estimateSendFee(1, alice.address, 1, false, '0x');
+      expect(receipt[0]).to.be.equal(123);
+      expect(receipt[1]).to.be.equal(456);
+    });
+  });
+  describe('setConfig', () => {
+    it('success - config changed', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setConfig(1, 1, 67, '0x');
+      expect(await lzEndpoint.config()).to.be.equal(67);
+      await lzEndpoint.getConfig(0, 0, alice.address, 0);
+    });
+  });
+  describe('getConfig', () => {
+    it('success - config obtained', async () => {
+      const receipt = await lzBridge.estimateSendFee(1, alice.address, 1, false, '0x');
+      expect(receipt[0]).to.be.equal(123);
+      expect(receipt[1]).to.be.equal(456);
     });
   });
   describe('send', () => {
@@ -294,5 +317,8 @@ contract('LayerZeroBridge', () => {
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('3'));
       expect(await agToken.balanceOf(lzBridge.address)).to.be.equal(parseEther('8'));
     });
+  });
+  describe('supportsInterface', () => {
+    it('reverts - paused', async () => {});
   });
 });

@@ -15,6 +15,9 @@ contract MockLayerZero {
     mapping(uint16 => uint256) public counters;
     uint256 public config;
     mapping(uint16 => uint64) public outboundNonce;
+    uint256 public resumeReceived;
+    uint256 public sendVersion;
+    uint256 public receiveVersion;
 
     /// @notice Initiate with a fixe change rate
     constructor() {}
@@ -47,4 +50,46 @@ contract MockLayerZero {
     ) public {
         ILzApp(lzApp).lzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
+
+    function estimateFees(
+        uint16,
+        address,
+        bytes calldata,
+        bool,
+        bytes calldata
+    ) external pure returns (uint256 nativeFee, uint256 zroFee) {
+        return(123,456);
+    }
+
+    function setConfig(
+        uint16,
+        uint16,
+        uint256 _configType,
+        bytes calldata
+    ) external {
+        config = _configType;
+    }
+
+    function getConfig(
+        uint16,
+        uint16,
+        address,
+        uint256
+    ) external view returns (bytes memory) {
+        return abi.encodePacked(config);
+
+    }
+    function setSendVersion(uint16 _version) external {
+        sendVersion = _version;
+    }
+
+    function setReceiveVersion(uint16 _version) external {
+        receiveVersion = _version;
+    }
+
+    function forceResumeReceive(uint16, bytes calldata) external {
+        resumeReceived = 1 - resumeReceived;
+    }
+
+
 }
