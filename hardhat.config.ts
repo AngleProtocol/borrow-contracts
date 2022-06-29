@@ -130,6 +130,7 @@ const config: HardhatUserConfig = {
       accounts: accounts('polygon'),
       gas: 'auto',
       chainId: 137,
+      gasPrice: 200e9,
     },
     fantom: {
       live: true,
@@ -217,17 +218,14 @@ const config: HardhatUserConfig = {
     username: process.env.TENDERLY_USERNAME || '',
   },
   etherscan: {
-    /*
-    // ts-ignore
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY,
       optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY,
       arbitrumOne: process.env.ARBITRUM_ETHERSCAN_API_KEY,
       avalanche: process.env.AVALANCHE_ETHERSCAN_API_KEY,
       polygon: process.env.POLYGON_ETHERSCAN_API_KEY,
-    },
-    */
-    apiKey: process.env.ETHERSCAN_API_KEY,
+      opera: process.env.FANTOM_ETHERSCAN_API_KEY,
+    } as any,
   },
   typechain: {
     outDir: 'typechain',
