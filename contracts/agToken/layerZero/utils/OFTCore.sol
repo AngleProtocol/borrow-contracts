@@ -6,9 +6,12 @@ import "./NonblockingLzApp.sol";
 import "./IOFTCore.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
+import "hardhat/console.sol";
+
 /// @title OFTCore
-/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFTCore.sol
-/// @notice Base contract for for bridging using LayerZero
+/// @author Forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFTCore.sol
+/// but with slight modifications from the Angle Core Team which added return values to the `_creditTo` and `_debitFrom` functions
+/// @notice Base contract for bridging using LayerZero
 abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
     // ==================== External Permissionless Functions ======================
 
@@ -61,10 +64,10 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         // decode and load the toAddress
         (bytes memory toAddressBytes, uint256 amount) = abi.decode(_payload, (bytes, uint256));
         address toAddress;
+        //solhint-disable-next-line
         assembly {
             toAddress := mload(add(toAddressBytes, 20))
         }
-
         amount = _creditTo(_srcChainId, toAddress, amount);
 
         emit ReceiveFromChain(_srcChainId, _srcAddress, toAddress, amount, _nonce);

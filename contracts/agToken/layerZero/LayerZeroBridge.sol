@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
 /// @title LayerZeroBridge
 /// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
-/// @notice Contract for bridging an AgToken using LayerZero
+/// @notice Contract to be deployed on Ethereum for bridging an AgToken using a bridge intermediate token and LayerZero
 contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Address of the bridgeable token
     /// @dev Immutable
@@ -19,6 +19,9 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
 
     // ============================= Constructor ===================================
 
+    /// @notice Initializes the contract
+    /// @param _lzEndpoint Layer zero endpoint to pass messages
+    /// @param _treasury Address of the treasury contract used for access control
     function initialize(address _lzEndpoint, address _treasury) external initializer {
         __LzAppUpgradeable_init(_lzEndpoint, _treasury);
         canonicalToken = IERC20(address(ITreasury(_treasury).stablecoin()));
@@ -63,7 +66,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return amount;
     }
 
-    // ============================= Internal Functions ===================================
+    // ========================== Internal Functions ===============================
 
     /// @inheritdoc OFTCore
     function _debitFrom(
@@ -94,11 +97,11 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
-    // ======================= View Functions ================================
+    // ========================= View Functions ====================================
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IOFT).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IOFTCore).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ======================= Governance Functions ================================
@@ -109,8 +112,8 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         pause ? _pause() : _unpause();
     }
 
-    /// @notice Decreases balanceOf of an address
-    /// @param amount Amount to withdraw from balanceOf
+    /// @notice Decreases the balance of an address
+    /// @param amount Amount to withdraw from balance
     /// @param recipient Address to withdraw from
     function sweep(uint256 amount, address recipient) external onlyGovernorOrGuardian {
         balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
