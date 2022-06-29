@@ -15,7 +15,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     IERC20 public token;
 
     /// @notice Maps an address to the amount of token bridged but not received
-    mapping(address => uint256) public credit;
+    mapping(address => uint256) public balanceOf;
 
     // ============================= Constructor ===================================
 
@@ -50,7 +50,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @param amount Amount to withdraw
     /// @param recipient Address to withdraw for
     function withdraw(uint256 amount, address recipient) external whenNotPaused {
-        credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big
+        balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
         token.transfer(recipient, amount);
     }
 
@@ -77,7 +77,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         // this contract
         uint256 balance = token.balanceOf(address(this));
         if (balance < _amount) {
-            credit[_toAddress] = _amount - balance;
+            balanceOf[_toAddress] = _amount - balance;
             if (balance > 0) token.transfer(_toAddress, balance);
         } else {
             token.transfer(_toAddress, _amount);
@@ -100,11 +100,11 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         pause ? _pause() : _unpause();
     }
 
-    /// @notice Decreases credit of an address
-    /// @param amount Amount to withdraw from credit
+    /// @notice Decreases balanceOf of an address
+    /// @param amount Amount to withdraw from balanceOf
     /// @param recipient Address to withdraw from
     function sweep(uint256 amount, address recipient) external onlyGovernorOrGuardian {
-        credit[recipient] = credit[recipient] - amount; // Will overflow if the amount is too big
+        balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
     }
 
     uint256[48] private __gap;
