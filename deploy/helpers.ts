@@ -1,4 +1,4 @@
-import { deployments, ethers } from 'hardhat';
+import { deployments, ethers, run } from 'hardhat';
 import yargs from 'yargs';
 
 const argv = yargs.env('').boolean('ci').parseSync();
@@ -63,6 +63,10 @@ export const deployProxy = async (
     args: [implementation, admin, data],
   });
   const address = (await ethers.getContract(deploymentName)).address;
+  await run('verify:verify', {
+    address: address,
+    constructorArguments: [implementation, admin, data],
+  });
   console.log(`Successfully deployed the implementation for ${deploymentName} at ${address}`);
 
   return address;
