@@ -1,12 +1,11 @@
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { BigNumber, Contract } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { ZERO_ADDRESS } from '../test/utils/helpers';
-import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory } from '../typechain';
-import LZ_ENDPOINTS from './constants/layerzeroEndpoints.json';
+import { ZERO_ADDRESS } from '../../test/utils/helpers';
+import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory } from '../../typechain';
+import LZ_ENDPOINTS from './../constants/layerzeroEndpoints.json';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -64,22 +63,22 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const treasury = (await ethers.getContract('MockTreasury')).address;
   console.log(`Successfully deployed the implementation for MockTreasury at ${treasury}`);
 
-  console.log('Initializing the proxy');
+  // console.log('Initializing the proxy');
   const contract = new Contract(
     agToken,
     AgTokenSideChainMultiBridge__factory.abi,
     deployer,
   ) as AgTokenSideChainMultiBridge;
-  await (await contract.initialize('AgEUR_TEST', 'AgEUR_TEST', treasury)).wait();
+  // await (await contract.initialize('AgEUR_TEST', 'AgEUR_TEST', treasury)).wait();
 
   console.log('Now deploying AngleOFT');
   const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
   console.log(`[${network.name}] LayerZero Endpoint address: ${endpointAddr}`);
   await deploy('Mock_AngleOFT', {
-    contract: 'AngleOFT',
+    contract: 'AngleETHOFT',
     from: deployer.address,
     log: !argv.ci,
-    args: ['AgEUR_LayerZero_TEST', 'AgEUR_LayerZero_TEST', endpointAddr, agToken, deployer.address],
+    args: [endpointAddr, treasury],
   });
   const angleOFT = (await ethers.getContract('Mock_AngleOFT')).address;
   console.log(`Successfully deployed AngleOFT at ${angleOFT}`);
@@ -90,5 +89,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   ).wait();
 };
 
-func.tags = ['mockLayerZeroPolygon'];
+func.tags = ['mockLayerZeroFantom'];
 export default func;
