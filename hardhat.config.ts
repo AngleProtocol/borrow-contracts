@@ -130,6 +130,7 @@ const config: HardhatUserConfig = {
       accounts: accounts('polygon'),
       gas: 'auto',
       chainId: 137,
+      gasPrice: 200e9,
     },
     fantom: {
       live: true,

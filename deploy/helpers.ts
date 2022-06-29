@@ -4,29 +4,46 @@ import { request } from 'undici';
 import yargs from 'yargs';
 const argv = yargs.env('').boolean('ci').parseSync();
 
-export const deploy = async (name: string, args: any[], isMock = false): Promise<string> => {
+export const deploy = async (name: string, args: any[], isMock = false, verify = true): Promise<string> => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-
-  console.log(`Now deploying ${isMock && 'a mock '}${name}`);
   const deploymentName = `${isMock ? 'Mock_' : ''}${name}`;
-  await deploy(deploymentName, {
-    contract: name,
-    from: deployer.address,
-    log: !argv.ci,
-    args: args,
-  });
-  const address = (await ethers.getContract(deploymentName)).address;
-  await run('verify:verify', {
-    address: address,
-    constructorArguments: args,
-  });
-  console.log(`Successfully deployed the implementation for ${deploymentName} at ${address}`);
+  let address;
+
+  try {
+    address = (await ethers.getContract(deploymentName)).address;
+    console.log(`Reusing ${deploymentName} at ${address}`);
+  } catch {
+    console.log(`Now deploying ${isMock && 'a mock '}${name}`);
+    await deploy(deploymentName, {
+      contract: name,
+      from: deployer.address,
+      log: !argv.ci,
+      args: args,
+    });
+    address = (await ethers.getContract(deploymentName)).address;
+    if (verify) {
+      try {
+        await (run as any)(
+          'verify:verify',
+          {
+            address: address,
+            constructorArguments: args,
+          },
+          { config: { noCompile: true } },
+        );
+      } catch (e) {
+        console.log('Verification failed');
+      }
+    }
+
+    console.log(`Successfully deployed ${deploymentName} at ${address}`);
+  }
 
   return address;
 };
 
-export const deployImplem = async (name: string, isMock = false): Promise<string> => {
+export const deployImplem = async (name: string, isMock = false, verify = true): Promise<string> => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
@@ -44,13 +61,20 @@ export const deployImplem = async (name: string, isMock = false): Promise<string
       log: !argv.ci,
     });
     implementationAddress = (await ethers.getContract(deploymentName)).address;
-    try {
-      await run('verify:verify', {
-        address: implementationAddress,
-        constructorArguments: [],
-      });
-    } catch (e) {
-      console.log('Verification failed: ', e);
+    if (verify) {
+      try {
+        await (run as any)(
+          'verify:verify',
+          {
+            address: implementationAddress,
+            constructorArguments: [],
+            noCompile: true,
+          },
+          { config: { noCompile: true } },
+        );
+      } catch (e) {
+        console.log('Verification failed');
+      }
     }
 
     console.log(`Successfully deployed ${deploymentName} at ${implementationAddress}`);
@@ -64,26 +88,47 @@ export const deployProxy = async (
   admin: string,
   data: string,
   isMock = false,
+  verify = true,
 ): Promise<string> => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-
-  console.log(`Now deploying ${isMock && 'a mock '}${name}`);
   const deploymentName = `${isMock ? 'Mock_' : ''}${name}`;
-  await deploy(deploymentName, {
-    contract: 'TransparentUpgradeableProxy',
-    from: deployer.address,
-    log: !argv.ci,
-    args: [implementation, admin, data],
-  });
-  const address = (await ethers.getContract(deploymentName)).address;
-  await run('verify:verify', {
-    address: address,
-    constructorArguments: [implementation, admin, data],
-  });
-  linkProxyWithImplementationAbi(address, implementation, []);
-  console.log(`Successfully deployed the implementation for ${deploymentName} at ${address}`);
+  let address;
 
+  try {
+    address = (await ethers.getContract(deploymentName)).address;
+    console.log(`Reusing ${deploymentName} at ${address}`);
+  } catch {
+    console.log(`Now deploying ${isMock && 'a mock '}${name}`);
+    await deploy(deploymentName, {
+      contract: 'TransparentUpgradeableProxy',
+      from: deployer.address,
+      log: !argv.ci,
+      args: [implementation, admin, data],
+    });
+    address = (await ethers.getContract(deploymentName)).address;
+    if (verify) {
+      try {
+        await (run as any)(
+          'verify:verify',
+          {
+            address: address,
+            constructorArguments: [implementation, admin, data],
+            noCompile: true,
+          },
+          { config: { noCompile: true } },
+        );
+      } catch (e) {
+        console.log('Verification failed');
+      }
+      try {
+        linkProxyWithImplementationAbi(address, implementation, []);
+      } catch (e) {
+        console.log('Verification failed');
+      }
+    }
+    console.log(`Successfully deployed the implementation for ${deploymentName} at ${address}`);
+  }
   return address;
 };
 
