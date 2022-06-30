@@ -7,8 +7,9 @@ import "./IOFTCore.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
 /// @title OFTCore
-/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFTCore.sol
-/// @notice Base contract for for bridging using LayerZero
+/// @author Forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFTCore.sol
+/// but with slight modifications from the Angle Core Team which added return values to the `_creditTo` and `_debitFrom` functions
+/// @notice Base contract for bridging using LayerZero
 abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
     // ==================== External Permissionless Functions ======================
 
@@ -24,7 +25,7 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable virtual {}
+    ) public payable virtual;
 
     /// @inheritdoc IOFTCore
     function send(
@@ -45,11 +46,9 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
     }
 
     /// @inheritdoc IOFTCore
-    function withdraw(uint256 amount, address recipient) external virtual returns (uint256) {
-        return amount;
-    }
+    function withdraw(uint256 amount, address recipient) external virtual returns (uint256);
 
-    // ============================= Internal Functions ===================================
+    // =========================== Internal Functions ==============================
 
     /// @inheritdoc NonblockingLzApp
     function _nonblockingLzReceive(
@@ -61,10 +60,10 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         // decode and load the toAddress
         (bytes memory toAddressBytes, uint256 amount) = abi.decode(_payload, (bytes, uint256));
         address toAddress;
+        //solhint-disable-next-line
         assembly {
             toAddress := mload(add(toAddressBytes, 20))
         }
-
         amount = _creditTo(_srcChainId, toAddress, amount);
 
         emit ReceiveFromChain(_srcChainId, _srcAddress, toAddress, amount, _nonce);
@@ -90,7 +89,7 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         uint256 _amount
     ) internal virtual returns (uint256);
 
-    // ======================= View Functions ================================
+    // ========================== View Functions ===================================
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId)

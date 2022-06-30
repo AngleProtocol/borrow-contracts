@@ -10,7 +10,7 @@ import "../../../interfaces/ITreasury.sol";
 
 /// @title NonblockingLzApp
 /// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/
-/// @notice Base contract for for bridging using LayerZero
+/// @notice Base contract for bridging using LayerZero
 abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     /// @notice Layer Zero endpoint
     ILayerZeroEndpoint public lzEndpoint;
@@ -37,21 +37,18 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
     error InvalidSource();
     error InvalidCaller();
     error InvalidPayload();
+    error ZeroAddress();
 
     // ============================= Constructor ===================================
 
+    //solhint-disable-next-line
     function __LzAppUpgradeable_init(address _endpoint, address _treasury) internal {
+        if (_endpoint == address(0) || _treasury == address(0)) revert ZeroAddress();
         lzEndpoint = ILayerZeroEndpoint(_endpoint);
         treasury = _treasury;
     }
 
     // =============================== Modifiers ===================================
-
-    /// @notice Checks whether the `msg.sender` has the governor role or not
-    modifier onlyGovernor() {
-        if (!ITreasury(treasury).isGovernor(msg.sender)) revert NotGovernor();
-        _;
-    }
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
@@ -170,6 +167,7 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
     ) internal virtual {
         bytes memory trustedRemote = trustedRemoteLookup[_dstChainId];
         if (trustedRemote.length == 0) revert InvalidSource();
+        //solhint-disable-next-line
         lzEndpoint.send{ value: msg.value }(
             _dstChainId,
             trustedRemote,

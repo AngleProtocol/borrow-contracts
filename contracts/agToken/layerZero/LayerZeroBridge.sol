@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
 /// @title LayerZeroBridge
 /// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
-/// @notice Contract for bridging an AgToken using LayerZero
+/// @notice Contract to be deployed on Ethereum for bridging an AgToken using a bridge intermediate token and LayerZero
 contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Address of the bridgeable token
     /// @dev Immutable
@@ -19,6 +19,9 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
 
     // ============================= Constructor ===================================
 
+    /// @notice Initializes the contract
+    /// @param _lzEndpoint Layer zero endpoint to pass messages
+    /// @param _treasury Address of the treasury contract used for access control
     function initialize(address _lzEndpoint, address _treasury) external initializer {
         __LzAppUpgradeable_init(_lzEndpoint, _treasury);
         canonicalToken = IERC20(address(ITreasury(_treasury).stablecoin()));
@@ -47,23 +50,28 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     }
 
     /// @inheritdoc OFTCore
-    function withdraw(uint256 amount, address recipient) external override whenNotPaused returns (uint256) {
-        balanceOf[msg.sender] = balanceOf[msg.sender] - amount; // Will overflow if the amount is too big
-        canonicalToken.transfer(recipient, amount);
-        return amount;
+    function withdraw(uint256 amount, address recipient) external override returns (uint256) {
+        return _withdraw(amount, msg.sender, recipient);
     }
 
     /// @notice Withdraws amount of `token` from the contract and sends it to the recipient
     /// @param amount Amount to withdraw
     /// @param recipient Address to withdraw for
     /// @return The amount of canonical token sent
-    function withdrawFor(uint256 amount, address recipient) external whenNotPaused returns (uint256) {
-        balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
-        canonicalToken.transfer(recipient, amount);
-        return amount;
+    function withdrawFor(uint256 amount, address recipient) external returns (uint256) {
+        return _withdraw(amount, recipient, recipient);
     }
 
-    // ============================= Internal Functions ===================================
+    // ========================== Internal Functions ===============================
+
+    /// @notice Withdraws `amount` from the balance of the `from` address and sends these tokens to the `to` address
+    /// @dev It's important to make sure that `from` is either the `msg.sender` or that `from` and `to` are the same 
+    /// addresses
+    function _withdraw(uint256 amount, address from, address to) internal whenNotPaused returns(uint256) {
+        balanceOf[from] = balanceOf[from] - amount; // Will overflow if the amount is too big
+        canonicalToken.transfer(to, amount);
+        return amount;
+    }
 
     /// @inheritdoc OFTCore
     function _debitFrom(
@@ -94,11 +102,11 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
-    // ======================= View Functions ================================
+    // ========================= View Functions ====================================
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IOFT).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IOFTCore).interfaceId || super.supportsInterface(interfaceId);
     }
 
     // ======================= Governance Functions ================================
@@ -109,8 +117,8 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         pause ? _pause() : _unpause();
     }
 
-    /// @notice Decreases balanceOf of an address
-    /// @param amount Amount to withdraw from balanceOf
+    /// @notice Decreases the balance of an address
+    /// @param amount Amount to withdraw from balance
     /// @param recipient Address to withdraw from
     function sweep(uint256 amount, address recipient) external onlyGovernorOrGuardian {
         balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big

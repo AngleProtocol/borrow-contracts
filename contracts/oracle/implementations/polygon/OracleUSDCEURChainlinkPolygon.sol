@@ -6,13 +6,13 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "../../BaseOracleChainlinkMulti.sol";
 
-/// @title OracleETHEURChainlinkOptimism
+/// @title OracleUSDCEURChainlinkPolygon
 /// @author Angle Core Team
-/// @notice Gives the price of ETH in Euro in base 18
-/// @dev This contract is built to be deployed on Optimism
-contract OracleETHEURChainlinkOptimism is BaseOracleChainlinkMulti {
+/// @notice Gives the price of USDC in Euro in base 18
+/// @dev This contract is built to be deployed on Polygon
+contract OracleUSDCEURChainlinkPolygon is BaseOracleChainlinkMulti {
     uint256 public constant OUTBASE = 10**18;
-    string public constant DESCRIPTION = "ETH/EUR Oracle";
+    string public constant DESCRIPTION = "USDC/EUR Oracle";
 
     /// @notice Constructor of the contract
     /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
@@ -23,10 +23,10 @@ contract OracleETHEURChainlinkOptimism is BaseOracleChainlinkMulti {
     function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = OUTBASE;
         AggregatorV3Interface[2] memory circuitChainlink = [
-            // Oracle ETH/USD
-            AggregatorV3Interface(0x13e3Ee699D1909E989722E753853AE30b17e08c5),
+            // Oracle USDC/USD
+            AggregatorV3Interface(0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7),
             // Oracle EUR/USD
-            AggregatorV3Interface(0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20)
+            AggregatorV3Interface(0x73366Fe0AA0Ded304479862808e02506FE556a98)
         ];
         uint8[2] memory circuitChainIsMultiplied = [1, 0];
         uint8[2] memory chainlinkDecimals = [8, 8];
