@@ -140,6 +140,30 @@ contract('LayerZeroBridge', () => {
       await lzEndpoint.getConfig(0, 0, alice.address, 0);
     });
   });
+  describe('setSendVersion', () => {
+    it('success - send version changed', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setSendVersion(10);
+      expect(await lzEndpoint.sendVersion()).to.be.equal(10);
+    });
+  });
+  describe('setReceiveVersion', () => {
+    it('success - receive version changed', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setReceiveVersion(14);
+      expect(await lzEndpoint.receiveVersion()).to.be.equal(14);
+    });
+  });
+  describe('forceResumeReceive', () => {
+    it('success - resumed', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).forceResumeReceive(1, '0x');
+      expect(await lzEndpoint.resumeReceived()).to.be.equal(1);
+    });
+    it('success - resumed and then paused', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).forceResumeReceive(1, '0x');
+      expect(await lzEndpoint.resumeReceived()).to.be.equal(1);
+      await lzBridge.connect(impersonatedSigners[governor]).forceResumeReceive(1, '0x');
+      expect(await lzEndpoint.resumeReceived()).to.be.equal(0);
+    });
+  });
   describe('send', () => {
     it('reverts - trusted remote not set', async () => {
       await agToken.mint(alice.address, parseEther('10'));
@@ -312,6 +336,9 @@ contract('LayerZeroBridge', () => {
     });
   });
   describe('supportsInterface', () => {
-    it('reverts - paused', async () => {});
+    it('success - correct result', async () => {
+      const bytes4 = web3.utils.toHex('test');
+      expect(await lzBridge.supportsInterface(bytes4)).to.be.equal(false);
+    });
   });
 });

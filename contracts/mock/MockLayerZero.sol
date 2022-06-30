@@ -58,7 +58,7 @@ contract MockLayerZero {
         bool,
         bytes calldata
     ) external pure returns (uint256 nativeFee, uint256 zroFee) {
-        return(123,456);
+        return (123, 456);
     }
 
     function setConfig(
@@ -77,8 +77,8 @@ contract MockLayerZero {
         uint256
     ) external view returns (bytes memory) {
         return abi.encodePacked(config);
-
     }
+
     function setSendVersion(uint16 _version) external {
         sendVersion = _version;
     }
@@ -90,6 +90,4 @@ contract MockLayerZero {
     function forceResumeReceive(uint16, bytes calldata) external {
         resumeReceived = 1 - resumeReceived;
     }
-
-
 }
