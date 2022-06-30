@@ -57,7 +57,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @param amount Amount to withdraw
     /// @param recipient Address to withdraw for
     /// @return The amount of canonical token sent
-    function withdrawFor(uint256 amount, address recipient) external override whenNotPaused returns (uint256) {
+    function withdrawFor(uint256 amount, address recipient) external whenNotPaused returns (uint256) {
         balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
         token.transfer(recipient, amount);
         return amount;
