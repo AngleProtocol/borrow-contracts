@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Address of the bridgeable token
     /// @dev Immutable
-    IERC20 public token;
+    IERC20 public canonicalToken;
 
     /// @notice Maps an address to the amount of token bridged but not received
     mapping(address => uint256) public balanceOf;
@@ -21,7 +21,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
 
     function initialize(address _lzEndpoint, address _treasury) external initializer {
         __LzAppUpgradeable_init(_lzEndpoint, _treasury);
-        token = IERC20(address(ITreasury(_treasury).stablecoin()));
+        canonicalToken = IERC20(address(ITreasury(_treasury).stablecoin()));
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -42,14 +42,14 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         bytes32 r,
         bytes32 s
     ) public payable override {
-        IERC20Permit(address(token)).permit(msg.sender, address(this), _amount, deadline, v, r, s);
+        IERC20Permit(address(canonicalToken)).permit(msg.sender, address(this), _amount, deadline, v, r, s);
         send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
     }
 
     /// @inheritdoc OFTCore
     function withdraw(uint256 amount, address recipient) external override whenNotPaused returns (uint256) {
         balanceOf[msg.sender] = balanceOf[msg.sender] - amount; // Will overflow if the amount is too big
-        token.transfer(recipient, amount);
+        canonicalToken.transfer(recipient, amount);
         return amount;
     }
 
@@ -59,7 +59,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @return The amount of canonical token sent
     function withdrawFor(uint256 amount, address recipient) external whenNotPaused returns (uint256) {
         balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
-        token.transfer(recipient, amount);
+        canonicalToken.transfer(recipient, amount);
         return amount;
     }
 
@@ -72,7 +72,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         uint256 _amount
     ) internal override whenNotPaused returns (uint256) {
         // No need to use safeTransferFrom as we know this implementation reverts on failure
-        token.transferFrom(msg.sender, address(this), _amount);
+        canonicalToken.transferFrom(msg.sender, address(this), _amount);
         return _amount;
     }
 
@@ -84,12 +84,12 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     ) internal override whenNotPaused returns (uint256) {
         // Should never revert as all the LayerZero bridge tokens come from
         // this contract
-        uint256 balance = token.balanceOf(address(this));
+        uint256 balance = canonicalToken.balanceOf(address(this));
         if (balance < _amount) {
             balanceOf[_toAddress] = _amount - balance;
-            if (balance > 0) token.transfer(_toAddress, balance);
+            if (balance > 0) canonicalToken.transfer(_toAddress, balance);
         } else {
-            token.transfer(_toAddress, _amount);
+            canonicalToken.transfer(_toAddress, _amount);
         }
         return _amount;
     }
