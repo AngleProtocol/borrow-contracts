@@ -140,13 +140,6 @@ contract('LayerZeroBridge', () => {
       await lzEndpoint.getConfig(0, 0, alice.address, 0);
     });
   });
-  describe('getConfig', () => {
-    it('success - config obtained', async () => {
-      const receipt = await lzBridge.estimateSendFee(1, alice.address, 1, false, '0x');
-      expect(receipt[0]).to.be.equal(123);
-      expect(receipt[1]).to.be.equal(456);
-    });
-  });
   describe('send', () => {
     it('reverts - trusted remote not set', async () => {
       await agToken.mint(alice.address, parseEther('10'));
