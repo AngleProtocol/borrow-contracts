@@ -46,12 +46,21 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
     }
 
-    /// @notice Withdraw amount of token from and to the recipient
+    /// @inheritdoc OFTCore
+    function withdraw(uint256 amount, address recipient) external override whenNotPaused returns (uint256) {
+        balanceOf[msg.sender] = balanceOf[msg.sender] - amount; // Will overflow if the amount is too big
+        token.transfer(recipient, amount);
+        return amount;
+    }
+
+    /// @notice Withdraws amount of `token` from the contract and sends it to the recipient
     /// @param amount Amount to withdraw
     /// @param recipient Address to withdraw for
-    function withdraw(uint256 amount, address recipient) external whenNotPaused {
+    /// @return The amount of canonical token sent
+    function withdrawFor(uint256 amount, address recipient) external override whenNotPaused returns (uint256) {
         balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
         token.transfer(recipient, amount);
+        return amount;
     }
 
     // ============================= Internal Functions ===================================

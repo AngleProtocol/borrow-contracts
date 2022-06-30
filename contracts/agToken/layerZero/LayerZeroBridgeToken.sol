@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /// @title LayerZeroBridgeToken
 /// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
-/// @notice Contract for bridging an AgToken using a bridge intermediate token and LayerZero
+/// @notice Contract to be deployed on a L2/sidechain for bridging an AgToken using a bridge intermediate token and LayerZero
 contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable {
     /// @notice Address of the bridgeable token
     /// @dev Immutable
@@ -21,6 +21,13 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
 
     // ============================= Constructor ===================================
 
+    /// @notice Initializes the contract
+    /// @param _name Name of the token corresponding to this contract
+    /// @param _symbol Symbol of the token corresponding to this contract
+    /// @param _lzEndpoint Layer zero endpoint to pass messages
+    /// @param _treasury Address of the treasury contract used for access control
+    /// @param initialSupply Initial supply to mint to the canonical token address
+    /// @dev The initial supply corresponds to the initial amount that could be bridged using this OFT
     function initialize(
         string memory _name,
         string memory _symbol,
@@ -33,7 +40,6 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
 
         canonicalToken = IAgTokenSideChainMultiBridge(address(ITreasury(_treasury).stablecoin()));
         _approve(address(this), address(canonicalToken), type(uint256).max);
-        // Set the initial amount that could be bridged using this OFT
         _mint(address(canonicalToken), initialSupply);
     }
 
@@ -57,6 +63,14 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     ) public payable override {
         canonicalToken.permit(msg.sender, address(this), _amount, deadline, v, r, s);
         send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
+    }
+
+    /// @inheritdoc OFTCore
+    function withdraw(uint256 amount, address recipient) external override whenNotPaused returns (uint256) {
+        // Does not check allowances as transfers from `msg.sender`
+        _transfer(msg.sender, address(this), amount);
+        amount = canonicalToken.swapIn(address(this), amount, recipient);
+        return amount;
     }
 
     // ============================= Internal Functions ===================================
