@@ -62,6 +62,12 @@ interface IOFTCore is IERC165 {
         bytes32 s
     ) external payable;
 
+    /// @notice Withdraws amount of canonical token from the `msg.sender` balance and sends it to the recipient
+    /// @param amount Amount to withdraw
+    /// @param recipient Address to send the canonical token to
+    /// @return The amount of canonical token sent
+    function withdraw(uint256 amount, address recipient) external returns (uint256);
+
     /// @dev Emitted when `_amount` tokens are moved from the `_sender` to (`_dstChainId`, `_toAddress`)
     /// `_nonce` is the outbound nonce
     event SendToChain(

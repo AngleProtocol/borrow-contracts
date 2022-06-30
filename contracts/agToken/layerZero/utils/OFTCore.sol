@@ -44,6 +44,11 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         emit SendToChain(msg.sender, _dstChainId, _toAddress, _amount, nonce);
     }
 
+    /// @inheritdoc IOFTCore
+    function withdraw(uint256 amount, address recipient) external virtual returns (uint256) {
+        return amount;
+    }
+
     // ============================= Internal Functions ===================================
 
     /// @inheritdoc NonblockingLzApp
