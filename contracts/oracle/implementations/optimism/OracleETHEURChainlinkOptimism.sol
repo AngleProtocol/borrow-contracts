@@ -26,7 +26,7 @@ contract OracleETHEURChainlinkOptimism is BaseOracleChainlinkMulti {
             // Oracle ETH/USD
             AggregatorV3Interface(0x13e3Ee699D1909E989722E753853AE30b17e08c5),
             // Oracle EUR/USD
-            AggregatorV3Interface(0xA14d53bC1F1c0F31B4aA3BD109344E5009051a84)
+            AggregatorV3Interface(0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20)
         ];
         uint8[2] memory circuitChainIsMultiplied = [1, 0];
         uint8[2] memory chainlinkDecimals = [8, 8];

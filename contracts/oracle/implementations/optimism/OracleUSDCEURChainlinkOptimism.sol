@@ -26,7 +26,7 @@ contract OracleUSDCEURChainlinkOptimism is BaseOracleChainlinkMulti {
             // Oracle USDC/USD
             AggregatorV3Interface(0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3),
             // Oracle EUR/USD
-            AggregatorV3Interface(0x73366Fe0AA0Ded304479862808e02506FE556a98)
+            AggregatorV3Interface(0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20)
         ];
         uint8[2] memory circuitChainIsMultiplied = [1, 0];
         uint8[2] memory chainlinkDecimals = [8, 8];
