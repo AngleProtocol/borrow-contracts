@@ -50,23 +50,28 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     }
 
     /// @inheritdoc OFTCore
-    function withdraw(uint256 amount, address recipient) external override whenNotPaused returns (uint256) {
-        balanceOf[msg.sender] = balanceOf[msg.sender] - amount; // Will overflow if the amount is too big
-        canonicalToken.transfer(recipient, amount);
-        return amount;
+    function withdraw(uint256 amount, address recipient) external override returns (uint256) {
+        return _withdraw(amount, msg.sender, recipient);
     }
 
     /// @notice Withdraws amount of `token` from the contract and sends it to the recipient
     /// @param amount Amount to withdraw
     /// @param recipient Address to withdraw for
     /// @return The amount of canonical token sent
-    function withdrawFor(uint256 amount, address recipient) external whenNotPaused returns (uint256) {
-        balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
-        canonicalToken.transfer(recipient, amount);
-        return amount;
+    function withdrawFor(uint256 amount, address recipient) external returns (uint256) {
+        return _withdraw(amount, recipient, recipient);
     }
 
     // ========================== Internal Functions ===============================
+
+    /// @notice Withdraws `amount` from the balance of the `from` address and sends these tokens to the `to` address
+    /// @dev It's important to make sure that `from` is either the `msg.sender` or that `from` and `to` are the same 
+    /// addresses
+    function _withdraw(uint256 amount, address from, address to) internal whenNotPaused returns(uint256) {
+        balanceOf[from] = balanceOf[from] - amount; // Will overflow if the amount is too big
+        canonicalToken.transfer(to, amount);
+        return amount;
+    }
 
     /// @inheritdoc OFTCore
     function _debitFrom(

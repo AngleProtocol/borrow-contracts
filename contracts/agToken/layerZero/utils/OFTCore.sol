@@ -6,8 +6,6 @@ import "./NonblockingLzApp.sol";
 import "./IOFTCore.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
-import "hardhat/console.sol";
-
 /// @title OFTCore
 /// @author Forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFTCore.sol
 /// but with slight modifications from the Angle Core Team which added return values to the `_creditTo` and `_debitFrom` functions
@@ -27,7 +25,7 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public payable virtual {}
+    ) public payable virtual;
 
     /// @inheritdoc IOFTCore
     function send(
@@ -48,11 +46,9 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
     }
 
     /// @inheritdoc IOFTCore
-    function withdraw(uint256 amount, address recipient) external virtual returns (uint256) {
-        return amount;
-    }
+    function withdraw(uint256 amount, address recipient) external virtual returns (uint256);
 
-    // ============================= Internal Functions ===================================
+    // =========================== Internal Functions ==============================
 
     /// @inheritdoc NonblockingLzApp
     function _nonblockingLzReceive(
@@ -93,7 +89,7 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         uint256 _amount
     ) internal virtual returns (uint256);
 
-    // ======================= View Functions ================================
+    // ========================== View Functions ===================================
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId)
