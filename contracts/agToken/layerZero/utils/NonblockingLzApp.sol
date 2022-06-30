@@ -50,12 +50,6 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
 
     // =============================== Modifiers ===================================
 
-    /// @notice Checks whether the `msg.sender` has the governor role or not
-    modifier onlyGovernor() {
-        if (!ITreasury(treasury).isGovernor(msg.sender)) revert NotGovernor();
-        _;
-    }
-
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
         if (!ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();

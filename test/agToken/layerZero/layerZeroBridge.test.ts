@@ -138,6 +138,7 @@ contract('LayerZeroBridge', () => {
       await lzBridge.connect(impersonatedSigners[governor]).setConfig(1, 1, 67, '0x');
       expect(await lzEndpoint.config()).to.be.equal(67);
       await lzEndpoint.getConfig(0, 0, alice.address, 0);
+      await lzBridge.getConfig(0, 0, alice.address, 0);
     });
   });
   describe('setSendVersion', () => {
@@ -333,6 +334,33 @@ contract('LayerZeroBridge', () => {
       expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('0'));
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('3'));
       expect(await agToken.balanceOf(lzBridge.address)).to.be.equal(parseEther('8'));
+    });
+  });
+  describe('sweep', () => {
+    it('reverts - underflows', async () => {
+      await expect(lzBridge.connect(impersonatedSigners[governor]).sweep(parseEther('1'), alice.address)).to.be
+        .reverted;
+    });
+    it('success - partial amount swept', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.mint(lzBridge.address, parseEther('1'));
+      const payloadData = ethers.utils.defaultAbiCoder.encode(['bytes', 'uint256'], [alice.address, parseEther('3')]);
+      await lzEndpoint.lzReceive(lzBridge.address, 1, remote.address, 0, payloadData);
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('2'));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      await lzBridge.connect(impersonatedSigners[governor]).sweep(parseEther('1'), alice.address);
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+    });
+    it('success - full amount amount swept', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.mint(lzBridge.address, parseEther('1'));
+      const payloadData = ethers.utils.defaultAbiCoder.encode(['bytes', 'uint256'], [alice.address, parseEther('3')]);
+      await lzEndpoint.lzReceive(lzBridge.address, 1, remote.address, 0, payloadData);
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('2'));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      await lzBridge.connect(impersonatedSigners[governor]).sweep(parseEther('2'), alice.address);
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('0'));
+      await expect(lzBridge.withdraw(parseEther('1'), alice.address)).to.be.reverted;
     });
   });
   describe('supportsInterface', () => {
