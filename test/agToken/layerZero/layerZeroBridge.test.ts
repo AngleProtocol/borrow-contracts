@@ -69,7 +69,7 @@ contract('LayerZeroBridge', () => {
   describe('initializer', () => {
     it('success - lzEndpoint, treasury, token', async () => {
       expect(await lzBridge.treasury()).to.be.equal(treasury.address);
-      expect(await lzBridge.token()).to.be.equal(agToken.address);
+      expect(await lzBridge.canonicalToken()).to.be.equal(agToken.address);
       expect(await lzBridge.lzEndpoint()).to.be.equal(lzEndpoint.address);
     });
     it('reverts - already initialized', async () => {
