@@ -22,14 +22,11 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     // Otherwise, we're using the proxy admin address from the desired network and the newly deployed agToken
     proxyAdmin = (await ethers.getContract('ProxyAdmin')).address;
-    agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
-    /* TODO Uncomment for real Polygon deployment
     if (network.config.chainId !== ChainId.POLYGON) {
-      agTokenAddress = (await deployments.get('AgToken')).address;
+      agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
     } else {
       agTokenAddress = CONTRACTS_ADDRESSES[ChainId.POLYGON].agEUR?.AgToken!;
     }
-    */
   }
 
   console.log('Now deploying Treasury');
@@ -69,10 +66,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const treasury = (await deployments.get('Treasury')).address;
   console.log(`Successfully deployed Treasury at the address ${treasury}`);
   console.log('');
-  if (network.config.chainId != 1) {
-    /* TODO Uncomment for real Polygon deployment
-    if (network.config.chainId != 1 && network.config.chainId!= ChainId.POLYGON) {
-  */
+  if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
     console.log(
       "Because we're in a specific network (not mainnet) and now that treasury is ready, initializing the agToken contract",
     );

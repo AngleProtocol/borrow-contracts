@@ -14,16 +14,11 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   if (network.config.chainId == 1 || !network.live) {
     // If we're in mainnet fork or on mainnet, we're using the agToken implementation address for mainnet
     implementationName = 'AgToken';
+  } else if (network.config.chainId !== ChainId.POLYGON) {
+    implementationName = 'TokenPolygonUpgradeable';
   } else {
-    implementationName = 'AgTokenSideChainMultiBridge';
+    implementationName = 'AgTokenSideChain';
   }
-  /* TODO Uncomment for real Polygon deployment
-    else if (network.config.chainId !== ChainId.POLYGON) {
-      implementationName = 'TokenPolygonUpgradeable';
-    } else {
-      implementationName = 'AgTokenSideChain';
-    }
-  */
 
   console.log(`Now deploying the implementation for AgToken on ${network.name}`);
   await deploy(`${implementationName}_Implementation`, {
@@ -36,10 +31,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log(`Successfully deployed the implementation for AgToken at ${agTokenImplementation}`);
   console.log('');
 
-  if (network.config.chainId != 1) {
-    /* TODO Uncomment for real Polygon deployment
-    if (network.config.chainId != 1 && network.config.chainId!= ChainId.POLYGON) {
-  */
+  if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
     console.log('Deploying the proxy for the agToken contract because chain is not mainnet and we need a new contract');
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
     await deploy(`AgToken_${stableName}`, {
