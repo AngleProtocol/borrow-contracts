@@ -62,11 +62,11 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     // =============================== Errors ================================
 
     error AssetStillControlledInReserves();
+    error HourlyLimitExceeded();
     error InvalidToken();
     error NotGovernor();
     error NotGovernorOrGuardian();
     error TooBigAmount();
-    error HourlyLimitExceeded();
     error TooHighParameterValue();
     error ZeroAddress();
 
