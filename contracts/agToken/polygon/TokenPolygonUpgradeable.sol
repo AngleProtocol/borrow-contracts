@@ -270,6 +270,7 @@ contract TokenPolygonUpgradeable is
         uint256 balance = IERC20(bridgeToken).balanceOf(address(this));
         if (balance + amount > bridgeDetails.limit) {
             // In case someone maliciously sends tokens to this contract
+            // Or the limit changes
             if (bridgeDetails.limit > balance) amount = bridgeDetails.limit - balance;
             else {
                 amount = 0;
@@ -279,7 +280,14 @@ contract TokenPolygonUpgradeable is
         // Checking requirement on the hourly volume
         uint256 hour = block.timestamp / 3600;
         uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
-        if (hourlyUsage > bridgeDetails.hourlyLimit) amount = bridgeDetails.hourlyLimit - usage[bridgeToken][hour];
+        if (hourlyUsage > bridgeDetails.hourlyLimit) {
+            // Edge case when the hourly limit changes
+            if (bridgeDetails.hourlyLimit > usage[bridgeToken][hour])
+                amount = bridgeDetails.hourlyLimit - usage[bridgeToken][hour];
+            else {
+                amount = 0;
+            }
+        }
         usage[bridgeToken][hour] = usage[bridgeToken][hour] + amount;
 
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
