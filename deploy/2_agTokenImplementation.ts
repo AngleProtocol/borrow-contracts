@@ -1,6 +1,7 @@
 import yargs from 'yargs';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { ChainId } from '@angleprotocol/sdk';
+import { deployImplem } from './helpers';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
@@ -14,22 +15,13 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   if (network.config.chainId == 1 || !network.live) {
     // If we're in mainnet fork or on mainnet, we're using the agToken implementation address for mainnet
     implementationName = 'AgToken';
-  } else if (network.config.chainId !== ChainId.POLYGON) {
+  } else if (network.config.chainId === ChainId.POLYGON) {
     implementationName = 'TokenPolygonUpgradeable';
   } else {
     implementationName = 'AgTokenSideChain';
   }
 
-  console.log(`Now deploying the implementation for AgToken on ${network.name}`);
-  await deploy(`${implementationName}_Implementation`, {
-    contract: implementationName,
-    from: deployer.address,
-    log: !argv.ci,
-  });
-  const agTokenImplementation = (await ethers.getContract(`${implementationName}_Implementation`)).address;
-
-  console.log(`Successfully deployed the implementation for AgToken at ${agTokenImplementation}`);
-  console.log('');
+  const agTokenImplementation = await deployImplem(implementationName);
 
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
     console.log('Deploying the proxy for the agToken contract because chain is not mainnet and we need a new contract');

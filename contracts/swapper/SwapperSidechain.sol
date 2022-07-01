@@ -73,7 +73,7 @@ contract SwapperSidechain is ISwapper {
 
     /// @inheritdoc ISwapper
     /// @dev This function swaps the `inToken` to the `outToken` by doing a UniV3 swap, a 1Inch swap or by interacting
-    /// with the AngleRouter contract
+    /// with the `AngleRouter` contract
     /// @dev One slippage check is performed at the end of the call
     /// @dev In this implementation, the function tries to make sure that the `outTokenRecipient` address has at the end
     /// of the call `outTokenOwed`, leftover tokens are sent to a `to` address which by default is the `outTokenRecipient`
@@ -124,7 +124,7 @@ contract SwapperSidechain is ISwapper {
 
     // ========================= Governance Function ===============================
 
-    /// @notice Changes allowance for a contract
+    /// @notice Changes allowances of this contract for different tokens
     /// @param tokens Addresses of the tokens to allow
     /// @param spenders Addresses to allow transfer
     /// @param amounts Amounts to allow

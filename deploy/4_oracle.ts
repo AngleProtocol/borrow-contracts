@@ -55,5 +55,5 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
 };
 
 func.tags = ['oracle'];
-func.dependencies = ['treasury'];
+// func.dependencies = ['treasury'];
 export default func;

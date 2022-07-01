@@ -2,6 +2,7 @@ import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 import { expect } from '../test/utils/chai-setup';
+import { deployImplem, deployProxy } from './helpers';
 
 import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../typechain';
 
@@ -30,41 +31,17 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   }
 
   console.log('Now deploying Treasury');
-  console.log('Starting with the implementation');
-  let treasuryImplementation;
-  try {
-    treasuryImplementation = (await ethers.getContract('Treasury_Implementation')).address;
-    console.log(`Treasury implementation has already been deployed at ${treasuryImplementation}`);
-  } catch {
-    await deploy('Treasury_Implementation', {
-      contract: 'Treasury',
-      from: deployer.address,
-      log: !argv.ci,
-    });
-    treasuryImplementation = (await ethers.getContract('Treasury_Implementation')).address;
-    console.log(`Successfully deployed the implementation for Treasury at ${treasuryImplementation}`);
-  }
-  console.log('');
+  const treasuryImplementation = await deployImplem('Treasury');
 
   const treasuryInterface = Treasury__factory.createInterface();
-
   const coreBorrow = await deployments.get('CoreBorrow');
-
   const dataTreasury = new ethers.Contract(
     treasuryImplementation,
     treasuryInterface,
   ).interface.encodeFunctionData('initialize', [coreBorrow.address, agTokenAddress]);
 
-  console.log('Now deploying the Proxy');
-  await deploy('Treasury', {
-    contract: 'TransparentUpgradeableProxy',
-    from: deployer.address,
-    args: [treasuryImplementation, proxyAdmin, dataTreasury],
-    log: !argv.ci,
-  });
+  const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
 
-  const treasury = (await deployments.get('Treasury')).address;
-  console.log(`Successfully deployed Treasury at the address ${treasury}`);
   console.log('');
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
     console.log(
