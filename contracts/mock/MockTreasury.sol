@@ -42,6 +42,10 @@ contract MockTreasury is ITreasury {
         return (_vaultManager == vaultManager1 || _vaultManager == vaultManager2);
     }
 
+    function setStablecoin(IAgToken _stablecoin) external {
+        stablecoin = _stablecoin;
+    }
+
     function setFlashLoanModule(address _flashLoanModule) external override {
         flashLoanModule = _flashLoanModule;
     }

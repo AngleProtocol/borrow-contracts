@@ -15,10 +15,7 @@ contract MockOracle is IOracle {
     bool public outdated;
 
     /// @notice Initiate with a fixe change rate
-    constructor(
-        uint256 rate_,
-        ITreasury _treasury
-    ) {
+    constructor(uint256 rate_, ITreasury _treasury) {
         rate = rate_;
         treasury = _treasury;
     }
@@ -32,7 +29,7 @@ contract MockOracle is IOracle {
     function update(uint256 newRate) external {
         rate = newRate;
     }
-    
+
     function setTreasury(address _treasury) external override {
         treasury = ITreasury(_treasury);
     }

@@ -670,39 +670,89 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       // Resetting state
       await agToken.connect(impersonatedSigners[governor]).toggleBridge(bridgeToken.address);
     });
-    it('reverts - zero limit', async () => {
+    it('success - zero limit swaps 0', async () => {
       await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('0'));
-      await expect(
-        agToken.connect(impersonatedSigners[governor]).swapIn(bridgeToken.address, parseEther('1'), alice.address),
-      ).to.be.revertedWith('TooBigAmount');
+      await agToken.connect(impersonatedSigners[governor]).swapIn(bridgeToken.address, parseEther('1'), alice.address);
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('0'));
     });
-    it('reverts - amount greater than limit', async () => {
+    it('success - amount greater than limit', async () => {
       await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('10'));
-      await expect(
-        agToken.connect(impersonatedSigners[governor]).swapIn(bridgeToken.address, parseEther('100'), alice.address),
-      ).to.be.revertedWith('TooBigAmount');
-    });
-    it('reverts - insufficient balance or no approval', async () => {
-      await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('100'));
-      await bridgeToken.mint(deployer.address, parseEther('10'));
-      await expect(agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('5'), alice.address)).to.be
-        .reverted;
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('10'));
+      await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseEther('0'));
+      await bridgeToken.mint(deployer.address, parseEther('100'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('100'));
-      await expect(agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('50'), alice.address)).to.be
-        .reverted;
+      await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('100'), bob.address);
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('10'));
+      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('90'));
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('10'));
+
       // Resetting state
-      await bridgeToken.burn(deployer.address, parseEther('10'));
+      await time.increase(3600);
+      await agToken.connect(bob).swapOut(bridgeToken.address, parseEther('10'), deployer.address);
+      await bridgeToken.burn(deployer.address, parseEther('100'));
     });
-    it('reverts - amount greater than hourlyLimit', async () => {
+    it('success - amount greater than hourlyLimit', async () => {
       await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('10'));
       await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('1'));
+      await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseEther('0'));
       await bridgeToken.mint(deployer.address, parseEther('2'));
       await bridgeToken.connect(deployer).approve(agToken.address, parseEther('2'));
-      await expect(
-        agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), alice.address),
-      ).to.be.revertedWith('HourlyLimitExceeded');
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('0'));
+      await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), bob.address);
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('1'));
+      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('1'));
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
+
       // Resetting state
+      await time.increase(3600);
+      await agToken.connect(bob).swapOut(bridgeToken.address, parseEther('1'), deployer.address);
       await bridgeToken.burn(deployer.address, parseEther('2'));
+    });
+    it('success - total amount greater than hourlyLimit', async () => {
+      await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('10'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('2'));
+      await bridgeToken.mint(deployer.address, parseEther('3'));
+      await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
+      await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), bob.address);
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
+      await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), bob.address);
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('2'));
+      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('1'));
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('2'));
+
+      // Resetting state
+      await time.increase(3600);
+      await agToken.connect(bob).swapOut(bridgeToken.address, parseEther('2'), deployer.address);
+      await bridgeToken.burn(deployer.address, parseEther('3'));
+    });
+    it('success - hourlyLimit over 2 hours', async () => {
+      await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0'));
+      await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('10'));
+      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('2'));
+      await bridgeToken.mint(deployer.address, parseEther('3'));
+      await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
+      await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), bob.address)).wait();
+      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(parseEther('1'));
+      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('2'));
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('1'));
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
+      let hour = Math.floor((await time.latest()) / 3600);
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('1'));
+      await time.increase(3600);
+      hour = Math.floor((await time.latest()) / 3600);
+      expect(await agToken.usage(bridgeToken.address, hour - 1)).to.be.equal(parseEther('1'));
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('0'));
+      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('0'));
+      await (await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), bob.address)).wait();
+      expect(await agToken.usage(bridgeToken.address, hour)).to.be.equal(parseEther('2'));
+      expect(await bridgeToken.balanceOf(agToken.address)).to.be.equal(parseEther('3'));
+      expect(await bridgeToken.balanceOf(deployer.address)).to.be.equal(parseEther('0'));
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(parseEther('3'));
+
+      // Resetting state
+      await time.increase(3600);
+      await agToken.connect(bob).swapOut(bridgeToken.address, parseEther('3'), deployer.address);
+      await bridgeToken.burn(deployer.address, parseEther('3'));
     });
     it('success - with some transaction fees', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'));
@@ -807,20 +857,6 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
           value: parseEther('100'),
         },
       );
-    });
-    it('reverts - total amount greater than hourlyLimit', async () => {
-      await agToken.connect(impersonatedSigners[governor]).setLimit(bridgeToken.address, parseEther('1000'));
-      await agToken.connect(impersonatedSigners[governor]).setHourlyLimit(bridgeToken.address, parseEther('2'));
-      await bridgeToken.mint(deployer.address, parseEther('3'));
-      await bridgeToken.connect(deployer).approve(agToken.address, parseEther('3'));
-      await time.increase(3600);
-      await agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('1'), alice.address);
-      expect(await agToken.currentUsage(bridgeToken.address)).to.be.equal(parseEther('1'));
-      await expect(
-        agToken.connect(deployer).swapIn(bridgeToken.address, parseEther('2'), alice.address),
-      ).to.be.revertedWith('HourlyLimitExceeded');
-      // Resetting state
-      await bridgeToken.burn(deployer.address, parseEther('2'));
     });
     it('success - hourlyLimit over 2 hours', async () => {
       await agToken.connect(impersonatedSigners[governor]).setSwapFee(bridgeToken.address, parseAmount.gwei('0'));
