@@ -40,8 +40,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     treasuryInterface,
   ).interface.encodeFunctionData('initialize', [coreBorrow.address, agTokenAddress]);
 
-  // const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
-  const treasury = (await deployments.get('Treasury')).address;
+  const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
+  // const treasury = (await deployments.get('Treasury')).address;
 
   console.log('');
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {

@@ -26,7 +26,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
     console.log('Deploying the proxy for the agToken contract');
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
-    /*
+
     await deploy(`AgToken_${stableName}`, {
       contract: 'TransparentUpgradeableProxy',
       from: deployer.address,
@@ -34,7 +34,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       args: [agTokenImplementation, proxyAdmin, '0x'],
       log: !argv.ci,
     });
-    */
 
     const agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
     console.log(`Successfully deployed ${`AgToken_${stableName}`} at the address ${agTokenAddress}`);
