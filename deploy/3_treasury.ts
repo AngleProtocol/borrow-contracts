@@ -40,13 +40,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     treasuryInterface,
   ).interface.encodeFunctionData('initialize', [coreBorrow.address, agTokenAddress]);
 
-  const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
+  // const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
+  const treasury = (await deployments.get('Treasury')).address;
 
   console.log('');
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
-    console.log(
-      "Because we're in a specific network (not mainnet) and now that treasury is ready, initializing the agToken contract",
-    );
+    console.log('Initializing the agToken contract now that we have the treasury address');
     const agToken = new ethers.Contract(
       agTokenAddress,
       AgTokenSideChainMultiBridge__factory.createInterface(),

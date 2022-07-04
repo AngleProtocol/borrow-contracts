@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20Pe
 
 /// @title BaseAgTokenSideChain
 /// @author Angle Core Team
-/// @notice Base Contract for Angle agTokens to be deployed on any other chain than Ethereum mainnet
+/// @notice Base Contract for Angle agTokens on other chains than Ethereum mainnet
 /// @dev This type of contract can be used to create and handle the stablecoins of Angle protocol in different chains than Ethereum
 contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     // ======================= Parameters and Variables ============================

@@ -18,14 +18,15 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else if (network.config.chainId === ChainId.POLYGON) {
     implementationName = 'TokenPolygonUpgradeable';
   } else {
-    implementationName = 'AgTokenSideChain';
+    implementationName = 'AgTokenSideChainMultiBridge';
   }
 
   const agTokenImplementation = await deployImplem(implementationName);
 
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
-    console.log('Deploying the proxy for the agToken contract because chain is not mainnet and we need a new contract');
+    console.log('Deploying the proxy for the agToken contract');
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
+    /*
     await deploy(`AgToken_${stableName}`, {
       contract: 'TransparentUpgradeableProxy',
       from: deployer.address,
@@ -33,7 +34,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       args: [agTokenImplementation, proxyAdmin, '0x'],
       log: !argv.ci,
     });
-    console.log('Success');
+    */
+
+    const agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
+    console.log(`Successfully deployed ${`AgToken_${stableName}`} at the address ${agTokenAddress}`);
+    console.log(`${agTokenAddress} ${agTokenImplementation} ${proxyAdmin} '0x'`);
+    console.log('');
   }
 };
 

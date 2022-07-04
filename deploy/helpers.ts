@@ -121,11 +121,13 @@ export const deployProxy = async (
       } catch (e) {
         console.log('Verification failed');
       }
+      /*
       try {
         linkProxyWithImplementationAbi(address, implementation, []);
       } catch (e) {
         console.log('Verification failed');
       }
+      */
     }
     console.log(`Successfully deployed the implementation for ${deploymentName} at ${address}`);
   }
