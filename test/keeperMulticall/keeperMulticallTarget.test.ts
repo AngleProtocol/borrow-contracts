@@ -168,11 +168,7 @@ describe('Keeper Multicall', async () => {
   it('withdrawStuckFunds', async () => {
     await expect(
       keeperMulticall.connect(user1).withdrawStuckFunds(Token1.address, randomUser, utils.parseUnits('1000', 6)),
-    ).to.be.revertedWith(
-      `AccessControl: account ${user1.address.toLowerCase()} is missing role ${await (
-        await keeperMulticall.KEEPER_ROLE()
-      ).toLowerCase()}`,
-    );
+    ).to.be.revertedWith(`AccessControl: account ${user1.address.toLowerCase()} is missing role `);
 
     await Token1.connect(deployer).transfer(keeperMulticall.address, utils.parseUnits('1000', 6));
     await deployer.sendTransaction({
@@ -412,9 +408,7 @@ describe('Keeper Multicall', async () => {
 
   it('approve - fail not keeper', async () => {
     await expect(keeperMulticall.approve(Token1.address, randomUser, utils.parseEther('100'))).to.be.revertedWith(
-      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${(
-        await keeperMulticall.KEEPER_ROLE()
-      ).toLowerCase()}`,
+      `AccessControl: account ${deployer.address.toLowerCase()} is missing role `,
     );
   });
 
@@ -446,9 +440,7 @@ describe('Keeper Multicall', async () => {
 
   it('swapToken - revert not keeper', async () => {
     await expect(keeperMulticall.swapToken(utils.parseEther('100'), '0x')).to.be.revertedWith(
-      `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${(
-        await keeperMulticall.KEEPER_ROLE()
-      ).toLowerCase()}`,
+      `AccessControl: account ${deployer.address.toLowerCase()} is missing role `,
     );
   });
 });
