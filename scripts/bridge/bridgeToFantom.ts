@@ -9,6 +9,8 @@ import {
   AgTokenSideChainMultiBridge__factory,
   LayerZeroBridge,
   LayerZeroBridge__factory,
+  MockTreasury,
+  MockTreasury__factory,
 } from '../../typechain';
 
 async function main() {
@@ -24,9 +26,16 @@ async function main() {
     deployer,
   ) as AgTokenSideChainMultiBridge;
 
+  const treasury = (await ethers.getContract('Mock_MockTreasury')).address;
+  const treasuryContract = new Contract(treasury, MockTreasury__factory.abi, deployer) as MockTreasury;
+
+  // await (await treasuryContract.addMinter(agToken, deployer.address)).wait();
+  // await (await contractAgToken.mint(deployer.address, ether(500))).wait();
+
   const angleOFT = (await ethers.getContract('Mock_LayerZeroBridge')).address;
   const contractAngleOFT = new Contract(angleOFT, LayerZeroBridge__factory.abi, deployer) as LayerZeroBridge;
 
+  // console.log(await contractAngleOFT.canonicalToken());
   await (
     await contractAgToken.approve(contractAngleOFT.address, ethers.constants.MaxUint256, { gasLimit, gasPrice })
   ).wait();
@@ -39,6 +48,7 @@ async function main() {
     ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
     { gasLimit },
   );
+
   console.log(estimate[0]?.toString());
 
   const tx = await contractAngleOFT.send(

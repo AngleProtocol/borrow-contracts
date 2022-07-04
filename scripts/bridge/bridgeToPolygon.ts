@@ -34,7 +34,7 @@ async function main() {
   const estimate = await contractAngleOFT.estimateSendFee(
     LZ_CHAINIDS.polygon,
     ethers.utils.solidityPack(['address'], [deployer.address]),
-    ether(0.5),
+    ether(0.01),
     false,
     ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
     { gasLimit },
@@ -44,11 +44,11 @@ async function main() {
   const tx = await contractAngleOFT.send(
     LZ_CHAINIDS.polygon,
     ethers.utils.solidityPack(['address'], [deployer.address]),
-    ether(0.5),
+    ether(0.01),
     deployer.address,
     ZERO_ADDRESS,
     ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
-    { gasLimit, gasPrice, value: estimate[0] },
+    { gasLimit, value: estimate[0] },
   );
   console.log(tx);
 
