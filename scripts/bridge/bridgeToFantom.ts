@@ -7,10 +7,8 @@ import { ZERO_ADDRESS } from '../../test/utils/helpers';
 import {
   AgTokenSideChainMultiBridge,
   AgTokenSideChainMultiBridge__factory,
-  AngleOFT,
-  AngleOFT__factory,
-  MockTreasury,
-  MockTreasury__factory,
+  LayerZeroBridge,
+  LayerZeroBridge__factory,
 } from '../../typechain';
 
 async function main() {
@@ -26,14 +24,8 @@ async function main() {
     deployer,
   ) as AgTokenSideChainMultiBridge;
 
-  const treasury = (await ethers.getContract('MockTreasury')).address;
-  const contractTreasury = new Contract(treasury, MockTreasury__factory.abi, deployer) as MockTreasury;
-
-  // await (await contractTreasury.addMinter(agToken, deployer.address)).wait();
-  // await (await contractAgToken.mint(deployer.address, ether(1))).wait();
-
-  const angleOFT = (await ethers.getContract('Mock_AngleOFT')).address;
-  const contractAngleOFT = new Contract(angleOFT, AngleOFT__factory.abi, deployer) as AngleOFT;
+  const angleOFT = (await ethers.getContract('Mock_LayerZeroBridge')).address;
+  const contractAngleOFT = new Contract(angleOFT, LayerZeroBridge__factory.abi, deployer) as LayerZeroBridge;
 
   await (
     await contractAgToken.approve(contractAngleOFT.address, ethers.constants.MaxUint256, { gasLimit, gasPrice })
@@ -42,18 +34,17 @@ async function main() {
   const estimate = await contractAngleOFT.estimateSendFee(
     LZ_CHAINIDS.fantom,
     ethers.utils.solidityPack(['address'], [deployer.address]),
-    ether(0.9),
+    ether(0.5),
     false,
     ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
     { gasLimit },
   );
   console.log(estimate[0]?.toString());
 
-  const tx = await contractAngleOFT.sendFrom(
-    deployer.address,
+  const tx = await contractAngleOFT.send(
     LZ_CHAINIDS.fantom,
     ethers.utils.solidityPack(['address'], [deployer.address]),
-    ether(0.9),
+    ether(0.5),
     deployer.address,
     ZERO_ADDRESS,
     ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200000]),
