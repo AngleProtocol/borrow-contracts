@@ -66,11 +66,14 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     }
 
     /// @inheritdoc OFTCore
-    function withdraw(uint256 amount, address recipient) external override returns (uint256) {
+    function withdraw(uint256 amount, address recipient) external override returns (uint256 amountMinted) {
         // Does not check allowances as transfers from `msg.sender`
         _transfer(msg.sender, address(this), amount);
-        amount = canonicalToken.swapIn(address(this), amount, recipient);
-        return amount;
+        amountMinted = canonicalToken.swapIn(address(this), amount, recipient);
+        uint256 leftover = balanceOf(address(this));
+        if (leftover > 0) {
+            _transfer(address(this), msg.sender, leftover);
+        }
     }
 
     // ============================= Internal Functions ===================================
@@ -90,6 +93,16 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     }
 
     /// @inheritdoc OFTCore
+    function _debitCreditFrom(
+        uint16,
+        bytes memory,
+        uint256 _amount
+    ) internal override whenNotPaused returns (uint256) {
+        _burn(msg.sender, _amount);
+        return _amount;
+    }
+
+    /// @inheritdoc OFTCore
     function _creditTo(
         uint16,
         address _toAddress,
@@ -97,7 +110,10 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     ) internal override whenNotPaused returns (uint256 amountMinted) {
         _mint(address(this), _amount);
         amountMinted = canonicalToken.swapIn(address(this), _amount, _toAddress);
-        transfer(_toAddress, balanceOf(address(this)));
+        uint256 leftover = balanceOf(address(this));
+        if (leftover > 0) {
+            _transfer(address(this), _toAddress, leftover);
+        }
     }
 
     // ======================= View Functions ================================

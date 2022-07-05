@@ -46,6 +46,24 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
     }
 
     /// @inheritdoc IOFTCore
+    function sendCredit(
+        uint16 _dstChainId,
+        bytes memory _toAddress,
+        uint256 _amount,
+        address payable _refundAddress,
+        address _zroPaymentAddress,
+        bytes memory _adapterParams
+    ) public payable virtual {
+        _amount = _debitCreditFrom(_dstChainId, _toAddress, _amount);
+
+        bytes memory payload = abi.encode(_toAddress, _amount);
+        _lzSend(_dstChainId, payload, _refundAddress, _zroPaymentAddress, _adapterParams);
+
+        uint64 nonce = lzEndpoint.getOutboundNonce(_dstChainId, address(this));
+        emit SendToChain(msg.sender, _dstChainId, _toAddress, _amount, nonce);
+    }
+
+    /// @inheritdoc IOFTCore
     function withdraw(uint256 amount, address recipient) external virtual returns (uint256);
 
     // =========================== Internal Functions ==============================
@@ -69,11 +87,21 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         emit ReceiveFromChain(_srcChainId, _srcAddress, toAddress, amount, _nonce);
     }
 
-    /// @notice Makes accountability when bridging from this contract
+    /// @notice Makes accountability when bridging from this contract using canonical token
     /// @param _dstChainId ChainId of the destination chain - LayerZero standard
     /// @param _toAddress Recipient on the destination chain
     /// @param _amount Amount to bridge
     function _debitFrom(
+        uint16 _dstChainId,
+        bytes memory _toAddress,
+        uint256 _amount
+    ) internal virtual returns (uint256);
+
+    /// @notice Makes accountability when bridging from this contract's credit
+    /// @param _dstChainId ChainId of the destination chain - LayerZero standard
+    /// @param _toAddress Recipient on the destination chain
+    /// @param _amount Amount to bridge
+    function _debitCreditFrom(
         uint16 _dstChainId,
         bytes memory _toAddress,
         uint256 _amount

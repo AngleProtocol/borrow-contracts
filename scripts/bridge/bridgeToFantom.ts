@@ -7,10 +7,10 @@ import { ZERO_ADDRESS } from '../../test/utils/helpers';
 import {
   AgTokenSideChainMultiBridge,
   AgTokenSideChainMultiBridge__factory,
-  LayerZeroBridge,
-  LayerZeroBridge__factory,
   MockTreasury,
   MockTreasury__factory,
+  OFTCore,
+  OFTCore__factory,
 } from '../../typechain';
 
 async function main() {
@@ -33,7 +33,7 @@ async function main() {
   // await (await contractAgToken.mint(deployer.address, ether(500))).wait();
 
   const angleOFT = (await ethers.getContract('Mock_LayerZeroBridge')).address;
-  const contractAngleOFT = new Contract(angleOFT, LayerZeroBridge__factory.abi, deployer) as LayerZeroBridge;
+  const contractAngleOFT = new Contract(angleOFT, OFTCore__factory.abi, deployer) as OFTCore;
 
   // console.log(await contractAngleOFT.canonicalToken());
   await (

@@ -65,9 +65,13 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     // ========================== Internal Functions ===============================
 
     /// @notice Withdraws `amount` from the balance of the `from` address and sends these tokens to the `to` address
-    /// @dev It's important to make sure that `from` is either the `msg.sender` or that `from` and `to` are the same 
+    /// @dev It's important to make sure that `from` is either the `msg.sender` or that `from` and `to` are the same
     /// addresses
-    function _withdraw(uint256 amount, address from, address to) internal whenNotPaused returns(uint256) {
+    function _withdraw(
+        uint256 amount,
+        address from,
+        address to
+    ) internal whenNotPaused returns (uint256) {
         balanceOf[from] = balanceOf[from] - amount; // Will overflow if the amount is too big
         canonicalToken.transfer(to, amount);
         return amount;
@@ -81,6 +85,16 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     ) internal override whenNotPaused returns (uint256) {
         // No need to use safeTransferFrom as we know this implementation reverts on failure
         canonicalToken.transferFrom(msg.sender, address(this), _amount);
+        return _amount;
+    }
+
+    /// @inheritdoc OFTCore
+    function _debitCreditFrom(
+        uint16,
+        bytes memory,
+        uint256 _amount
+    ) internal override whenNotPaused returns (uint256) {
+        balanceOf[msg.sender] -= _amount;
         return _amount;
     }
 
