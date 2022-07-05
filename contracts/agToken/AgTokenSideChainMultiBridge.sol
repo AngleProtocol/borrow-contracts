@@ -191,7 +191,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         // We don't want to change the amount being swapped out.
         // The user can decide to send another tx with the correct amount to reach the limit
         if (hourlyUsage > chainTotalHourlyLimit) revert HourlyLimitExceeded();
-        chainTotalUsage[hour] = chainTotalUsage[hour] + amount;
+        chainTotalUsage[hour] = hourlyUsage;
 
         _burn(msg.sender, amount);
         uint256 bridgeOut = amount;
