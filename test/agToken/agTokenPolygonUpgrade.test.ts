@@ -966,6 +966,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
 
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('8'), bob.address);
       expect(await agToken.chainTotalUsage(currentHour)).to.equal(parseEther('10'));
+      expect(await agToken.chainTotalUsage(currentHour)).to.equal(await agToken.currentTotalUsage());
     });
     it('success - hourly limit updated by governance', async () => {
       await time.increase(3600);
@@ -988,6 +989,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await agToken.connect(impersonatedSigners[governor]).setChainTotalHourlyLimit(utils.parseEther('11'));
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('2'), bob.address);
       expect(await agToken.chainTotalUsage(currentHour)).to.equal(parseEther('11'));
+      expect(await agToken.chainTotalUsage(currentHour)).to.equal(await agToken.currentTotalUsage());
       await expect(
         agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('0.1'), bob.address),
       ).to.revertedWith('HourlyLimitExceeded');

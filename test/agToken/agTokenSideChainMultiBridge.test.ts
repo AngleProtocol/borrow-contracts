@@ -650,7 +650,7 @@ contract('AgTokenSideChainMultiBridge', () => {
       expect(await agToken.chainTotalUsage(currentHour)).to.equal(parseEther('2'));
 
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('8'), bob.address);
-      expect(await agToken.chainTotalUsage(currentHour)).to.equal(parseEther('10'));
+      expect(await agToken.currentTotalUsage()).to.equal(parseEther('10'));
     });
     it('success - hourly limit updated by governance', async () => {
       const limit = utils.parseEther('10');
@@ -674,6 +674,8 @@ contract('AgTokenSideChainMultiBridge', () => {
       await expect(
         agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('0.1'), bob.address),
       ).to.revertedWith('HourlyLimitExceeded');
+
+      expect(await agToken.currentTotalUsage()).to.equal(parseEther('11'));
     });
   });
 });
