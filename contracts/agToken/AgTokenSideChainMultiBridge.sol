@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title AgTokenSideChainMultiBridge
 /// @author Angle Core Team
-/// @notice Contract for Angle agTokens to be deployed on other chains than Ethereum mainnet
+/// @notice Contract for Angle agTokens on other chains than Ethereum mainnet
 /// @dev This contract supports bridge tokens having a minting right on the stablecoin (also referred to as the canonical
-/// token)
+/// or the native token)
 /// @dev References:
 ///      - FRAX implementation: https://polygonscan.com/address/0x45c32fA6DF82ead1e2EF74d17b76547EDdFaFF89#code
 ///      - QiDAO implementation: https://snowtrace.io/address/0x5c49b268c9841AFF1Cc3B0a418ff5c3442eE3F3b#code

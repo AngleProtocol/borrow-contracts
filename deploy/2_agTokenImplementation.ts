@@ -1,6 +1,7 @@
 import yargs from 'yargs';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { ChainId } from '@angleprotocol/sdk';
+import { deployImplem } from './helpers';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
@@ -14,34 +15,18 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   if (network.config.chainId == 1 || !network.live) {
     // If we're in mainnet fork or on mainnet, we're using the agToken implementation address for mainnet
     implementationName = 'AgToken';
+  } else if (network.config.chainId === ChainId.POLYGON) {
+    implementationName = 'TokenPolygonUpgradeable';
   } else {
     implementationName = 'AgTokenSideChainMultiBridge';
   }
-  /* TODO Uncomment for real Polygon deployment
-    else if (network.config.chainId !== ChainId.POLYGON) {
-      implementationName = 'TokenPolygonUpgradeable';
-    } else {
-      implementationName = 'AgTokenSideChain';
-    }
-  */
 
-  console.log(`Now deploying the implementation for AgToken on ${network.name}`);
-  await deploy(`${implementationName}_Implementation`, {
-    contract: implementationName,
-    from: deployer.address,
-    log: !argv.ci,
-  });
-  const agTokenImplementation = (await ethers.getContract(`${implementationName}_Implementation`)).address;
+  const agTokenImplementation = await deployImplem(implementationName);
 
-  console.log(`Successfully deployed the implementation for AgToken at ${agTokenImplementation}`);
-  console.log('');
-
-  if (network.config.chainId != 1) {
-    /* TODO Uncomment for real Polygon deployment
-    if (network.config.chainId != 1 && network.config.chainId!= ChainId.POLYGON) {
-  */
-    console.log('Deploying the proxy for the agToken contract because chain is not mainnet and we need a new contract');
+  if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
+    console.log('Deploying the proxy for the agToken contract');
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
+
     await deploy(`AgToken_${stableName}`, {
       contract: 'TransparentUpgradeableProxy',
       from: deployer.address,
@@ -49,7 +34,11 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       args: [agTokenImplementation, proxyAdmin, '0x'],
       log: !argv.ci,
     });
-    console.log('Success');
+
+    const agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
+    console.log(`Successfully deployed ${`AgToken_${stableName}`} at the address ${agTokenAddress}`);
+    console.log(`${agTokenAddress} ${agTokenImplementation} ${proxyAdmin} '0x'`);
+    console.log('');
   }
 };
 
