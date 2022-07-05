@@ -569,9 +569,9 @@ contract('AgTokenSideChainMultiBridge', () => {
       await agToken.connect(alice).mint(deployer.address, parseEther('100'));
       await bridgeToken.connect(deployer).mint(agToken.address, parseEther('100'));
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('9'), bob.address);
-      expect(agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('2'), bob.address)).to.be.revertedWith(
-        'HourlyLimitExceeded',
-      );
+      await expect(
+        agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('2'), bob.address),
+      ).to.be.revertedWith('HourlyLimitExceeded');
     });
     it('reverts - hourly limit exceeded at different hours', async () => {
       const limit = utils.parseEther('10');
@@ -584,9 +584,9 @@ contract('AgTokenSideChainMultiBridge', () => {
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('9'), bob.address);
       await time.increase(3600);
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('2'), bob.address);
-      expect(agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('8.1'), bob.address)).to.be.revertedWith(
-        'HourlyLimitExceeded',
-      );
+      await expect(
+        agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('8.1'), bob.address),
+      ).to.be.revertedWith('HourlyLimitExceeded');
     });
     it('success - with a valid bridgeToken balance', async () => {
       await agToken.connect(deployer).setSwapFee(bridgeToken.address, parseAmount.gwei('0.5'));
@@ -661,9 +661,9 @@ contract('AgTokenSideChainMultiBridge', () => {
       await bridgeToken.connect(deployer).mint(agToken.address, parseEther('100'));
 
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('9'), bob.address);
-      expect(agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('2'), bob.address)).to.be.revertedWith(
-        'HourlyLimitExceeded',
-      );
+      await expect(
+        agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('2'), bob.address),
+      ).to.be.revertedWith('HourlyLimitExceeded');
 
       const currentHour = Math.floor((await time.latest()) / 3600);
       expect(await agToken.chainTotalUsage(currentHour)).to.equal(parseEther('9'));
@@ -671,9 +671,9 @@ contract('AgTokenSideChainMultiBridge', () => {
       await agToken.connect(deployer).setChainTotalHourlyLimit(utils.parseEther('11'));
       await agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('2'), bob.address);
       expect(await agToken.chainTotalUsage(currentHour)).to.equal(parseEther('11'));
-      expect(agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('0.1'), bob.address)).to.revertedWith(
-        'HourlyLimitExceeded',
-      );
+      await expect(
+        agToken.connect(deployer).swapOut(bridgeToken.address, parseEther('0.1'), bob.address),
+      ).to.revertedWith('HourlyLimitExceeded');
     });
   });
 });
