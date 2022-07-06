@@ -28,18 +28,26 @@ async function resetTime(): Promise<void> {
   await resetFork();
 }
 
-async function resetFork(): Promise<void> {
+async function resetFork(options?: { blockNumber?: number; jsonRpcUrl?: string }): Promise<void> {
+  const jsonRpcUrl = hre.config.networks.hardhat.forking?.url || options?.jsonRpcUrl;
+
+  const params: {
+    forking?: { jsonRpcUrl: string; blockNumber?: number };
+  } = {
+    forking: jsonRpcUrl
+      ? {
+          jsonRpcUrl,
+        }
+      : undefined,
+  };
+
+  if (params.forking && options?.blockNumber) {
+    params.forking.blockNumber = options.blockNumber;
+  }
+
   await hre.network.provider.request({
     method: 'hardhat_reset',
-    params: [
-      {
-        forking: hre.config.networks.hardhat.forking
-          ? {
-              jsonRpcUrl: hre.config.networks.hardhat.forking.url,
-            }
-          : undefined,
-      },
-    ],
+    params: [params],
   });
 }
 

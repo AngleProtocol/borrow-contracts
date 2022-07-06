@@ -47,6 +47,10 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     mapping(address => mapping(uint256 => uint256)) public usage;
     /// @notice Maps an address to whether it is exempt of fees for when it comes to swapping in and out
     mapping(address => uint256) public isFeeExempt;
+    /// @notice Limit to the amount of tokens that can be sent from that chain to another chain
+    uint256 public chainTotalHourlyLimit;
+    /// @notice Usage per hour on that chain. Maps an hourly timestamp to the total volume swapped out on the chain
+    mapping(uint256 => uint256) public chainTotalUsage;
 
     // ================================== Events ===================================
 
@@ -56,6 +60,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     event BridgeTokenFeeUpdated(address indexed bridgeToken, uint64 fee);
     event BridgeTokenLimitUpdated(address indexed bridgeToken, uint256 limit);
     event BridgeTokenHourlyLimitUpdated(address indexed bridgeToken, uint256 hourlyLimit);
+    event HourlyLimitUpdated(uint256 hourlyLimit);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event FeeToggled(address indexed theAddress, uint256 toggleStatus);
 
@@ -112,6 +117,12 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @dev Helpful for UIs
     function currentUsage(address bridgeToken) external view returns (uint256) {
         return usage[bridgeToken][block.timestamp / 3600];
+    }
+
+    /// @notice Returns the current total volume on the chain for the current hour
+    /// @dev Helpful for UIs
+    function currentTotalUsage() external view returns (uint256) {
+        return chainTotalUsage[block.timestamp / 3600];
     }
 
     /// @notice Mints the canonical token from a supported bridge token
@@ -173,6 +184,15 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
+
+        uint256 hour = block.timestamp / 3600;
+        uint256 hourlyUsage = chainTotalUsage[hour] + amount;
+        // If the amount being swapped out exceeds the limit, we revert
+        // We don't want to change the amount being swapped out.
+        // The user can decide to send another tx with the correct amount to reach the limit
+        if (hourlyUsage > chainTotalHourlyLimit) revert HourlyLimitExceeded();
+        chainTotalUsage[hour] = hourlyUsage;
+
         _burn(msg.sender, amount);
         uint256 bridgeOut = amount;
         if (isFeeExempt[msg.sender] == 0) {
@@ -252,6 +272,12 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
         bridges[bridgeToken].hourlyLimit = hourlyLimit;
         emit BridgeTokenHourlyLimitUpdated(bridgeToken, hourlyLimit);
+    }
+
+    /// @notice Updates the `chainTotalHourlyLimit` amount
+    function setChainTotalHourlyLimit(uint256 hourlyLimit) external onlyGovernorOrGuardian {
+        chainTotalHourlyLimit = hourlyLimit;
+        emit HourlyLimitUpdated(hourlyLimit);
     }
 
     /// @notice Updates the `fee` value for `bridgeToken`
