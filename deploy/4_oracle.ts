@@ -24,7 +24,6 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
     console.log(`Successfully deployed Oracle wBTC/EUR at the address ${oracle}`);
     console.log('');
   } else {
-    // TODO change before real deployments
     await deploy('Oracle_ETH_EUR', {
       contract: `OracleETHEURChainlink${chainName}`,
       from: deployer.address,
@@ -34,16 +33,23 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
     const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
     console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
     console.log('');
-
     await deploy('Oracle_MATIC_EUR', {
-      contract: 'MockOracle',
+      contract: `OracleMATICEURChainlink${chainName}`,
       from: deployer.address,
-      // Entry rate for MATIC, we can update the rate as we wish
-      args: ['555179000000000000', treasury],
+      args: [3600 * 48, treasury],
       log: !argv.ci,
     });
     const oracle2 = (await deployments.get('Oracle_MATIC_EUR')).address;
     console.log(`Successfully deployed Oracle MATIC/EUR at the address ${oracle2}`);
+    console.log('');
+    await deploy('Oracle_USDC_EUR', {
+      contract: `OracleUSDCEURChainlink${chainName}`,
+      from: deployer.address,
+      args: [3600 * 48, treasury],
+      log: !argv.ci,
+    });
+    const oracle3 = (await deployments.get('Oracle_USDC_EUR')).address;
+    console.log(`Successfully deployed Oracle USDC/EUR at the address ${oracle3}`);
     console.log('');
   }
 };

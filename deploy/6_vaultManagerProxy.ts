@@ -5,6 +5,7 @@ import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 import { expect } from '../test/utils/chai-setup';
+import { deployProxy } from './helpers';
 
 import { Treasury__factory, VaultManager__factory } from '../typechain';
 import params from './networks';
@@ -30,7 +31,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
-  console.log(`Deploying proxies for the following vaultManager ${vaultsList}`);
+  console.log(`Deploying proxies for the following vaultManager: ${vaultsList}`);
 
   if (params.stablesParameters.EUR.vaultManagers) {
     for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
@@ -65,14 +66,17 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         vaultManagerParams.symbol,
       ]);
 
+      // await deployProxy(name, implementation, proxyAdminAddress, callData);
       await deploy(name, {
         contract: 'TransparentUpgradeableProxy',
         from: deployer.address,
         args: [implementation, proxyAdminAddress, callData],
         log: !argv.ci,
       });
+
       const vaultManagerAddress = (await deployments.get(name)).address;
       console.log(`Successfully deployed ${name} at the address ${vaultManagerAddress}`);
+      console.log(`${vaultManagerAddress} ${implementation} ${proxyAdminAddress} ${callData}`);
       console.log('');
     }
   }

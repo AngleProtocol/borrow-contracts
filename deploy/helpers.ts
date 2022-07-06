@@ -14,7 +14,7 @@ export const deploy = async (name: string, args: any[], isMock = false, verify =
     address = (await ethers.getContract(deploymentName)).address;
     console.log(`Reusing ${deploymentName} at ${address}`);
   } catch {
-    console.log(`Now deploying ${isMock && 'a mock '}${name}`);
+    console.log(`Now deploying ${isMock ? 'a mock ' : ' '}${name}`);
     await deploy(deploymentName, {
       contract: name,
       from: deployer.address,
@@ -47,7 +47,7 @@ export const deployImplem = async (name: string, isMock = false, verify = true):
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
-  console.log(`Now deploying ${isMock && 'a mock '}${name} implementation`);
+  console.log(`Now deploying ${isMock ? 'a mock ' : ' '}${name} implementation`);
   let implementationAddress;
 
   const deploymentName = `${isMock ? 'Mock_' : ''}${name}_Implementation`;
@@ -99,7 +99,7 @@ export const deployProxy = async (
     address = (await ethers.getContract(deploymentName)).address;
     console.log(`Reusing ${deploymentName} at ${address}`);
   } catch {
-    console.log(`Now deploying ${isMock && 'a mock '}${name}`);
+    console.log(`Now deploying ${isMock ? 'a mock ' : ' '}${name}`);
     await deploy(deploymentName, {
       contract: 'TransparentUpgradeableProxy',
       from: deployer.address,
@@ -121,11 +121,13 @@ export const deployProxy = async (
       } catch (e) {
         console.log('Verification failed');
       }
+      /*
       try {
         linkProxyWithImplementationAbi(address, implementation, []);
       } catch (e) {
         console.log('Verification failed');
       }
+      */
     }
     console.log(`Successfully deployed the implementation for ${deploymentName} at ${address}`);
   }
