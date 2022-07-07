@@ -8,14 +8,14 @@ import {
   LayerZeroBridgeToken__factory,
   MockLayerZero,
   MockLayerZero__factory,
-  MockTreasury,
-  MockTreasury__factory,
   MockTokenPermit,
   MockTokenPermit__factory,
+  MockTreasury,
+  MockTreasury__factory,
 } from '../../../typechain';
 import { expect } from '../../utils/chai-setup';
 import { inReceipt } from '../../utils/expectEvent';
-import { deployUpgradeable, ZERO_ADDRESS, latestTime, MAX_UINT256 } from '../../utils/helpers';
+import { deployUpgradeable, latestTime, MAX_UINT256, ZERO_ADDRESS } from '../../utils/helpers';
 import { signPermit } from '../../utils/sigUtils';
 
 contract('LayerZeroBridgeToken', () => {
