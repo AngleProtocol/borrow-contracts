@@ -1,4 +1,3 @@
-import { Interfaces } from '@angleprotocol/sdk';
 import { ProxyAdmin_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { constants, Contract, Signer, utils } from 'ethers';
@@ -25,7 +24,7 @@ import {
 import { parseAmount } from '../../utils/bignumber';
 // import { domainSeparator, signPermit } from '../../test/utils/sigUtils';
 
-contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
+contract('TokenPolygonUpgradeable - End-to-end Upgrade with updated swapOut', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
@@ -42,10 +41,6 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   let governor: string;
   let proxyAdmin: ProxyAdmin;
   let depositorRole: string;
-  let governorRole: string;
-  let guardianRole: string;
-  let flashloanerTreasuryRole: string;
-  let defaultAdminRole: string;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -67,10 +62,6 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await hre.network.provider.send('hardhat_setBalance', [address, '0x10000000000000000000000000000']);
       impersonatedSigners[address] = await ethers.getSigner(address);
       depositorRole = web3.utils.keccak256('DEPOSITOR_ROLE');
-      guardianRole = web3.utils.keccak256('GUARDIAN_ROLE');
-      governorRole = web3.utils.keccak256('GOVERNOR_ROLE');
-      defaultAdminRole = '0x0000000000000000000000000000000000000000000000000000000000000000';
-      flashloanerTreasuryRole = web3.utils.keccak256('FLASHLOANER_TREASURY_ROLE');
     }
   });
 
@@ -154,7 +145,6 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     });
     it('success - from role granted 2/2', async () => {
       const bytesPassed = ethers.utils.defaultAbiCoder.encode(['uint256'], [parseEther('1000000')]);
-      console.log(bytesPassed);
       await agToken.connect(impersonatedSigners[governor]).grantRole(depositorRole, governor);
       const aliceBalance = await agToken.balanceOf(alice.address);
       const receipt = await (
@@ -377,7 +367,6 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
       await bridgeToken.burn(agToken.address, parseEther('1'));
     });
     it('success - mappings updated when there is one token', async () => {
-      const balance = await bridgeToken.balanceOf(agToken.address);
       const receipt = await (
         await agToken.connect(impersonatedSigners[governor]).removeBridgeToken(bridgeToken.address)
       ).wait();
@@ -830,7 +819,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
     });
   });
 
-  describe.only('swapOut', () => {
+  describe('swapOut', () => {
     beforeEach(async () => {
       await agToken.connect(impersonatedSigners[governor]).setChainTotalHourlyLimit(constants.MaxUint256);
     });
