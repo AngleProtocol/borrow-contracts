@@ -84,6 +84,11 @@ contract('LayerZeroBridge', () => {
       await expect(lzBridgeRevert.initialize(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
     });
   });
+  describe('name', () => {
+    it('success - name', async () => {
+      expect(await lzBridge.name()).to.be.equal('LayerZero Bridge Token');
+    });
+  });
   describe('Access Control', () => {
     it('reverts - non governor or guardian', async () => {
       await expect(lzBridge.pauseSendTokens(true)).to.be.revertedWith('NotGovernorOrGuardian');

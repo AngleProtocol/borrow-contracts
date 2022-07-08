@@ -10,6 +10,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 /// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
 /// @notice Contract to be deployed on Ethereum for bridging an AgToken using a bridge intermediate token and LayerZero
 contract LayerZeroBridge is OFTCore, PausableUpgradeable {
+    /// @notice Name of the contract for indexing purposes
+    string public constant name = "LayerZero Bridge Token";
+
     /// @notice Address of the bridgeable token
     /// @dev Immutable
     IERC20 public canonicalToken;

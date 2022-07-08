@@ -60,8 +60,6 @@ const func: DeployFunction = async ({ ethers, network }) => {
     layerZeroBridgeImplem,
     proxyAdmin.address,
     LayerZeroBridgeToken__factory.createInterface().encodeFunctionData('initialize', [
-      'agEUR_TEST',
-      'agEUR_TEST',
       endpointAddr,
       treasury,
       parseEther('10000'),
