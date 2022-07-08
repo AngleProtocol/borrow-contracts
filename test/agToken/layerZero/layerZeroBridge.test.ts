@@ -163,6 +163,7 @@ contract('LayerZeroBridge', () => {
       expect(await lzEndpoint.resumeReceived()).to.be.equal(0);
     });
   });
+
   describe('send', () => {
     it('reverts - trusted remote not set', async () => {
       await agToken.mint(alice.address, parseEther('10'));
@@ -192,6 +193,50 @@ contract('LayerZeroBridge', () => {
       await lzBridge.connect(impersonatedSigners[governor]).pauseSendTokens(true);
       await expect(
         lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, '0x'),
+      ).to.be.revertedWith('Pausable: paused');
+    });
+  });
+
+  describe('sendCredit', () => {
+    it('reverts - trusted remote not set', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.mint(lzBridge.address, parseEther('1'));
+      const payloadData = ethers.utils.defaultAbiCoder.encode(['bytes', 'uint256'], [alice.address, parseEther('3')]);
+      await lzEndpoint.lzReceive(lzBridge.address, 1, remote.address, 0, payloadData);
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('2'));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      await expect(
+        lzBridge.connect(alice).sendCredit(9, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, '0x'),
+      ).to.be.revertedWith('InvalidSource');
+    });
+    it('success - trusted remote set and message sent', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await lzEndpoint.setOutBoundNonce(1, 10);
+      expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.mint(lzBridge.address, parseEther('1'));
+      const payloadData = ethers.utils.defaultAbiCoder.encode(['bytes', 'uint256'], [alice.address, parseEther('3')]);
+      await lzEndpoint.lzReceive(lzBridge.address, 1, remote.address, 0, payloadData);
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('2'));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      await lzBridge.connect(alice).sendCredit(1, bob.address, parseEther('2'), bob.address, ZERO_ADDRESS, '0x');
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('0'));
+      expect(await lzEndpoint.counters(1)).to.be.equal(1);
+    });
+    it('reverts - paused', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await lzEndpoint.setOutBoundNonce(1, 10);
+      expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.mint(lzBridge.address, parseEther('1'));
+      const payloadData = ethers.utils.defaultAbiCoder.encode(['bytes', 'uint256'], [alice.address, parseEther('3')]);
+      await lzEndpoint.lzReceive(lzBridge.address, 1, remote.address, 0, payloadData);
+      expect(await lzBridge.balanceOf(alice.address)).to.be.equal(parseEther('2'));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('1'));
+      await lzBridge.connect(impersonatedSigners[governor]).pauseSendTokens(true);
+      await expect(
+        lzBridge.connect(alice).sendCredit(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, '0x'),
       ).to.be.revertedWith('Pausable: paused');
     });
   });

@@ -40,6 +40,22 @@ interface IOFTCore is IERC165 {
         bytes calldata _adapterParams
     ) external payable;
 
+    /// @notice Sends `_amount` amount of credit to (`_dstChainId`, `_toAddress`)
+    /// @param _dstChainId the destination chain identifier
+    /// @param _toAddress can be any size depending on the `dstChainId`.
+    /// @param _amount the quantity of credit to send in wei
+    /// @param _refundAddress the address LayerZero refunds if too much message fee is sent
+    /// @param _zroPaymentAddress set to address(0x0) if not paying in ZRO (LayerZero Token)
+    /// @param _adapterParams is a flexible bytes array to indicate messaging adapter services
+    function sendCredit(
+        uint16 _dstChainId,
+        bytes calldata _toAddress,
+        uint256 _amount,
+        address payable _refundAddress,
+        address _zroPaymentAddress,
+        bytes calldata _adapterParams
+    ) external payable;
+
     /// @notice Sends `_amount` amount of token to (`_dstChainId`, `_toAddress`)
     /// @param _dstChainId The destination chain identifier
     /// @param _toAddress Can be any size depending on the `dstChainId`.
