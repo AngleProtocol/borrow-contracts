@@ -112,7 +112,7 @@ contract('LayerZeroBridgeToken', () => {
   });
   describe('name', () => {
     it('success - name', async () => {
-      expect(await lzBridge.name()).to.be.equal('LayerZero Bridge Token');
+      expect(await lzBridge.name()).to.be.equal('lz-agEUR');
     });
   });
   describe('pauseSendTokens', () => {

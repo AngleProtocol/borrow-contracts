@@ -22,16 +22,20 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     // ============================= Constructor ===================================
 
     /// @notice Initializes the contract
+    /// @param _name Name of the token corresponding to this contract
+    /// @param _symbol Symbol of the token corresponding to this contract
     /// @param _lzEndpoint Layer zero endpoint to pass messages
     /// @param _treasury Address of the treasury contract used for access control
     /// @param initialSupply Initial supply to mint to the canonical token address
     /// @dev The initial supply corresponds to the initial amount that could be bridged using this OFT
     function initialize(
+        string memory _name,
+        string memory _symbol,
         address _lzEndpoint,
         address _treasury,
         uint256 initialSupply
     ) external initializer {
-        __ERC20_init_unchained("LayerZero Bridge Token", "LayerZero Bridge Token");
+        __ERC20_init_unchained(_name, _symbol);
         __LzAppUpgradeable_init(_lzEndpoint, _treasury);
 
         canonicalToken = IAgTokenSideChainMultiBridge(address(ITreasury(_treasury).stablecoin()));
