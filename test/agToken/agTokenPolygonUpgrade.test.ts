@@ -100,6 +100,10 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade with updated swapOut', ()
       .addBridgeToken(bridgeToken.address, parseEther('10'), parseEther('1'), parseAmount.gwei(0.5), false);
   });
 
+  after(async () => {
+    await resetFork();
+  });
+
   describe('upgrade - old References & Variables', () => {
     it('success - old references', async () => {
       expect(await agToken.name()).to.be.equal('agEUR');
