@@ -63,7 +63,7 @@ contract('LayerZeroBridge', () => {
       ZERO_ADDRESS,
     )) as MockTreasury;
 
-    await lzBridge.initialize(lzEndpoint.address, treasury.address);
+    await lzBridge.initialize('LayerZero Bridge Token', lzEndpoint.address, treasury.address);
   });
 
   describe('initializer', () => {
@@ -73,15 +73,26 @@ contract('LayerZeroBridge', () => {
       expect(await lzBridge.lzEndpoint()).to.be.equal(lzEndpoint.address);
     });
     it('reverts - already initialized', async () => {
-      await expect(lzBridge.initialize(lzEndpoint.address, treasury.address)).to.be.revertedWith(
-        'Initializable: contract is already initialized',
-      );
+      await expect(
+        lzBridge.initialize('LayerZero Bridge Token', lzEndpoint.address, treasury.address),
+      ).to.be.revertedWith('Initializable: contract is already initialized');
     });
     it('reverts - zero address', async () => {
       const lzBridgeRevert = (await deployUpgradeable(new LayerZeroBridge__factory(deployer))) as LayerZeroBridge;
-      await expect(lzBridgeRevert.initialize(ZERO_ADDRESS, treasury.address)).to.be.revertedWith('ZeroAddress');
-      await expect(lzBridgeRevert.initialize(lzEndpoint.address, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
-      await expect(lzBridgeRevert.initialize(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+      await expect(
+        lzBridgeRevert.initialize('LayerZero Bridge Token', ZERO_ADDRESS, treasury.address),
+      ).to.be.revertedWith('ZeroAddress');
+      await expect(
+        lzBridgeRevert.initialize('LayerZero Bridge Token', lzEndpoint.address, ZERO_ADDRESS),
+      ).to.be.revertedWith('ZeroAddress');
+      await expect(lzBridgeRevert.initialize('LayerZero Bridge Token', ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(
+        'ZeroAddress',
+      );
+    });
+  });
+  describe('name', () => {
+    it('success - name', async () => {
+      expect(await lzBridge.name()).to.be.equal('LayerZero Bridge Token');
     });
   });
   describe('Access Control', () => {
