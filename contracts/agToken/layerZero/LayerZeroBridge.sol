@@ -10,6 +10,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 /// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
 /// @notice Contract to be deployed on Ethereum for bridging an AgToken using a bridge intermediate token and LayerZero
 contract LayerZeroBridge is OFTCore, PausableUpgradeable {
+    /// @notice Name of the contract for indexing purposes
+    string public name;
+
     /// @notice Address of the bridgeable token
     /// @dev Immutable
     IERC20 public canonicalToken;
@@ -20,10 +23,16 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     // ============================= Constructor ===================================
 
     /// @notice Initializes the contract
+    /// @param _name Name of the token corresponding to this contract
     /// @param _lzEndpoint Layer zero endpoint to pass messages
     /// @param _treasury Address of the treasury contract used for access control
-    function initialize(address _lzEndpoint, address _treasury) external initializer {
+    function initialize(
+        string memory _name,
+        address _lzEndpoint,
+        address _treasury
+    ) external initializer {
         __LzAppUpgradeable_init(_lzEndpoint, _treasury);
+        name = _name;
         canonicalToken = IERC20(address(ITreasury(_treasury).stablecoin()));
     }
 
@@ -138,5 +147,5 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
     }
 
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 }

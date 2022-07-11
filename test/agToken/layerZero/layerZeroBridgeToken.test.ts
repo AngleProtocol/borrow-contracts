@@ -110,6 +110,11 @@ contract('LayerZeroBridgeToken', () => {
       await expect(lzBridge.forceResumeReceive(1, '0x')).to.be.revertedWith('NotGovernorOrGuardian');
     });
   });
+  describe('name', () => {
+    it('success - name', async () => {
+      expect(await lzBridge.name()).to.be.equal('lz-agEUR');
+    });
+  });
   describe('pauseSendTokens', () => {
     it('success - pausing', async () => {
       await lzBridge.connect(impersonatedSigners[governor]).pauseSendTokens(true);
