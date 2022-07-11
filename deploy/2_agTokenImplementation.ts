@@ -21,7 +21,15 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     implementationName = 'AgTokenSideChainMultiBridge';
   }
 
-  const agTokenImplementation = await deployImplem(implementationName);
+  console.log(`Now deploying the implementation for AgToken on ${network.name}`);
+  await deploy(`${implementationName}_Implementation`, {
+    contract: implementationName,
+    from: deployer.address,
+    log: !argv.ci,
+  });
+  const agTokenImplementation = (await ethers.getContract(`${implementationName}_Implementation`)).address;
+
+  //  const agTokenImplementation = await deployImplem(implementationName);
 
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
     console.log('Deploying the proxy for the agToken contract');

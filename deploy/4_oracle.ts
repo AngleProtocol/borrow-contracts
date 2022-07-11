@@ -21,7 +21,7 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
       log: !argv.ci,
     });
     const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
-    console.log(`Successfully deployed Oracle wBTC/EUR at the address ${oracle}`);
+    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
     console.log('');
   } else {
     await deploy('Oracle_ETH_EUR', {
@@ -32,15 +32,6 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
     });
     const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
     console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
-    console.log('');
-    await deploy('Oracle_MATIC_EUR', {
-      contract: `OracleMATICEURChainlink${chainName}`,
-      from: deployer.address,
-      args: [3600 * 48, treasury],
-      log: !argv.ci,
-    });
-    const oracle2 = (await deployments.get('Oracle_MATIC_EUR')).address;
-    console.log(`Successfully deployed Oracle MATIC/EUR at the address ${oracle2}`);
     console.log('');
     await deploy('Oracle_USDC_EUR', {
       contract: `OracleUSDCEURChainlink${chainName}`,
@@ -55,5 +46,5 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
 };
 
 func.tags = ['oracle'];
-func.dependencies = ['treasury'];
+// func.dependencies = ['treasury'];
 export default func;

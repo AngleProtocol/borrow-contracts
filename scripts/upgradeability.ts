@@ -31,11 +31,21 @@ async function main() {
   testUpgradeability('MockPolygonAgEUR', 'contracts/mock/MockPolygonAgEUR.sol');
   testUpgradeability('TokenPolygonUpgradeable', 'contracts/agToken/polygon/TokenPolygonUpgradeable.sol');
 
+  testUpgradeability('MockSidechainAgEUR', 'contracts/mock/MockSidechainAgEUR.sol');
+  testUpgradeability('AgTokenSideChainMultiBridge', 'contracts/agToken/AgTokenSideChainMultiBridge.sol');
+
   testStorage(
     'MockPolygonAgEUR',
     'contracts/mock/MockPolygonAgEUR.sol',
     'TokenPolygonUpgradeable',
     'contracts/agToken/polygon/TokenPolygonUpgradeable.sol',
+  );
+
+  testStorage(
+    'MockSidechainAgEUR',
+    'contracts/mock/MockSidechainAgEUR.sol',
+    'AgTokenSideChainMultiBridge',
+    'contracts/agToken/AgTokenSideChainMultiBridge.sol',
   );
 }
 
