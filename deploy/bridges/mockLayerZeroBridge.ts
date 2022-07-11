@@ -14,6 +14,7 @@ import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deploy, deployImplem, deployProxy } from '../helpers';
 
 const func: DeployFunction = async ({ ethers, network }) => {
+  /*
   // Using an EOA as proxyAdmin as it's a mock deployment
   const { deployer, proxyAdmin } = await ethers.getNamedSigners();
 
@@ -74,6 +75,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
       false,
     )
   ).wait();
+  */
 };
 
 func.tags = ['mockLayerZeroBridge'];
