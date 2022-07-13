@@ -17,10 +17,10 @@ import 'solidity-coverage';
 import '@tenderly/hardhat-tenderly';
 import '@typechain/hardhat';
 
-import { HardhatUserConfig } from 'hardhat/config';
+import { HardhatUserConfig } from 'hardhat/types';
 import yargs from 'yargs';
 
-import { accounts, nodeUrl } from './utils/network';
+import { accounts, etherscanKey, nodeUrl } from './utils/network';
 
 const argv = yargs
   .env('')
@@ -92,10 +92,10 @@ const config: HardhatUserConfig = {
         enabled: argv.fork || false,
         // For mainnet
         // url: nodeUrl('fork'),
-        // blockNumber: 14665543,
+        // blockNumber: 15133066,
         // For Polygon
         url: nodeUrl('forkpolygon'),
-        blockNumber: 26536036,
+        blockNumber: 30672813,
       },
       mining: argv.disableAutoMining
         ? {
@@ -131,6 +131,11 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       chainId: 137,
       gasPrice: 200e9,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('polygon'),
+        },
+      },
     },
     fantom: {
       live: true,
@@ -146,6 +151,11 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       gasMultiplier: 1.3,
       chainId: 1,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('mainnet'),
+        },
+      },
     },
     optimism: {
       live: true,
@@ -153,6 +163,11 @@ const config: HardhatUserConfig = {
       accounts: accounts('optimism'),
       gas: 'auto',
       chainId: 10,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('optimism'),
+        },
+      },
     },
     arbitrum: {
       live: true,
@@ -160,6 +175,11 @@ const config: HardhatUserConfig = {
       accounts: accounts('arbitrum'),
       gas: 'auto',
       chainId: 42161,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('arbitrum'),
+        },
+      },
     },
     avalanche: {
       live: true,
@@ -220,14 +240,14 @@ const config: HardhatUserConfig = {
   etherscan: {
     // eslint-disable-next-line
     // @ts-ignore
-    apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY,
-      optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY,
-      arbitrumOne: process.env.ARBITRUM_ETHERSCAN_API_KEY,
-      avalanche: process.env.AVALANCHE_ETHERSCAN_API_KEY,
-      polygon: process.env.POLYGON_ETHERSCAN_API_KEY,
-    },
-    // apiKey: process.env.ETHERSCAN_API_KEY,
+    // apiKey: {
+    //   mainnet: process.env.ETHERSCAN_API_KEY,
+    //   optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+    //   arbitrumOne: process.env.ARBITRUM_ETHERSCAN_API_KEY,
+    //   avalanche: process.env.AVALANCHE_ETHERSCAN_API_KEY,
+    //   polygon: process.env.POLYGON_ETHERSCAN_API_KEY,
+    // },
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'typechain',
