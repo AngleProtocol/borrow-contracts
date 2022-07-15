@@ -1,5 +1,7 @@
 {
   "ethereum": 1,
+  "mainnet": 1,
+  "localhost": 1,
   "bsc": 2,
   "avalanche": 6,
   "polygon": 9,

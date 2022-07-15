@@ -1,16 +1,18 @@
 import { Contract } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import LZ_CHAINIDS from '../../deploy/constants/layerzeroChainIds.json';
 import { LayerZeroBridge, LayerZeroBridge__factory } from '../../typechain';
+import LZ_CHAINIDS from '../constants/layerzeroChainIds.json';
 
 const func: DeployFunction = async ({ ethers, network }) => {
   // Using an EOA as proxyAdmin as it's a mock deployment
   const { deployer } = await ethers.getNamedSigners();
 
   const OFTs: { [string: string]: string } = {
-    fantom: '0x5ae1cAa23E540c243f5a45d283feD041b2FC4177',
-    polygon: '0x87C88923c7149baE28e6E5cE11b968183707657f',
+    polygon: '0x0c1EBBb61374dA1a8C57cB6681bF27178360d36F',
+    optimism: '0x840b25c87B626a259CA5AC32124fA752F0230a72',
+    arbitrum: '0x16cd38b1B54E7abf307Cb2697E2D9321e843d5AA',
+    mainnet: '0x4Fa745FCCC04555F2AFA8874cd23961636CdF982',
   };
 
   const local = OFTs[network.name];
@@ -18,11 +20,12 @@ const func: DeployFunction = async ({ ethers, network }) => {
 
   for (const chain of Object.keys(OFTs)) {
     if (chain !== network.name) {
-      const tx = await contractAngleOFT.setTrustedRemote((LZ_CHAINIDS as any)[chain], OFTs[chain]);
-      await tx.wait();
+      console.log(
+        contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [(LZ_CHAINIDS as any)[chain], OFTs[chain]]),
+      );
     }
   }
 };
 
-func.tags = ['mockLayerZeroSources'];
+func.tags = ['LayerZeroSources'];
 export default func;
