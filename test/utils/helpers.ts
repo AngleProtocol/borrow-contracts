@@ -170,6 +170,11 @@ type Call = {
   data: BytesLike;
 };
 
+type MerkleTreeType = {
+  merkleRoot: BytesLike;
+  ipfsHash: BytesLike;
+};
+
 function createVault(to: string): Call {
   return { action: 0, data: ethers.utils.defaultAbiCoder.encode(['address'], [to]) };
 }
@@ -333,6 +338,7 @@ export {
   increaseTime,
   latestTime,
   MAX_UINT256,
+  MerkleTreeType,
   mine,
   permit,
   removeCollateral,
