@@ -44,7 +44,6 @@ contract('MerkleRootDistributor', () => {
     await distributor.initialize(treasury.address);
     merkleTree = { merkleRoot: web3.utils.keccak256('MERKLE_ROOT'), ipfsHash: web3.utils.keccak256('IPFS_HASH') };
   });
-  /*
   describe('initializer', () => {
     it('success - treasury', async () => {
       expect(await distributor.treasury()).to.be.equal(treasury.address);
@@ -132,7 +131,6 @@ contract('MerkleRootDistributor', () => {
       expect((await distributor.tree()).ipfsHash).to.be.equal(web3.utils.keccak256('IPFS_HASH'));
     });
   });
-  */
   describe('claim', () => {
     it('reverts - invalid length', async () => {
       await expect(
@@ -301,6 +299,7 @@ contract('MerkleRootDistributor', () => {
         parseEther('0.5'),
       );
     });
+
     it('success - small proof on different tokens for the same address', async () => {
       var elements = [];
       const bytesPassed1 = ethers.utils.defaultAbiCoder.encode(
@@ -312,7 +311,7 @@ contract('MerkleRootDistributor', () => {
       const agEUR = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
       const bytesPassed2 = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256'],
-        ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', agEUR.address, parseEther('1')],
+        ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', agEUR.address, parseEther('0.5')],
       );
       elements.push(web3.utils.keccak256(bytesPassed2));
 
@@ -350,9 +349,92 @@ contract('MerkleRootDistributor', () => {
         parseEther('1'),
       );
       expect(await agEUR.balanceOf(distributor.address)).to.be.equal(parseEther('0'));
-      expect(await angle.balanceOf('0x3931C80BF7a911fcda8b684b23A433D124b59F06')).to.be.equal(parseEther('0.5'));
+      expect(await agEUR.balanceOf('0x3931C80BF7a911fcda8b684b23A433D124b59F06')).to.be.equal(parseEther('0.5'));
       expect(await distributor.claimed('0x3931C80BF7a911fcda8b684b23A433D124b59F06', agEUR.address)).to.be.equal(
         parseEther('0.5'),
+      );
+    });
+    it('success - two claims on the same token by the same address', async () => {
+      var elements = [];
+      const bytesPassed1 = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256'],
+        ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', angle.address, parseEther('1')],
+      );
+      var hash = web3.utils.keccak256(bytesPassed1);
+      elements.push(hash);
+      const agEUR = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
+      const bytesPassed2 = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256'],
+        ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', agEUR.address, parseEther('0.5')],
+      );
+      elements.push(web3.utils.keccak256(bytesPassed2));
+
+      const leaf = elements[0];
+      const merkleTreeLib = new MerkleTree(elements, web3.utils.keccak256, { hashLeaves: false, sortPairs: true });
+      const root = merkleTreeLib.getHexRoot();
+      const proof = merkleTreeLib.getHexProof(leaf);
+      await angle.mint(distributor.address, parseEther('10'));
+      await agEUR.mint(distributor.address, parseEther('0.5'));
+      merkleTree.merkleRoot = root;
+      await distributor.connect(guardian).updateTree(merkleTree);
+
+      // Doing first claim
+      const receipt = await (
+        await distributor.claim(
+          ['0x3931C80BF7a911fcda8b684b23A433D124b59F06'],
+          [angle.address],
+          [parseEther('1')],
+          [proof],
+        )
+      ).wait();
+      inReceipt(receipt, 'Claimed', {
+        user: '0x3931C80BF7a911fcda8b684b23A433D124b59F06',
+        token: angle.address,
+        amount: parseEther('1'),
+      });
+
+      expect(await angle.balanceOf(distributor.address)).to.be.equal(parseEther('9'));
+      expect(await angle.balanceOf('0x3931C80BF7a911fcda8b684b23A433D124b59F06')).to.be.equal(parseEther('1'));
+      expect(await distributor.claimed('0x3931C80BF7a911fcda8b684b23A433D124b59F06', angle.address)).to.be.equal(
+        parseEther('1'),
+      );
+      // Updating Merkle root after second claim
+      elements = [];
+      // Now the person can claim 2 additional tokens
+      const bytesPassed3 = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256'],
+        ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', angle.address, parseEther('3')],
+      );
+      var hash = web3.utils.keccak256(bytesPassed3);
+      elements.push(hash);
+      const bytesPassed4 = ethers.utils.defaultAbiCoder.encode(
+        ['address', 'address', 'uint256'],
+        ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', agEUR.address, parseEther('0.5')],
+      );
+      elements.push(web3.utils.keccak256(bytesPassed4));
+      const merkleTreeLib2 = new MerkleTree(elements, web3.utils.keccak256, { hashLeaves: false, sortPairs: true });
+      const root2 = merkleTreeLib2.getHexRoot();
+      const proof2 = merkleTreeLib2.getHexProof(elements[0]);
+      merkleTree.merkleRoot = root2;
+      await distributor.connect(guardian).updateTree(merkleTree);
+      const receipt2 = await (
+        await distributor.claim(
+          ['0x3931C80BF7a911fcda8b684b23A433D124b59F06'],
+          [angle.address],
+          [parseEther('3')],
+          [proof2],
+        )
+      ).wait();
+      inReceipt(receipt2, 'Claimed', {
+        user: '0x3931C80BF7a911fcda8b684b23A433D124b59F06',
+        token: angle.address,
+        amount: parseEther('2'),
+      });
+
+      expect(await angle.balanceOf(distributor.address)).to.be.equal(parseEther('7'));
+      expect(await angle.balanceOf('0x3931C80BF7a911fcda8b684b23A433D124b59F06')).to.be.equal(parseEther('3'));
+      expect(await distributor.claimed('0x3931C80BF7a911fcda8b684b23A433D124b59F06', angle.address)).to.be.equal(
+        parseEther('3'),
       );
     });
   });

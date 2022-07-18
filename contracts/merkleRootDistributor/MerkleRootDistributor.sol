@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/ITreasury.sol";
-import "hardhat/console.sol";
 
 struct MerkleTree {
     // Root of a Merkle tree which leaves are (address user, address token, uint amount)
@@ -106,8 +105,6 @@ contract MerkleRootDistributor is Initializable {
 
             // Verifying proof
             bytes32 leaf = keccak256(abi.encode(user, token, amount));
-            console.log(user, token, amount);
-            console.logBytes32(leaf);
             if (!_verifyProof(leaf, proofs[i])) revert InvalidProof();
 
             // Closing reentrancy gate here
