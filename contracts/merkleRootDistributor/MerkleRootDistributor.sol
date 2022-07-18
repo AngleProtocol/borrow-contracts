@@ -9,17 +9,17 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ITreasury.sol";
 
 struct MerkleTree {
-    // Root of merkle tree whose leaves are (address user, address token, uint amount)
-    // representing and amount of token owed to user
-    // The Merkle tree is assumed to have only increasing amounts
-    // that is to say if a user can claim 1, after the next update he should be able to claim x > 1.
+    // Root of a Merkle tree which leaves are (address user, address token, uint amount)
+    // representing an amount of tokens owed to user.
+    // The Merkle tree is assumed to have only increasing amounts: that is to say if a user can claim 1,
+    // then after the amount associated in the Merkle tree for this token should be x > 1
     bytes32 merkleRoot;
-    // ipfs hash of the tree data
+    // Ipfs hash of the tree data
     bytes32 ipfsHash;
 }
 
 /// @title MerkleRootDistributor
-/// @notice Allows the DAO to distribute rewards through Merkle Roots.
+/// @notice Allows the DAO to distribute rewards through Merkle Roots
 /// @author Angle Core Team
 contract MerkleRootDistributor is Initializable {
     using SafeERC20 for IERC20;
@@ -30,27 +30,28 @@ contract MerkleRootDistributor is Initializable {
     /// @notice Treasury contract handling access control
     ITreasury public treasury;
 
-    // Mapping user -> token -> amount to track claimed amounts
+    /// @notice Mapping user -> token -> amount to track claimed amounts
     mapping(address => mapping(address => uint256)) public claimed;
 
-    // Trusted EOA to update the merkle root
+    /// @notice Trusted EOAs to update the merkle root
     mapping(address => uint256) public trusted;
 
     uint256[46] private __gap;
 
     // ================================== Events ===================================
 
-    event TrustedToggled(address indexed eao, bool trust);
+    event TrustedToggled(address indexed eoa, bool trust);
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event TreeUpdated(bytes32 merkleRoot, bytes32 ipfsHash);
     event Claimed(address user, address token, uint256 amount);
 
     // ================================== Errors ===================================
 
-    error NotGovernorOrGuardian();
-    error NotTrusted();
     error InvalidLengths();
     error InvalidProof();
+    error NotGovernorOrGuardian();
+    error NotTrusted();
+    error ZeroAddress();
 
     // ================================= Modifiers =================================
 
@@ -60,9 +61,9 @@ contract MerkleRootDistributor is Initializable {
         _;
     }
 
-    /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
+    /// @notice Checks whether the `msg.sender` is a trusted address to change the Merkle root of the contract
     modifier onlyTrusted() {
-        if (!treasury.isGovernorOrGuardian(msg.sender) && trusted[msg.sender] != 1) revert NotGovernorOrGuardian();
+        if (!treasury.isGovernorOrGuardian(msg.sender) && trusted[msg.sender] != 1) revert NotTrusted();
         _;
     }
 
@@ -71,18 +72,19 @@ contract MerkleRootDistributor is Initializable {
     constructor() initializer {}
 
     function initialize(ITreasury _treasury) public initializer {
+        if(address(_treasury) == address(0)) revert ZeroAddress();
         treasury = _treasury;
     }
 
     // =========================== Main Function ===================================
 
-    /// @notice Claim rewards for a given user
+    /// @notice Claims rewards for a given set of users
     /// @dev Anyone may call this function for anyone else, funds go to destination regardless, it's just a question of
-    /// @dev who provides the proof and pays the gas, msg.sender is not used in this function
-    /// @param users recipient of tokens
+    /// who provides the proof and pays the gas: `msg.sender` is not used in this function
+    /// @param users Recipient of tokens
     /// @param tokens ERC20 claimed
-    /// @param amounts amount of tokens that will be sent to `user`
-    /// @param proofs array of hashes bridging from leaf (hash of user | token | amount) to merkle root
+    /// @param amounts Amount of tokens that will be sent to the corresponding users
+    /// @param proofs Array of hashes bridging from leaf (hash of user | token | amount) to Merkle root
     function claim(
         address[] calldata users,
         address[] calldata tokens,
@@ -114,18 +116,19 @@ contract MerkleRootDistributor is Initializable {
         }
     }
 
-    // =========================== Governance Functions ===============================
+    // =========================== Governance Functions ============================
 
     /// @notice Adds or removes trusted EOA
     function toggleTrusted(address eoa) external onlyGovernorOrGuardian {
-        trusted[eoa] = 1 - trusted[eoa];
-        emit TrustedToggled(eoa, trusted[eoa] == 1);
+        uint256 trustedStatus = 1 - trusted[eoa];
+        trusted[eoa] = trustedStatus;
+        emit TrustedToggled(eoa, trustedStatus == 1);
     }
 
     /// @notice Updates Merkle Tree
     function updateTree(MerkleTree calldata _tree) external onlyTrusted {
         tree = _tree;
-        emit TreeUpdated(tree.merkleRoot, tree.ipfsHash);
+        emit TreeUpdated(_tree.merkleRoot, _tree.ipfsHash);
     }
 
     /// @notice Recovers any ERC20 token
@@ -138,12 +141,12 @@ contract MerkleRootDistributor is Initializable {
         emit Recovered(tokenAddress, to, amountToRecover);
     }
 
-    // =========================== Internal Functions ===============================
+    // =========================== Internal Functions ==============================
 
     /// @notice Checks the validity of a proof
     /// @param leaf Hashed leaf data, the starting point of the proof
     /// @param proof Array of hashes forming a hash chain from leaf to root
-    /// @return true if proof is correct, else false
+    /// @return true If proof is correct, else false
     function _verifyProof(bytes32 leaf, bytes32[] memory proof) internal view returns (bool) {
         bytes32 currentHash = leaf;
         for (uint256 i = 0; i < proof.length; i += 1) {
