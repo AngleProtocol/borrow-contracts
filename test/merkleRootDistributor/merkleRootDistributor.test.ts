@@ -1,21 +1,20 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { parseEther, parseUnits } from 'ethers/lib/utils';
+import { BigNumber } from 'ethers';
+import { parseEther } from 'ethers/lib/utils';
 import { contract, ethers, web3 } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
-import { BigNumber, BytesLike, utils } from 'ethers';
 
 import {
   MerkleRootDistributor,
   MerkleRootDistributor__factory,
-  MockTreasury,
-  MockTreasury__factory,
   MockToken,
   MockToken__factory,
+  MockTreasury,
+  MockTreasury__factory,
 } from '../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inReceipt } from '../utils/expectEvent';
-import { MAX_UINT256, ZERO_ADDRESS, deployUpgradeable, MerkleTreeType } from '../utils/helpers';
-import { CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
+import { deployUpgradeable, MerkleTreeType, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('MerkleRootDistributor', () => {
   let deployer: SignerWithAddress;
@@ -175,19 +174,19 @@ contract('MerkleRootDistributor', () => {
       ).to.be.revertedWith('InvalidProof');
     });
     it('reverts - small proof on one token but no token balance', async () => {
-      var elements = [];
+      const elements = [];
       const file = {
         '0x3931C80BF7a911fcda8b684b23A433D124b59F06': parseEther('1'),
         '0x8f02b4a44Eacd9b8eE7739aa0BA58833DD45d002': parseEther('0.5'),
       };
       const fileProcessed = file as { [name: string]: BigNumber };
       const keys = Object.keys(fileProcessed);
-      for (let key in keys) {
+      for (const key in keys) {
         const bytesPassed = ethers.utils.defaultAbiCoder.encode(
           ['address', 'address', 'uint256'],
           [keys[key], angle.address, fileProcessed[keys[key]]],
         );
-        var hash = web3.utils.keccak256(bytesPassed);
+        const hash = web3.utils.keccak256(bytesPassed);
         elements.push(hash);
       }
 
@@ -204,19 +203,19 @@ contract('MerkleRootDistributor', () => {
       ).to.be.reverted;
     });
     it('success - small proof on one token and token balance', async () => {
-      var elements = [];
+      const elements = [];
       const file = {
         '0x3931C80BF7a911fcda8b684b23A433D124b59F06': parseEther('1'),
         '0x8f02b4a44Eacd9b8eE7739aa0BA58833DD45d002': parseEther('0.5'),
       };
       const fileProcessed = file as { [name: string]: BigNumber };
       const keys = Object.keys(fileProcessed);
-      for (let key in keys) {
+      for (const key in keys) {
         const bytesPassed = ethers.utils.defaultAbiCoder.encode(
           ['address', 'address', 'uint256'],
           [keys[key], angle.address, fileProcessed[keys[key]]],
         );
-        var hash = web3.utils.keccak256(bytesPassed);
+        const hash = web3.utils.keccak256(bytesPassed);
         elements.push(hash);
       }
       const leaf = elements[0];
@@ -247,19 +246,19 @@ contract('MerkleRootDistributor', () => {
       );
     });
     it('success - small proof on one token for different addresses', async () => {
-      var elements = [];
+      const elements = [];
       const file = {
         '0x3931C80BF7a911fcda8b684b23A433D124b59F06': parseEther('1'),
         '0x8f02b4a44Eacd9b8eE7739aa0BA58833DD45d002': parseEther('0.5'),
       };
       const fileProcessed = file as { [name: string]: BigNumber };
       const keys = Object.keys(fileProcessed);
-      for (let key in keys) {
+      for (const key in keys) {
         const bytesPassed = ethers.utils.defaultAbiCoder.encode(
           ['address', 'address', 'uint256'],
           [keys[key], angle.address, fileProcessed[keys[key]]],
         );
-        var hash = web3.utils.keccak256(bytesPassed);
+        const hash = web3.utils.keccak256(bytesPassed);
         elements.push(hash);
       }
       const leaf = elements[0];
@@ -301,12 +300,12 @@ contract('MerkleRootDistributor', () => {
     });
 
     it('success - small proof on different tokens for the same address', async () => {
-      var elements = [];
+      const elements = [];
       const bytesPassed1 = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256'],
         ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', angle.address, parseEther('1')],
       );
-      var hash = web3.utils.keccak256(bytesPassed1);
+      const hash = web3.utils.keccak256(bytesPassed1);
       elements.push(hash);
       const agEUR = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
       const bytesPassed2 = ethers.utils.defaultAbiCoder.encode(
@@ -355,13 +354,12 @@ contract('MerkleRootDistributor', () => {
       );
     });
     it('success - two claims on the same token by the same address', async () => {
-      var elements = [];
+      let elements = [];
       const bytesPassed1 = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256'],
         ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', angle.address, parseEther('1')],
       );
-      var hash = web3.utils.keccak256(bytesPassed1);
-      elements.push(hash);
+      elements.push(web3.utils.keccak256(bytesPassed1));
       const agEUR = (await new MockToken__factory(deployer).deploy('agEUR', 'agEUR', 18)) as MockToken;
       const bytesPassed2 = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256'],
@@ -405,8 +403,7 @@ contract('MerkleRootDistributor', () => {
         ['address', 'address', 'uint256'],
         ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', angle.address, parseEther('3')],
       );
-      var hash = web3.utils.keccak256(bytesPassed3);
-      elements.push(hash);
+      elements.push(web3.utils.keccak256(bytesPassed3));
       const bytesPassed4 = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint256'],
         ['0x3931C80BF7a911fcda8b684b23A433D124b59F06', agEUR.address, parseEther('0.5')],
