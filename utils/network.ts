@@ -31,7 +31,7 @@ export function etherscanKey(networkName: string): string {
       return key;
     }
   }
-  throw new Error(`cannot find etherscan in .env : ${networkName}`);
+  return '';
 }
 
 export function getMnemonic(networkName: string): string {
