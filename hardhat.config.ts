@@ -17,10 +17,17 @@ import 'solidity-coverage';
 import '@tenderly/hardhat-tenderly';
 import '@typechain/hardhat';
 
-import { HardhatUserConfig } from 'hardhat/types';
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names';
+import { HardhatUserConfig, subtask } from 'hardhat/config';
 import yargs from 'yargs';
 
 import { accounts, etherscanKey, nodeUrl } from './utils/network';
+
+// Otherwise, ".sol" files from "test" are picked up during compilation and throw an error
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
+  const paths = await runSuper();
+  return paths.filter((p: string) => !p.includes('/test/foundry/'));
+});
 
 const argv = yargs
   .env('')

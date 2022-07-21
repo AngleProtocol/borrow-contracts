@@ -48,3 +48,6 @@ bin
 typechain/cacheIndex.ts
 contracts/mock/MockEulerReactor.sol
 
+# foundry
+/out
+/cache-forge
