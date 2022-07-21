@@ -206,6 +206,7 @@ const config: HardhatUserConfig = {
   paths: {
     sources: './contracts',
     tests: './test',
+    cache: 'cache-hh',
   },
   namedAccounts: {
     deployer: 0,

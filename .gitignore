@@ -11,7 +11,8 @@ settings.json
 venv
 
 # Build output
-cache
+/cache
+/cache-hh
 build
 export
 **/artifacts

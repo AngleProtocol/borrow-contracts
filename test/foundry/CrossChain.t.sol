@@ -3,6 +3,7 @@ pragma solidity 0.8.12;
 
 import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
+import { Solenv } from "./Solenv.sol";
 
 import "../../contracts/agToken/layerZero/LayerZeroBridgeToken.sol";
 import "../../contracts/agToken/layerZero/LayerZeroBridge.sol";
@@ -52,9 +53,10 @@ contract CrossChainTest is Test {
     mapping(string => LZAddresses) internal _lzAddressesPerChain;
 
     function setUp() public virtual {
-        _ethereum = vm.createFork("https://eth-mainnet.alchemyapi.io/v2/K-M3e0cpvugLUuCkoKT6uKmlkB0ccBV2");
-        _polygon = vm.createFork("https://polygon-mainnet.g.alchemy.com/v2/IJTj5SikhXCIV_a021XV2xpbLL8ibwUP");
-        _fantom = vm.createFork("https://rpc.ftm.tools");
+        Solenv.config();
+        _ethereum = vm.createFork(vm.envString("ETH_NODE_URI_MAINNET"));
+        _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"));
+        _fantom = vm.createFork(vm.envString("ETH_NODE_URI_FANTOM"));
 
         _lzAddressesPerChain["ethereum"] = LZAddresses({
             endpoint: 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -134,7 +136,7 @@ contract CrossChainTest is Test {
 
         vm.startPrank(_sender);
         _agTokenSideChainMultiBridge.approve(address(_layerZeroBridge), 1 ether);
-        _layerZeroBridge.send{ value: 0.1 ether }(
+        _layerZeroBridge.send{ value: 0.5 ether }(
             _lzAddressesPerChain["fantom"].lzChainId,
             abi.encodePacked(_receiver),
             0.2 ether,
