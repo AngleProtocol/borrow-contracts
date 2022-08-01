@@ -64,6 +64,12 @@ contract('Interest Rates', () => {
       console.log(gas.toString());
       console.log(receipt.toString());
     });
+    it('compound', async () => {
+      const receipt = await computer.calculateCompound1YearDirect();
+      const gas = await computer.estimateGas.calculateCompound1YearDirect();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
   });
   describe('calculate 1Year', () => {
     it('aave', async () => {

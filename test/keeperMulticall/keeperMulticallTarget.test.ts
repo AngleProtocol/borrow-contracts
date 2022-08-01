@@ -47,9 +47,11 @@ describe('Keeper Multicall', async () => {
     const initializeData = KeeperMulticall__factory.createInterface().encodeFunctionData('initialize', [
       keeper.address,
     ]);
-    const proxy = await (
-      await ethers.getContractFactory('TransparentUpgradeableProxy')
-    ).deploy(keeperMulticallImplementation.address, proxyAdmin.address, initializeData);
+    const proxy = await (await ethers.getContractFactory('TransparentUpgradeableProxy')).deploy(
+      keeperMulticallImplementation.address,
+      proxyAdmin.address,
+      initializeData,
+    );
     keeperMulticall = new Contract(
       proxy.address,
       [...KeeperMulticall__factory.abi, 'function upgradeTo(address newImplementation) external'],
@@ -93,9 +95,9 @@ describe('Keeper Multicall', async () => {
 
     const newImplementation = await (await ethers.getContractFactory('MockKeeperMulticall')).deploy();
     await expect(
-      (keeperMulticall as unknown as TransparentUpgradeableProxy).connect(user1).upgradeTo(newImplementation.address),
+      ((keeperMulticall as unknown) as TransparentUpgradeableProxy).connect(user1).upgradeTo(newImplementation.address),
     ).to.be.reverted;
-    await (keeperMulticall as unknown as TransparentUpgradeableProxy)
+    await ((keeperMulticall as unknown) as TransparentUpgradeableProxy)
       .connect(proxyAdmin)
       .upgradeTo(newImplementation.address);
 
@@ -128,7 +130,7 @@ describe('Keeper Multicall', async () => {
     );
 
     const upgradeBuildInfo = await artifacts.getBuildInfo(
-      'contracts/mock/MockKeeperMulticall2.sol:MockKeeperMulticall2',
+      'contracts/mock/MockKeeperMulticall.sol:MockKeeperMulticall2',
     );
     const upgradeContract = new UpgradeableContract(
       'MockKeeperMulticall2',
