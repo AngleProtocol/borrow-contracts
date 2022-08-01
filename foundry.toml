@@ -1,0 +1,11 @@
+[profile.default]
+src = 'contracts'
+out = 'out'
+test = 'test/foundry'
+libs = ['node_modules', 'lib']
+cache_path = 'cache-forge'
+
+fuzz_runs = 5000
+# solc_version = '0.8.14'
+
+ffi = true
