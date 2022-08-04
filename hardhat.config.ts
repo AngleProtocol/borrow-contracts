@@ -97,12 +97,24 @@ const config: HardhatUserConfig = {
       hardfork: 'london',
       forking: {
         enabled: argv.fork || false,
-        // For mainnet
-        // url: nodeUrl('fork'),
-        // blockNumber: 15133066,
-        // For Polygon
+        // Mainnet
+        /* 
+        url: nodeUrl('fork'),
+        blockNumber: 15133066,
+        */
+        // Polygon
         url: nodeUrl('forkpolygon'),
-        blockNumber: 30672813,
+        blockNumber: 31505333,
+        // Optimism
+        /*
+        url: nodeUrl('optimism'),
+        blockNumber: 17614765,
+        */
+        // Arbitrum
+        /*
+        url: nodeUrl('arbitrum'),
+        blockNumber: 19356874,
+        */
       },
       mining: argv.disableAutoMining
         ? {
