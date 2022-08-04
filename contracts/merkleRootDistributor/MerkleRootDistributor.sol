@@ -72,7 +72,7 @@ contract MerkleRootDistributor is Initializable {
     constructor() initializer {}
 
     function initialize(ITreasury _treasury) public initializer {
-        if(address(_treasury) == address(0)) revert ZeroAddress();
+        if (address(_treasury) == address(0)) revert ZeroAddress();
         treasury = _treasury;
     }
 
