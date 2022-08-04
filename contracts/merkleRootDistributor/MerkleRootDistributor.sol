@@ -118,7 +118,9 @@ contract MerkleRootDistributor is Initializable {
 
     // =========================== Governance Functions ============================
 
-    /// @notice Pull reward amount from caller
+    /// @notice Pulls reward amount from `msg.sender`
+    /// @param token Address of the ERC20 to transfer
+    /// @param amount Amount to pull
     function deposit_reward_token(IERC20 token, uint256 amount) external {
         token.transferFrom(msg.sender, address(this), amount);
     }
