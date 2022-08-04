@@ -118,6 +118,11 @@ contract MerkleRootDistributor is Initializable {
 
     // =========================== Governance Functions ============================
 
+    /// @notice Pull reward amount from caller
+    function deposit_reward_token (IERC20 token, uint256 amount) external {
+        token.transferFrom(msg.sender, address(this),amount);
+    }
+
     /// @notice Adds or removes trusted EOA
     function toggleTrusted(address eoa) external onlyGovernorOrGuardian {
         uint256 trustedStatus = 1 - trusted[eoa];
