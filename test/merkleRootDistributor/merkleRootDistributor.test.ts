@@ -435,4 +435,23 @@ contract('MerkleRootDistributor', () => {
       );
     });
   });
+
+  describe('deposit_reward_token', () => {
+    it('revert - not approved', async () => {
+      await angle.mint(guardian.address, parseEther('10'));
+      expect(await angle.balanceOf(guardian.address)).to.be.equal(parseEther('10'));
+      expect(await angle.balanceOf(distributor.address)).to.be.equal(parseEther('0'));
+      await expect(distributor.connect(guardian).deposit_reward_token(angle.address, parseEther('10'))).to.be.reverted;
+    });
+
+    it('success', async () => {
+      await angle.mint(guardian.address, parseEther('10'));
+      expect(await angle.balanceOf(guardian.address)).to.be.equal(parseEther('10'));
+      expect(await angle.balanceOf(distributor.address)).to.be.equal(parseEther('0'));
+      await angle.connect(guardian).approve(distributor.address, parseEther('10'));
+      await distributor.connect(guardian).deposit_reward_token(angle.address, parseEther('10'));
+      expect(await angle.balanceOf(guardian.address)).to.be.equal(parseEther('0'));
+      expect(await angle.balanceOf(distributor.address)).to.be.equal(parseEther('10'));
+    });
+  });
 });
