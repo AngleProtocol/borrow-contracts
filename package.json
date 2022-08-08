@@ -36,6 +36,7 @@
     "test:e2e:polygon": "FORK=true hardhat test e2e/polygon/*.ts",
     "test:all": "yarn test && yarn test:e2e:mainnet",
     "testFork": "FORK=true hardhat test",
+    "foundry:setup": "curl -L https://foundry.paradigm.xyz | bash && foundryup && git submodule update --init --recursive",
     "foundry:run": "docker run -it --rm -v $(pwd):/app -w /app ghcr.io/foundry-rs/foundry sh",
     "foundry:test": "forge test -vvvv"
   },
