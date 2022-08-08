@@ -40,9 +40,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   });
 
   console.log(`Successfully deployed MerkleRootDistributor at the address ${merkleRootDistributor.address}\n`);
-
-  // Next step: change Keeper to this new keeper contract where needed (strategy, ...)
-  // see: scripts/mainnet-fork/changeKeeper.ts
 };
 
 func.tags = ['merkleRootDistributor'];
