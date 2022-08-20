@@ -72,7 +72,7 @@ contract MerkleRootDistributor is Initializable {
     constructor() initializer {}
 
     function initialize(ITreasury _treasury) public initializer {
-        if(address(_treasury) == address(0)) revert ZeroAddress();
+        if (address(_treasury) == address(0)) revert ZeroAddress();
         treasury = _treasury;
     }
 
@@ -119,8 +119,8 @@ contract MerkleRootDistributor is Initializable {
     // =========================== Governance Functions ============================
 
     /// @notice Pull reward amount from caller
-    function deposit_reward_token (IERC20 token, uint256 amount) external {
-        token.transferFrom(msg.sender, address(this),amount);
+    function deposit_reward_token(IERC20 token, uint256 amount) external {
+        token.transferFrom(msg.sender, address(this), amount);
     }
 
     /// @notice Adds or removes trusted EOA
