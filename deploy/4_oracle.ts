@@ -24,24 +24,14 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
     console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
     console.log('');
   } else {
-    await deploy('Oracle_ETH_EUR', {
-      contract: `OracleETHEURChainlink${chainName}`,
+    await deploy('Oracle_BTC_EUR', {
+      contract: `OracleBTCEURChainlink${chainName}`,
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
-    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
-    console.log('');
-    await deploy('Oracle_USDC_EUR', {
-      contract: `OracleUSDCEURChainlink${chainName}`,
-      from: deployer.address,
-      args: [3600 * 48, treasury],
-      log: !argv.ci,
-    });
-    const oracle3 = (await deployments.get('Oracle_USDC_EUR')).address;
-    console.log(`Successfully deployed Oracle USDC/EUR at the address ${oracle3}`);
-    console.log('');
+    const oracle = (await deployments.get('Oracle_BTC_EUR')).address;
+    console.log(`Successfully deployed Oracle BTC/EUR at the address ${oracle}`);
   }
 };
 

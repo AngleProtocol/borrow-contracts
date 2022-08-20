@@ -5,5 +5,5 @@
   "oneInchRouter": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
   "angleRouter": "0xC16B81Af351BA9e64C1a069E3Ab18c244A1E3049",
   "dust": "200",
-  "vaultsList": ["wETH", "USDC"]
+  "vaultsList": ["wBTC"]
 }

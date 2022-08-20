@@ -42,7 +42,7 @@ contract MockInterestRateComputer {
     }
 
     function _calculateCompound(uint256 exp, uint256 _interestAccumulator) internal view returns (uint256) {
-        return _interestAccumulator * (baseInterest +  interestRate * exp);
+        return _interestAccumulator * (baseInterest + interestRate * exp);
     }
 
     function _rpow(
@@ -168,5 +168,4 @@ contract MockInterestRateComputer {
 
         return _interestAccumulator;
     }
-
 }
