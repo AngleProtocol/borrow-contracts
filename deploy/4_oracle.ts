@@ -13,15 +13,15 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
   const chainName = network.name.charAt(0).toUpperCase() + network.name.substring(1);
 
   if (!network.live || network.config.chainId === ChainId.MAINNET) {
-    console.log('Now deploying the Oracle ETH/EUR');
-    await deploy('Oracle_ETH_EUR', {
-      contract: 'OracleETHEURChainlink',
+    console.log('Now deploying the Oracle LUSD/EUR');
+    await deploy('Oracle_LUSD_EUR', {
+      contract: 'OracleLUSDEURChainlink',
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
-    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
+    const oracle = (await deployments.get('Oracle_LUSD_EUR')).address;
+    console.log(`Successfully deployed Oracle LUSD/EUR at the address ${oracle}`);
     console.log('');
   } else {
     await deploy('Oracle_BTC_EUR', {
