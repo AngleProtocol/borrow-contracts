@@ -12,6 +12,8 @@ import {
   OracleETHEURChainlink__factory,
   OracleBTCEURChainlink,
   OracleBTCEURChainlink__factory,
+  OracleLUSDEURChainlink,
+  OracleLUSDEURChainlink__factory,
 } from '../../typechain';
 import { expect } from '../../test/utils/chai-setup';
 import { deployUpgradeable, ZERO_ADDRESS } from '../../test/utils/helpers';
@@ -24,6 +26,7 @@ contract('Oracles Chainlink', () => {
   let oracleWSTETH: OracleWSTETHEURChainlink;
   let oracleETH: OracleETHEURChainlink;
   let oracleBTC: OracleBTCEURChainlink;
+  let oracleLUSD: OracleLUSDEURChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -42,6 +45,7 @@ contract('Oracles Chainlink', () => {
     oracleWSTETH = await new OracleWSTETHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleETH = await new OracleETHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleBTC = await new OracleBTCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleLUSD = await new OracleLUSDEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -81,6 +85,19 @@ contract('Oracles Chainlink', () => {
       expect(await oracleBTC.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleBTC.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleBTC.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle LUSDEUR', () => {
+    it('read', async () => {
+      const receipt = await oracleLUSD.read();
+      const gas = await oracleLUSD.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleLUSD.OUTBASE()).to.be.equal(parseEther('1'));
+      expect(await oracleLUSD.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleLUSD.treasury()).to.be.equal(treasury.address);
     });
   });
 });

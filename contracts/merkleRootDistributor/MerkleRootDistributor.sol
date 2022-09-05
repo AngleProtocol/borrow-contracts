@@ -119,6 +119,7 @@ contract MerkleRootDistributor is Initializable {
     // =========================== Governance Functions ============================
 
     /// @notice Pull reward amount from caller
+    //solhint-disable-next-line
     function deposit_reward_token(IERC20 token, uint256 amount) external {
         token.transferFrom(msg.sender, address(this), amount);
     }
