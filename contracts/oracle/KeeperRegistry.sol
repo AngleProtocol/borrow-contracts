@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../interfaces/ITreasury.sol";
+import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/IKeeperRegistry.sol";
 
 /// @title KeeperRegistry
@@ -15,8 +15,8 @@ import "../interfaces/IKeeperRegistry.sol";
 contract KeeperRegistry is Initializable, IKeeperRegistry {
     using SafeERC20 for IERC20;
 
-    /// @notice Treasury contract handling access control
-    ITreasury public treasury;
+    /// @notice CoreBorrow contract handling access control
+    ICoreBorrow public coreBorrow;
 
     /// @notice Trusted EOAs - needs to be tx.origin
     mapping(address => uint256) public trusted;
@@ -37,7 +37,7 @@ contract KeeperRegistry is Initializable, IKeeperRegistry {
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
-        if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        if (!coreBorrow.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         _;
     }
 
@@ -45,9 +45,9 @@ contract KeeperRegistry is Initializable, IKeeperRegistry {
 
     constructor() initializer {}
 
-    function initialize(ITreasury _treasury) public initializer {
-        if (address(_treasury) == address(0)) revert ZeroAddress();
-        treasury = _treasury;
+    function initialize(ICoreBorrow _coreBorrow) public initializer {
+        if (address(_coreBorrow) == address(0)) revert ZeroAddress();
+        coreBorrow = _coreBorrow;
     }
 
     // =========================== Main Function ===================================
