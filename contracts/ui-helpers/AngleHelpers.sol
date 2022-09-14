@@ -35,7 +35,6 @@ struct PerpetualManagerParamData {
     uint64 lockTime;
 }
 
-
 struct CollateralAddresses {
     address stableMaster;
     address poolManager;
@@ -62,17 +61,15 @@ contract AngleHelpers is Initializable {
     error NotInitialized();
     error InvalidAmount();
 
-    function initialize() external initializer {}
-
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {}
+    constructor() initializer {}
 
     function previewMint(
         uint256 amount,
         address agToken,
         address collateral
     ) external view returns (uint256) {
-        (uint256 amountObtained,  ) = _previewMintAndFees(amount, agToken, collateral);
+        (uint256 amountObtained, ) = _previewMintAndFees(amount, agToken, collateral);
         return amountObtained;
     }
 
@@ -89,14 +86,7 @@ contract AngleHelpers is Initializable {
         uint256 amount,
         address agToken,
         address collateral
-    )
-        external
-        view
-        returns (
-            uint256,
-            uint256
-        )
-    {
+    ) external view returns (uint256, uint256) {
         return _previewMintAndFees(amount, agToken, collateral);
     }
 
@@ -104,14 +94,7 @@ contract AngleHelpers is Initializable {
         uint256 amount,
         address agToken,
         address collateral
-    )
-        external
-        view
-        returns (
-            uint256,
-            uint256
-        )
-    {
+    ) external view returns (uint256, uint256) {
         return _previewBurnAndFees(amount, agToken, collateral);
     }
 
@@ -144,7 +127,7 @@ contract AngleHelpers is Initializable {
             }
         }
         address[] memory strategies = new address[](length);
-        for(uint256 i=0;i<length;++i) {
+        for (uint256 i = 0; i < length; ++i) {
             strategies[i] = IPoolManager(poolManager).strategyList(i);
         }
         addresses.strategies = strategies;
@@ -153,13 +136,17 @@ contract AngleHelpers is Initializable {
     function getStablecoinAddresses() external view returns (address[] memory, address[] memory) {
         address[] memory stableMasterAddresses = CORE.stablecoinList();
         address[] memory agTokenAddresses = new address[](stableMasterAddresses.length);
-        for(uint256 i = 0;i<stableMasterAddresses.length;++i) {
+        for (uint256 i = 0; i < stableMasterAddresses.length; ++i) {
             agTokenAddresses[i] = IStableMaster(stableMasterAddresses[i]).agToken();
         }
         return (stableMasterAddresses, agTokenAddresses);
     }
 
-    function getCollateralParameters(address agToken, address collateral) external view returns (Parameters memory params) {
+    function getCollateralParameters(address agToken, address collateral)
+        external
+        view
+        returns (Parameters memory params)
+    {
         (address stableMaster, address poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
         (
             ,
@@ -188,14 +175,14 @@ contract AngleHelpers is Initializable {
         uint256 length = 0;
         while (!finished) {
             try perpetualManager.xHAFeesDeposit(length) returns (uint64) {
-                length+=1;
+                length += 1;
             } catch {
                 finished = true;
             }
         }
         uint64[] memory data = new uint64[](length);
         uint64[] memory data2 = new uint64[](length);
-        for(uint256 i=0;i<length;++i) {
+        for (uint256 i = 0; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesDeposit(i);
             data2[i] = perpetualManager.yHAFeesDeposit(i);
         }
@@ -206,32 +193,23 @@ contract AngleHelpers is Initializable {
         length = 0;
         while (!finished) {
             try perpetualManager.xHAFeesWithdraw(length) returns (uint64) {
-                length+=1;
+                length += 1;
             } catch {
                 finished = true;
             }
         }
         data = new uint64[](length);
         data2 = new uint64[](length);
-        for(uint256 i=0;i<length;++i) {
+        for (uint256 i = 0; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesWithdraw(i);
             data2[i] = perpetualManager.yHAFeesWithdraw(i);
         }
         params.perpFeeData.xHAFeesWithdraw = data;
         params.perpFeeData.yHAFeesWithdraw = data2;
     }
-    
+
     function getPoolManager(address agToken, address collateral) public view returns (address poolManager) {
         (, poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
-    }
-
-    function _getStableMasterAndPoolManager(address agToken, address collateral)
-        internal
-        view
-        returns (address stableMaster, address poolManager)
-    {
-        stableMaster = IAgTokenMainnet(agToken).stableMaster();
-        (poolManager, , , ) = ROUTER.mapPoolManagers(stableMaster, collateral);
     }
 
     // ======================== Replica Functions ==================================
@@ -241,14 +219,7 @@ contract AngleHelpers is Initializable {
         uint256 amount,
         address agToken,
         address collateral
-    )
-        internal
-        view
-        returns (
-            uint256 amountForUserInCollat,
-            uint256 feePercent
-        )
-    {
+    ) internal view returns (uint256 amountForUserInCollat, uint256 feePercent) {
         (address stableMaster, address poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
         (
             address token,
@@ -281,14 +252,7 @@ contract AngleHelpers is Initializable {
         uint256 amount,
         address agToken,
         address collateral
-    )
-        internal
-        view
-        returns (
-            uint256 amountForUserInStable,
-            uint256 feePercent
-        )
-    {
+    ) internal view returns (uint256 amountForUserInStable, uint256 feePercent) {
         (address stableMaster, address poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
         (
             address token,
@@ -306,7 +270,6 @@ contract AngleHelpers is Initializable {
 
         amountForUserInStable = oracle.readQuoteLower(amount);
 
-
         if (feeData.xFeeMint.length == 1) feePercent = feeData.yFeeMint[0];
         else {
             bytes memory data = abi.encode(address(perpetualManager), feeData.targetHAHedge);
@@ -322,10 +285,7 @@ contract AngleHelpers is Initializable {
     // ======================== Utility Functions ==================================
     // These are copy pasted from other contracts
 
-    function _computeHedgeRatio(
-        uint256 newStocksUsers,
-        bytes memory data
-    ) internal view returns (uint64 ratio) {
+    function _computeHedgeRatio(uint256 newStocksUsers, bytes memory data) internal view returns (uint64 ratio) {
         (address perpetualManager, uint64 targetHAHedge) = abi.decode(data, (address, uint64));
         uint256 totalHedgeAmount = IPerpetualManager(perpetualManager).totalHedgeAmount();
         newStocksUsers = (targetHAHedge * newStocksUsers) / BASE_PARAMS;
@@ -366,5 +326,14 @@ contract AngleHelpers is Initializable {
                     (xArray[upper] - xArray[lower]);
             }
         }
+    }
+    
+    function _getStableMasterAndPoolManager(address agToken, address collateral)
+        internal
+        view
+        returns (address stableMaster, address poolManager)
+    {
+        stableMaster = IAgTokenMainnet(agToken).stableMaster();
+        (poolManager, , , ) = ROUTER.mapPoolManagers(stableMaster, collateral);
     }
 }
