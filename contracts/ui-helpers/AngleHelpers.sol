@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "../interfaces/coreModule/IAgTokenMainnet.sol";
 import "../interfaces/IAngleRouter.sol";
+import "../interfaces/coreModule/IAgTokenMainnet.sol";
 import "../interfaces/coreModule/ICore.sol";
-import "../interfaces/coreModule/IStableMaster.sol";
 import "../interfaces/coreModule/IOracleCore.sol";
-import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IPerpetualManager.sol";
+import "../interfaces/coreModule/IPoolManager.sol";
+import "../interfaces/coreModule/IStableMaster.sol";
+
 
 pragma solidity 0.8.12;
 
@@ -49,21 +50,19 @@ struct CollateralAddresses {
 /// @title AngleHelpers
 /// @author Angle Core Team
 /// @notice Contract with view functions designed to facilitate integrations on the Angle Protocol
+/// @dev This contract just has view functions and as such functions were not built to optimize for gas consumption
 contract AngleHelpers is Initializable {
-    IAngleRouter public constant ROUTER = IAngleRouter(0xBB755240596530be0c1DE5DFD77ec6398471561d);
-    ICore public constant CORE = ICore(0x61ed74de9Ca5796cF2F8fD60D54160D47E30B7c3);
 
-    bytes32 public constant STABLE = keccak256("STABLE");
-    uint256 public constant BASE_PARAMS = 10**9;
+    // ======================== Helper View Functions ==============================
 
-    uint256 public constant MAX_ARRAY_LENGTH = 20;
-
-    error NotInitialized();
-    error InvalidAmount();
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
-
+    /// @notice Gives the amount of `agToken` you'd be getting if you were executing in the same block a mint transaction
+    /// with `amount` of `collateral` in the Core module of the Angle protocol
+    /// @param amount Amount of collateral to bring for the transaction
+    /// @param agToken Address of the agToken to mint
+    /// @param collateral Collateral to use for the mint transaction
+    /// @return Amount of `agToken` that would be obtained with a mint transaction in the same block
+    /// @dev This function reverts if the mint transaction was to revert in the same conditions (without taking into account
+    /// potential approval problems to the `StableMaster` contract)
     function previewMint(
         uint256 amount,
         address agToken,
@@ -73,6 +72,14 @@ contract AngleHelpers is Initializable {
         return amountObtained;
     }
 
+    /// @notice Gives the amount of `collateral` you'd be getting if you were executing in the same block a burn transaction
+    ///  with `amount` of `agToken` in the Core module of the Angle protocol
+    /// @param amount Amount of agToken to bring for the transaction
+    /// @param agToken Address of the agToken to burn
+    /// @param collateral Collateral to obtain in the transaction
+    /// @return Amount of `collateral` that would be obtained with a burn transaction in the same block
+    /// @dev This function reverts if the burn transaction was to revert in the same conditions (without taking into account
+    /// potential approval problems to the `StableMaster` contract or agToken balance prior to the call)
     function previewBurn(
         uint256 amount,
         address agToken,
@@ -82,6 +89,10 @@ contract AngleHelpers is Initializable {
         return amountObtained;
     }
 
+    /// @notice Same as the `previewMint` function except that it returns in addition to the amount of `agToken` that would be
+    /// obtained from a mint transaction the value of the fees (in `BASE_PARAMS`) that would be applied during the mint
+    /// @return Amount of `agToken` that would be obtained with a mint transaction in the same block
+    /// @return Percentage of fees that would be taken during a mint transaction in the same block
     function previewMintAndFees(
         uint256 amount,
         address agToken,
@@ -90,6 +101,10 @@ contract AngleHelpers is Initializable {
         return _previewMintAndFees(amount, agToken, collateral);
     }
 
+    /// @notice Same as the `previewBurn` function except that it returns in addition to the amount of `collateral` that would be 
+    /// obtained from a burn the value of the fees (in `BASE_PARAMS`) that would be applied during the mint
+    /// @return Amount of `collateral` that would be obtained with a burn transaction in the same block
+    /// @return Percentage of fees that would be taken during a burn transaction in the same block
     function previewBurnAndFees(
         uint256 amount,
         address agToken,
@@ -98,6 +113,8 @@ contract AngleHelpers is Initializable {
         return _previewBurnAndFees(amount, agToken, collateral);
     }
 
+    /// @notice Returns all the addresses associated to the (`agToken`,`collateral`) pair given
+    /// @return addresses A struct with all the addresses associated in the Core module
     function getCollateralAddresses(address agToken, address collateral)
         external
         view
@@ -133,6 +150,10 @@ contract AngleHelpers is Initializable {
         addresses.strategies = strategies;
     }
 
+    /// @notice Gets the addresses of all the `StableMaster` contracts and their associated `AgToken` addresses
+    /// @return List of the `StableMaster` addresses of the Angle protocol
+    /// @return List of the `AgToken` addresses of the protocol
+    /// @dev The place of an agToken address in the list is the same as the corresponding `StableMaster` address
     function getStablecoinAddresses() external view returns (address[] memory, address[] memory) {
         address[] memory stableMasterAddresses = CORE.stablecoinList();
         address[] memory agTokenAddresses = new address[](stableMasterAddresses.length);
@@ -142,6 +163,9 @@ contract AngleHelpers is Initializable {
         return (stableMasterAddresses, agTokenAddresses);
     }
 
+    /// @notice Returns most of the governance parameters associated to the (`agToken`,`collateral`) pair given
+    /// @return params Struct with most of the parameters in the `StableMaster` and `PerpetualManager` contracts
+    /// @dev Check out the struct `Parameters` for the meaning of the return values
     function getCollateralParameters(address agToken, address collateral)
         external
         view
@@ -208,6 +232,8 @@ contract AngleHelpers is Initializable {
         params.perpFeeData.yHAFeesWithdraw = data2;
     }
 
+    /// @notice Returns the address of the poolManager associated to an (`agToken`, `collateral`) pair
+    /// in the Core module of the protocol
     function getPoolManager(address agToken, address collateral) public view returns (address poolManager) {
         (, poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
     }
@@ -283,7 +309,7 @@ contract AngleHelpers is Initializable {
     }
 
     // ======================== Utility Functions ==================================
-    // These are copy pasted from other contracts
+    // These utility functions are taken from other contracts of the protocol
 
     function _computeHedgeRatio(uint256 newStocksUsers, bytes memory data) internal view returns (uint64 ratio) {
         (address perpetualManager, uint64 targetHAHedge) = abi.decode(data, (address, uint64));
@@ -327,7 +353,7 @@ contract AngleHelpers is Initializable {
             }
         }
     }
-    
+
     function _getStableMasterAndPoolManager(address agToken, address collateral)
         internal
         view
@@ -336,4 +362,18 @@ contract AngleHelpers is Initializable {
         stableMaster = IAgTokenMainnet(agToken).stableMaster();
         (poolManager, , , ) = ROUTER.mapPoolManagers(stableMaster, collateral);
     }
+
+    // ====================== Constants and Initializers ===========================
+
+    IAngleRouter public constant ROUTER = IAngleRouter(0xBB755240596530be0c1DE5DFD77ec6398471561d);
+    ICore public constant CORE = ICore(0x61ed74de9Ca5796cF2F8fD60D54160D47E30B7c3);
+
+    bytes32 public constant STABLE = keccak256("STABLE");
+    uint256 public constant BASE_PARAMS = 10**9;
+
+    error NotInitialized();
+    error InvalidAmount();
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 }
