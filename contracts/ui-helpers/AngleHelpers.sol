@@ -48,8 +48,8 @@ struct CollateralAddresses {
 
 /// @title AngleHelpers
 /// @author Angle Core Team
-/// @notice Contract with view functions designed to facilitate integrations on the Angle Protocol
-/// @dev This contract just has view functions and as such functions were not built to optimize for gas consumption
+/// @notice Contract with view functions designed to facilitate integrations on the Core module of the Angle Protocol
+/// @dev This contract only contains view functions to be queried off-chain. It was thus not optimized for gas consumption
 contract AngleHelpers is Initializable {
     // ======================== Helper View Functions ==============================
 

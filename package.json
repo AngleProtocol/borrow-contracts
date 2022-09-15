@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
-    "deploy:mainnet": "hardhat deploy --network mainnet --tags vaultManagerProxy",
+    "deploy:mainnet": "hardhat deploy --network mainnet --tags angleHelpers",
     "deploy:rinkeby": "hardhat deploy --network rinkeby --tags unpausing",
     "deploy:arbitrum": "hardhat deploy --network arbitrum --tags vaultManagerProxy",
     "deploy:avalanche": "hardhat deploy --network avalanche --tags flashAngle",
