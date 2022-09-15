@@ -60,51 +60,7 @@ describe('AngleHelpers', () => {
       console.log(result);
     });
   });
-  describe('previewMint', () => {
-    it('success - usdc', async () => {
-      const result = await helpers.previewMint(parseUnits('1', 6), agEUR, usdc);
-      console.log(result.toString());
-    });
-    it('success - dai', async () => {
-      const result = await helpers.previewMint(parseUnits('1', 18), agEUR, dai);
-      console.log(result.toString());
-    });
-    it('success - frax', async () => {
-      const result = await helpers.previewMint(parseUnits('1', 18), agEUR, frax);
-      console.log(result.toString());
-    });
-    it('reverts - when too high amount', async () => {
-      await expect(helpers.previewMint(parseUnits('1', 28), agEUR, frax)).to.be.revertedWith('InvalidAmount');
-    });
-    it('reverts - on an unknown token', async () => {
-      await expect(helpers.previewMint(parseUnits('1', 18), agEUR, ohm)).to.be.revertedWith('NotInitialized');
-    });
-  });
-  describe('previewBurn', () => {
-    it('success - usdc', async () => {
-      const result = await helpers.previewBurn(parseUnits('1', 18), agEUR, usdc);
-      // This is exactly the amount we would have gotten on Tenderly at the same block
-      console.log(result.toString());
-    });
-    it('success - dai', async () => {
-      const result = await helpers.previewBurn(parseUnits('1', 18), agEUR, dai);
-      // This is exactly the amount we would have gotten on Tenderly at the same block
-      console.log(result.toString());
-    });
-    it('success - frax', async () => {
-      const result = await helpers.previewBurn(parseUnits('1', 18), agEUR, frax);
-      // This is exactly the amount we would have gotten on Tenderly at the same block
-      console.log(result.toString());
-    });
-    it('reverts - when too high amount', async () => {
-      await expect(helpers.previewBurn(parseUnits('1', 25), agEUR, frax)).to.be.revertedWith('InvalidAmount');
-      await expect(helpers.previewBurn(parseUnits('1', 28), agEUR, usdc)).to.be.revertedWith('InvalidAmount');
-      await expect(helpers.previewBurn(parseUnits('1', 28), agEUR, dai)).to.be.revertedWith('InvalidAmount');
-    });
-    it('reverts - on an unknown token', async () => {
-      await expect(helpers.previewBurn(parseUnits('1', 18), agEUR, ohm)).to.be.revertedWith('NotInitialized');
-    });
-  });
+
   describe('previewMintAndFees', () => {
     it('success - usdc', async () => {
       const result = await helpers.previewMintAndFees(parseUnits('1', 6), agEUR, usdc);
@@ -123,6 +79,9 @@ describe('AngleHelpers', () => {
     });
     it('reverts - on an unknown token', async () => {
       await expect(helpers.previewMintAndFees(parseUnits('1', 18), agEUR, ohm)).to.be.revertedWith('NotInitialized');
+    });
+    it('reverts - when too high amount', async () => {
+      await expect(helpers.previewMintAndFees(parseUnits('1', 28), agEUR, frax)).to.be.revertedWith('InvalidAmount');
     });
   });
   describe('previewBurnAndFees', () => {
@@ -143,6 +102,11 @@ describe('AngleHelpers', () => {
     });
     it('reverts - on an unknown token', async () => {
       await expect(helpers.previewBurnAndFees(parseUnits('1', 18), agEUR, ohm)).to.be.revertedWith('NotInitialized');
+    });
+    it('reverts - when too high amount', async () => {
+      await expect(helpers.previewBurnAndFees(parseUnits('1', 25), agEUR, frax)).to.be.revertedWith('InvalidAmount');
+      await expect(helpers.previewBurnAndFees(parseUnits('1', 28), agEUR, usdc)).to.be.revertedWith('InvalidAmount');
+      await expect(helpers.previewBurnAndFees(parseUnits('1', 28), agEUR, dai)).to.be.revertedWith('InvalidAmount');
     });
   });
 });

@@ -9,7 +9,6 @@ import "../interfaces/coreModule/IPerpetualManager.sol";
 import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
 
-
 pragma solidity 0.8.12;
 
 struct Parameters {
@@ -52,47 +51,15 @@ struct CollateralAddresses {
 /// @notice Contract with view functions designed to facilitate integrations on the Angle Protocol
 /// @dev This contract just has view functions and as such functions were not built to optimize for gas consumption
 contract AngleHelpers is Initializable {
-
     // ======================== Helper View Functions ==============================
 
     /// @notice Gives the amount of `agToken` you'd be getting if you were executing in the same block a mint transaction
-    /// with `amount` of `collateral` in the Core module of the Angle protocol
-    /// @param amount Amount of collateral to bring for the transaction
-    /// @param agToken Address of the agToken to mint
-    /// @param collateral Collateral to use for the mint transaction
-    /// @return Amount of `agToken` that would be obtained with a mint transaction in the same block
-    /// @dev This function reverts if the mint transaction was to revert in the same conditions (without taking into account
-    /// potential approval problems to the `StableMaster` contract)
-    function previewMint(
-        uint256 amount,
-        address agToken,
-        address collateral
-    ) external view returns (uint256) {
-        (uint256 amountObtained, ) = _previewMintAndFees(amount, agToken, collateral);
-        return amountObtained;
-    }
-
-    /// @notice Gives the amount of `collateral` you'd be getting if you were executing in the same block a burn transaction
-    ///  with `amount` of `agToken` in the Core module of the Angle protocol
-    /// @param amount Amount of agToken to bring for the transaction
-    /// @param agToken Address of the agToken to burn
-    /// @param collateral Collateral to obtain in the transaction
-    /// @return Amount of `collateral` that would be obtained with a burn transaction in the same block
-    /// @dev This function reverts if the burn transaction was to revert in the same conditions (without taking into account
-    /// potential approval problems to the `StableMaster` contract or agToken balance prior to the call)
-    function previewBurn(
-        uint256 amount,
-        address agToken,
-        address collateral
-    ) external view returns (uint256) {
-        (uint256 amountObtained, ) = _previewBurnAndFees(amount, agToken, collateral);
-        return amountObtained;
-    }
-
-    /// @notice Same as the `previewMint` function except that it returns in addition to the amount of `agToken` that would be
-    /// obtained from a mint transaction the value of the fees (in `BASE_PARAMS`) that would be applied during the mint
+    /// with `amount` of `collateral` in the Core module of the Angle protocol as well as the value of the fees
+    /// (in `BASE_PARAMS`) that would be applied during the mint
     /// @return Amount of `agToken` that would be obtained with a mint transaction in the same block
     /// @return Percentage of fees that would be taken during a mint transaction in the same block
+    /// @dev This function reverts if the mint transaction was to revert in the same conditions (without taking into account
+    /// potential approval problems to the `StableMaster` contract)
     function previewMintAndFees(
         uint256 amount,
         address agToken,
@@ -101,10 +68,13 @@ contract AngleHelpers is Initializable {
         return _previewMintAndFees(amount, agToken, collateral);
     }
 
-    /// @notice Same as the `previewBurn` function except that it returns in addition to the amount of `collateral` that would be 
-    /// obtained from a burn the value of the fees (in `BASE_PARAMS`) that would be applied during the mint
+    /// @notice Gives the amount of `collateral` you'd be getting if you were executing in the same block a burn transaction
+    ///  with `amount` of `agToken` in the Core module of the Angle protocol as well as the value of the fees
+    /// (in `BASE_PARAMS`) that would be applied during the burn
     /// @return Amount of `collateral` that would be obtained with a burn transaction in the same block
     /// @return Percentage of fees that would be taken during a burn transaction in the same block
+    /// @dev This function reverts if the burn transaction was to revert in the same conditions (without taking into account
+    /// potential approval problems to the `StableMaster` contract or agToken balance prior to the call)
     function previewBurnAndFees(
         uint256 amount,
         address agToken,
@@ -134,13 +104,12 @@ contract AngleHelpers is Initializable {
         addresses.oracle = address(oracle);
         addresses.feeManager = IPoolManager(poolManager).feeManager();
 
-        bool finished = false;
         uint256 length = 0;
-        while (!finished) {
+        while (true) {
             try IPoolManager(poolManager).strategyList(length) returns (address) {
                 length += 1;
             } catch {
-                finished = true;
+                break;
             }
         }
         address[] memory strategies = new address[](length);
@@ -195,13 +164,12 @@ contract AngleHelpers is Initializable {
         params.perpFeeData.haBonusMalusDeposit = perpetualManager.haBonusMalusDeposit();
         params.perpFeeData.haBonusMalusWithdraw = perpetualManager.haBonusMalusWithdraw();
 
-        bool finished = false;
         uint256 length = 0;
-        while (!finished) {
+        while (true) {
             try perpetualManager.xHAFeesDeposit(length) returns (uint64) {
                 length += 1;
             } catch {
-                finished = true;
+                break;
             }
         }
         uint64[] memory data = new uint64[](length);
@@ -213,13 +181,12 @@ contract AngleHelpers is Initializable {
         params.perpFeeData.xHAFeesDeposit = data;
         params.perpFeeData.yHAFeesDeposit = data2;
 
-        finished = false;
         length = 0;
-        while (!finished) {
+        while (true) {
             try perpetualManager.xHAFeesWithdraw(length) returns (uint64) {
                 length += 1;
             } catch {
-                finished = true;
+                break;
             }
         }
         data = new uint64[](length);
