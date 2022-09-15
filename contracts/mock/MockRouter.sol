@@ -9,7 +9,7 @@ import "../interfaces/IAngleRouter.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 
-contract MockRouter is IAngleRouter, IUniswapV3Router, IWStETH {
+contract MockRouter is IUniswapV3Router, IWStETH {
     using SafeERC20 for IERC20;
 
     uint256 public counterAngleMint;

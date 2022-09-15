@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 /// @title IAngleRouter
 /// @author Angle Core Team
@@ -23,4 +23,14 @@ interface IAngleRouter {
         address stablecoin,
         address collateral
     ) external;
+
+    function mapPoolManagers(address stableMaster, address collateral)
+        external
+        view
+        returns (
+            address poolManager,
+            address perpetualManager,
+            address sanToken,
+            address gauge
+        );
 }
