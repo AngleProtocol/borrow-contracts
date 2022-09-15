@@ -72,5 +72,6 @@ jobs:
           ENABLE_GAS_REPORT: true
           CI: true
           ETH_NODE_URI_POLYGON: ${{ secrets.ETH_NODE_URI_POLYGON }}
+          ETH_NODE_URI_FORK: ${{ secrets.ETH_NODE_URI_FORK }}
       - name: Print gas report
         run: cat gas-report.txt

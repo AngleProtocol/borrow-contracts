@@ -1,20 +1,18 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { utils } from 'ethers';
 import { contract, ethers } from 'hardhat';
 
 import { KeeperRegistry, KeeperRegistry__factory, MockCoreBorrow, MockCoreBorrow__factory } from '../../typechain';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt } from '../utils/expectEvent';
 import { deployUpgradeable } from '../utils/helpers';
 
 contract('KeeperRegistry', () => {
-  let deployer: SignerWithAddress, alice: SignerWithAddress, governor: SignerWithAddress, guardian: SignerWithAddress;
+  let deployer: SignerWithAddress, alice: SignerWithAddress, guardian: SignerWithAddress;
 
   let registery: KeeperRegistry;
   let coreBorrow: MockCoreBorrow;
 
   beforeEach(async () => {
-    ({ deployer, alice, governor, guardian } = await ethers.getNamedSigners());
+    ({ deployer, alice, guardian } = await ethers.getNamedSigners());
     coreBorrow = (await new MockCoreBorrow__factory(deployer).deploy()) as MockCoreBorrow;
     await (await coreBorrow.toggleGuardian(guardian.address)).wait();
 
