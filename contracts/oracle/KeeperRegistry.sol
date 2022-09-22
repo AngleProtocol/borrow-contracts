@@ -15,7 +15,7 @@ import "../interfaces/IKeeperRegistry.sol";
 contract KeeperRegistry is Initializable, IKeeperRegistry {
     using SafeERC20 for IERC20;
 
-    /// @notice CoreBorrow contract handling access control
+    /// @notice Contract handling access control
     ICoreBorrow public coreBorrow;
 
     /// @notice Trusted EOAs - needs to be tx.origin
@@ -23,17 +23,17 @@ contract KeeperRegistry is Initializable, IKeeperRegistry {
 
     uint256[48] private __gap;
 
-    // ================================== Events ===================================
+    // =================================== EVENTS ==================================
 
     event TrustedToggled(address indexed wallet, bool trust);
 
-    // ================================== Errors ===================================
+    // =================================== ERRORS ==================================
 
     error NotGovernorOrGuardian();
     error NotTrusted();
     error ZeroAddress();
 
-    // ================================= Modifiers =================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
@@ -41,7 +41,7 @@ contract KeeperRegistry is Initializable, IKeeperRegistry {
         _;
     }
 
-    // ============================ Constructor ====================================
+    // ================================ CONSTRUCTOR ================================
 
     constructor() initializer {}
 
@@ -50,7 +50,7 @@ contract KeeperRegistry is Initializable, IKeeperRegistry {
         coreBorrow = _coreBorrow;
     }
 
-    // =========================== Main Function ===================================
+    // =============================== MAIN FUNCTIONS ==============================
 
     /// @notice Adds or removes a trusted keeper bot
     function toggleTrusted(address eoa) external onlyGovernorOrGuardian {
