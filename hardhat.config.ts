@@ -215,6 +215,23 @@ const config: HardhatUserConfig = {
       accounts: accounts('avalanche'),
       gas: 'auto',
       chainId: 43114,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('avalanche'),
+        },
+      },
+    },
+    bsc: {
+      live: true,
+      url: nodeUrl('bsc'),
+      accounts: accounts('bsc'),
+      gas: 'auto',
+      chainId: 56,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('bsc'),
+        },
+      },
     },
     aurora: {
       live: true,
@@ -267,7 +284,7 @@ const config: HardhatUserConfig = {
     username: process.env.TENDERLY_USERNAME || '',
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.BSC_ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'typechain',
