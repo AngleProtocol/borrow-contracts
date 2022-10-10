@@ -284,7 +284,7 @@ const config: HardhatUserConfig = {
     username: process.env.TENDERLY_USERNAME || '',
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.BSC_ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'typechain',
