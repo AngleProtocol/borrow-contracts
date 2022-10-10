@@ -215,6 +215,23 @@ const config: HardhatUserConfig = {
       accounts: accounts('avalanche'),
       gas: 'auto',
       chainId: 43114,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('avalanche'),
+        },
+      },
+    },
+    bsc: {
+      live: true,
+      url: nodeUrl('bsc'),
+      accounts: accounts('bsc'),
+      gas: 'auto',
+      chainId: 56,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('bsc'),
+        },
+      },
     },
     aurora: {
       live: true,
