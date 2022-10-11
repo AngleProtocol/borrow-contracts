@@ -4,7 +4,7 @@ pragma solidity 0.8.12;
 import "../BaseLevSwapper.sol";
 import "../../../interfaces/external/curve/IMetaPool2.sol";
 
-/// @title Leverage Swapper from agEUR to Curve LP agEUR-EUROC
+/// @title Leverage swapper on Curve LP tokens with Convex
 /// @author Angle Core Team
 abstract contract CurveLevSwapper is BaseLevSwapper {
     using SafeERC20 for IERC20;
