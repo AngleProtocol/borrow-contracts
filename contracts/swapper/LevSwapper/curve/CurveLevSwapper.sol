@@ -6,19 +6,8 @@ import "../../../interfaces/external/curve/IMetaPool2.sol";
 
 /// @title Leverage Swapper from agEUR to Curve LP agEUR-EUROC
 /// @author Angle Core Team
-contract CurveLevSwapper is BaseLevSwapper {
+abstract contract CurveLevSwapper is BaseLevSwapper {
     using SafeERC20 for IERC20;
-
-    // ================================= CONSTANTS =================================
-
-    /// @notice Reference to the `agToken` contract which route the leverage operation
-    IERC20 public constant AGTOKEN = IERC20(address(0));
-    /// @notice Reference to the `collateral` contract which is the counterpart token in the Curve pool
-    IERC20 public constant COLLATERAL = IERC20(address(0));
-    /// @notice Reference to the actual collateral contract
-    IMetaPool2 public constant METAPOOL = IMetaPool2(address(0));
-
-    // =================================== ERRORS ==================================
 
     constructor(
         ICoreBorrow _core,
@@ -35,15 +24,27 @@ contract CurveLevSwapper is BaseLevSwapper {
             data,
             (bool, uint256, uint256, uint256)
         );
-        AGTOKEN.safeApprove(address(METAPOOL), amountAgToken);
-        COLLATERAL.safeApprove(address(METAPOOL), amountCollateral);
-        amountOut = METAPOOL.add_liquidity([amountAgToken, amountCollateral], minAmountOut);
-        IERC20(METAPOOL).safeApprove(address(ANGLE_STAKER), amountOut);
+        IMetaPool2 _metaPool = metapool();
+        agToken().safeApprove(address(_metaPool), amountAgToken);
+        collateral().safeApprove(address(_metaPool), amountCollateral);
+        amountOut = _metaPool.add_liquidity([amountAgToken, amountCollateral], minAmountOut);
+        IERC20(_metaPool).safeApprove(address(ANGLE_STAKER), amountOut);
     }
 
     function _deleverage(bytes memory data) internal override returns (uint256 amountOut) {
         (uint256 burnAmount, uint256 minAmountOut) = abi.decode(data, (uint256, uint256));
         // TODO add possible remove liquidity (imbalance and/or classic) + swaps to have a full flexible withdraw
-        amountOut = METAPOOL.remove_liquidity_one_coin(burnAmount, 0, minAmountOut);
+        amountOut = metapool().remove_liquidity_one_coin(burnAmount, 0, minAmountOut);
     }
+
+    // ============================= VIRTUAL FUNCTIONS =============================
+
+    /// @notice Reference to the `agToken` contract which route the leverage operation
+    function agToken() public pure virtual returns (IERC20);
+
+    /// @notice Reference to the `collateral` contract which is the counterpart token in the Curve pool
+    function collateral() public pure virtual returns (IERC20);
+
+    /// @notice Reference to the actual collateral contract
+    function metapool() public pure virtual returns (IMetaPool2);
 }
