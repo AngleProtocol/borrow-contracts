@@ -14,11 +14,11 @@ contract CurveLevSwapperTemplate is CurveLevSwapper {
         IAngleRouterSidechain _angleRouter
     ) CurveLevSwapper(_core, _uniV3Router, _oneInch, _angleRouter) {}
 
-    function agToken() public pure override returns (IERC20) {
+    function token1() public pure override returns (IERC20) {
         return IERC20(address(0));
     }
 
-    function collateral() public pure override returns (IERC20) {
+    function token2() public pure override returns (IERC20) {
         return IERC20(address(0));
     }
 

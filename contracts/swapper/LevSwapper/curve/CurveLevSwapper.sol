@@ -27,11 +27,11 @@ abstract contract CurveLevSwapper is BaseLevSwapper {
 
     function _leverage(bytes memory) internal override returns (uint256 amountOut) {
         // Instead of doing sweeps at the end just use the full balance to add liquidity
-        uint256 amountAgToken = agToken().balanceOf(address(this));
-        uint256 amountCollateral = collateral().balanceOf(address(this));
+        uint256 amountAgToken = token1().balanceOf(address(this));
+        uint256 amountCollateral = token2().balanceOf(address(this));
         IMetaPool2 _metaPool = metapool();
-        agToken().safeApprove(address(_metaPool), amountAgToken);
-        collateral().safeApprove(address(_metaPool), amountCollateral);
+        token1().safeApprove(address(_metaPool), amountAgToken);
+        token2().safeApprove(address(_metaPool), amountCollateral);
         // slippage is checked at the very end of the `swap` function
         amountOut = _metaPool.add_liquidity([amountAgToken, amountCollateral], 0);
         IERC20(_metaPool).safeApprove(address(ANGLE_STAKER), amountOut);
@@ -57,10 +57,10 @@ abstract contract CurveLevSwapper is BaseLevSwapper {
     // ============================= VIRTUAL FUNCTIONS =============================
 
     /// @notice Reference to the `agToken` contract which route the leverage operation
-    function agToken() public pure virtual returns (IERC20);
+    function token1() public pure virtual returns (IERC20);
 
     /// @notice Reference to the `collateral` contract which is the counterpart token in the Curve pool
-    function collateral() public pure virtual returns (IERC20);
+    function token2() public pure virtual returns (IERC20);
 
     /// @notice Reference to the actual collateral contract
     function metapool() public pure virtual returns (IMetaPool2);
