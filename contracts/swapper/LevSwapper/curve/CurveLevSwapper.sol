@@ -4,6 +4,13 @@ pragma solidity 0.8.12;
 import "../BaseLevSwapper.sol";
 import "../../../interfaces/external/curve/IMetaPool2.sol";
 
+/// @notice All possible removal on Curve
+enum CurveRemovalType {
+    oneCoin,
+    balance,
+    imbalance
+}
+
 /// @title Leverage swapper on Curve LP tokens with Convex
 /// @author Angle Core Team
 abstract contract CurveLevSwapper is BaseLevSwapper {
@@ -18,23 +25,33 @@ abstract contract CurveLevSwapper is BaseLevSwapper {
 
     // =============================== MAIN FUNCTIONS ==============================
 
-    function _leverage(bytes memory data) internal override returns (uint256 amountOut) {
-        // TODO add possible swaps to have a more balance add_liquidity
-        (bool swaps, uint256 amountAgToken, uint256 amountCollateral, uint256 minAmountOut) = abi.decode(
-            data,
-            (bool, uint256, uint256, uint256)
-        );
+    function _leverage(bytes memory) internal override returns (uint256 amountOut) {
+        // Instead of doing sweeps at the end just use the full balance to add liquidity
+        uint256 amountAgToken = agToken().balanceOf(address(this));
+        uint256 amountCollateral = collateral().balanceOf(address(this));
         IMetaPool2 _metaPool = metapool();
         agToken().safeApprove(address(_metaPool), amountAgToken);
         collateral().safeApprove(address(_metaPool), amountCollateral);
-        amountOut = _metaPool.add_liquidity([amountAgToken, amountCollateral], minAmountOut);
+        // slippage is checked at the very end of the `swap` function
+        amountOut = _metaPool.add_liquidity([amountAgToken, amountCollateral], 0);
         IERC20(_metaPool).safeApprove(address(ANGLE_STAKER), amountOut);
     }
 
-    function _deleverage(bytes memory data) internal override returns (uint256 amountOut) {
-        (uint256 burnAmount, uint256 minAmountOut) = abi.decode(data, (uint256, uint256));
-        // TODO add possible remove liquidity (imbalance and/or classic) + swaps to have a full flexible withdraw
-        amountOut = metapool().remove_liquidity_one_coin(burnAmount, 0, minAmountOut);
+    function _deleverage(uint256 burnAmount, bytes memory data) internal override returns (uint256 amountOut) {
+        CurveRemovalType removalType = abi.decode(data, (CurveRemovalType));
+        if (removalType == CurveRemovalType.oneCoin) {
+            uint256 minAmountOut = abi.decode(data, (uint256));
+            amountOut = metapool().remove_liquidity_one_coin(burnAmount, 0, minAmountOut);
+        } else if (removalType == CurveRemovalType.balance) {
+            uint256[2] memory minAmountOuts = abi.decode(data, (uint256[2]));
+            minAmountOuts = metapool().remove_liquidity(burnAmount, minAmountOuts);
+        } else if (removalType == CurveRemovalType.imbalance) {
+            (address to, uint256[2] memory amountOuts) = abi.decode(data, (address, uint256[2]));
+            uint256 actualBurnAmount = metapool().remove_liquidity_imbalance(amountOuts, burnAmount);
+            // we may have withdrawn more than needed, maybe not optimal because a user may want have no lp token staked
+            // maybe just do a sweep on all tokens in the `BaseLevSwapper` contract
+            ANGLE_STAKER.deposit(burnAmount - actualBurnAmount, to);
+        }
     }
 
     // ============================= VIRTUAL FUNCTIONS =============================

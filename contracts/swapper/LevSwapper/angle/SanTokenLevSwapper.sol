@@ -28,10 +28,10 @@ abstract contract SanTokenLevSwapper is BaseLevSwapper {
         sanToken().safeApprove(address(ANGLE_STAKER), amountOut);
     }
 
-    function _deleverage(bytes memory data) internal override returns (uint256 amountOut) {
-        (uint256 amount, uint256 minAmountOut) = abi.decode(data, (uint256, uint256));
+    function _deleverage(uint256 amount, bytes memory data) internal override returns (uint256 amountOut) {
+        uint256 minAmountOut = abi.decode(data, (uint256));
         stableMaster().withdraw(amount, address(this), address(this), poolManager());
-        amountOut = sanToken().balanceOf(address(this));
+        amountOut = collateral().balanceOf(address(this));
         if (amountOut < minAmountOut) revert TooSmallAmountOut();
     }
 
