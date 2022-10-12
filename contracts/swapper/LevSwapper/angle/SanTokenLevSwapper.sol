@@ -5,8 +5,9 @@ import "../BaseLevSwapper.sol";
 import "../../../interfaces/coreModule/IStableMaster.sol";
 import "../../../interfaces/external/curve/IMetaPool2.sol";
 
-/// @title Leverage Swapper on SanTokens
+/// @title SanTokenLevSwapper
 /// @author Angle Core Team
+/// @dev Leverage Swapper on SanTokens
 abstract contract SanTokenLevSwapper is BaseLevSwapper {
     using SafeERC20 for IERC20;
 
@@ -19,16 +20,18 @@ abstract contract SanTokenLevSwapper is BaseLevSwapper {
 
     // =============================== MAIN FUNCTIONS ==============================
 
-    function _leverage(bytes memory data) internal override returns (uint256 amountOut) {
+    /// @inheritdoc BaseLevSwapper
+    function _add(bytes memory data) internal override returns (uint256 amountOut) {
         (uint256 amount, uint256 minAmountOut) = abi.decode(data, (uint256, uint256));
         collateral().safeApprove(address(stableMaster()), amount);
         stableMaster().deposit(amount, address(this), poolManager());
         amountOut = sanToken().balanceOf(address(this));
         if (amountOut < minAmountOut) revert TooSmallAmountOut();
-        sanToken().safeApprove(address(ANGLE_STAKER), amountOut);
+        sanToken().safeApprove(address(angleStaker()), amountOut);
     }
 
-    function _deleverage(uint256 amount, bytes memory data) internal override returns (uint256 amountOut) {
+    /// @inheritdoc BaseLevSwapper
+    function _remove(uint256 amount, bytes memory data) internal override returns (uint256 amountOut) {
         uint256 minAmountOut = abi.decode(data, (uint256));
         stableMaster().withdraw(amount, address(this), address(this), poolManager());
         amountOut = collateral().balanceOf(address(this));

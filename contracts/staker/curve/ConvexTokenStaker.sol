@@ -10,6 +10,8 @@ import "../../interfaces/external/convex/IConvexToken.sol";
 import "../BorrowStaker.sol";
 
 /// @title ConvexTokenStaker
+/// @author Angle Core Team
+/// @dev Borrow staker adapted to curve LP token deposited on Convex
 abstract contract ConvexTokenStaker is BorrowStaker {
     /// @notice Convex-related constants
     IConvexBooster private constant _CONVEX_BOOSTER = IConvexBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
@@ -19,10 +21,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
 
     // ============================= INTERNAL FUNCTIONS ============================
 
-    function _withdrawFromProtocol(uint256 amount) internal override {
-        _baseRewardPool().withdrawAndUnwrap(amount, false);
-    }
-
+    /// @inheritdoc ERC20Upgradeable
     function _afterTokenTransfer(
         address from,
         address,
@@ -36,6 +35,12 @@ abstract contract ConvexTokenStaker is BorrowStaker {
         }
     }
 
+    /// @inheritdoc BorrowStaker
+    function _withdrawFromProtocol(uint256 amount) internal override {
+        _baseRewardPool().withdrawAndUnwrap(amount, false);
+    }
+
+    /// @inheritdoc BorrowStaker
     /// @dev Should be override by implementation if there are more rewards
     function _claimRewards() internal override {
         // Claim on Convex
@@ -65,6 +70,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
         integral[_CVX] += (cvxRewards * BASE_PARAMS) / totalSupply();
     }
 
+    /// @inheritdoc BorrowStaker
     function _getRewards() internal pure override returns (IERC20[] memory rewards) {
         rewards = new IERC20[](2);
         rewards[0] = _CRV;
@@ -72,6 +78,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
         return rewards;
     }
 
+    /// @inheritdoc BorrowStaker
     function _rewardsToBeClaimed(IERC20 rewardToken) internal view override returns (uint256 amount) {
         amount = _baseRewardPool().earned(address(this));
         if (rewardToken == IERC20(address(_CVX))) {
@@ -80,14 +87,10 @@ abstract contract ConvexTokenStaker is BorrowStaker {
             uint256 totalSupply = _CVX.totalSupply();
             uint256 cliff = totalSupply / _CVX.reductionPerCliff();
             uint256 totalCliffs = _CVX.totalCliffs();
-            //mint if below total cliffs
             if (cliff < totalCliffs) {
-                //for reduction% take inverse of current cliff
                 uint256 reduction = totalCliffs - cliff;
-                //reduce
                 amount = (amount * reduction) / totalCliffs;
 
-                //supply cap check
                 uint256 amtTillMax = _CVX.maxSupply() - totalSupply;
                 if (amount > amtTillMax) {
                     amount = amtTillMax;

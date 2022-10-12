@@ -11,8 +11,9 @@ enum CurveRemovalType {
     imbalance
 }
 
-/// @title Leverage swapper on Curve LP tokens with Convex
+/// @title CurveLevSwapper
 /// @author Angle Core Team
+/// @dev Leverage swapper on Curve LP tokens with Convex staking
 abstract contract CurveLevSwapper is BaseLevSwapper {
     using SafeERC20 for IERC20;
 
@@ -25,7 +26,8 @@ abstract contract CurveLevSwapper is BaseLevSwapper {
 
     // =============================== MAIN FUNCTIONS ==============================
 
-    function _leverage(bytes memory) internal override returns (uint256 amountOut) {
+    /// @inheritdoc BaseLevSwapper
+    function _add(bytes memory) internal override returns (uint256 amountOut) {
         // Instead of doing sweeps at the end just use the full balance to add liquidity
         uint256 amountAgToken = token1().balanceOf(address(this));
         uint256 amountCollateral = token2().balanceOf(address(this));
@@ -34,10 +36,11 @@ abstract contract CurveLevSwapper is BaseLevSwapper {
         token2().safeApprove(address(_metaPool), amountCollateral);
         // slippage is checked at the very end of the `swap` function
         amountOut = _metaPool.add_liquidity([amountAgToken, amountCollateral], 0);
-        IERC20(_metaPool).safeApprove(address(ANGLE_STAKER), amountOut);
+        IERC20(_metaPool).safeApprove(address(angleStaker()), amountOut);
     }
 
-    function _deleverage(uint256 burnAmount, bytes memory data) internal override returns (uint256 amountOut) {
+    /// @inheritdoc BaseLevSwapper
+    function _remove(uint256 burnAmount, bytes memory data) internal override returns (uint256 amountOut) {
         CurveRemovalType removalType = abi.decode(data, (CurveRemovalType));
         if (removalType == CurveRemovalType.oneCoin) {
             uint256 minAmountOut = abi.decode(data, (uint256));
@@ -50,7 +53,7 @@ abstract contract CurveLevSwapper is BaseLevSwapper {
             uint256 actualBurnAmount = metapool().remove_liquidity_imbalance(amountOuts, burnAmount);
             // we may have withdrawn more than needed, maybe not optimal because a user may want have no lp token staked
             // maybe just do a sweep on all tokens in the `BaseLevSwapper` contract
-            ANGLE_STAKER.deposit(burnAmount - actualBurnAmount, to);
+            angleStaker().deposit(burnAmount - actualBurnAmount, to);
         }
     }
 

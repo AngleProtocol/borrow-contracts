@@ -14,14 +14,22 @@ contract CurveLevSwapperTemplate is CurveLevSwapper {
         IAngleRouterSidechain _angleRouter
     ) CurveLevSwapper(_core, _uniV3Router, _oneInch, _angleRouter) {}
 
+    /// @inheritdoc BaseLevSwapper
+    function angleStaker() public pure override returns (IBorrowStaker) {
+        return IBorrowStaker(address(0));
+    }
+
+    /// @inheritdoc CurveLevSwapper
     function token1() public pure override returns (IERC20) {
         return IERC20(address(0));
     }
 
+    /// @inheritdoc CurveLevSwapper
     function token2() public pure override returns (IERC20) {
         return IERC20(address(0));
     }
 
+    /// @inheritdoc CurveLevSwapper
     function metapool() public pure override returns (IMetaPool2) {
         return IMetaPool2(address(0));
     }

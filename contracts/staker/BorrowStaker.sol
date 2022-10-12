@@ -5,6 +5,10 @@ pragma solidity 0.8.12;
 import "./BorrowStakerStorage.sol";
 
 /// @title BorrowStaker
+/// @author Angle Core Team
+/// @dev Staking contract keeping track of user rewards and minting a wrapper token
+/// that can be hassle free on any other protocol without loosing the rewards.
+/// Angle use case: collateral on the Borrowing module
 abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     using SafeERC20 for IERC20;
 
@@ -21,19 +25,16 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        if (!treasury.isGovernor(msg.sender)) revert NotGovernor();
-        _;
-    }
-
-    /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
-    modifier onlyGovernorOrGuardian() {
-        if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        if (!coreBorrow.isGovernor(msg.sender)) revert NotGovernor();
         _;
     }
 
     // ============================= EXTERNAL FUNCTIONS ============================
 
-    function deposit(uint256 amount, address to) external nonReentrant returns (uint256) {
+    /// @notice Deposit the token to get the wrapped version
+    /// @param amount Amount of token to be staked
+    /// @param to Address for which the token is deposited
+    function deposit(uint256 amount, address to) external returns (uint256) {
         // Need to transfer before minting or ERC777s could reenter.
         asset.safeTransferFrom(msg.sender, address(this), amount);
         _mint(to, amount);
@@ -41,11 +42,15 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         return amount;
     }
 
+    /// @notice Withdraw the token from the same amount of wrapped token
+    /// @param amount Amount of token to be unstaked
+    /// @param from Address from which the token will be withdrawed
+    /// @param to Address which will receive the token
     function withdraw(
         uint256 amount,
         address from,
         address to
-    ) external nonReentrant returns (uint256 shares) {
+    ) external returns (uint256 shares) {
         if (msg.sender != from) {
             uint256 currentAllowance = allowance(from, msg.sender);
             if (currentAllowance < amount) revert TransferAmountExceedsAllowance();
@@ -61,32 +66,34 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         asset.safeTransfer(to, amount);
     }
 
-    /// @notice Claims earned rewards
+    /// @notice Claims earned rewards for user `from`
     /// @param from Address to claim for
     /// @return rewardAmounts Amounts claimed by the user
-    function claimRewards(address from) external nonReentrant returns (uint256[] memory rewardAmounts) {
+    function claimRewards(address from) external returns (uint256[] memory rewardAmounts) {
         address[] memory checkpointUser = new address[](1);
         checkpointUser[0] = address(from);
         rewardAmounts = _checkpoint(checkpointUser, true)[0];
     }
 
-    /// @dev Goves the exact amount that will be received if called `claim(_user)` for a specific reward token
-    function claimableRewards(address _user, IERC20 _rewardToken) external view returns (uint256) {
+    /// @notice Return the exact amount that will be received if called `claimRewards(from)` for a specific reward token
+    /// @param from Address to claim for
+    /// @param _rewardToken Token to get rewards for
+    function claimableRewards(address from, IERC20 _rewardToken) external view returns (uint256) {
         uint256 newIntegral = integral[_rewardToken] +
             (_rewardsToBeClaimed(_rewardToken) * BASE_PARAMS) /
             totalSupply();
-        uint256 userIntegral = integralOf[_rewardToken][_user];
-        uint256 newClaimable = (balanceOf(_user) * (newIntegral - userIntegral)) / BASE_PARAMS;
-        return pendingRewardsOf[_rewardToken][_user] + newClaimable;
+        uint256 userIntegral = integralOf[_rewardToken][from];
+        uint256 newClaimable = (balanceOf(from) * (newIntegral - userIntegral)) / BASE_PARAMS;
+        return pendingRewardsOf[_rewardToken][from] + newClaimable;
     }
 
     // ============================ GOVERNANCE FUNCTIONS ===========================
 
-    /// @notice Changes the treasury contract
-    /// @dev Like the function above, this permissionless function just adjusts the treasury to
-    /// the address of the treasury contract from the `VaultManager` in case it has been modified
-    function setTreasury(ITreasury _treasury) external onlyGovernor {
-        treasury = _treasury;
+    /// @notice Changes the core borrow contract
+    /// @param _coreBorrow Address of the new core borrow contract
+    function setCoreBorrow(ICoreBorrow _coreBorrow) external onlyGovernor {
+        if (!_coreBorrow.isGovernor(msg.sender)) revert NotGovernor();
+        coreBorrow = _coreBorrow;
     }
 
     /// @notice Allows to recover any ERC20 token, including the asset managed by the reactor
@@ -107,6 +114,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     // ============================= INTERNAL FUNCTIONS ============================
 
+    /// @inheritdoc ERC20Upgradeable
     function _beforeTokenTransfer(
         address _from,
         address _to,
@@ -124,6 +132,9 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         if (_to == address(0)) _withdrawFromProtocol(amount);
     }
 
+    /// @notice Claim contracts rewards an d checkpoint for each `accounts`
+    /// @param accounts Array of each accounts we should checkpoint rewards for
+    /// @param _claim Whether to claim for `accounts` the pending rewards
     /// @return rewardAmounts An array of array where the 1st array represent the rewards earned by `from`
     /// and the 2nd one represent the earnings of `to`
     function _checkpoint(address[] memory accounts, bool _claim) internal returns (uint256[][] memory rewardAmounts) {
@@ -136,11 +147,10 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         }
     }
 
-    /// @notice Claims rewards earned by a user
+    /// @notice Checkpoint rewards earned by a user
     /// @param from Address to claim rewards from
     /// @param _claim Whether to claim or not the rewards
-    /// @return rewardAmounts Amounts earned by the user
-    /// @dev Function will revert if there has been no mint
+    /// @return rewardAmounts Amounts earned by the user in each tokens
     function _checkpointRewardsUser(address from, bool _claim) internal returns (uint256[] memory rewardAmounts) {
         IERC20[] memory rewardsToken = _getRewards();
         rewardAmounts = new uint256[](rewardsToken.length);
@@ -179,13 +189,16 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     // ============================= VIRTUAL FUNCTIONS =============================
 
-    /// @dev Should increase the claimableRewards
+    /// @notice Claim all available rewards and increase the associated integral
     function _claimRewards() internal virtual;
 
+    /// @notice Returns a list of all reward tokens supported by this contract
     function _getRewards() internal pure virtual returns (IERC20[] memory reward);
 
+    /// @notice withdraw the staking token from the protocol rewards contract
     function _withdrawFromProtocol(uint256 amount) internal virtual;
 
-    // For some staker this may not be precise (lower bound)
+    /// @notice Check all unclaimed rewards in `rewardToken`
+    /// @dev For some `rewardToken` this may not be precise (i.e lower bound) on what can be claimed
     function _rewardsToBeClaimed(IERC20 rewardToken) internal view virtual returns (uint256 amount);
 }

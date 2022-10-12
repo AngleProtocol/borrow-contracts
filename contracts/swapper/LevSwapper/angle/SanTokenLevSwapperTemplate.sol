@@ -14,18 +14,27 @@ contract SanTokenLevSwapperTemplate is SanTokenLevSwapper {
         IAngleRouterSidechain _angleRouter
     ) SanTokenLevSwapper(_core, _uniV3Router, _oneInch, _angleRouter) {}
 
+    /// @inheritdoc BaseLevSwapper
+    function angleStaker() public pure override returns (IBorrowStaker) {
+        return IBorrowStaker(address(0));
+    }
+
+    /// @inheritdoc SanTokenLevSwapper
     function stableMaster() public pure override returns (IStableMaster) {
         return IStableMaster(address(0));
     }
 
+    /// @inheritdoc SanTokenLevSwapper
     function poolManager() public pure override returns (address) {
         return address(0);
     }
 
+    /// @inheritdoc SanTokenLevSwapper
     function collateral() public pure override returns (IERC20) {
         return IERC20(address(0));
     }
 
+    /// @inheritdoc SanTokenLevSwapper
     function sanToken() public pure override returns (IERC20) {
         return IERC20(address(0));
     }
