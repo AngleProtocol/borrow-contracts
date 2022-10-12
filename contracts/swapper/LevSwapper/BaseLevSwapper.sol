@@ -56,6 +56,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             // For instance when borrowing on Angle you receive agEUR, but may want to be LP on
             // the 3Pool, tou can then swap 1/3 of the agEUR to USDC, 1/3 to USDT and 1/3 to DAI
             // before providing liquidity
+            // These swaps are easy to anticipate as you know how many tokens have been sent when querying the 1inch API
             _multiSwap1inch(oneInchPayloads);
             amountOut = _add(data);
             angleStaker().deposit(amountOut, to);
@@ -72,6 +73,8 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             _remove(toUnstake, data);
             // Taking the same example as in the `leverage` side, you can withdraw USDC,DAI and USDT while wanting to
             // to repay a debt in agEUR so you need to do a multiswap
+            // These swaps are not easy to anticipate the amounts received depends on the deleverage action which can be chaotic
+            // Better to swap a lower bound and then sweep the tokens --> loss of efficiency
             _multiSwap1inch(oneInchPayloads);
             // after the swaps and/or the delevrage we can end up with useless tokens for repaying a debt and therefore let the
             // possibility to send it wherever

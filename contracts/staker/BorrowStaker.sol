@@ -170,6 +170,13 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         }
     }
 
+    /// @notice Add the contract claimed rewards to the distributed rewards
+    /// @param rewardToken Reward token that must be updated
+    /// @param amount Amount to add to the claimable rewards
+    function _updateRewards(IERC20 rewardToken, uint256 amount) internal {
+        integral[rewardToken] += (amount * BASE_PARAMS) / totalSupply();
+    }
+
     /// @notice Changes allowance of this contract for a given token
     /// @param token Address of the token for which allowance should be changed
     /// @param spender Address to approve

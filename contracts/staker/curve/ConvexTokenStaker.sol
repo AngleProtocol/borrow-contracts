@@ -31,13 +31,13 @@ abstract contract ConvexTokenStaker is BorrowStaker {
         if (from == address(0)) {
             // Deposit the Curve LP tokens into the convex contract and stake
             _changeAllowance(asset, address(_CONVEX_BOOSTER), amount);
-            _CONVEX_BOOSTER.deposit(_poolPid(), amount, true);
+            _CONVEX_BOOSTER.deposit(poolPid(), amount, true);
         }
     }
 
     /// @inheritdoc BorrowStaker
     function _withdrawFromProtocol(uint256 amount) internal override {
-        _baseRewardPool().withdrawAndUnwrap(amount, false);
+        baseRewardPool().withdrawAndUnwrap(amount, false);
     }
 
     /// @inheritdoc BorrowStaker
@@ -45,7 +45,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
     function _claimRewards() internal override {
         // Claim on Convex
         address[] memory rewardContracts = new address[](1);
-        rewardContracts[0] = address(_baseRewardPool());
+        rewardContracts[0] = address(baseRewardPool());
 
         uint256 prevBalanceCRV = _CRV.balanceOf(address(this));
         uint256 prevBalanceCVX = _CVX.balanceOf(address(this));
@@ -66,8 +66,8 @@ abstract contract ConvexTokenStaker is BorrowStaker {
         uint256 cvxRewards = _CVX.balanceOf(address(this)) - prevBalanceCVX;
 
         // do the same thing for additional rewards
-        integral[_CRV] += (crvRewards * BASE_PARAMS) / totalSupply();
-        integral[_CVX] += (cvxRewards * BASE_PARAMS) / totalSupply();
+        _updateRewards(_CRV, crvRewards);
+        _updateRewards(_CVX, cvxRewards);
     }
 
     /// @inheritdoc BorrowStaker
@@ -80,7 +80,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
 
     /// @inheritdoc BorrowStaker
     function _rewardsToBeClaimed(IERC20 rewardToken) internal view override returns (uint256 amount) {
-        amount = _baseRewardPool().earned(address(this));
+        amount = baseRewardPool().earned(address(this));
         if (rewardToken == IERC20(address(_CVX))) {
             // Computation made in the Convex token when claiming rewards check
             // https://etherscan.io/address/0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b#code
@@ -102,8 +102,8 @@ abstract contract ConvexTokenStaker is BorrowStaker {
     // ============================= VIRTUAL FUNCTIONS =============================
 
     /// @notice Address of the Convex contract on which to claim rewards
-    function _baseRewardPool() internal pure virtual returns (IConvexBaseRewardPool);
+    function baseRewardPool() public pure virtual returns (IConvexBaseRewardPool);
 
     /// @notice ID of the pool associated to the AMO on Convex
-    function _poolPid() internal pure virtual returns (uint256);
+    function poolPid() public pure virtual returns (uint256);
 }
