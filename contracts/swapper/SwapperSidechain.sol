@@ -14,7 +14,7 @@ import "../interfaces/external/uniswap/IUniswapRouter.sol";
 /// @title SwapperSidechain
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
-contract SwapperSidechain is ISwapper {
+abstract contract SwapperSidechain is ISwapper {
     using SafeERC20 for IERC20;
 
     // ================ Constants and Immutable Variables ==========================
@@ -35,6 +35,7 @@ contract SwapperSidechain is ISwapper {
         UniswapV3,
         oneInch,
         AngleRouter,
+        Leverage,
         None
     }
 
@@ -185,6 +186,7 @@ contract SwapperSidechain is ISwapper {
         if (swapType == SwapType.UniswapV3) _swapOnUniswapV3(inToken, amount, args);
         else if (swapType == SwapType.oneInch) _swapOn1Inch(inToken, args);
         else if (swapType == SwapType.AngleRouter) _angleRouterActions(inToken, args);
+        else if (swapType == SwapType.Leverage) _swapLeverage(args);
     }
 
     /// @notice Performs a UniswapV3 swap
@@ -226,6 +228,13 @@ contract SwapperSidechain is ISwapper {
         PermitType[] memory permits;
         angleRouter.mixer(permits, actions, actionData);
     }
+
+    /// @notice Allows to take leverage or deleverage via a specific contract
+    /// @param payload Bytes needed for 1Inch API
+    /// @dev Here again, we don't specify a slippage as in the `swap` function a final slippage check
+    /// is performed at the end
+    /// TODO reentrancy/approval checks - should be good as only transitory contracts
+    function _swapLeverage(bytes memory payload) internal virtual returns (uint256 amountOut);
 
     /// @notice Internal function used for error handling
     /// @param errMsg Error message received
