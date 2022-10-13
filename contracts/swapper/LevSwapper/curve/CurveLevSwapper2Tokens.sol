@@ -11,11 +11,11 @@ enum CurveRemovalType {
     imbalance
 }
 
-/// @title CurveLevSwapper
+/// @title CurveLevSwapper2Tokens
 /// @author Angle Core Team
 /// @dev Leverage swapper on Curve LP tokens with Convex staking
 /// @dev This implementation is for Curve pools with 2 tokens
-abstract contract CurveLevSwapper is BaseLevSwapper {
+abstract contract CurveLevSwapper2Tokens is BaseLevSwapper {
     using SafeERC20 for IERC20;
 
     constructor(
@@ -44,8 +44,8 @@ abstract contract CurveLevSwapper is BaseLevSwapper {
     function _remove(uint256 burnAmount, bytes memory data) internal override returns (uint256 amountOut) {
         CurveRemovalType removalType = abi.decode(data, (CurveRemovalType));
         if (removalType == CurveRemovalType.oneCoin) {
-            uint256 minAmountOut = abi.decode(data, (uint256));
-            amountOut = metapool().remove_liquidity_one_coin(burnAmount, 0, minAmountOut);
+            (int128 whichCoin, uint256 minAmountOut) = abi.decode(data, (int128, uint256));
+            amountOut = metapool().remove_liquidity_one_coin(burnAmount, whichCoin, minAmountOut);
         } else if (removalType == CurveRemovalType.balance) {
             uint256[2] memory minAmountOuts = abi.decode(data, (uint256[2]));
             minAmountOuts = metapool().remove_liquidity(burnAmount, minAmountOuts);
