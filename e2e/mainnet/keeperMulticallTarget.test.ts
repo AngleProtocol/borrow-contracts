@@ -4,7 +4,7 @@ import { BigNumber, Contract, utils, Wallet } from 'ethers';
 import { ethers, network } from 'hardhat';
 import qs from 'qs';
 
-import { expect } from '../../test/utils/chai-setup';
+import { expect } from '../../test/hardhat/utils/chai-setup';
 import { IERC20, IERC20__factory, KeeperMulticall, KeeperMulticall__factory } from '../../typechain';
 
 export async function get1inchSwapData(
@@ -141,7 +141,7 @@ describe('Keeper Multicall (mainnet fork)', async () => {
         const log = KeeperMulticall__factory.createInterface().parseLog(_log);
         if (log.eventFragment.name !== 'SentToMiner') return returnValue;
         return log;
-      } catch (e) {}
+      } catch (e) { }
       return returnValue;
     }, {} as utils.LogDescription | undefined);
 
@@ -200,7 +200,7 @@ describe('Keeper Multicall (mainnet fork)', async () => {
         const log = KeeperMulticall__factory.createInterface().parseLog(_log);
         if (log.name !== 'SentToMiner') return returnValue;
         return log;
-      } catch (e) {}
+      } catch (e) { }
       return returnValue;
     }, {} as utils.LogDescription | undefined);
 
@@ -258,7 +258,7 @@ describe('Keeper Multicall (mainnet fork)', async () => {
         const log = KeeperMulticall__factory.createInterface().parseLog(_log);
         if (log.eventFragment.name !== 'SentToMiner') return returnValue;
         return log;
-      } catch (e) {}
+      } catch (e) { }
       return returnValue;
     }, {} as utils.LogDescription | undefined);
 
