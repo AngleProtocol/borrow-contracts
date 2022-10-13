@@ -3,8 +3,8 @@ pragma solidity 0.8.12;
 
 import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
-import "../../contracts/keeperMulticall/KeeperMulticall.sol";
-import "../../contracts/mock/MockToken.sol";
+import "../../../contracts/keeperMulticall/KeeperMulticall.sol";
+import "../../../contracts/mock/MockToken.sol";
 
 contract KeeperMulticallTest is Test {
     KeeperMulticall internal _contractKeeperMulticall;
