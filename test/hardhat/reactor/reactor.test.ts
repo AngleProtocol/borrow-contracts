@@ -714,11 +714,6 @@ contract('Reactor', () => {
       expect(await reactor.rewardsAccumulator()).to.be.equal(
         BigNumber.from((await latestTime()) - lastTime).mul(sharesAmount),
       );
-      expectApprox(
-        await vaultManager.getVaultDebt(1),
-        sharesAmount.add(secondSharesAmount).mul(2).mul(targetCF),
-        0.00001,
-      );
     });
 
     it('success - second mint without borrow', async () => {
