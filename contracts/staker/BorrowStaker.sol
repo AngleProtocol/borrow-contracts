@@ -8,7 +8,8 @@ import "./BorrowStakerStorage.sol";
 /// @author Angle Core Team
 /// @dev Staking contract keeping track of user rewards and minting a wrapper token
 /// that can be hassle free on any other protocol without loosing the rewards.
-/// Angle use case: collateral on the Borrowing module
+/// @dev If Angle is to accept a Curve LP token accruing CRV rewards, what is to be a collateral on the Borrowing module
+/// is not going to be the LP token in itself, but the token corresponding to this type of contract
 abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     using SafeERC20 for IERC20;
 
@@ -31,7 +32,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     // ============================= EXTERNAL FUNCTIONS ============================
 
-    /// @notice Deposit the token to get the wrapped version
+    /// @notice Deposits the token to get the wrapped version
     /// @param amount Amount of token to be staked
     /// @param to Address for which the token is deposited
     function deposit(uint256 amount, address to) external returns (uint256) {
@@ -42,9 +43,9 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         return amount;
     }
 
-    /// @notice Withdraw the token from the same amount of wrapped token
+    /// @notice Withdraws the token from the same amount of wrapped token
     /// @param amount Amount of token to be unstaked
-    /// @param from Address from which the token will be withdrawed
+    /// @param from Address from which the token will be withdrawn
     /// @param to Address which will receive the token
     function withdraw(
         uint256 amount,
@@ -68,22 +69,21 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     /// @notice Claims earned rewards for user `from`
     /// @param from Address to claim for
-    /// @return rewardAmounts Amounts claimed by the user
+    /// @return rewardAmounts Amounts of each reward token claimed by the user
     function claimRewards(address from) external returns (uint256[] memory rewardAmounts) {
         address[] memory checkpointUser = new address[](1);
         checkpointUser[0] = address(from);
         rewardAmounts = _checkpoint(checkpointUser, true)[0];
     }
 
-    /// @notice Return the exact amount that will be received if called `claimRewards(from)` for a specific reward token
+    /// @notice Returns the exact amount that will be received if called `claimRewards(from)` for a specific reward token
     /// @param from Address to claim for
     /// @param _rewardToken Token to get rewards for
     function claimableRewards(address from, IERC20 _rewardToken) external view returns (uint256) {
         uint256 newIntegral = integral[_rewardToken] +
             (_rewardsToBeClaimed(_rewardToken) * BASE_PARAMS) /
             totalSupply();
-        uint256 userIntegral = integralOf[_rewardToken][from];
-        uint256 newClaimable = (balanceOf(from) * (newIntegral - userIntegral)) / BASE_PARAMS;
+        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_PARAMS;
         return pendingRewardsOf[_rewardToken][from] + newClaimable;
     }
 
@@ -132,11 +132,11 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         if (_to == address(0)) _withdrawFromProtocol(amount);
     }
 
-    /// @notice Claim contracts rewards an d checkpoint for each `accounts`
-    /// @param accounts Array of each accounts we should checkpoint rewards for
+    /// @notice Claims contracts rewards and checkpoints for different `accounts`
+    /// @param accounts Array of accounts we should checkpoint rewards for
     /// @param _claim Whether to claim for `accounts` the pending rewards
-    /// @return rewardAmounts An array of array where the 1st array represent the rewards earned by `from`
-    /// and the 2nd one represent the earnings of `to`
+    /// @return rewardAmounts An array of array where the 1st array represents the rewards earned by `from`
+    /// and the 2nd one represents the earnings of `to`
     function _checkpoint(address[] memory accounts, bool _claim) internal returns (uint256[][] memory rewardAmounts) {
         _claimRewards();
 
@@ -147,30 +147,30 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         }
     }
 
-    /// @notice Checkpoint rewards earned by a user
+    /// @notice Checkpoints rewards earned by a user
     /// @param from Address to claim rewards from
     /// @param _claim Whether to claim or not the rewards
-    /// @return rewardAmounts Amounts earned by the user in each tokens
+    /// @return rewardAmounts Amounts of the different reward tokens earned by the user
     function _checkpointRewardsUser(address from, bool _claim) internal returns (uint256[] memory rewardAmounts) {
-        IERC20[] memory rewardsToken = _getRewards();
-        rewardAmounts = new uint256[](rewardsToken.length);
-        for (uint256 i = 0; i < rewardsToken.length; ++i) {
-            uint256 userIntegral = integralOf[rewardsToken[i]][from];
-            uint256 newClaimable = (balanceOf(from) * (integral[rewardsToken[i]] - userIntegral)) / BASE_PARAMS;
+        IERC20[] memory rewardTokens = _getRewards();
+        rewardAmounts = new uint256[](rewardTokens.length);
+        for (uint256 i = 0; i < rewardTokens.length; ++i) {
+            uint256 newClaimable = (balanceOf(from) * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
+                BASE_PARAMS;
             if (newClaimable > 0) {
                 if (_claim) {
-                    rewardsToken[i].safeTransfer(from, pendingRewardsOf[rewardsToken[i]][from] + newClaimable);
-                    pendingRewardsOf[rewardsToken[i]][from] = 0;
+                    rewardTokens[i].safeTransfer(from, pendingRewardsOf[rewardTokens[i]][from] + newClaimable);
+                    pendingRewardsOf[rewardTokens[i]][from] = 0;
                 } else {
-                    pendingRewardsOf[rewardsToken[i]][from] += newClaimable;
+                    pendingRewardsOf[rewardTokens[i]][from] += newClaimable;
                 }
-                integralOf[rewardsToken[i]][from] = integral[rewardsToken[i]];
             }
+            integralOf[rewardTokens[i]][from] = integral[rewardTokens[i]];
             rewardAmounts[i] = newClaimable;
         }
     }
 
-    /// @notice Add the contract claimed rewards to the distributed rewards
+    /// @notice Adds the contract claimed rewards to the distributed rewards
     /// @param rewardToken Reward token that must be updated
     /// @param amount Amount to add to the claimable rewards
     function _updateRewards(IERC20 rewardToken, uint256 amount) internal {
@@ -196,16 +196,16 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     // ============================= VIRTUAL FUNCTIONS =============================
 
-    /// @notice Claim all available rewards and increase the associated integral
+    /// @notice Claims all available rewards and increases the associated integral
     function _claimRewards() internal virtual;
 
     /// @notice Returns a list of all reward tokens supported by this contract
     function _getRewards() internal pure virtual returns (IERC20[] memory reward);
 
-    /// @notice withdraw the staking token from the protocol rewards contract
+    /// @notice Withdraws the staking token from the protocol rewards contract
     function _withdrawFromProtocol(uint256 amount) internal virtual;
 
-    /// @notice Check all unclaimed rewards in `rewardToken`
+    /// @notice Checks all unclaimed rewards in `rewardToken`
     /// @dev For some `rewardToken` this may not be precise (i.e lower bound) on what can be claimed
     function _rewardsToBeClaimed(IERC20 rewardToken) internal view virtual returns (uint256 amount);
 }

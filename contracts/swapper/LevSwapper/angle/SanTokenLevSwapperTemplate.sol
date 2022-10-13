@@ -4,8 +4,8 @@ pragma solidity 0.8.12;
 import "./SanTokenLevSwapper.sol";
 import "../../../interfaces/external/curve/IMetaPool2.sol";
 
-/// @title Template leverage swapper on sanTokens
 /// @author Angle Core Team
+/// @notice Template leverage swapper on sanTokens
 contract SanTokenLevSwapperTemplate is SanTokenLevSwapper {
     constructor(
         ICoreBorrow _core,

@@ -231,7 +231,7 @@ abstract contract SwapperSidechain is ISwapper {
 
     /// @notice Allows to take leverage or deleverage via a specific contract
     /// @param payload Bytes needed for 1Inch API
-    /// @dev Here again, we don't specify a slippage here as in the `swap` function a final slippage check
+    /// @dev Here again, we don't specify a slippage as in the `swap` function a final slippage check
     /// is performed at the end
     /// TODO reentrancy/approval checks - should be good as only transitory contracts
     function _swapLeverage(bytes memory payload) internal virtual returns (uint256 amountOut);

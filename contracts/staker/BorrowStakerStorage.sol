@@ -24,20 +24,22 @@ contract BorrowStakerStorage is Initializable {
 
     // ================================= VARIABLES =================================
 
-    /// @notice Mapping each token to a track record of cumulated rewards
+    /// @notice Maps each reward token to a track record of cumulated rewards
     mapping(IERC20 => uint256) public integral;
-    /// @notice Mapping each (token,user) current pending claimable rewards
+    /// @notice Maps pairs of `(token,user)` to the currently pending claimable rewards
     mapping(IERC20 => mapping(address => uint256)) public pendingRewardsOf;
-    /// @notice Mapping each (token,user) a track record of cumulated personal rewards
+    /// @notice Maps pairs of `(token,user)` to a track record of cumulated personal rewards
     mapping(IERC20 => mapping(address => uint256)) public integralOf;
 
     uint256[43] private __gap;
+
+    // =================================== EVENTS ==================================
 
     event Deposit(address indexed from, address indexed to, uint256 amount);
     event Withdraw(address indexed from, address indexed to, uint256 amount);
     event Recovered(address indexed token, address indexed to, uint256 amount);
 
-    // =============================== Errors ======================================
+    // =================================== ERRROS ==================================
 
     error InvalidToken();
     error NotGovernor();

@@ -11,7 +11,7 @@ import "../BorrowStaker.sol";
 
 /// @title ConvexTokenStaker
 /// @author Angle Core Team
-/// @dev Borrow staker adapted to curve LP token deposited on Convex
+/// @dev Borrow staker adapted to Curve LP tokens deposited on Convex
 abstract contract ConvexTokenStaker is BorrowStaker {
     /// @notice Convex-related constants
     IConvexBooster private constant _CONVEX_BOOSTER = IConvexBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
