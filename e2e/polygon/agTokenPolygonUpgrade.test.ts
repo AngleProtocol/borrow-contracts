@@ -5,9 +5,9 @@ import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
 // import { fromRpcSig } from 'ethereumjs-util';
-import { expect } from '../../test/utils/chai-setup';
-import { inIndirectReceipt, inReceipt } from '../../test/utils/expectEvent';
-import { deployUpgradeable, mine, time, ZERO_ADDRESS } from '../../test/utils/helpers';
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../../test/hardhat/utils/expectEvent';
+import { deployUpgradeable, mine, time, ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
   CoreBorrow,
   CoreBorrow__factory,

@@ -9,9 +9,9 @@ import { Signer } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
-import { expect } from '../../test/utils/chai-setup';
-import { inReceipt } from '../../test/utils/expectEvent';
-import { ZERO_ADDRESS } from '../../test/utils/helpers';
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { inReceipt } from '../../test/hardhat/utils/expectEvent';
+import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import { AgTokenIntermediateUpgrade, AgTokenIntermediateUpgrade__factory, ProxyAdmin } from '../../typechain';
 
 contract('AgTokenIntermediateUpgrade - End-to-end Upgrade', () => {

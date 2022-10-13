@@ -9,8 +9,8 @@ import {
   MockTreasury,
   MockTreasury__factory,
 } from '../../typechain';
-import { expect } from '../../test/utils/chai-setup';
-import { ZERO_ADDRESS } from '../../test/utils/helpers';
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 
 contract('Oracles Chainlink', () => {
   let deployer: SignerWithAddress;

@@ -2,8 +2,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { parseUnits } from 'ethers/lib/utils';
 import { ethers, network } from 'hardhat';
 
-import { expect } from '../../test/utils/chai-setup';
-import { deployUpgradeable } from '../../test/utils/helpers';
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { deployUpgradeable } from '../../test/hardhat/utils/helpers';
 import { AngleHelpers, AngleHelpers__factory } from '../../typechain';
 
 describe('AngleHelpers', () => {

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "hardhat compile",
+    "hardhat:compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "deploy:mainnet": "hardhat deploy --network mainnet --tags angleHelpers",
     "deploy:rinkeby": "hardhat deploy --network rinkeby --tags unpausing",
@@ -30,7 +30,7 @@
     "prettier:sol": "prettier --write 'contracts/**/*.sol'",
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
     "size": "hardhat size-contracts",
-    "test": "hardhat test",
+    "hardhat:test": "hardhat test",
     "test:e2e:mainnet": "FORK=true hardhat test e2e/mainnet/*.ts",
     "test:e2e:mainnet:oracle": "FORK=true hardhat test e2e/mainnet/oraclesChainlink.test.ts",
     "test:e2e:mainnet:upgrade": "FORK=true hardhat test e2e/mainnet/agTokenUpgrade.test.ts",
