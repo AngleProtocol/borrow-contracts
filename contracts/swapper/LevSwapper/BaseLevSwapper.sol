@@ -18,7 +18,7 @@ struct SwapType {
     uint256 amount;
 }
 
-/// @title SwapperSidechain
+/// @title BaseLevSwapper
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with a `VaultManager` - liquidation, leverage, wrapping and unwrapping
 abstract contract BaseLevSwapper is SwapperSidechain {
@@ -38,13 +38,14 @@ abstract contract BaseLevSwapper is SwapperSidechain {
 
     // ============================= INTERNAL FUNCTIONS ============================
 
-    /// @notice Implementing the bundle transaction to increase/decrease exposure to a token
+    /// @notice Implements the bundle transaction to increase/decrease exposure to a token
     /// and then stake the token into `angleStaker` contract in the leverage case
     /// @param data Encoded data giving specific instruction to the bundle tx
     /// @return amountOut Amount obtained from the swap.
     /// TODO This can be misleading as in some cases the swap can result in multiple tokens.
     /// Also this ariable is not used, so worth removing the return value
-    /// @dev All transfers must have been done before hand
+    /// @dev All token transfers must have been done beforehand
+    /// @dev This function can support multiple swaps to get a desired token
     function _swapLeverage(bytes memory data) internal override returns (uint256 amountOut) {
         bool leverage;
         address to;
@@ -54,7 +55,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             (oneInchPayloads, data) = abi.decode(data, (bytes[], bytes));
             // After sending all your tokens you have the possibility to swap them through 1inch
             // For instance when borrowing on Angle you receive agEUR, but may want to be LP on
-            // the 3Pool, tou can then swap 1/3 of the agEUR to USDC, 1/3 to USDT and 1/3 to DAI
+            // the 3Pool, you can then swap 1/3 of the agEUR to USDC, 1/3 to USDT and 1/3 to DAI
             // before providing liquidity
             // These swaps are easy to anticipate as you know how many tokens have been sent when querying the 1inch API
             _multiSwap1inch(oneInchPayloads);
@@ -68,15 +69,16 @@ abstract contract BaseLevSwapper is SwapperSidechain {
                 data,
                 (uint256, IERC20, IERC20[], bytes[], bytes)
             );
-            // should transfer the token to the contract this will claim the rewards for the current owner of the wrapper
+            // Should transfer the token to the contract this will claim the rewards for the current owner of the wrapper
             angleStaker().withdraw(toUnstake, address(this), address(this));
             _remove(toUnstake, data);
-            // Taking the same example as in the `leverage` side, you can withdraw USDC,DAI and USDT while wanting to
-            // to repay a debt in agEUR so you need to do a multiswap
-            // These swaps are not easy to anticipate the amounts received depends on the deleverage action which can be chaotic
-            // Better to swap a lower bound and then sweep the tokens --> loss of efficiency
+            // Taking the same example as in the `leverage` side, you can withdraw USDC, DAI and USDT while wanting to
+            // to repay a debt in agEUR so you need to do a multiswap.
+            // These swaps are not easy to anticipate the amounts received depend on the deleverage action which can be chaotic
+            // Very often, it's better to swap a lower bound and then sweep the tokens, even though it's not the most efficient
+            // thing to do
             _multiSwap1inch(oneInchPayloads);
-            // after the swaps and/or the delevrage we can end up with useless tokens for repaying a debt and therefore let the
+            // After the swaps and/or the deleverage we can end up with useless tokens for repaying a debt and therefore let the
             // possibility to send it wherever
             _sweep(sweepTokens, to);
             // TODO not useful actually to send an amountOut and quering the balance is expensive
@@ -84,8 +86,8 @@ abstract contract BaseLevSwapper is SwapperSidechain {
         }
     }
 
-    /// @notice Allows to do an arbitrary number of swaps using 1Inch API
-    /// @param data Encoded info to exceute the swaps from `_swapOn1Inch`
+    /// @notice Allows to do an arbitrary number of swaps using 1inch API
+    /// @param data Encoded info to execute the swaps from `_swapOn1Inch`
     function _multiSwap1inch(bytes[] memory data) internal {
         for (uint256 i = 0; i < data.length; i++) {
             (address inToken, bytes memory payload) = abi.decode(data[i], (address, bytes));
@@ -93,7 +95,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
         }
     }
 
-    /// @notice Sweeps tokens from the router contract
+    /// @notice Sweeps tokens from the contract
     /// @param tokensOut Token to sweep
     /// @param to Address to which tokens should be sent
     function _sweep(IERC20[] memory tokensOut, address to) internal {
@@ -107,16 +109,16 @@ abstract contract BaseLevSwapper is SwapperSidechain {
 
     // ========================= EXTERNAL VIRTUAL FUNCTIONS ========================
 
-    /// @notice Token used as collateral on the borrow module, which wrap the `true` collateral
+    /// @notice Token used as collateral on the borrow module, which wraps the `true` collateral
     function angleStaker() public pure virtual returns (IBorrowStaker);
 
     // ========================= INTERNAL VIRTUAL FUNCTIONS ========================
 
-    /// @notice Implementing the bundle transaction to increase exposure to a token
+    /// @notice Implements the bundle transaction to increase exposure to a token
     /// @param data Encoded data giving specific instruction to the bundle tx
     function _add(bytes memory data) internal virtual returns (uint256 amountOut);
 
-    /// @notice Implementing the bundle transaction to decrease exposure to a token
+    /// @notice Implements the bundle transaction to decrease exposure to a token
     /// @param toUnstake Amount of tokens to withdraw from the `angleStaker`
     /// @param data Encoded data giving specific instruction to the bundle tx
     function _remove(uint256 toUnstake, bytes memory data) internal virtual returns (uint256 amount);

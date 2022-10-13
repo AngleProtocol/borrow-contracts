@@ -4,8 +4,8 @@ pragma solidity 0.8.12;
 import "./CurveLevSwapper.sol";
 import "../../../interfaces/external/curve/IMetaPool2.sol";
 
-/// @title Template leverage swapper on Curve LP tokens with Convex
 /// @author Angle Core Team
+/// @notice Template leverage swapper on Curve LP tokens with Convex
 contract CurveLevSwapperTemplate is CurveLevSwapper {
     constructor(
         ICoreBorrow _core,
