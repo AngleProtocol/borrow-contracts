@@ -135,7 +135,7 @@ contract('Swapper', () => {
       await stablecoin.mint(swapper.address, parseEther('3'));
       const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'uint128', 'bytes'],
-        [bob.address, parseEther('10'), 3, '0x'],
+        [bob.address, parseEther('10'), 4, '0x'],
       );
       await expect(
         swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('2'), data),
@@ -146,7 +146,7 @@ contract('Swapper', () => {
       await stablecoin.mint(swapper.address, parseEther('3'));
       const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'uint128', 'bytes'],
-        [bob.address, 0, 3, '0x'],
+        [bob.address, 0, 4, '0x'],
       );
       await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('2'), data);
       expect(await stablecoin.balanceOf(bob.address)).to.be.equal(parseEther('3'));
@@ -159,7 +159,7 @@ contract('Swapper', () => {
       await stablecoin.mint(swapper.address, parseEther('3'));
       const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'uint128', 'bytes'],
-        [bob.address, 0, 3, '0x'],
+        [bob.address, 0, 4, '0x'],
       );
 
       await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('2'), data);
@@ -173,7 +173,7 @@ contract('Swapper', () => {
       await stablecoin.mint(swapper.address, parseEther('3'));
       const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'uint128', 'bytes'],
-        [bob.address, 0, 3, '0x'],
+        [bob.address, 0, 4, '0x'],
       );
 
       await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('2'), data);
@@ -186,7 +186,7 @@ contract('Swapper', () => {
       await stETH.mint(swapper.address, parseEther('2'));
       const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'uint128', 'bytes'],
-        [ZERO_ADDRESS, 0, 3, '0x'],
+        [ZERO_ADDRESS, 0, 4, '0x'],
       );
 
       await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('2'), data);
@@ -198,7 +198,7 @@ contract('Swapper', () => {
       await stETH.mint(swapper.address, parseEther('2'));
       const data = ethers.utils.defaultAbiCoder.encode(
         ['address', 'uint256', 'uint128', 'bytes'],
-        [alice.address, 0, 3, '0x'],
+        [alice.address, 0, 4, '0x'],
       );
 
       await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('2'), data);
