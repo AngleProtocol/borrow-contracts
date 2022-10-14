@@ -13,7 +13,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
     arbitrum: '0x16cd38b1B54E7abf307Cb2697E2D9321e843d5AA',
     mainnet: '0x4Fa745FCCC04555F2AFA8874cd23961636CdF982',
     avalanche: '0x14C00080F97B9069ae3B4Eb506ee8a633f8F5434',
-    bsc: '0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8',
+    bsc: '0xe9f183FC656656f1F17af1F2b0dF79b8fF9ad8eD',
   };
 
   const local = OFTs[network.name];
