@@ -13,7 +13,9 @@ import "../interfaces/ICoreBorrow.sol";
 /// @dev Variables, references, parameters and events needed in the `BorrowStaker` contract
 contract BorrowStakerStorage is Initializable {
     /// @notice Base used for parameter computation
-    uint256 public constant BASE_PARAMS = 10**9;
+    /// @dev Large base because when `(amount * BASE_PARAMS) / totalSupply()` if `amount << totalSupply`
+    /// rounding can be terrible. Setting the base higher limits the maximum decimals a reward can have - overflows.
+    uint256 public constant BASE_PARAMS = 10**36;
 
     // ================================= REFERENCES ================================
 
@@ -24,6 +26,8 @@ contract BorrowStakerStorage is Initializable {
 
     // ================================= VARIABLES =================================
 
+    /// @notice Token decimal
+    uint8 internal _decimals;
     /// @notice Maps each reward token to a track record of cumulated rewards
     mapping(IERC20 => uint256) public integral;
     /// @notice Maps pairs of `(token,user)` to the currently pending claimable rewards
