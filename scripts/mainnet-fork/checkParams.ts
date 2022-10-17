@@ -1,9 +1,10 @@
-import { deployments, ethers } from 'hardhat';
-import { VaultManager, VaultManager__factory, FlashAngle, FlashAngle__factory } from '../../typechain';
 import { CONSTANTS } from '@angleprotocol/sdk';
-// import params from '../../deploy/networks';
-import { expect } from '../../test/utils/chai-setup';
 import { parseEther } from 'ethers/lib/utils';
+import { deployments, ethers } from 'hardhat';
+
+// import params from '../../deploy/networks';
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { FlashAngle, FlashAngle__factory, VaultManager, VaultManager__factory } from '../../typechain';
 
 async function main() {
   let vaultManager: VaultManager;

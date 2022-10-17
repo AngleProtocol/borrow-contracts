@@ -2,7 +2,7 @@ import { BigNumber, Contract } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { ZERO_ADDRESS } from '../../test/utils/helpers';
+import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
   AgTokenSideChainMultiBridge,
   AgTokenSideChainMultiBridge__factory,

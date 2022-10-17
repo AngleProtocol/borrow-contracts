@@ -4,10 +4,10 @@ import { Contract } from 'ethers';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
-import { expect } from '../test/utils/chai-setup';
-import { deployProxy } from './helpers';
 
+import { expect } from '../test/hardhat/utils/chai-setup';
 import { Treasury__factory, VaultManager__factory } from '../typechain';
+import { deployProxy } from './helpers';
 import params from './networks';
 const argv = yargs.env('').boolean('ci').parseSync();
 

@@ -1,8 +1,8 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
-import { expect } from '../test/utils/chai-setup';
 
+import { expect } from '../test/hardhat/utils/chai-setup';
 import { FlashAngle__factory } from '../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 

@@ -1,10 +1,10 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
-import { expect } from '../test/utils/chai-setup';
-import { deployImplem, deployProxy } from './helpers';
 
+import { expect } from '../test/hardhat/utils/chai-setup';
 import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../typechain';
+import { deployImplem, deployProxy } from './helpers';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -35,10 +35,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const treasuryInterface = Treasury__factory.createInterface();
   const coreBorrow = await deployments.get('CoreBorrow');
-  const dataTreasury = new ethers.Contract(
-    treasuryImplementation,
-    treasuryInterface,
-  ).interface.encodeFunctionData('initialize', [coreBorrow.address, agTokenAddress]);
+  const dataTreasury = new ethers.Contract(treasuryImplementation, treasuryInterface).interface.encodeFunctionData(
+    'initialize',
+    [coreBorrow.address, agTokenAddress],
+  );
 
   const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
 
