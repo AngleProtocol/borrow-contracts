@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "./BorrowStakerStorage.sol";
+import "hardhat/console.sol";
 
 /// @title BorrowStaker
 /// @author Angle Core Team
@@ -14,12 +15,14 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Initializes the `BorrowStaker`
-    function _initialize(IERC20Metadata _asset) internal initializer {
+    function initialize(ICoreBorrow _coreBorrow, IERC20Metadata _asset) external initializer {
         __ERC20_init_unchained(
             string(abi.encodePacked("Angle ", _asset.name(), " Staker")),
             string(abi.encodePacked("agstk-", _asset.symbol()))
         );
+        coreBorrow = _coreBorrow;
         asset = IERC20(_asset);
+        _decimals = _asset.decimals();
     }
 
     // ================================= MODIFIERS =================================
@@ -31,6 +34,10 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     }
 
     // ============================= EXTERNAL FUNCTIONS ============================
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
+    }
 
     /// @notice Deposits the token to get the wrapped version
     /// @param amount Amount of token to be staked
@@ -80,9 +87,10 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     /// @param from Address to claim for
     /// @param _rewardToken Token to get rewards for
     function claimableRewards(address from, IERC20 _rewardToken) external view returns (uint256) {
-        uint256 newIntegral = integral[_rewardToken] +
-            (_rewardsToBeClaimed(_rewardToken) * BASE_PARAMS) /
-            totalSupply();
+        uint256 _totalSupply = totalSupply();
+        uint256 newIntegral = _totalSupply > 0
+            ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * BASE_PARAMS) / totalSupply()
+            : integral[_rewardToken];
         uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_PARAMS;
         return pendingRewardsOf[_rewardToken][from] + newClaimable;
     }
@@ -155,8 +163,13 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         IERC20[] memory rewardTokens = _getRewards();
         rewardAmounts = new uint256[](rewardTokens.length);
         for (uint256 i = 0; i < rewardTokens.length; ++i) {
+            console.log("integral ", integral[rewardTokens[i]]);
+            console.log("integral of ", integralOf[rewardTokens[i]][from]);
+            console.log("balance of ", balanceOf(from));
+
             uint256 newClaimable = (balanceOf(from) * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
                 BASE_PARAMS;
+            console.log("new claimable ", newClaimable);
             if (newClaimable > 0) {
                 if (_claim) {
                     rewardTokens[i].safeTransfer(from, pendingRewardsOf[rewardTokens[i]][from] + newClaimable);
@@ -174,7 +187,8 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     /// @param rewardToken Reward token that must be updated
     /// @param amount Amount to add to the claimable rewards
     function _updateRewards(IERC20 rewardToken, uint256 amount) internal {
-        integral[rewardToken] += (amount * BASE_PARAMS) / totalSupply();
+        uint256 _totalSupply = totalSupply();
+        if (_totalSupply > 0) integral[rewardToken] += (amount * BASE_PARAMS) / totalSupply();
     }
 
     /// @notice Changes allowance of this contract for a given token
@@ -200,7 +214,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     function _claimRewards() internal virtual;
 
     /// @notice Returns a list of all reward tokens supported by this contract
-    function _getRewards() internal pure virtual returns (IERC20[] memory reward);
+    function _getRewards() internal view virtual returns (IERC20[] memory reward);
 
     /// @notice Withdraws the staking token from the protocol rewards contract
     function _withdrawFromProtocol(uint256 amount) internal virtual;
