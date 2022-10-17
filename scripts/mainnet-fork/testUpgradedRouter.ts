@@ -1,6 +1,7 @@
-import { ethers } from 'hardhat';
 import { ChainId, CONTRACTS_ADDRESSES, Interfaces } from '@angleprotocol/sdk';
-import { expect } from '../../test/utils/chai-setup';
+import { ethers } from 'hardhat';
+
+import { expect } from '../../test/hardhat/utils/chai-setup';
 
 async function main() {
   const { deployer } = await ethers.getNamedSigners();
