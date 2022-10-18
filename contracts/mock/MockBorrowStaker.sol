@@ -9,8 +9,27 @@ import "../staker/BorrowStaker.sol";
 contract MockBorrowStaker is BorrowStaker {
     using SafeERC20 for IERC20;
 
+    error IncompatibleLengths();
+
     IERC20 public rewardToken;
     uint256 public rewardAmount;
+
+    /// @notice Changes allowance of a set of tokens to addresses
+    /// @param tokens Tokens to change allowance for
+    /// @param spenders Addresses to approve
+    /// @param amounts Approval amounts for each address
+    /// @dev You can only change allowance for approved strategies
+    function changeAllowance(
+        IERC20[] calldata tokens,
+        address[] calldata spenders,
+        uint256[] calldata amounts
+    ) external onlyGovernor {
+        if (tokens.length != amounts.length || spenders.length != amounts.length || tokens.length == 0)
+            revert IncompatibleLengths();
+        for (uint256 i = 0; i < spenders.length; i++) {
+            _changeAllowance(tokens[i], spenders[i], amounts[i]);
+        }
+    }
 
     /// @inheritdoc BorrowStaker
     function _withdrawFromProtocol(uint256 amount) internal override {}
