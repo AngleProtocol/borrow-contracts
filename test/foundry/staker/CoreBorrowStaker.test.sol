@@ -23,10 +23,10 @@ contract CoreBorrowStakerTest is BaseTest {
     uint256 public rewardAmount = 10**2 * 10**(decimalReward);
     uint256 public maxTokenAmount = 10**15 * 10**decimalToken;
 
-    uint256 public constant depositLengthArray = 10;
-    uint256 public constant withdrawLengthArray = 10;
-    uint256 public constant claimableRewardsLengthArray = 50;
-    uint256 public constant claimRewardsLengthArray = 50;
+    uint256 public constant DEPOSIT_LENGTH = 10;
+    uint256 public constant WITHDRAW_LENGTH = 10;
+    uint256 public constant CLAIMABLE_LENGTH = 50;
+    uint256 public constant CLAIM_LENGTH = 50;
 
     function setUp() public override {
         super.setUp();
@@ -129,6 +129,95 @@ contract CoreBorrowStakerTest is BaseTest {
         assertEq(otherToken.balanceOf(_alice), amount);
     }
 
+    // ============================== CHANGEALLOWANCE ==============================
+
+    function testChangeAllowanceWrongCaller() public {
+        IERC20[] memory tokens = new IERC20[](0);
+        address[] memory spenders = new address[](0);
+        uint256[] memory amounts = new uint256[](0);
+
+        vm.expectRevert(BorrowStakerStorage.NotGovernor.selector);
+        vm.prank(_alice);
+        staker.changeAllowance(tokens, spenders, amounts);
+    }
+
+    function testChangeAllowanceWrongLength() public {
+        IERC20[] memory tokens = new IERC20[](0);
+        address[] memory spenders = new address[](0);
+        uint256[] memory amounts = new uint256[](0);
+
+        vm.expectRevert(MockBorrowStaker.IncompatibleLengths.selector);
+        vm.prank(_GOVERNOR);
+        staker.changeAllowance(tokens, spenders, amounts);
+
+        tokens = new IERC20[](1);
+        spenders = new address[](1);
+        amounts = new uint256[](0);
+
+        vm.expectRevert(MockBorrowStaker.IncompatibleLengths.selector);
+        vm.prank(_GOVERNOR);
+        staker.changeAllowance(tokens, spenders, amounts);
+
+        tokens = new IERC20[](0);
+        spenders = new address[](1);
+        amounts = new uint256[](1);
+
+        vm.expectRevert(MockBorrowStaker.IncompatibleLengths.selector);
+        vm.prank(_GOVERNOR);
+        staker.changeAllowance(tokens, spenders, amounts);
+    }
+
+    function testChangeAllowance(uint256 amount) public {
+        startHoax(_GOVERNOR);
+
+        IERC20[] memory tokens = new IERC20[](1);
+        address[] memory spenders = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        // decrease allowance
+        tokens[0] = asset;
+        spenders[0] = address(_alice);
+        amounts[0] = amount;
+        staker.changeAllowance(tokens, spenders, amounts);
+
+        assertEq(asset.allowance(address(staker), address(_alice)), amount);
+
+        // keep same allowance
+        tokens[0] = asset;
+        spenders[0] = address(_alice);
+        amounts[0] = amount;
+        staker.changeAllowance(tokens, spenders, amounts);
+
+        assertEq(asset.allowance(address(staker), address(_alice)), amount);
+
+        // increase allowance
+        tokens[0] = asset;
+        spenders[0] = address(_alice);
+        amounts[0] = type(uint256).max;
+        staker.changeAllowance(tokens, spenders, amounts);
+
+        assertEq(asset.allowance(address(staker), address(_alice)), type(uint256).max);
+    }
+
+    function testChangeAllowanceMulti(uint256 amount, uint256 amount2) public {
+        startHoax(_GOVERNOR);
+        IERC20[] memory tokens = new IERC20[](2);
+        address[] memory spenders = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+
+        tokens[0] = asset;
+        spenders[0] = address(_alice);
+        amounts[0] = amount;
+        tokens[1] = asset;
+        spenders[1] = address(_bob);
+        amounts[1] = amount2;
+
+        staker.changeAllowance(tokens, spenders, amounts);
+
+        assertEq(asset.allowance(address(staker), address(_alice)), amount);
+        assertEq(asset.allowance(address(staker), address(_bob)), amount2);
+    }
+
     // ================================== DEPOSIT ==================================
 
     function testDepositNoFunds(uint256 amount, address to) public {
@@ -206,8 +295,8 @@ contract CoreBorrowStakerTest is BaseTest {
     }
 
     function testMultiDepositsRewardsSuccess(
-        uint256[depositLengthArray] memory amounts,
-        uint256[depositLengthArray] memory accounts
+        uint256[DEPOSIT_LENGTH] memory amounts,
+        uint256[DEPOSIT_LENGTH] memory accounts
     ) public {
         amounts[0] = bound(amounts[0], 1, maxTokenAmount);
         deal(address(asset), _alice, amounts[0]);
@@ -357,9 +446,9 @@ contract CoreBorrowStakerTest is BaseTest {
     }
 
     function testMultiWithdrawRewardsSuccess(
-        uint256[withdrawLengthArray] memory amounts,
-        bool[withdrawLengthArray] memory isDeposit,
-        uint256[withdrawLengthArray] memory accounts
+        uint256[WITHDRAW_LENGTH] memory amounts,
+        bool[WITHDRAW_LENGTH] memory isDeposit,
+        uint256[WITHDRAW_LENGTH] memory accounts
     ) public {
         deal(address(rewardToken), address(staker), rewardAmount * (amounts.length));
 
@@ -417,9 +506,9 @@ contract CoreBorrowStakerTest is BaseTest {
     // ============================== CLAIMABLEREWARDS =============================
 
     function testClaimableRewardsSuccess(
-        uint256[claimableRewardsLengthArray] memory amounts,
-        bool[claimableRewardsLengthArray] memory isDeposit,
-        uint256[claimableRewardsLengthArray] memory accounts
+        uint256[CLAIMABLE_LENGTH] memory amounts,
+        bool[CLAIMABLE_LENGTH] memory isDeposit,
+        uint256[CLAIMABLE_LENGTH] memory accounts
     ) public {
         deal(address(rewardToken), address(staker), rewardAmount * (amounts.length));
 
@@ -495,9 +584,9 @@ contract CoreBorrowStakerTest is BaseTest {
     // ================================ CLAIMREWARDS ===============================
 
     function testClaimRewardsSuccess(
-        uint256[claimRewardsLengthArray] memory amounts,
-        bool[claimRewardsLengthArray] memory isDeposit,
-        uint256[claimRewardsLengthArray] memory accounts
+        uint256[CLAIM_LENGTH] memory amounts,
+        bool[CLAIM_LENGTH] memory isDeposit,
+        uint256[CLAIM_LENGTH] memory accounts
     ) public {
         deal(address(rewardToken), address(staker), rewardAmount * (amounts.length));
 
@@ -541,9 +630,6 @@ contract CoreBorrowStakerTest is BaseTest {
                 staker.setRewardAmount(0);
                 uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
                 uint256[] memory claimedRewards = staker.claimRewards(account);
-                for (uint256 j = 0; i < claimedRewards.length; i++) {
-                    console.log(j, claimedRewards[j]);
-                }
                 assertEq(functionClaimableRewards, claimedRewards[0]);
                 assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
             } else {
@@ -567,94 +653,5 @@ contract CoreBorrowStakerTest is BaseTest {
                 10**(decimalReward - 4)
             );
         }
-    }
-
-    // ============================== CHANGEALLOWANCE ==============================
-
-    function testChangeAllowanceWrongCaller() public {
-        IERC20[] memory tokens = new IERC20[](0);
-        address[] memory spenders = new address[](0);
-        uint256[] memory amounts = new uint256[](0);
-
-        vm.expectRevert(BorrowStakerStorage.NotGovernor.selector);
-        vm.prank(_alice);
-        staker.changeAllowance(tokens, spenders, amounts);
-    }
-
-    function testChangeAllowanceWrongLength() public {
-        IERC20[] memory tokens = new IERC20[](0);
-        address[] memory spenders = new address[](0);
-        uint256[] memory amounts = new uint256[](0);
-
-        vm.expectRevert(MockBorrowStaker.IncompatibleLengths.selector);
-        vm.prank(_GOVERNOR);
-        staker.changeAllowance(tokens, spenders, amounts);
-
-        tokens = new IERC20[](1);
-        spenders = new address[](1);
-        amounts = new uint256[](0);
-
-        vm.expectRevert(MockBorrowStaker.IncompatibleLengths.selector);
-        vm.prank(_GOVERNOR);
-        staker.changeAllowance(tokens, spenders, amounts);
-
-        tokens = new IERC20[](0);
-        spenders = new address[](1);
-        amounts = new uint256[](1);
-
-        vm.expectRevert(MockBorrowStaker.IncompatibleLengths.selector);
-        vm.prank(_GOVERNOR);
-        staker.changeAllowance(tokens, spenders, amounts);
-    }
-
-    function testChangeAllowance(uint256 amount) public {
-        startHoax(_GOVERNOR);
-
-        IERC20[] memory tokens = new IERC20[](1);
-        address[] memory spenders = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        // decrease allowance
-        tokens[0] = asset;
-        spenders[0] = address(_alice);
-        amounts[0] = amount;
-        staker.changeAllowance(tokens, spenders, amounts);
-
-        assertEq(asset.allowance(address(staker), address(_alice)), amount);
-
-        // keep same allowance
-        tokens[0] = asset;
-        spenders[0] = address(_alice);
-        amounts[0] = amount;
-        staker.changeAllowance(tokens, spenders, amounts);
-
-        assertEq(asset.allowance(address(staker), address(_alice)), amount);
-
-        // increase allowance
-        tokens[0] = asset;
-        spenders[0] = address(_alice);
-        amounts[0] = type(uint256).max;
-        staker.changeAllowance(tokens, spenders, amounts);
-
-        assertEq(asset.allowance(address(staker), address(_alice)), type(uint256).max);
-    }
-
-    function testChangeAllowanceMulti(uint256 amount, uint256 amount2) public {
-        startHoax(_GOVERNOR);
-        IERC20[] memory tokens = new IERC20[](2);
-        address[] memory spenders = new address[](2);
-        uint256[] memory amounts = new uint256[](2);
-
-        tokens[0] = asset;
-        spenders[0] = address(_alice);
-        amounts[0] = amount;
-        tokens[1] = asset;
-        spenders[1] = address(_bob);
-        amounts[1] = amount2;
-
-        staker.changeAllowance(tokens, spenders, amounts);
-
-        assertEq(asset.allowance(address(staker), address(_alice)), amount);
-        assertEq(asset.allowance(address(staker), address(_bob)), amount2);
     }
 }

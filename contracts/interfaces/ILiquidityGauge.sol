@@ -21,4 +21,8 @@ interface ILiquidityGauge {
 
     // solhint-disable-next-line
     function claimable_reward(address _addr, address _reward_token) external view returns (uint256 amount);
+
+    /// @dev Only for testing purposes
+    // solhint-disable-next-line
+    function deposit_reward_token(address _rewardToken, uint256 _amount) external;
 }
