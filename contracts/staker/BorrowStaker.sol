@@ -82,12 +82,6 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         uint256[] memory rewardAmounts = new uint256[](1);
         checkpointUser[0] = address(from);
         return _checkpoint(checkpointUser, true, rewardAmounts);
-        // for (uint256 i = 0; i < tmp.length; ++i) {
-        //     for (uint256 j = 0; i < tmp[i].length; ++i) {
-        //         console.log(i, j, tmp[i][j]);
-        //     }
-        // }
-        // return tmp[0];
     }
 
     /// @notice Returns the exact amount that will be received if called `claimRewards(from)` for a specific reward token

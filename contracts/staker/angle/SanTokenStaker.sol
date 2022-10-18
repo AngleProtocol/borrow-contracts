@@ -20,7 +20,7 @@ abstract contract SanTokenStaker is BorrowStaker {
         address,
         uint256 amount
     ) internal override {
-        // Stake on Convex if it is a deposit
+        // Stake on the gauge if it is a deposit
         if (from == address(0)) {
             // Deposit the sanTokens into the liquidity gauge contract
             _changeAllowance(asset, address(liquidityGauge()), amount);
@@ -58,5 +58,5 @@ abstract contract SanTokenStaker is BorrowStaker {
     // ============================= VIRTUAL FUNCTIONS =============================
 
     /// @notice Address of the liquidity gauge contract on which to deposit the tokens to get the rewards
-    function liquidityGauge() public pure virtual returns (ILiquidityGauge);
+    function liquidityGauge() public view virtual returns (ILiquidityGauge);
 }
