@@ -175,7 +175,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
             uint256 newClaimable = (balanceOf(from) * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
                 BASE_PARAMS;
             uint256 previousClaimable = pendingRewardsOf[rewardTokens[i]][from];
-            if (_claim) {
+            if (_claim && previousClaimable + newClaimable > 0) {
                 rewardTokens[i].safeTransfer(from, previousClaimable + newClaimable);
                 pendingRewardsOf[rewardTokens[i]][from] = 0;
             } else if (newClaimable > 0) {

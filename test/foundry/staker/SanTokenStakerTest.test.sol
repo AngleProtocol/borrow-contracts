@@ -26,7 +26,6 @@ contract SanTokenStakerTest is BaseTest {
     uint8 public decimalReward;
     uint256 public rewardAmount;
 
-    uint256 public constant REWARD_LENGTH = 7;
     uint256 public constant WITHDRAW_LENGTH = 50;
 
     function setUp() public override {
@@ -51,10 +50,9 @@ contract SanTokenStakerTest is BaseTest {
 
     function testSanTokenBorrowStakerRewards(
         uint256[WITHDRAW_LENGTH] memory amounts,
-        bool[WITHDRAW_LENGTH] memory isDeposit,
+        uint256[WITHDRAW_LENGTH] memory depositWithdrawRewards,
         uint256[WITHDRAW_LENGTH] memory accounts,
-        uint256[WITHDRAW_LENGTH + REWARD_LENGTH] memory elapseTimes,
-        bool[REWARD_LENGTH] memory isRewardTime // uint256[REWARD_LENGTH] memory rewards
+        uint256[WITHDRAW_LENGTH] memory elapseTimes
     ) public {
         amounts[0] = bound(amounts[0], minTokenAmount, maxTokenAmount);
         deal(address(asset), _alice, amounts[0]);
@@ -63,26 +61,19 @@ contract SanTokenStakerTest is BaseTest {
         staker.deposit(amounts[0], _alice);
         vm.stopPrank();
 
-        uint256[5] memory pendingRewards;
+        uint256[4] memory pendingRewards;
 
-        uint256 indexOnDeposit = 1;
-        uint256 indexOnReward;
-        while (indexOnDeposit < amounts.length && indexOnReward < isRewardTime.length) {
-            elapseTimes[indexOnReward + indexOnDeposit] = bound(
-                elapseTimes[indexOnReward + indexOnDeposit],
-                1,
-                180 days
-            );
-            vm.warp(block.timestamp + elapseTimes[indexOnReward + indexOnDeposit]);
-            if (isRewardTime[indexOnReward]) {
+        for (uint256 i = 0; i < amounts.length; i++) {
+            elapseTimes[i] = bound(elapseTimes[i], 1, 180 days);
+            vm.warp(block.timestamp + elapseTimes[i]);
+            if (depositWithdrawRewards[i] % 3 == 2) {
                 _depositRewards(rewardAmount);
-                indexOnReward++;
             } else {
-                uint256 randomIndex = bound(accounts[indexOnDeposit], 0, 3);
+                uint256 randomIndex = bound(accounts[i], 0, 3);
                 address account = randomIndex == 0 ? _alice : randomIndex == 1 ? _bob : randomIndex == 2
                     ? _charlie
                     : _dylan;
-                if (staker.balanceOf(account) == 0) isDeposit[indexOnDeposit] = true;
+                if (staker.balanceOf(account) == 0) depositWithdrawRewards[i] = 0;
 
                 {
                     uint256 totSupply = staker.totalSupply();
@@ -105,8 +96,8 @@ contract SanTokenStakerTest is BaseTest {
 
                 uint256 amount;
                 vm.startPrank(account);
-                if (isDeposit[indexOnDeposit]) {
-                    amount = bound(amounts[indexOnDeposit], minTokenAmount, maxTokenAmount);
+                if (depositWithdrawRewards[i] % 3 == 0) {
+                    amount = bound(amounts[i], minTokenAmount, maxTokenAmount);
                     deal(address(asset), account, amount);
                     asset.approve(address(staker), amount);
 
@@ -114,7 +105,7 @@ contract SanTokenStakerTest is BaseTest {
                     staker.deposit(amount, account);
                     assertEq(rewardToken.balanceOf(account), prevRewardTokenBalance);
                 } else {
-                    amount = bound(amounts[indexOnDeposit], 1, 10**9);
+                    amount = bound(amounts[i], 1, 10**9);
                     staker.withdraw((amount * staker.balanceOf(account)) / 10**9, account, account);
                     assertEq(staker.pendingRewardsOf(rewardToken, account), 0);
                 }
@@ -125,83 +116,25 @@ contract SanTokenStakerTest is BaseTest {
                     pendingRewards[randomIndex],
                     10**(decimalReward - 4)
                 );
-                indexOnDeposit++;
             }
 
             // not working so far I don't know why
-            // // check on claimable rewards / added the Governor to just have an address with no stake --> should be 0
-            // address[5] memory allAccounts = [_alice, _bob, _charlie, _dylan, _GOVERNOR];
-            // for (uint256 i = 0; i < allAccounts.length; i++) {
-            //     uint256 prevRewardTokenBalance = rewardToken.balanceOf(allAccounts[i]);
-            //     uint256 functionClaimableRewards = staker.claimableRewards(allAccounts[i], rewardToken);
-            //     uint256[] memory claimedRewards = staker.claimRewards(allAccounts[i]);
-            //     assertEq(functionClaimableRewards, claimedRewards[0]);
-            //     assertEq(rewardToken.balanceOf(allAccounts[i]) - prevRewardTokenBalance, functionClaimableRewards);
-            //     pendingRewards[i] += functionClaimableRewards;
-            // }
-        }
-    }
-
-    function testSanTokenBorrowStakerClaimable(
-        uint256[WITHDRAW_LENGTH] memory amounts,
-        bool[WITHDRAW_LENGTH] memory isDeposit,
-        uint256[WITHDRAW_LENGTH] memory accounts,
-        uint256[WITHDRAW_LENGTH + REWARD_LENGTH] memory elapseTimes,
-        bool[REWARD_LENGTH] memory isRewardTime // uint256[REWARD_LENGTH] memory rewards
-    ) public {
-        amounts[0] = bound(amounts[0], minTokenAmount, maxTokenAmount);
-        deal(address(asset), _alice, amounts[0]);
-        vm.startPrank(_alice);
-        asset.approve(address(staker), amounts[0]);
-        staker.deposit(amounts[0], _alice);
-        vm.stopPrank();
-
-        uint256 indexOnDeposit = 1;
-        uint256 indexOnReward;
-        while (indexOnDeposit < amounts.length && indexOnReward < isRewardTime.length) {
-            elapseTimes[indexOnReward + indexOnDeposit] = bound(
-                elapseTimes[indexOnReward + indexOnDeposit],
-                1,
-                180 days
-            );
-            vm.warp(block.timestamp + elapseTimes[indexOnReward + indexOnDeposit]);
-            if (isRewardTime[indexOnReward]) {
-                _depositRewards(rewardAmount);
-                indexOnReward++;
-            } else {
-                uint256 randomIndex = bound(accounts[indexOnDeposit], 0, 3);
-                address account = randomIndex == 0 ? _alice : randomIndex == 1 ? _bob : randomIndex == 2
-                    ? _charlie
-                    : _dylan;
-                if (staker.balanceOf(account) == 0) isDeposit[indexOnDeposit] = true;
-
-                uint256 amount;
-                vm.startPrank(account);
-                if (isDeposit[indexOnDeposit]) {
-                    amount = bound(amounts[indexOnDeposit], minTokenAmount, maxTokenAmount);
-                    deal(address(asset), account, amount);
-                    asset.approve(address(staker), amount);
-
-                    uint256 prevRewardTokenBalance = rewardToken.balanceOf(account);
-                    staker.deposit(amount, account);
-                    assertEq(rewardToken.balanceOf(account), prevRewardTokenBalance);
-                } else {
-                    amount = bound(amounts[indexOnDeposit], 1, 10**9);
-                    staker.withdraw((amount * staker.balanceOf(account)) / 10**9, account, account);
-                    assertEq(staker.pendingRewardsOf(rewardToken, account), 0);
-                }
-                vm.stopPrank();
-                indexOnDeposit++;
-            }
-
             // check on claimable rewards / added the Governor to just have an address with no stake --> should be 0
-            address[5] memory allAccounts = [_alice, _bob, _charlie, _dylan, _GOVERNOR];
-            for (uint256 i = 0; i < allAccounts.length; i++) {
-                uint256 prevRewardTokenBalance = rewardToken.balanceOf(allAccounts[i]);
-                uint256 functionClaimableRewards = staker.claimableRewards(allAccounts[i], rewardToken);
-                uint256[] memory claimedRewards = staker.claimRewards(allAccounts[i]);
+            address[4] memory allAccounts = [_alice, _bob, _charlie, _dylan];
+            for (uint256 j = 0; j < allAccounts.length; j++) {
+                uint256 prevRewardTokenBalance = rewardToken.balanceOf(allAccounts[j]);
+                uint256 functionClaimableRewards = staker.claimableRewards(allAccounts[j], rewardToken);
+                uint256[] memory claimedRewards = staker.claimRewards(allAccounts[j]);
                 assertEq(functionClaimableRewards, claimedRewards[0]);
-                assertEq(rewardToken.balanceOf(allAccounts[i]) - prevRewardTokenBalance, functionClaimableRewards);
+                assertEq(rewardToken.balanceOf(allAccounts[j]) - prevRewardTokenBalance, functionClaimableRewards);
+                // Otherwise it has already been taken into account when deposit/withdraw
+                if (depositWithdrawRewards[i] % 3 == 2) pendingRewards[j] += functionClaimableRewards;
+
+                assertApproxEqAbs(
+                    rewardToken.balanceOf(allAccounts[j]) + staker.pendingRewardsOf(rewardToken, allAccounts[j]),
+                    pendingRewards[j],
+                    10**(decimalReward - 4)
+                );
             }
         }
     }
