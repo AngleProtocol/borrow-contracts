@@ -16,6 +16,7 @@ contract SanTokenStakerTest is BaseTest {
     address public ANGLEDistributor = 0x4f91F01cE8ec07c9B1f6a82c18811848254917Ab;
     IERC20 public asset = IERC20(0x9C215206Da4bf108aE5aEEf9dA7caD3352A36Dad);
     IERC20 public rewardToken = IERC20(_ANGLE);
+    address internal _hacker = address(uint160(uint256(keccak256(abi.encodePacked("hacker")))));
 
     MockSanTokenStaker public stakerImplementation;
     MockSanTokenStaker public staker;
@@ -61,7 +62,7 @@ contract SanTokenStakerTest is BaseTest {
         staker.deposit(amounts[0], _alice);
         vm.stopPrank();
 
-        uint256[4] memory pendingRewards;
+        uint256[5] memory pendingRewards;
 
         for (uint256 i = 0; i < amounts.length; i++) {
             elapseTimes[i] = bound(elapseTimes[i], 1, 180 days);
@@ -120,7 +121,7 @@ contract SanTokenStakerTest is BaseTest {
 
             // not working so far I don't know why
             // check on claimable rewards / added the Governor to just have an address with no stake --> should be 0
-            address[4] memory allAccounts = [_alice, _bob, _charlie, _dylan];
+            address[5] memory allAccounts = [_alice, _bob, _charlie, _dylan, _hacker];
             for (uint256 j = 0; j < allAccounts.length; j++) {
                 uint256 prevRewardTokenBalance = rewardToken.balanceOf(allAccounts[j]);
                 uint256 functionClaimableRewards = staker.claimableRewards(allAccounts[j], rewardToken);
