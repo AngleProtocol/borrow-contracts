@@ -20,7 +20,7 @@ contract MockCoreBorrow is ICoreBorrow {
     }
 
     function isGovernorOrGuardian(address admin) external view override returns (bool) {
-        return guardians[admin];
+        return governors[admin] || guardians[admin];
     }
 
     function toggleGovernor(address admin) external {

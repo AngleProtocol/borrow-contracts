@@ -11,13 +11,6 @@ import "../../interfaces/external/uniswap/IUniswapRouter.sol";
 
 import "../SwapperSidechain.sol";
 
-/// @param token Token address
-/// @param amount Amount of token owned
-struct SwapType {
-    IERC20 token;
-    uint256 amount;
-}
-
 /// @title BaseLevSwapper
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with a `VaultManager` - liquidation, leverage, wrapping and unwrapping
@@ -40,13 +33,14 @@ abstract contract BaseLevSwapper is SwapperSidechain {
 
     /// @notice Implements the bundle transaction to increase/decrease exposure to a token
     /// and then stake the token into `angleStaker` contract in the leverage case
+    /// @param amount Amount sent to the contract before any other actions
     /// @param data Encoded data giving specific instruction to the bundle tx
     /// @return amountOut Amount obtained from the swap.
     /// TODO This can be misleading as in some cases the swap can result in multiple tokens.
     /// Also this ariable is not used, so worth removing the return value
     /// @dev All token transfers must have been done beforehand
     /// @dev This function can support multiple swaps to get a desired token
-    function _swapLeverage(bytes memory data) internal override returns (uint256 amountOut) {
+    function _swapLeverage(uint256 amount, bytes memory data) internal override returns (uint256 amountOut) {
         bool leverage;
         address to;
         bytes[] memory oneInchPayloads;
@@ -62,21 +56,18 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             amountOut = _add(data);
             angleStaker().deposit(amountOut, to);
         } else {
-            uint256 toUnstake;
             IERC20 outToken;
             IERC20[] memory sweepTokens;
-            (toUnstake, outToken, sweepTokens, oneInchPayloads, data) = abi.decode(
-                data,
-                (uint256, IERC20, IERC20[], bytes[], bytes)
-            );
+            (outToken, sweepTokens, oneInchPayloads, data) = abi.decode(data, (IERC20, IERC20[], bytes[], bytes));
             // Should transfer the token to the contract this will claim the rewards for the current owner of the wrapper
-            angleStaker().withdraw(toUnstake, address(this), address(this));
-            _remove(toUnstake, data);
+            angleStaker().withdraw(amount, address(this), address(this));
+            _remove(amount, data);
             // Taking the same example as in the `leverage` side, you can withdraw USDC, DAI and USDT while wanting to
             // to repay a debt in agEUR so you need to do a multiswap.
             // These swaps are not easy to anticipate the amounts received depend on the deleverage action which can be chaotic
             // Very often, it's better to swap a lower bound and then sweep the tokens, even though it's not the most efficient
             // thing to do
+            console.log(angleStaker().asset().balanceOf(address(this)));
             _multiSwap1inch(oneInchPayloads);
             // After the swaps and/or the deleverage we can end up with useless tokens for repaying a debt and therefore let the
             // possibility to send it wherever
@@ -110,7 +101,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     // ========================= EXTERNAL VIRTUAL FUNCTIONS ========================
 
     /// @notice Token used as collateral on the borrow module, which wraps the `true` collateral
-    function angleStaker() public pure virtual returns (IBorrowStaker);
+    function angleStaker() public view virtual returns (IBorrowStaker);
 
     // ========================= INTERNAL VIRTUAL FUNCTIONS ========================
 
