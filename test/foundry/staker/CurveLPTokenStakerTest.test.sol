@@ -22,7 +22,7 @@ contract CurveLPTokenStakerTest is BaseTest {
     IERC20 public asset = IERC20(0xBa3436Fd341F2C8A928452Db3C5A3670d1d5Cc73);
     IERC20[] public rewardToken = [_CRV];
     uint256 public constant NBR_REWARD = 1;
-    IConvexBooster public constant convexBooster = IConvexBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+    IConvexBooster public convexBooster = IConvexBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
     IConvexBaseRewardPool public baseRewardPool = IConvexBaseRewardPool(0xA91fccC1ec9d4A2271B7A86a7509Ca05057C1A98);
     uint256 public constant POOL_ID = 113;
 

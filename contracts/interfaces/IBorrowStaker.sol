@@ -4,9 +4,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IBorrowStaker is IERC20 {
-    function stakingToken() external returns (address stakingToken);
-
-    function depositRewardToken(address _rewardToken, uint256 _amount) external;
+    function asset() external returns (IERC20 stakingToken);
 
     function deposit(uint256 amount, address to) external;
 

@@ -21,7 +21,7 @@ contract MockSwapperSidechain is SwapperSidechain {
         IAngleRouterSidechain _angleRouter
     ) SwapperSidechain(_core, _uniV3Router, _oneInch, _angleRouter) {}
 
-    function _swapLeverage(bytes memory) internal pure override returns (uint256) {
+    function _swapLeverage(uint256, bytes memory) internal pure override returns (uint256) {
         revert NotImplemented();
     }
 }
