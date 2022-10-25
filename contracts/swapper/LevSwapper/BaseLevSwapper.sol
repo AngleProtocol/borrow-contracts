@@ -67,7 +67,6 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             // These swaps are not easy to anticipate the amounts received depend on the deleverage action which can be chaotic
             // Very often, it's better to swap a lower bound and then sweep the tokens, even though it's not the most efficient
             // thing to do
-            console.log(angleStaker().asset().balanceOf(address(this)));
             _multiSwap1inch(oneInchPayloads);
             // After the swaps and/or the deleverage we can end up with useless tokens for repaying a debt and therefore let the
             // possibility to send it wherever
