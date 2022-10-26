@@ -5,7 +5,7 @@ import "../swapper/LevSwapper/angle/SanTokenLevSwapper.sol";
 
 /// @author Angle Core Team
 /// @notice Template leverage swapper on sanTokens
-contract SanTokenLevSwapperTemplate is SanTokenLevSwapper {
+contract MockSanTokenLevSwapper is SanTokenLevSwapper {
     IBorrowStaker internal _angleStaker;
 
     constructor(

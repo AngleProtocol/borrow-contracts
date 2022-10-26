@@ -273,6 +273,8 @@ contract BaseLevSwapperTest is BaseTest {
         _USDT.safeTransfer(address(swapper), amountUSDT);
         swapper.swap(IERC20(address(asset)), IERC20(address(staker)), _alice, 0, amount, data);
 
+        console.log("min amount out ", minAmountOut);
+
         // deleverage
         minAmountOut = (19000 ether * 9900) / _BPS;
         // We sweep the USDC in the staker removal process, because I made a swap of 19000 on 1inch swagger
@@ -282,7 +284,7 @@ contract BaseLevSwapperTest is BaseTest {
         {
             // intermediary variables
             bytes[] memory oneInchData = new bytes[](1);
-            // swap 10000 FRAX for USDC
+            // swap 19000 USDC for FRAX
             oneInchData[0] = abi.encode(
                 address(_USDC),
                 hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
@@ -299,7 +301,7 @@ contract BaseLevSwapperTest is BaseTest {
         vm.stopPrank();
 
         // because of the sweep
-        assertGt(asset.balanceOf(_alice), 0);
+        assertGt(asset.balanceOf(_alice), ((amount - 19000 * 10**6) * 9900) / _BPS);
         assertEq(staker.balanceOf(address(swapper)), 0);
         assertEq(staker.balanceOf(_alice), 0);
         assertEq(asset.balanceOf(address(swapper)), 0);
@@ -358,7 +360,7 @@ contract BaseLevSwapperTest is BaseTest {
         {
             // intermediary variables
             bytes[] memory oneInchData = new bytes[](1);
-            // swap 10000 FRAX for USDC
+            // swap 19000 USDC for FRAX
             oneInchData[0] = abi.encode(
                 address(_USDC),
                 hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
@@ -375,7 +377,7 @@ contract BaseLevSwapperTest is BaseTest {
         vm.stopPrank();
 
         // because of the sweep
-        assertGt(asset.balanceOf(_bob), 0);
+        assertGt(asset.balanceOf(_bob), ((amount - 19000 * 10**6) * 9900) / _BPS);
         assertEq(asset.balanceOf(_alice), 0);
         assertEq(staker.balanceOf(address(swapper)), 0);
         assertEq(staker.balanceOf(_alice), 0);
