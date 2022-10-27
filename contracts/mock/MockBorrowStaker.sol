@@ -60,3 +60,14 @@ contract MockBorrowStaker is BorrowStaker {
         rewardAmount = amount;
     }
 }
+
+/// @title MockBorrowStakerReset
+/// @author Angle Core Team
+contract MockBorrowStakerReset is MockBorrowStaker {
+    /// @inheritdoc BorrowStaker
+    /// @dev Reset to 0 when rewards are claimed
+    function _claimRewards() internal virtual override {
+        _updateRewards(rewardToken, rewardAmount);
+        rewardAmount = 0;
+    }
+}
