@@ -115,11 +115,13 @@ contract SanTokenLevSwapperTest is BaseTest {
         // swap 10000 FRAX for USDC
         oneInchData[0] = abi.encode(
             address(_FRAX),
+            0,
             hex"e449022e00000000000000000000000000000000000000000000021e19e0c9bab2400000000000000000000000000000000000000000000000000000000000024dc9bbaa000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
         );
         // swap 10000 USDT for USDC
         oneInchData[1] = abi.encode(
             address(_USDT),
+            0,
             hex"e449022e00000000000000000000000000000000000000000000000000000002540be400000000000000000000000000000000000000000000000000000000024e089f88000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000003416cf6c708da44db2624d63ea0aaef7113527c6cfee7c08"
         );
 
@@ -173,11 +175,13 @@ contract SanTokenLevSwapperTest is BaseTest {
             // swap 10000 FRAX for USDC
             oneInchData[0] = abi.encode(
                 address(_FRAX),
+                0,
                 hex"e449022e00000000000000000000000000000000000000000000021e19e0c9bab2400000000000000000000000000000000000000000000000000000000000024dc9bbaa000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
             );
             // swap 10000 USDT for USDC
             oneInchData[1] = abi.encode(
                 address(_USDT),
+                0,
                 hex"e449022e00000000000000000000000000000000000000000000000000000002540be400000000000000000000000000000000000000000000000000000000024e089f88000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000003416cf6c708da44db2624d63ea0aaef7113527c6cfee7c08"
             );
 
@@ -226,6 +230,7 @@ contract SanTokenLevSwapperTest is BaseTest {
                 // swap 19000 USDC for FRAX
                 oneInchData[0] = abi.encode(
                     address(_USDC),
+                    swapMinAmountOut,
                     hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
                 );
             } else {
@@ -234,7 +239,7 @@ contract SanTokenLevSwapperTest is BaseTest {
             IERC20[] memory sweepTokens = new IERC20[](1);
             sweepTokens[0] = _USDC;
             bytes memory removeData = abi.encode(netAmount + 1);
-            bytes memory swapData = abi.encode(_USDC, sweepTokens, oneInchData, removeData);
+            bytes memory swapData = abi.encode(sweepTokens, oneInchData, removeData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
             data = abi.encode(address(0), swapMinAmountOut, SwapType.Leverage, leverageData);
         }
@@ -262,11 +267,13 @@ contract SanTokenLevSwapperTest is BaseTest {
             // swap 10000 FRAX for USDC
             oneInchData[0] = abi.encode(
                 address(_FRAX),
+                0,
                 hex"e449022e00000000000000000000000000000000000000000000021e19e0c9bab2400000000000000000000000000000000000000000000000000000000000024dc9bbaa000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
             );
             // swap 10000 USDT for USDC
             oneInchData[1] = abi.encode(
                 address(_USDT),
+                0,
                 hex"e449022e00000000000000000000000000000000000000000000000000000002540be400000000000000000000000000000000000000000000000000000000024e089f88000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000003416cf6c708da44db2624d63ea0aaef7113527c6cfee7c08"
             );
 
@@ -315,6 +322,7 @@ contract SanTokenLevSwapperTest is BaseTest {
                 // swap 19000 USDC for FRAX
                 oneInchData[0] = abi.encode(
                     address(_USDC),
+                    swapMinAmountOut,
                     hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
                 );
             } else {
@@ -323,7 +331,7 @@ contract SanTokenLevSwapperTest is BaseTest {
             IERC20[] memory sweepTokens = new IERC20[](1);
             sweepTokens[0] = _USDC;
             bytes memory removeData = abi.encode(netAmount);
-            bytes memory swapData = abi.encode(_USDC, sweepTokens, oneInchData, removeData);
+            bytes memory swapData = abi.encode(sweepTokens, oneInchData, removeData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
             data = abi.encode(address(0), swapMinAmountOut, SwapType.Leverage, leverageData);
         }
