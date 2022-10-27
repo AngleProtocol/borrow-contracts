@@ -157,7 +157,7 @@ contract SanTokenLevSwapperTest is BaseTest {
         assertEq(_USDT.balanceOf(address(staker)), 0);
     }
 
-    function testRevertDeleverage(uint256 amount, uint256 newSanRate) public {
+    function testRevertSlippageDeleverage(uint256 amount, uint256 newSanRate) public {
         uint256 amountFRAX = 10000 ether;
         uint256 amountUSDT = 10000 * 10**6;
         amount = bound(amount, 0, 10**15);

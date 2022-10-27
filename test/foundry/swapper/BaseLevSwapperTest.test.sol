@@ -113,7 +113,7 @@ contract BaseLevSwapperTest is BaseTest {
 
     // ================================== NO FORK ==================================
 
-    function testDepositSwapperNo1InchNoEndTransfer(uint256 amount) public {
+    function testDepositSwapperNo1Inch(uint256 amount) public {
         setUpNoFork();
         deal(address(asset), address(_alice), amount);
         vm.startPrank(_alice);
@@ -139,7 +139,7 @@ contract BaseLevSwapperTest is BaseTest {
         assertEq(asset.balanceOf(address(staker)), amount);
     }
 
-    function testWithdrawSwapperNo1InchNoEndTransfer(uint256 amount) public {
+    function testWithdrawSwapperNo1Inch(uint256 amount) public {
         setUpNoFork();
 
         deal(address(asset), address(_alice), amount);
@@ -162,6 +162,47 @@ contract BaseLevSwapperTest is BaseTest {
         leverage = false;
         stakeFor = _alice;
         IERC20[] memory sweepToken = new IERC20[](0);
+        oneInchData;
+        addData;
+        swapData = abi.encode(sweepToken, oneInchData, addData);
+        leverageData = abi.encode(leverage, stakeFor, swapData);
+        data = abi.encode(address(0), amount, SwapType.Leverage, leverageData);
+        staker.transfer(address(swapper), amount);
+        swapper.swap(IERC20(address(staker)), IERC20(address(asset)), _alice, 0, amount, data);
+
+        vm.stopPrank();
+
+        assertEq(asset.balanceOf(_alice), amount);
+        assertEq(staker.balanceOf(address(swapper)), 0);
+        assertEq(staker.balanceOf(_alice), 0);
+        assertEq(asset.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(staker)), 0);
+    }
+
+    function testSweepNullBalanceSwapperNo1Inch(uint256 amount) public {
+        setUpNoFork();
+
+        deal(address(asset), address(_alice), amount);
+        vm.startPrank(_alice);
+        // intermediary variables
+        bool leverage = true;
+        address stakeFor = _alice;
+        bytes[] memory oneInchData = new bytes[](0);
+        bytes memory addData;
+        bytes memory swapData = abi.encode(oneInchData, addData);
+        bytes memory leverageData = abi.encode(leverage, stakeFor, swapData);
+        bytes memory data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
+
+        // we first need to send the tokens before hand, you should always use the swapper
+        // in another tx to not losse your funds by front running
+        asset.transfer(address(swapper), amount);
+        swapper.swap(IERC20(address(asset)), IERC20(address(staker)), _alice, 0, amount, data);
+
+        // deleverage
+        leverage = false;
+        stakeFor = _alice;
+        IERC20[] memory sweepToken = new IERC20[](1);
+        sweepToken[0] = IERC20(address(staker));
         oneInchData;
         addData;
         swapData = abi.encode(sweepToken, oneInchData, addData);
@@ -276,8 +317,6 @@ contract BaseLevSwapperTest is BaseTest {
         _FRAX.transfer(address(swapper), amountFRAX);
         _USDT.safeTransfer(address(swapper), amountUSDT);
         swapper.swap(IERC20(address(asset)), IERC20(address(staker)), _alice, 0, amount, data);
-
-        console.log("min amount out ", minAmountOut);
 
         // deleverage
         minAmountOut = (19000 ether * 9900) / _BPS;
