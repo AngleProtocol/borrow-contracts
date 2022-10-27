@@ -11,8 +11,6 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
-import "hardhat/console.sol";
-
 // ================================== Enum =====================================
 
 /// @notice All possible swaps
@@ -236,7 +234,6 @@ abstract contract SwapperSidechain is ISwapper {
     /// @param payload Bytes needed for 1Inch API
     /// @dev Here again, we don't specify a slippage as in the `swap` function a final slippage check
     /// is performed at the end
-    /// TODO reentrancy/approval checks - should be good as only transitory contracts
     function _swapLeverage(uint256 amount, bytes memory payload) internal virtual returns (uint256 amountOut);
 
     /// @notice Internal function used for error handling

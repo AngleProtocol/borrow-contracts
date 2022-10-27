@@ -35,9 +35,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     /// and then stake the token into `angleStaker` contract in the leverage case
     /// @param amount Amount sent to the contract before any other actions
     /// @param data Encoded data giving specific instruction to the bundle tx
-    /// @return amountOut Amount obtained from the swap.
-    /// TODO This can be misleading as in some cases the swap can result in multiple tokens.
-    /// Also this ariable is not used, so worth removing the return value
+    /// @dev The amountOut is unused so let it as 0
     /// @dev All token transfers must have been done beforehand
     /// @dev This function can support multiple swaps to get a desired token
     function _swapLeverage(uint256 amount, bytes memory data) internal override returns (uint256 amountOut) {
@@ -71,8 +69,6 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             // After the swaps and/or the deleverage we can end up with useless tokens for repaying a debt and therefore let the
             // possibility to send it wherever
             _sweep(sweepTokens, to);
-            // TODO not useful actually to send an amountOut and quering the balance is expensive
-            amountOut = outToken.balanceOf(address(this));
         }
     }
 
