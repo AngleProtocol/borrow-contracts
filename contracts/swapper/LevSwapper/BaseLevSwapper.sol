@@ -54,9 +54,8 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             amountOut = _add(data);
             angleStaker().deposit(amountOut, to);
         } else {
-            IERC20 outToken;
             IERC20[] memory sweepTokens;
-            (outToken, sweepTokens, oneInchPayloads, data) = abi.decode(data, (IERC20, IERC20[], bytes[], bytes));
+            (sweepTokens, oneInchPayloads, data) = abi.decode(data, (IERC20[], bytes[], bytes));
             // Should transfer the token to the contract this will claim the rewards for the current owner of the wrapper
             angleStaker().withdraw(amount, address(this), address(this));
             _remove(amount, data);
@@ -76,8 +75,10 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     /// @param data Encoded info to execute the swaps from `_swapOn1Inch`
     function _multiSwap1inch(bytes[] memory data) internal {
         for (uint256 i = 0; i < data.length; i++) {
-            (address inToken, bytes memory payload) = abi.decode(data[i], (address, bytes));
-            _swapOn1Inch(IERC20(inToken), payload);
+            (address inToken, uint256 minAmount, bytes memory payload) = abi.decode(data[i], (address, uint256, bytes));
+            uint256 amountOut = _swapOn1Inch(IERC20(inToken), payload);
+            // we check the slippage in this case as `swap()`will only check it for the `outToken`
+            if (amountOut < minAmount) revert TooSmallAmountOut();
         }
     }
 
