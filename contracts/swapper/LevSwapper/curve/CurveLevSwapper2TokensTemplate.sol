@@ -33,4 +33,9 @@ contract CurveLevSwapperTemplate is CurveLevSwapper2Tokens {
     function metapool() public pure override returns (IMetaPool2) {
         return IMetaPool2(address(0));
     }
+
+    /// @inheritdoc CurveLevSwapper2Tokens
+    function lpToken() public pure override returns (IERC20) {
+        return IERC20(address(0));
+    }
 }
