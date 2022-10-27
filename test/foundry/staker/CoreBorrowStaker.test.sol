@@ -62,6 +62,7 @@ contract CoreBorrowStakerTest is BaseTest {
         assertEq(staker.symbol(), "agstk-agEUR");
         assertEq(address(staker.asset()), address(asset));
         assertEq(address(staker.coreBorrow()), address(coreBorrow));
+        assertEq(staker.decimals(), decimalToken);
     }
 
     // =============================== ACCESS CONTROL ==============================
@@ -173,6 +174,12 @@ contract CoreBorrowStakerTest is BaseTest {
         IERC20[] memory tokens = new IERC20[](1);
         address[] memory spenders = new address[](1);
         uint256[] memory amounts = new uint256[](1);
+
+        // increase allowance
+        tokens[0] = asset;
+        spenders[0] = address(_alice);
+        amounts[0] = type(uint256).max;
+        staker.changeAllowance(tokens, spenders, amounts);
 
         // decrease allowance
         tokens[0] = asset;
@@ -642,6 +649,84 @@ contract CoreBorrowStakerTest is BaseTest {
                 uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
                 uint256[] memory claimedRewards = staker.claimRewards(account);
                 assertEq(functionClaimableRewards, claimedRewards[0]);
+                assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
+            }
+
+            vm.stopPrank();
+
+            assertApproxEqAbs(
+                rewardToken.balanceOf(account) + staker.pendingRewardsOf(rewardToken, account),
+                pendingRewards[randomIndex],
+                10**(decimalReward - 4)
+            );
+        }
+    }
+
+    function testClaimWithoutNewRewards(
+        uint256[CLAIM_LENGTH] memory amounts,
+        bool[CLAIM_LENGTH] memory isDeposit,
+        uint256[CLAIM_LENGTH] memory accounts
+    ) public {
+        deal(address(rewardToken), address(staker), rewardAmount * (amounts.length));
+
+        amounts[0] = bound(amounts[0], 1, maxTokenAmount);
+        deal(address(asset), _alice, amounts[0]);
+        vm.startPrank(_alice);
+        asset.approve(address(staker), amounts[0]);
+        staker.deposit(amounts[0], _alice);
+        vm.stopPrank();
+
+        uint256[4] memory pendingRewards;
+
+        for (uint256 i = 1; i < amounts.length; i++) {
+            staker.setRewardAmount(rewardAmount);
+            uint256 randomIndex = bound(accounts[i], 0, 3);
+            address account = randomIndex == 0 ? _alice : randomIndex == 1 ? _bob : randomIndex == 2
+                ? _charlie
+                : _dylan;
+            if (staker.balanceOf(account) == 0) isDeposit[i] = true;
+
+            {
+                uint256 totSupply = staker.totalSupply();
+                if (totSupply > 0) {
+                    pendingRewards[0] += (staker.balanceOf(_alice) * rewardAmount) / staker.totalSupply();
+                    pendingRewards[1] += (staker.balanceOf(_bob) * rewardAmount) / staker.totalSupply();
+                    pendingRewards[2] += (staker.balanceOf(_charlie) * rewardAmount) / staker.totalSupply();
+                    pendingRewards[3] += (staker.balanceOf(_dylan) * rewardAmount) / staker.totalSupply();
+                }
+            }
+
+            uint256 amount;
+            vm.startPrank(account);
+            if (isDeposit[i]) {
+                amount = bound(amounts[i], 1, maxTokenAmount);
+                deal(address(asset), account, amount);
+                uint256 prevRewardTokenBalance = rewardToken.balanceOf(account);
+                asset.approve(address(staker), amount);
+                staker.deposit(amount, account);
+
+                // to disable new rewards when calling `claimableRewards` and `claimRewards`
+                staker.setRewardAmount(0);
+                uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
+                uint256[] memory claimedRewards = staker.claimRewards(account);
+                assertEq(functionClaimableRewards, claimedRewards[0]);
+                assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
+                // double claim without new rewards
+                staker.claimRewards(account);
+                assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
+            } else {
+                amount = bound(amounts[i], 1, 10**9);
+                staker.withdraw((amount * staker.balanceOf(account)) / 10**9, account, account);
+
+                // to disable new rewards when calling `claimableRewards` and `claimRewards`
+                staker.setRewardAmount(0);
+                uint256 prevRewardTokenBalance = rewardToken.balanceOf(account);
+                uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
+                uint256[] memory claimedRewards = staker.claimRewards(account);
+                assertEq(functionClaimableRewards, claimedRewards[0]);
+                assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
+                // double claim without new rewards
+                staker.claimRewards(account);
                 assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
             }
 

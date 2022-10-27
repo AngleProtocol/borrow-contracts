@@ -8,7 +8,8 @@ import "../../../interfaces/external/curve/IMetaPool2.sol";
 enum CurveRemovalType {
     oneCoin,
     balance,
-    imbalance
+    imbalance,
+    none
 }
 
 /// @title CurveLevSwapper2Tokens

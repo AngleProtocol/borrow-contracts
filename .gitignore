@@ -17,6 +17,7 @@ build
 export
 **/artifacts
 .openzeppelin
+lcov.info
 docgen/docs
 docgen/SUMMARY.md
 solidity-flattenedContracts
