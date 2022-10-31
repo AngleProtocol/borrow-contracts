@@ -239,7 +239,7 @@ contract SanTokenLevSwapperTest is BaseTest {
             IERC20[] memory sweepTokens = new IERC20[](1);
             sweepTokens[0] = _USDC;
             bytes memory removeData = abi.encode(netAmount + 1);
-            bytes memory swapData = abi.encode(sweepTokens, oneInchData, removeData);
+            bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
             data = abi.encode(address(0), swapMinAmountOut, SwapType.Leverage, leverageData);
         }
@@ -331,7 +331,7 @@ contract SanTokenLevSwapperTest is BaseTest {
             IERC20[] memory sweepTokens = new IERC20[](1);
             sweepTokens[0] = _USDC;
             bytes memory removeData = abi.encode(netAmount);
-            bytes memory swapData = abi.encode(sweepTokens, oneInchData, removeData);
+            bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
             data = abi.encode(address(0), swapMinAmountOut, SwapType.Leverage, leverageData);
         }

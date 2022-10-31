@@ -213,6 +213,7 @@ contract LevSwapperTestE2E is BaseTest {
                     staker.withdraw((amount * staker.balanceOf(account)) / 10**9, account, account);
                     {
                         bytes memory data;
+                        uint256 toUnstake = (amount * staker.balanceOf(account)) / 10**9;
                         {
                             // deleverage
                             bool leverage = false;
@@ -220,19 +221,12 @@ contract LevSwapperTestE2E is BaseTest {
                             IERC20[] memory sweepToken = new IERC20[](0);
                             bytes[] memory oneInchData;
                             bytes memory addData;
-                            bytes memory swapData = abi.encode(sweepToken, oneInchData, addData);
+                            bytes memory swapData = abi.encode(toUnstake, sweepToken, oneInchData, addData);
                             bytes memory leverageData = abi.encode(leverage, stakeFor, swapData);
                             data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
                         }
-                        staker.transfer(address(swapper), (amount * staker.balanceOf(account)) / 10**9);
-                        swapper.swap(
-                            IERC20(address(staker)),
-                            IERC20(address(asset)),
-                            account,
-                            0,
-                            (amount * staker.balanceOf(account)) / 10**9,
-                            data
-                        );
+                        staker.transfer(address(swapper), toUnstake);
+                        swapper.swap(IERC20(address(staker)), IERC20(address(asset)), account, 0, toUnstake, data);
                     }
                     for (uint256 j = 0; j < listRewardTokens.length; j++) {
                         assertEq(staker.pendingRewardsOf(listRewardTokens[j], account), 0);

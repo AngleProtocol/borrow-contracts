@@ -186,7 +186,7 @@ abstract contract SwapperSidechain is ISwapper {
         if (swapType == SwapType.UniswapV3) _swapOnUniswapV3(inToken, amount, args);
         else if (swapType == SwapType.oneInch) _swapOn1Inch(inToken, args);
         else if (swapType == SwapType.AngleRouter) _angleRouterActions(inToken, args);
-        else if (swapType == SwapType.Leverage) _swapLeverage(amount, args);
+        else if (swapType == SwapType.Leverage) _swapLeverage(args);
     }
 
     /// @notice Performs a UniswapV3 swap
@@ -230,11 +230,10 @@ abstract contract SwapperSidechain is ISwapper {
     }
 
     /// @notice Allows to take leverage or deleverage via a specific contract
-    /// @param amount Amount received beforehand
     /// @param payload Bytes needed for 1Inch API
     /// @dev Here again, we don't specify a slippage as in the `swap` function a final slippage check
     /// is performed at the end
-    function _swapLeverage(uint256 amount, bytes memory payload) internal virtual returns (uint256 amountOut);
+    function _swapLeverage(bytes memory payload) internal virtual returns (uint256 amountOut);
 
     /// @notice Internal function used for error handling
     /// @param errMsg Error message received

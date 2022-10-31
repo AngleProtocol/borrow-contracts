@@ -164,7 +164,7 @@ contract BaseLevSwapperTest is BaseTest {
         IERC20[] memory sweepToken = new IERC20[](0);
         oneInchData;
         addData;
-        swapData = abi.encode(sweepToken, oneInchData, addData);
+        swapData = abi.encode(amount, sweepToken, oneInchData, addData);
         leverageData = abi.encode(leverage, stakeFor, swapData);
         data = abi.encode(address(0), amount, SwapType.Leverage, leverageData);
         staker.transfer(address(swapper), amount);
@@ -205,7 +205,7 @@ contract BaseLevSwapperTest is BaseTest {
         sweepToken[0] = IERC20(address(staker));
         oneInchData;
         addData;
-        swapData = abi.encode(sweepToken, oneInchData, addData);
+        swapData = abi.encode(amount, sweepToken, oneInchData, addData);
         leverageData = abi.encode(leverage, stakeFor, swapData);
         data = abi.encode(address(0), amount, SwapType.Leverage, leverageData);
         staker.transfer(address(swapper), amount);
@@ -324,6 +324,7 @@ contract BaseLevSwapperTest is BaseTest {
         // As I can't exactly anticipate the number of USDC after swapping FRAX and USDT
         IERC20[] memory sweepTokens = new IERC20[](1);
         sweepTokens[0] = asset;
+        amount = staker.balanceOf(_alice);
         {
             // intermediary variables
             bytes[] memory oneInchData = new bytes[](1);
@@ -335,11 +336,10 @@ contract BaseLevSwapperTest is BaseTest {
                 hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
             );
             bytes memory addData;
-            bytes memory swapData = abi.encode(sweepTokens, oneInchData, addData);
+            bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, addData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
             data = abi.encode(address(0), minAmountOut, SwapType.Leverage, leverageData);
         }
-        amount = staker.balanceOf(_alice);
         staker.transfer(address(swapper), amount);
         swapper.swap(IERC20(address(staker)), IERC20(address(_FRAX)), _alice, 0, amount, data);
 
@@ -404,6 +404,7 @@ contract BaseLevSwapperTest is BaseTest {
         // As I can't exactly anticipate the number of USDC after swapping FRAX and USDT
         IERC20[] memory sweepTokens = new IERC20[](1);
         sweepTokens[0] = asset;
+        amount = staker.balanceOf(_alice);
         {
             // intermediary variables
             bytes[] memory oneInchData = new bytes[](1);
@@ -414,11 +415,10 @@ contract BaseLevSwapperTest is BaseTest {
                 hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
             );
             bytes memory addData;
-            bytes memory swapData = abi.encode(sweepTokens, oneInchData, addData);
+            bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, addData);
             bytes memory leverageData = abi.encode(false, _bob, swapData);
             data = abi.encode(address(0), minAmountOut, SwapType.Leverage, leverageData);
         }
-        amount = staker.balanceOf(_alice);
         staker.transfer(address(swapper), amount);
         swapper.swap(IERC20(address(staker)), IERC20(address(_FRAX)), _charlie, 0, amount, data);
 

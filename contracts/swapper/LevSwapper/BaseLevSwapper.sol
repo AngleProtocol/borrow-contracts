@@ -28,12 +28,11 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     // ============================= INTERNAL FUNCTIONS ============================
 
     /// @notice inheritdoc SwapperSidechain
-    /// @param amount Amount sent to the contract before any other actions
     /// @param data Encoded data giving specific instruction to the bundle tx
     /// @dev The amountOut is unused so left as 0 in the case of a deleverage transaction
     /// @dev All token transfers must have been done beforehand
     /// @dev This function can support multiple swaps to get a desired token
-    function _swapLeverage(uint256 amount, bytes memory data) internal override returns (uint256 amountOut) {
+    function _swapLeverage(bytes memory data) internal override returns (uint256 amountOut) {
         bool leverage;
         address to;
         bytes[] memory oneInchPayloads;
@@ -49,11 +48,12 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             amountOut = _add(data);
             angleStaker().deposit(amountOut, to);
         } else {
+            uint256 toUnstake;
             IERC20[] memory sweepTokens;
-            (sweepTokens, oneInchPayloads, data) = abi.decode(data, (IERC20[], bytes[], bytes));
+            (toUnstake, sweepTokens, oneInchPayloads, data) = abi.decode(data, (uint256, IERC20[], bytes[], bytes));
             // Should transfer the token to the contract this will claim the rewards for the current owner of the wrapper
-            angleStaker().withdraw(amount, address(this), address(this));
-            _remove(amount, data);
+            angleStaker().withdraw(toUnstake, address(this), address(this));
+            _remove(toUnstake, data);
             // Taking the same example as in the `leverage` side, you can withdraw USDC, DAI and USDT while wanting to
             // to repay a debt in agEUR so you need to do a multiswap.
             // These swaps are not easy to anticipate the amounts received depend on the deleverage action which can be chaotic
