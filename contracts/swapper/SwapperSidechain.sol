@@ -11,6 +11,17 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
+// ================================== Enum =====================================
+
+/// @notice All possible swaps
+enum SwapType {
+    UniswapV3,
+    oneInch,
+    AngleRouter,
+    Leverage,
+    None
+}
+
 /// @title SwapperSidechain
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
@@ -27,17 +38,6 @@ abstract contract SwapperSidechain is ISwapper {
     address public immutable oneInch;
     /// @notice AngleRouter
     IAngleRouterSidechain public immutable angleRouter;
-
-    // ================================== Enum =====================================
-
-    /// @notice All possible swaps
-    enum SwapType {
-        UniswapV3,
-        oneInch,
-        AngleRouter,
-        Leverage,
-        None
-    }
 
     // ================================== Errors ===================================
 
@@ -233,7 +233,6 @@ abstract contract SwapperSidechain is ISwapper {
     /// @param payload Bytes needed for 1Inch API
     /// @dev Here again, we don't specify a slippage as in the `swap` function a final slippage check
     /// is performed at the end
-    /// TODO reentrancy/approval checks - should be good as only transitory contracts
     function _swapLeverage(bytes memory payload) internal virtual returns (uint256 amountOut);
 
     /// @notice Internal function used for error handling

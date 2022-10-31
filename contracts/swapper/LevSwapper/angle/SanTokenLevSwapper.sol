@@ -3,7 +3,6 @@ pragma solidity 0.8.12;
 
 import "../BaseLevSwapper.sol";
 import "../../../interfaces/coreModule/IStableMaster.sol";
-import "../../../interfaces/external/curve/IMetaPool2.sol";
 
 /// @title SanTokenLevSwapper
 /// @author Angle Core Team
@@ -21,13 +20,10 @@ abstract contract SanTokenLevSwapper is BaseLevSwapper {
     // =============================== MAIN FUNCTIONS ==============================
 
     /// @inheritdoc BaseLevSwapper
-    function _add(bytes memory data) internal override returns (uint256 amountOut) {
-        (uint256 amount, uint256 minAmountOut) = abi.decode(data, (uint256, uint256));
-        collateral().safeApprove(address(stableMaster()), amount);
+    function _add(bytes memory) internal override returns (uint256 amountOut) {
+        uint256 amount = collateral().balanceOf(address(this));
         stableMaster().deposit(amount, address(this), poolManager());
         amountOut = sanToken().balanceOf(address(this));
-        if (amountOut < minAmountOut) revert TooSmallAmountOut();
-        sanToken().safeApprove(address(angleStaker()), amountOut);
     }
 
     /// @inheritdoc BaseLevSwapper
@@ -35,6 +31,8 @@ abstract contract SanTokenLevSwapper is BaseLevSwapper {
         uint256 minAmountOut = abi.decode(data, (uint256));
         stableMaster().withdraw(amount, address(this), address(this), poolManager());
         amountOut = collateral().balanceOf(address(this));
+        // We let this check because the caller may swap part of the tokens received and therefore
+        // the check in the base swapper will only be for the out token
         if (amountOut < minAmountOut) revert TooSmallAmountOut();
     }
 

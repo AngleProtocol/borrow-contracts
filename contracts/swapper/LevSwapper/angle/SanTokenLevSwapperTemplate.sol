@@ -2,7 +2,6 @@
 pragma solidity 0.8.12;
 
 import "./SanTokenLevSwapper.sol";
-import "../../../interfaces/external/curve/IMetaPool2.sol";
 
 /// @author Angle Core Team
 /// @notice Template leverage swapper on sanTokens

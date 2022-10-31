@@ -11,13 +11,6 @@ import "../../interfaces/external/uniswap/IUniswapRouter.sol";
 
 import "../SwapperSidechain.sol";
 
-/// @param token Token address
-/// @param amount Amount of token owned
-struct SwapType {
-    IERC20 token;
-    uint256 amount;
-}
-
 /// @title BaseLevSwapper
 /// @author Angle Core Team
 /// @notice Swapper contract facilitating interactions with a `VaultManager` - liquidation, leverage, wrapping and unwrapping
@@ -25,10 +18,6 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     using SafeERC20 for IERC20;
 
     /// @notice Constructor of the contract
-    /// @param _core Core address
-    /// @param _uniV3Router UniswapV3 Router address
-    /// @param _oneInch 1Inch Router address
-    /// @param _angleRouter AngleRouter contract address
     constructor(
         ICoreBorrow _core,
         IUniswapV3Router _uniV3Router,
@@ -38,12 +27,9 @@ abstract contract BaseLevSwapper is SwapperSidechain {
 
     // ============================= INTERNAL FUNCTIONS ============================
 
-    /// @notice Implements the bundle transaction to increase/decrease exposure to a token
-    /// and then stake the token into `angleStaker` contract in the leverage case
+    /// @notice inheritdoc SwapperSidechain
     /// @param data Encoded data giving specific instruction to the bundle tx
-    /// @return amountOut Amount obtained from the swap.
-    /// TODO This can be misleading as in some cases the swap can result in multiple tokens.
-    /// Also this ariable is not used, so worth removing the return value
+    /// @dev The amountOut is unused so left as 0 in the case of a deleverage transaction
     /// @dev All token transfers must have been done beforehand
     /// @dev This function can support multiple swaps to get a desired token
     function _swapLeverage(bytes memory data) internal override returns (uint256 amountOut) {
@@ -63,12 +49,8 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             angleStaker().deposit(amountOut, to);
         } else {
             uint256 toUnstake;
-            IERC20 outToken;
             IERC20[] memory sweepTokens;
-            (toUnstake, outToken, sweepTokens, oneInchPayloads, data) = abi.decode(
-                data,
-                (uint256, IERC20, IERC20[], bytes[], bytes)
-            );
+            (toUnstake, sweepTokens, oneInchPayloads, data) = abi.decode(data, (uint256, IERC20[], bytes[], bytes));
             // Should transfer the token to the contract this will claim the rewards for the current owner of the wrapper
             angleStaker().withdraw(toUnstake, address(this), address(this));
             _remove(toUnstake, data);
@@ -81,8 +63,6 @@ abstract contract BaseLevSwapper is SwapperSidechain {
             // After the swaps and/or the deleverage we can end up with useless tokens for repaying a debt and therefore let the
             // possibility to send it wherever
             _sweep(sweepTokens, to);
-            // TODO not useful actually to send an amountOut and quering the balance is expensive
-            amountOut = outToken.balanceOf(address(this));
         }
     }
 
@@ -90,8 +70,10 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     /// @param data Encoded info to execute the swaps from `_swapOn1Inch`
     function _multiSwap1inch(bytes[] memory data) internal {
         for (uint256 i = 0; i < data.length; i++) {
-            (address inToken, bytes memory payload) = abi.decode(data[i], (address, bytes));
-            _swapOn1Inch(IERC20(inToken), payload);
+            (address inToken, uint256 minAmount, bytes memory payload) = abi.decode(data[i], (address, uint256, bytes));
+            uint256 amountOut = _swapOn1Inch(IERC20(inToken), payload);
+            // We check the slippage in this case as `swap()` will only check it for the `outToken`
+            if (amountOut < minAmount) revert TooSmallAmountOut();
         }
     }
 
@@ -110,7 +92,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     // ========================= EXTERNAL VIRTUAL FUNCTIONS ========================
 
     /// @notice Token used as collateral on the borrow module, which wraps the `true` collateral
-    function angleStaker() public pure virtual returns (IBorrowStaker);
+    function angleStaker() public view virtual returns (IBorrowStaker);
 
     // ========================= INTERNAL VIRTUAL FUNCTIONS ========================
 
@@ -119,7 +101,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     function _add(bytes memory data) internal virtual returns (uint256 amountOut);
 
     /// @notice Implements the bundle transaction to decrease exposure to a token
-    /// @param toUnstake Amount of tokens to withdraw from the `angleStaker`
+    /// @param toUnstake Amount of tokens to remove
     /// @param data Encoded data giving specific instruction to the bundle tx
     function _remove(uint256 toUnstake, bytes memory data) internal virtual returns (uint256 amount);
 }

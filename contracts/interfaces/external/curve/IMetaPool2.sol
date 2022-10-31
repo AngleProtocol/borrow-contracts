@@ -10,6 +10,9 @@ uint256 constant N_COINS = 2;
 interface IMetaPool2 is IMetaPoolBase {
     function coins() external view returns (uint256[N_COINS] memory);
 
+    // for basis pool
+    function balances(uint256) external view returns (uint256);
+
     function get_balances() external view returns (uint256[N_COINS] memory);
 
     function get_previous_balances() external view returns (uint256[N_COINS] memory);
