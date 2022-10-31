@@ -72,7 +72,12 @@ contract CoreBorrowStakerTest is BaseTest {
         uint256 amount,
         address newCoreBorrow
     ) public {
-        vm.assume(randomUser != _GOVERNOR && randomUser != address(0) && newCoreBorrow != address(0));
+        vm.assume(
+            randomUser != _GOVERNOR &&
+                randomUser != address(0) &&
+                randomUser != address(proxyAdmin) &&
+                newCoreBorrow != address(0)
+        );
         otherToken.mint(address(staker), amount);
 
         startHoax(randomUser);
@@ -377,7 +382,7 @@ contract CoreBorrowStakerTest is BaseTest {
 
     /// @dev This test will go through the totalSupply = 0 branches
     function testFirstWithdrawSuccess(uint256 amount, address to) public {
-        vm.assume(to != address(0));
+        vm.assume(to != address(0) && to != address(staker) && to != address(_alice) && to != address(asset));
         amount = bound(amount, 0, maxTokenAmount);
         deal(address(asset), address(_alice), amount);
         deal(address(rewardToken), address(staker), rewardAmount);
