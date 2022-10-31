@@ -3,20 +3,24 @@ import { BigNumber, Signer, utils } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { deployUpgradeable, ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
   MockTreasury,
   MockTreasury__factory,
-  OracleWSTETHEURChainlink,
-  OracleWSTETHEURChainlink__factory,
-  OracleETHEURChainlink,
-  OracleETHEURChainlink__factory,
   OracleBTCEURChainlink,
   OracleBTCEURChainlink__factory,
+  OracleETHEURChainlink,
+  OracleETHEURChainlink__factory,
+  OracleFRAXBPEURChainlink,
+  OracleFRAXBPEURChainlink__factory,
   OracleLUSDEURChainlink,
   OracleLUSDEURChainlink__factory,
+  OracleTriCrypto2EURChainlink,
+  OracleTriCrypto2EURChainlink__factory,
+  OracleWSTETHEURChainlink,
+  OracleWSTETHEURChainlink__factory,
 } from '../../typechain';
-import { expect } from '../../test/hardhat/utils/chai-setup';
-import { deployUpgradeable, ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 
 contract('Oracles Chainlink', () => {
   let deployer: SignerWithAddress;
@@ -27,6 +31,8 @@ contract('Oracles Chainlink', () => {
   let oracleETH: OracleETHEURChainlink;
   let oracleBTC: OracleBTCEURChainlink;
   let oracleLUSD: OracleLUSDEURChainlink;
+  let oracleTriCrypto2: OracleTriCrypto2EURChainlink;
+  let oracleFRAXBP: OracleFRAXBPEURChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -46,6 +52,8 @@ contract('Oracles Chainlink', () => {
     oracleETH = await new OracleETHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleBTC = await new OracleBTCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleLUSD = await new OracleLUSDEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleTriCrypto2 = await new OracleTriCrypto2EURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleFRAXBP = await new OracleFRAXBPEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -98,6 +106,32 @@ contract('Oracles Chainlink', () => {
       expect(await oracleLUSD.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleLUSD.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleLUSD.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle TriCrypto2EUR', () => {
+    it('read', async () => {
+      const receipt = await oracleTriCrypto2.read();
+      const gas = await oracleTriCrypto2.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleTriCrypto2.TRI_CRYPTO_ORACLE()).to.be.equal('0xE8b2989276E2Ca8FDEA2268E3551b2b4B2418950');
+      expect(await oracleTriCrypto2.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleTriCrypto2.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle FRAXBP', () => {
+    it('read', async () => {
+      const receipt = await oracleFRAXBP.read();
+      const gas = await oracleFRAXBP.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleFRAXBP.FRAXBP()).to.be.equal('0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2');
+      expect(await oracleFRAXBP.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleFRAXBP.treasury()).to.be.equal(treasury.address);
     });
   });
 });
