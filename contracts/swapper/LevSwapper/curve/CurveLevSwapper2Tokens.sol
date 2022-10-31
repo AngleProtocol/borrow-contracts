@@ -4,7 +4,7 @@ pragma solidity 0.8.12;
 import "../BaseLevSwapper.sol";
 import "../../../interfaces/external/curve/IMetaPool2.sol";
 
-/// @notice All possible removal on Curve
+/// @notice All possible removals on Curve
 enum CurveRemovalType {
     oneCoin,
     balance,
@@ -35,8 +35,8 @@ abstract contract CurveLevSwapper2Tokens is BaseLevSwapper {
         uint256 amountToken2 = token2().balanceOf(address(this));
         // Slippage is checked at the very end of the `swap` function
         metapool().add_liquidity([amountToken1, amountToken2], 0);
-        // Other solution is to not query the balance but let the user specify how many tokens has
-        // been sent + get the return value from add_liquidity more gas efficient but more verbose
+        // Other solution is also to let the user specify how many tokens have been sent + get
+        // the return value from `add_liquidity`: it's more gas efficient but adds more verbose
         amountOut = lpToken().balanceOf(address(this));
     }
 
@@ -53,8 +53,8 @@ abstract contract CurveLevSwapper2Tokens is BaseLevSwapper {
         } else if (removalType == CurveRemovalType.imbalance) {
             (address to, uint256[2] memory amountOuts) = abi.decode(data, (address, uint256[2]));
             uint256 actualBurnAmount = metapool().remove_liquidity_imbalance(amountOuts, burnAmount);
-            // We may have withdrawn more than needed, maybe not optimal because a user may want have no lp token staked
-            // maybe just do a sweep on all tokens in the `BaseLevSwapper` contract
+            // We may have withdrawn more than needed: maybe not optimal because a user may not want to have
+            // lp tokens staked. Solution is to do a sweep on all tokens in the `BaseLevSwapper` contract
             angleStaker().deposit(burnAmount - actualBurnAmount, to);
         }
     }
@@ -71,6 +71,6 @@ abstract contract CurveLevSwapper2Tokens is BaseLevSwapper {
     function metapool() public pure virtual returns (IMetaPool2);
 
     /// @notice Reference to the actual collateral contract
-    /// @dev most of the time this is the same address as the `metapool`
+    /// @dev Most of the time this is the same address as the `metapool`
     function lpToken() public pure virtual returns (IERC20);
 }

@@ -230,7 +230,7 @@ abstract contract SwapperSidechain is ISwapper {
     }
 
     /// @notice Allows to take leverage or deleverage via a specific contract
-    /// @param amount Amount received before hand
+    /// @param amount Amount received beforehand
     /// @param payload Bytes needed for 1Inch API
     /// @dev Here again, we don't specify a slippage as in the `swap` function a final slippage check
     /// is performed at the end

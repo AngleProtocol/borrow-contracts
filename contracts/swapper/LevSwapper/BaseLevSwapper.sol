@@ -18,10 +18,6 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     using SafeERC20 for IERC20;
 
     /// @notice Constructor of the contract
-    /// @param _core Core address
-    /// @param _uniV3Router UniswapV3 Router address
-    /// @param _oneInch 1Inch Router address
-    /// @param _angleRouter AngleRouter contract address
     constructor(
         ICoreBorrow _core,
         IUniswapV3Router _uniV3Router,
@@ -31,11 +27,10 @@ abstract contract BaseLevSwapper is SwapperSidechain {
 
     // ============================= INTERNAL FUNCTIONS ============================
 
-    /// @notice Implements the bundle transaction to increase/decrease exposure to a token
-    /// and then stake the token into `angleStaker` contract in the leverage case
+    /// @notice inheritdoc SwapperSidechain
     /// @param amount Amount sent to the contract before any other actions
     /// @param data Encoded data giving specific instruction to the bundle tx
-    /// @dev The amountOut is unused so let it as 0
+    /// @dev The amountOut is unused so left as 0 in the case of a deleverage transaction
     /// @dev All token transfers must have been done beforehand
     /// @dev This function can support multiple swaps to get a desired token
     function _swapLeverage(uint256 amount, bytes memory data) internal override returns (uint256 amountOut) {
@@ -77,7 +72,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
         for (uint256 i = 0; i < data.length; i++) {
             (address inToken, uint256 minAmount, bytes memory payload) = abi.decode(data[i], (address, uint256, bytes));
             uint256 amountOut = _swapOn1Inch(IERC20(inToken), payload);
-            // we check the slippage in this case as `swap()`will only check it for the `outToken`
+            // We check the slippage in this case as `swap()` will only check it for the `outToken`
             if (amountOut < minAmount) revert TooSmallAmountOut();
         }
     }
@@ -106,7 +101,7 @@ abstract contract BaseLevSwapper is SwapperSidechain {
     function _add(bytes memory data) internal virtual returns (uint256 amountOut);
 
     /// @notice Implements the bundle transaction to decrease exposure to a token
-    /// @param toUnstake Amount of tokens to withdraw from the `angleStaker`
+    /// @param toUnstake Amount of tokens to remove
     /// @param data Encoded data giving specific instruction to the bundle tx
     function _remove(uint256 toUnstake, bytes memory data) internal virtual returns (uint256 amount);
 }

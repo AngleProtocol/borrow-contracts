@@ -39,7 +39,7 @@ abstract contract SanTokenStaker is BorrowStaker {
         uint256 prevBalanceAngle = _ANGLE.balanceOf(address(this));
         liquidityGauge().claim_rewards(address(this), address(0));
         uint256 angleRewards = _ANGLE.balanceOf(address(this)) - prevBalanceAngle;
-        // do the same thing for additional rewards
+        // Do the same thing for additional rewards
         _updateRewards(_ANGLE, angleRewards);
     }
 
