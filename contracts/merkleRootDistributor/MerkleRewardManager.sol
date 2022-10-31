@@ -19,6 +19,7 @@ import "../interfaces/ICoreBorrow.sol";
 - check which other parameters we need and if parameters can be improved or not: like
 for instance we don't need proportionToken1 + propToken2 + propFees
 - how can we check whether address passed is a UniV3 pool
+- do we leave opportunity to specify whether there is a boost logic or not
 */
 
 struct RewardDistribution {
@@ -198,6 +199,17 @@ abstract contract MerkleRewardManager is Initializable {
         bool toggleStatus = !waivedFees[user];
         waivedFees[user] = toggleStatus;
         emit WaivedStatusToggled(user, toggleStatus);
+    }
+
+    /// @notice Recovers fees accrued on the contract for a list of `tokens`
+    function recoverFees(IERC20[] memory tokens, address to) external onlyGovernorOrGuardian {
+        for (uint256 i = 0; i < tokens.length; ) {
+            uint256 amount = tokens[i].balanceOf(address(this));
+            tokens[i].safeTransfer(to, amount);
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     // ============================== INTERNAL HELPERS =============================
