@@ -8,6 +8,18 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/ICoreBorrow.sol";
 
+/* TODO for the script
+- check whether the uniV3 pool is actually one or not
+- automatically ERC20 token addresses which own the position
+- what happens if rewards sent to a pool with no fees at all
+*/
+
+/* TODO for the contract
+- check which other parameters we need and if parameters can be improved or not: like
+for instance we don't need proportionToken1 + propToken2 + propFees
+- how can we check whether address passed is a UniV3 pool
+*/
+
 struct Reward {
     // Address of the UniswapV3 pool that needs to be incentivized
     address uniV3Pool;
@@ -19,11 +31,11 @@ struct Reward {
     // but might help in future settings (suggesting UniV3 wrappers, updating rewards, ...)
     address manager;
     // In the incentivization formula, how much of the fees should go
-    uint32 propToken1;
+    uint32 proportionToken1;
     // Proportion for holding token2
-    uint32 propToken2;
+    uint32 proportionToken2;
     // Proportion for simply providing a useful liquidity
-    uint32 propFees;
+    uint32 proportionFees;
     // Whether out of range liquidity should still be incentivized or not
     uint32 outOfRangeIncentivized;
     // Timestamp at which the incentivization should start
@@ -31,12 +43,6 @@ struct Reward {
     // Amount of epochs for which incentivization should last
     uint32 numEpoch;
 }
-
-/* TODO for the script
-- check whether the uniV3 pool is actually one or not
-- automatically ERC20 token addresses which own the position
-- what happens if rewards sent to a pool with no fees at all
-*/
 
 /// @title MerkleRewardManager
 /// @author Angle Labs, Inc.
@@ -87,20 +93,20 @@ contract MerkleRewardManager is Initializable {
 
     // ============================== DEPOSIT FUNCTION =============================
 
-    // uniV3Pool, proportionTokenA, propTokenB, propFees, periodStart, epochAmount, token, bool outOfRange, amountOfTokens
-    /// @notice Deposits a reward `reward`
+    /// @notice Deposits a reward `reward` to incentivize a given UniswapV3 pool for a specific period of time
+    /// @dev It's important to make sure that the address specified as a UniV3 pool is effectively a pool
+    /// otherwise they will not be handled by the distribution script and rewards may be lost
     function depositReward(Reward memory reward) external {
         uint256 epochStart = _getRoundedEpoch(reward.epochStart);
         // Reward will not be accepted in the following conditions:
         if (
-            // TODO better check for if UniV3 pool
-            // If the pool to incentivize is not a contract
+            // if the pool to incentivize is not a contract
             reward.uniV3Pool.code.length == 0 ||
-            // If epoch parameters would lead to a past distribution
+            // if epoch parameters would lead to a past distribution
             epochStart + EPOCH_DURATION < block.timestamp ||
-            // If the amount of epochs for which this incentive should last is zero
+            // if the amount of epochs for which this incentive should last is zero
             reward.numEpoch == 0 ||
-            // If the amount to use to incentivize is still 0
+            // if the amount to use to incentivize is still 0
             reward.amount == 0
         ) revert InvalidReward();
         if (reward.manager == address(0)) reward.manager = msg.sender;
@@ -170,7 +176,6 @@ contract MerkleRewardManager is Initializable {
                 ++i;
             }
         }
-
         Reward[] memory activeRewards = new Reward[](length);
         uint256 j;
         for (uint32 i = 0; i < rewardList.length && j < length; ) {
