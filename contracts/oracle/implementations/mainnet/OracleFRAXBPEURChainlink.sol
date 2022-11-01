@@ -21,6 +21,9 @@ contract OracleFRAXBPEURChainlink is BaseOracleChainlinkMulti {
 
     /// @inheritdoc IOracle
     function read() external view override returns (uint256 quoteAmount) {
+        // We use 0 decimals when reading fees through `readChainlinkFeed` since all feeds have 8 decimals
+        // and the virtual price of the Curve pool is given in 18 decimals, just like the amount of decimals
+        // of the FRAXBP token
         uint256 fraxPrice = _readChainlinkFeed(
             1,
             AggregatorV3Interface(0xB9E1E3A9feFf48998E45Fa90847ed4D467E8BcfD),
