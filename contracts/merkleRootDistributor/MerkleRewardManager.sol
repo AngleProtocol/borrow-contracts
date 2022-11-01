@@ -12,7 +12,7 @@ import "../interfaces/ICoreBorrow.sol";
 /* TODO for the script
 - check whether the uniV3 pool is actually one or not
 - automatically ERC20 token addresses which own the position
-- what happens if rewards sent to a pool with no fees at all
+- what happens if rewards sent to a pool with no fees accruing in the week at all
 */
 
 /* TODO for the contract
@@ -29,7 +29,6 @@ struct RewardDistribution {
     address token;
     // List of all UniV3 position wrappers to consider for this contract
     // (this can include addresses of Arrakis or Gamma smart contracts for instance)
-    // It's important to make sure that the wrappers are supported
     address[] positionWrappers;
     // Amount of `token` to distribute
     uint256 amount;
@@ -114,6 +113,8 @@ abstract contract MerkleRewardManager is Initializable {
     /// @return rewardAmount How many rewards are actually taken into consideration in the contract
     /// @dev It's important to make sure that the address specified as a UniV3 pool is effectively a pool
     /// otherwise they will not be handled by the distribution script and rewards may be lost
+    /// @dev The `positionWrappers` specified in the `reward` struct need to be supported by the struct
+    /// @dev If the pool incentivized contains agEUR, then no fees are taken on the rewards
     function depositReward(RewardDistribution memory reward) external returns (uint256 rewardAmount) {
         uint256 epochStart = _getRoundedEpoch(reward.epochStart);
         // Reward will not be accepted in the following conditions:
