@@ -38,6 +38,10 @@ struct RewardDistribution {
     uint32 epochStart;
     // Amount of epochs for which incentivization should last
     uint32 numEpoch;
+    // Whether out of range liquidity should be incentivized or not
+    // This should be equal to 1 if out of range liquidity should still be incentivized
+    // and 0 otherwise
+    uint32 incentivizeOutOfRange;
     // How much more addresses with a maximum boost can get with respect to addresses
     // which do not have a boost (in base 4). In the case of Curve where addresses get 2.5x more
     // this would be 25000
