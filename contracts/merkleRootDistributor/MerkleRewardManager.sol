@@ -15,13 +15,6 @@ import "../interfaces/ICoreBorrow.sol";
 - what happens if rewards sent to a pool with no fees accruing in the week at all
 */
 
-/* TODO for the contract
-- check which other parameters we need and if parameters can be improved or not: like
-for instance we don't need proportionToken1 + propToken2 + propFees
-- how can we check whether address passed is a UniV3 pool
-- do we leave opportunity to specify whether there is a boost logic or not
-*/
-
 struct RewardDistribution {
     // Address of the UniswapV3 pool that needs to be incentivized
     address uniV3Pool;
@@ -32,18 +25,26 @@ struct RewardDistribution {
     address[] positionWrappers;
     // Amount of `token` to distribute
     uint256 amount;
-    // In the incentivization formula, how much of the fees should go
-    uint32 proportionToken1;
-    // Proportion for holding token2
-    uint32 proportionToken2;
-    // Proportion for simply providing a useful liquidity
-    uint32 proportionFees;
+    // In the incentivization formula, how much of the fees should go to holders of token1
+    // in base 10**4
+    uint32 propToken1;
+    // Proportion for holding token2 (in base 10**4)
+    uint32 propToken2;
+    // Proportion for providing a useful liquidity (in base 10**4) that generates fees
+    uint32 propFees;
     // Whether out of range liquidity should still be incentivized or not
     uint32 outOfRangeIncentivized;
     // Timestamp at which the incentivization should start
     uint32 epochStart;
     // Amount of epochs for which incentivization should last
     uint32 numEpoch;
+    // How much more addresses with a maximum boost can get with respect to addresses
+    // which do not have a boost (in base 4). In the case of Curve where addresses get 2.5x more
+    // this would be 25000
+    uint32 boostedReward;
+    // Address of the token which dictates who gets boosted rewards or not. This is optional
+    // and if the zero address is given no boost will be taken into account
+    address boostingAddress;
 }
 
 /// @title MerkleRewardManager
@@ -113,7 +114,7 @@ abstract contract MerkleRewardManager is Initializable {
     /// @return rewardAmount How many rewards are actually taken into consideration in the contract
     /// @dev It's important to make sure that the address specified as a UniV3 pool is effectively a pool
     /// otherwise they will not be handled by the distribution script and rewards may be lost
-    /// @dev The `positionWrappers` specified in the `reward` struct need to be supported by the struct
+    /// @dev The `positionWrappers` specified in the `reward` struct need to be supported by the script
     /// @dev If the pool incentivized contains agEUR, then no fees are taken on the rewards
     function depositReward(RewardDistribution memory reward) external returns (uint256 rewardAmount) {
         uint256 epochStart = _getRoundedEpoch(reward.epochStart);
@@ -124,7 +125,11 @@ abstract contract MerkleRewardManager is Initializable {
             // if the amount of epochs for which this incentive should last is zero
             reward.numEpoch == 0 ||
             // if the amount to use to incentivize is still 0
-            reward.amount == 0
+            reward.amount == 0 ||
+            // if the reward parameters are not correctly specified
+            reward.propFees + reward.propToken1 + reward.propToken2 != 10**4 ||
+            // if boosted addresses get less than non-boosted addresses in case of
+            (reward.boostingAddress != address(0) && reward.boostedReward < 10**4)
         ) revert InvalidReward();
         rewardAmount = reward.amount;
         address agEURAddress = _agEUR();
