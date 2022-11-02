@@ -19,21 +19,25 @@ contract OracleTriCrypto2EURChainlink is BaseOracleChainlinkMulti {
     /// @param _treasury Treasury associated to the `VaultManager` which reads from this feed
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMulti(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc IOracle
-    function read() external view override returns (uint256 quoteAmount) {
-        quoteAmount = TRI_CRYPTO_ORACLE.lp_price();
-        AggregatorV3Interface[2] memory circuitChainlink = [
+    function circuitChainlink() public pure returns (AggregatorV3Interface[2] memory) {
+        return [
             // Chainlink USDT/USD address
             AggregatorV3Interface(0x3E7d1eAB13ad0104d2750B8863b489D65364e32D),
             // Chainlink EUR/USD address
             AggregatorV3Interface(0xb49f677943BC038e9857d61E7d053CaA2C1734C1)
         ];
+    }
+
+    /// @inheritdoc IOracle
+    function read() external view override returns (uint256 quoteAmount) {
+        quoteAmount = TRI_CRYPTO_ORACLE.lp_price();
+        AggregatorV3Interface[2] memory _circuitChainlink = circuitChainlink();
         uint8[2] memory circuitChainIsMultiplied = [1, 0];
         uint8[2] memory chainlinkDecimals = [8, 8];
-        for (uint256 i = 0; i < circuitChainlink.length; i++) {
+        for (uint256 i = 0; i < _circuitChainlink.length; i++) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
-                circuitChainlink[i],
+                _circuitChainlink[i],
                 circuitChainIsMultiplied[i],
                 chainlinkDecimals[i]
             );

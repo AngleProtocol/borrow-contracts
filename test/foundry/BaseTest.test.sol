@@ -23,6 +23,7 @@ contract BaseTest is Test {
     address internal constant _dylan = address(uint160(uint256(keccak256(abi.encodePacked("_dylan")))));
 
     uint256 internal _ethereum;
+    uint256 internal _polygon;
 
     uint256 public constant BASE_PARAMS = 10**36;
 
