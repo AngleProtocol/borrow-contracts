@@ -88,15 +88,30 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         return _checkpoint(checkpointUser, true);
     }
 
+    /// @notice Get the full `asset` balance of `from`, both the wrapper balance and all wrapper deposited on all vaultManager
+    /// @param from Address to check the full balance of
+    function totalBalanceOf(address from) public returns (uint256 totalBalance) {
+        // If `from` is one of the whitelisted vaults, do not consider the rewards to not double count balances
+        for (uint256 i; i < _vaultManagers.length; i++) {
+            if (_vaultManagers[i] == from) return 0;
+        }
+
+        totalBalance = balanceOf(from);
+        for (uint256 i; i < _vaultManagers.length; i++) {
+            totalBalance += IVaultManagerCollateralTrack(_vaultManagers[i]).getUserCollateral(from);
+        }
+        return balanceOf(from);
+    }
+
     /// @notice Returns the exact amount that will be received if calling `claimRewards(from)` for a specific reward token
     /// @param from Address to claim for
     /// @param _rewardToken Token to get rewards for
-    function claimableRewards(address from, IERC20 _rewardToken) external view returns (uint256) {
+    function claimableRewards(address from, IERC20 _rewardToken) external returns (uint256) {
         uint256 _totalSupply = totalSupply();
         uint256 newIntegral = _totalSupply > 0
             ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * BASE_PARAMS) / _totalSupply
             : integral[_rewardToken];
-        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_PARAMS;
+        uint256 newClaimable = (totalBalanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_PARAMS;
         return pendingRewardsOf[_rewardToken][from] + newClaimable;
     }
 
@@ -178,8 +193,8 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         IERC20[] memory rewardTokens = _getRewards();
         rewardAmounts = new uint256[](rewardTokens.length);
         for (uint256 i = 0; i < rewardTokens.length; ++i) {
-            uint256 newClaimable = (balanceOf(from) * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
-                BASE_PARAMS;
+            uint256 newClaimable = (totalBalanceOf(from) *
+                (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) / BASE_PARAMS;
             uint256 previousClaimable = pendingRewardsOf[rewardTokens[i]][from];
             if (_claim && previousClaimable + newClaimable > 0) {
                 rewardTokens[i].safeTransfer(from, previousClaimable + newClaimable);

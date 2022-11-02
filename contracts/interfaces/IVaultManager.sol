@@ -247,3 +247,10 @@ interface IVaultManagerStorage {
 interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721Metadata {
 
 }
+
+/// @title VaultManagerCollateralTrack
+/// @author Angle Core Team
+/// @notice Interface for the `VaultManagerCollateralTrack` contract
+interface IVaultManagerCollateralTrack is IVaultManager {
+    function getUserCollateral(address user) external returns (uint256);
+}
