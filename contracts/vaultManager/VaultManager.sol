@@ -397,7 +397,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @notice Increases the collateral balance of a vault
     /// @param vaultID ID of the vault to increase the collateral balance of
     /// @param collateralAmount Amount by which increasing the collateral balance of
-    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
+    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal virtual {
         if (!_exists(vaultID)) revert NonexistentVault();
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
@@ -414,7 +414,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 collateralAmount,
         uint256 oracleValue,
         uint256 interestAccumulator_
-    ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) internal virtual onlyApprovedOrOwner(msg.sender, vaultID) {
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
