@@ -72,8 +72,8 @@ abstract contract MerkleRewardManager is Initializable {
     /// @notice Value (in base 10**9) of the fees taken when adding rewards for a pool which does not
     /// have agEUR in it
     uint256 public fees;
-
-    mapping(address => bool) public waivedFees;
+    /// @notice Maps an address to the rebate
+    mapping(address => uint256) public feeRebate;
 
     uint256[47] private __gap;
 
@@ -82,7 +82,7 @@ abstract contract MerkleRewardManager is Initializable {
     event FeesSet(uint256 _fees);
     event MerkleRootDistributorUpdated(address indexed _merkleRootDistributor);
     event NewReward(RewardDistribution reward, address indexed sender);
-    event WaivedStatusToggled(address indexed user, bool toggleStatus);
+    event FeeRebateUpdated(address indexed user, uint256 userFeeRebate);
 
     error InvalidReward();
     error InvalidParam();
@@ -107,6 +107,7 @@ abstract contract MerkleRewardManager is Initializable {
         uint256 _fees
     ) public initializer {
         if (address(_coreBorrow) == address(0) || _merkleRootDistributor == address(0)) revert ZeroAddress();
+        if (_fees >= 10**9) revert InvalidParam();
         merkleRootDistributor = _merkleRootDistributor;
         coreBorrow = _coreBorrow;
         fees = _fees;
@@ -121,6 +122,21 @@ abstract contract MerkleRewardManager is Initializable {
     /// @dev The `positionWrappers` specified in the `reward` struct need to be supported by the script
     /// @dev If the pool incentivized contains agEUR, then no fees are taken on the rewards
     function depositReward(RewardDistribution memory reward) external returns (uint256 rewardAmount) {
+        return _depositReward(reward);
+    }
+
+    /// @notice Same as the function above but for multiple rewards at once
+    /// @return List of all the reward amounts actually deposited for each `reward` in the `rewards` list
+    function depositRewards(RewardDistribution[] memory rewards) external returns (uint256[] memory) {
+        uint256[] memory rewardAmounts = new uint256[](rewards.length);
+        for (uint256 i = 0; i < rewards.length; ) {
+            rewardAmounts[i] = _depositReward(rewards[i]);
+        }
+        return rewardAmounts;
+    }
+
+    /// @notice Internal version of `depositReward`
+    function _depositReward(RewardDistribution memory reward) internal returns (uint256 rewardAmount) {
         uint256 epochStart = _getRoundedEpoch(reward.epochStart);
         // Reward will not be accepted in the following conditions:
         if (
@@ -138,12 +154,14 @@ abstract contract MerkleRewardManager is Initializable {
         rewardAmount = reward.amount;
         address agEURAddress = _agEUR();
         // Computing fees: these are waive for whitelisted addresses and if there is agEUR in a pool
+        uint256 userFeeRebate = feeRebate[msg.sender];
         if (
-            !waivedFees[msg.sender] &&
+            userFeeRebate < 10**9 &&
             IUniswapV3Pool(reward.uniV3Pool).token0() != agEURAddress &&
             IUniswapV3Pool(reward.uniV3Pool).token1() != agEURAddress
         ) {
-            uint256 rewardAmountMinusFees = (rewardAmount * (10**9 - fees)) / 10**9;
+            uint256 _fees = (fees * (10**9 - userFeeRebate)) / 10**9;
+            uint256 rewardAmountMinusFees = (rewardAmount * (10**9 - _fees)) / 10**9;
             IERC20(reward.token).safeTransferFrom(msg.sender, address(this), rewardAmount - rewardAmountMinusFees);
             rewardAmount = rewardAmountMinusFees;
             reward.amount = rewardAmount;
@@ -204,11 +222,10 @@ abstract contract MerkleRewardManager is Initializable {
         emit FeesSet(_fees);
     }
 
-    /// @notice Waives or unwaives the fees for an address
-    function toggleWaivedFees(address user) external onlyGovernorOrGuardian {
-        bool toggleStatus = !waivedFees[user];
-        waivedFees[user] = toggleStatus;
-        emit WaivedStatusToggled(user, toggleStatus);
+    /// @notice Sets fee rebates for a given user
+    function setUserFeeRebates(address user, uint256 userFeeRebate) external onlyGovernorOrGuardian {
+        feeRebate[user] = userFeeRebate;
+        emit FeeRebateUpdated(user, userFeeRebate);
     }
 
     /// @notice Recovers fees accrued on the contract for a list of `tokens`
