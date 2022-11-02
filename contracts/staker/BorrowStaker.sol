@@ -88,6 +88,14 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         return _checkpoint(checkpointUser, true);
     }
 
+    /// @notice Checkpoint earned rewards for user `from`
+    /// @param from Address to checkpoint for
+    function checkpoint(address from) external {
+        address[] memory checkpointUser = new address[](1);
+        checkpointUser[0] = address(from);
+        _checkpoint(checkpointUser, false);
+    }
+
     /// @notice Get the full `asset` balance of `from`, both the wrapper balance and all wrapper deposited on all vaultManager
     /// @param from Address to check the full balance of
     function totalBalanceOf(address from) public returns (uint256 totalBalance) {
@@ -192,9 +200,10 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     function _checkpointRewardsUser(address from, bool _claim) internal returns (uint256[] memory rewardAmounts) {
         IERC20[] memory rewardTokens = _getRewards();
         rewardAmounts = new uint256[](rewardTokens.length);
+        uint256 balanceUser = totalBalanceOf(from);
         for (uint256 i = 0; i < rewardTokens.length; ++i) {
-            uint256 newClaimable = (totalBalanceOf(from) *
-                (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) / BASE_PARAMS;
+            uint256 newClaimable = (balanceUser * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
+                BASE_PARAMS;
             uint256 previousClaimable = pendingRewardsOf[rewardTokens[i]][from];
             if (_claim && previousClaimable + newClaimable > 0) {
                 rewardTokens[i].safeTransfer(from, previousClaimable + newClaimable);

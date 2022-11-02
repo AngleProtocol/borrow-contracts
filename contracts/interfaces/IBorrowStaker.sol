@@ -14,5 +14,7 @@ interface IBorrowStaker is IERC20 {
         address to
     ) external;
 
-    function claimRewards(address user) external;
+    function claimRewards(address user) external returns (uint256[] memory);
+
+    function checkpoint(address from) external;
 }
