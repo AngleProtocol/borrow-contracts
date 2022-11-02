@@ -34,7 +34,7 @@ abstract contract ConvexLevSwapper2Tokens is BaseLevSwapper {
         uint256 amountToken1 = token1().balanceOf(address(this));
         uint256 amountToken2 = token2().balanceOf(address(this));
         // Slippage is checked at the very end of the `swap` function
-        metapool().add_liquidity([amountToken1, amountToken2], 0);
+        if (amountToken1 > 0 && amountToken2 > 0) metapool().add_liquidity([amountToken1, amountToken2], 0);
         // Other solution is also to let the user specify how many tokens have been sent + get
         // the return value from `add_liquidity`: it's more gas efficient but adds more verbose
         amountOut = lpToken().balanceOf(address(this));
@@ -55,7 +55,7 @@ abstract contract ConvexLevSwapper2Tokens is BaseLevSwapper {
             uint256 actualBurnAmount = metapool().remove_liquidity_imbalance(amountOuts, burnAmount);
             // We may have withdrawn more than needed: maybe not optimal because a user may not want to have
             // lp tokens staked. Solution is to do a sweep on all tokens in the `BaseLevSwapper` contract
-            angleStaker().deposit(burnAmount - actualBurnAmount, to);
+            if (burnAmount > actualBurnAmount) angleStaker().deposit(burnAmount - actualBurnAmount, to);
         }
     }
 

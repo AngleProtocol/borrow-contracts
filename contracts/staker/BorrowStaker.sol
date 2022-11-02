@@ -32,6 +32,12 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         _;
     }
 
+    /// @notice Checks whether the `msg.sender` has the governor role or not
+    modifier onlyGovernorOrGuardian() {
+        if (!coreBorrow.isGovernorOrGuardian(msg.sender)) revert NotGovernor();
+        _;
+    }
+
     // ============================= EXTERNAL FUNCTIONS ============================
 
     function decimals() public view override returns (uint8) {
@@ -101,6 +107,16 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     function setCoreBorrow(ICoreBorrow _coreBorrow) external onlyGovernor {
         if (!_coreBorrow.isGovernor(msg.sender)) revert NotGovernor();
         coreBorrow = _coreBorrow;
+    }
+
+    /// @notice Add to the tracking list a vault manager which has as collateral the `asset`
+    /// @param vaultManager Address of the new vaultManager to add to the list
+    function addVaultManager(IVaultManager vaultManager) external onlyGovernorOrGuardian {
+        if (address(vaultManager.collateral()) != address(asset)) revert InvalidVaultManager();
+        for (uint256 i; i < _vaultManagers.length; i++) {
+            if (address(vaultManager) == _vaultManagers[i]) revert InvalidVaultManager();
+        }
+        _vaultManagers.push(address(vaultManager));
     }
 
     /// @notice Allows to recover any ERC20 token, including the asset managed by the reactor
