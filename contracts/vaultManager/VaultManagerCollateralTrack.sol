@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.12;
 
+import "../interfaces/IBorrowStaker.sol";
 import "./VaultManager.sol";
 
 /// @title VaultManagerCollateralTrack
@@ -33,6 +34,9 @@ contract VaultManagerCollateralTrack is VaultManager {
     // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
 
     /// @inheritdoc VaultManager
+    /// @dev No need to checkpoint token when adding collateral because when the transfer will happen
+    /// it will do itself a checkpoint on the right account as the only discrepancy is when the tokens
+    /// are owned by a `vaultManager`
     function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal override {
         if (!_exists(vaultID)) revert NonexistentVault();
         vaultData[vaultID].collateralAmount += collateralAmount;
@@ -41,14 +45,19 @@ contract VaultManagerCollateralTrack is VaultManager {
     }
 
     /// @inheritdoc VaultManager
+    /// @dev We need to checkpoint for the user owning the vault otherwise when transferring the `collateral`
+    /// the claimed Reawards won't be acknowledge properly to each users because the staker will consider
+    /// that the vaultManager had a null balance
     function _removeCollateral(
         uint256 vaultID,
         uint256 collateralAmount,
         uint256 oracleValue,
         uint256 interestAccumulator_
     ) internal override onlyApprovedOrOwner(msg.sender, vaultID) {
+        address owner = _ownerOf(vaultID);
         vaultData[vaultID].collateralAmount -= collateralAmount;
-        _collateralBalances[_ownerOf(vaultID)] -= collateralAmount;
+        _collateralBalances[owner] -= collateralAmount;
+        IBorrowStaker(address(collateral)).checkpoint(owner);
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
         emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
