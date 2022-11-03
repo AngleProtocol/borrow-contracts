@@ -101,7 +101,42 @@ contract SanTokenLevSwapperTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testLeverage(uint256 amount) public {
+    function testLeverageNoUnderlyingTokenDeposited(uint256 amount) public {
+        amount = bound(amount, 0, 10**15);
+
+        deal(address(asset), address(_alice), amount);
+        vm.startPrank(_alice);
+        // intermediary variables
+        bytes[] memory oneInchData = new bytes[](0);
+
+        uint256 minAmountOut = amount;
+        bytes memory addData;
+        bytes memory swapData = abi.encode(oneInchData, addData);
+        bytes memory leverageData = abi.encode(true, _alice, swapData);
+        bytes memory data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
+
+        // we first need to send the tokens before hand, you should always use the swapper
+        // in another tx to not losse your funds by front running
+        asset.transfer(address(swapper), amount);
+        swapper.swap(IERC20(address(_USDC)), IERC20(address(staker)), _alice, 0, amount, data);
+
+        vm.stopPrank();
+
+        assertGe(staker.balanceOf(_alice), minAmountOut);
+        assertEq(staker.balanceOf(_alice), staker.totalSupply());
+        assertEq(asset.balanceOf(_alice), 0);
+        assertEq(staker.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), 0);
+        assertGe(asset.balanceOf(address(staker)), minAmountOut);
+        assertEq(_FRAX.balanceOf(_alice), 0);
+        assertEq(_USDT.balanceOf(_alice), 0);
+        assertEq(_FRAX.balanceOf(address(swapper)), 0);
+        assertEq(_USDT.balanceOf(address(swapper)), 0);
+        assertEq(_FRAX.balanceOf(address(staker)), 0);
+        assertEq(_USDT.balanceOf(address(staker)), 0);
+    }
+
+    function testLeverageSuccess(uint256 amount) public {
         uint256 amountFRAX = 10000 ether;
         uint256 amountUSDT = 10000 * 10**6;
         amount = bound(amount, 0, 10**15);

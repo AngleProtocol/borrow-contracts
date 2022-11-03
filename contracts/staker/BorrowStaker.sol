@@ -108,7 +108,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         for (uint256 i; i < _vaultManagers.length; i++) {
             totalBalance += IVaultManagerCollateralTrack(_vaultManagers[i]).getUserCollateral(from);
         }
-        return balanceOf(from);
+        return totalBalance;
     }
 
     /// @notice Returns the exact amount that will be received if calling `claimRewards(from)` for a specific reward token

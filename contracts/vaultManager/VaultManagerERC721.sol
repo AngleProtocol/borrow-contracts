@@ -198,11 +198,13 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         if (whitelistingActivated && (isWhitelisted[to] != 1 || isWhitelisted[msg.sender] != 1))
             revert NotWhitelisted();
         if (to == address(0)) revert ZeroAddress();
+        vaultID = vaultIDCount;
+        _beforeTokenTransfer(address(0), to, vaultID);
+
         unchecked {
             vaultIDCount += 1;
             _balances[to] += 1;
         }
-        vaultID = vaultIDCount;
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
         if (!_checkOnERC721Received(address(0), to, vaultID, "")) revert NonERC721Receiver();
@@ -214,6 +216,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     function _burn(uint256 vaultID) internal {
         address owner = _ownerOf(vaultID);
 
+        _beforeTokenTransfer(owner, address(0), vaultID);
         // Clear approvals
         _approve(address(0), vaultID);
         // The following line cannot underflow as the owner's balance is necessarily
@@ -240,6 +243,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         if (_ownerOf(vaultID) != from) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
         if (whitelistingActivated && isWhitelisted[to] != 1) revert NotWhitelisted();
+
+        _beforeTokenTransfer(from, to, vaultID);
+
         // Clear approvals from the previous owner
         _approve(address(0), vaultID);
         unchecked {
@@ -303,4 +309,18 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
             return true;
         }
     }
+
+    /// @notice Hook that is called before any token transfer. This includes minting and burning.
+    ///  Calling conditions:
+    ///
+    ///  - When `from` and `to` are both non-zero, ``from``'s `vaultID` will be
+    ///  transferred to `to`.
+    ///  - When `from` is zero, `vaultID` will be minted for `to`.
+    ///  - When `to` is zero, ``from``'s `vaultID` will be burned.
+    ///  - `from` and `to` are never both zero.
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 vaultID
+    ) internal virtual {}
 }

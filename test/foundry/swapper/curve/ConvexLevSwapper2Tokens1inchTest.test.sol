@@ -382,6 +382,7 @@ contract ConvexLevSwapper2Tokens1InchTest is BaseTest {
         _USDT.safeTransfer(address(swapper), swappedUSDT);
         swapper.swap(IERC20(address(_USDC)), IERC20(address(staker)), _alice, 0, addLiquidityUSDC, data);
 
+        console.log(staker.balanceOf(_alice));
         vm.stopPrank();
         vm.startPrank(_dylan);
         // do a swap to change the pool state and withdraw womething different than what has been deposited
