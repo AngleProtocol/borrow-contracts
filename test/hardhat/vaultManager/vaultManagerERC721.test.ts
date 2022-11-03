@@ -6,6 +6,8 @@ import hre, { contract, ethers } from 'hardhat';
 import {
   AgToken,
   AgToken__factory,
+  AngleHelpers,
+  AngleHelpers__factory,
   MockERC721Receiver__factory,
   MockOracle,
   MockOracle__factory,
@@ -15,13 +17,13 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  VaultManager,
-  VaultManager__factory,
+  VaultManagerLiquidationBoost,
+  VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
 import { addCollateral, angle, closeVault, createVault, deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('VaultManager - ERC721', () => {
+contract('VaultManagerLiquidationBoost - ERC721', () => {
   let deployer: SignerWithAddress;
   let governor: SignerWithAddress;
   let guardian: SignerWithAddress;
@@ -35,7 +37,8 @@ contract('VaultManager - ERC721', () => {
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
   let agToken: AgToken;
-  let vaultManager: VaultManager;
+  let vaultManager: VaultManagerLiquidationBoost;
+  let helpers: AngleHelpers;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -81,7 +84,9 @@ contract('VaultManager - ERC721', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e9, 0.1e9)) as VaultManagerLiquidationBoost;
+    helpers = (await deployUpgradeable(new AngleHelpers__factory(deployer))) as AngleHelpers;
+
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -173,13 +178,13 @@ contract('VaultManager - ERC721', () => {
     });
     describe('getControlledVaults & vaultIDCount', () => {
       it('success - no vault', async () => {
-        const [, count] = await vaultManager.getControlledVaults(alice.address);
+        const [, count] = await helpers.getControlledVaults(vaultManager.address, alice.address);
         expect(count).to.be.equal(0);
       });
 
       it('success - first vault', async () => {
         await angle(vaultManager, alice, [createVault(alice.address)]);
-        const [vaults] = await vaultManager.getControlledVaults(alice.address);
+        const [vaults] = await helpers.getControlledVaults(vaultManager.address, alice.address);
         expect(vaults.length).to.be.equal(1);
         expect(vaults[0].toNumber()).to.be.equal(1);
         expect(await vaultManager.vaultIDCount()).to.be.equal(1);
@@ -188,7 +193,7 @@ contract('VaultManager - ERC721', () => {
       it('success - second vault', async () => {
         await angle(vaultManager, bob, [createVault(bob.address)]);
         await angle(vaultManager, alice, [createVault(alice.address)]);
-        const [vaults, count] = await vaultManager.getControlledVaults(alice.address);
+        const [vaults, count] = await helpers.getControlledVaults(vaultManager.address, alice.address);
         expect(vaults.length).to.be.equal(2);
         expect(count).to.be.equal(1);
         expect(vaults[0].toNumber()).to.be.equal(2);
@@ -201,7 +206,7 @@ contract('VaultManager - ERC721', () => {
         await angle(vaultManager, alice, [createVault(alice.address)]);
         expect(await vaultManager.vaultIDCount()).to.be.equal(2);
         await angle(vaultManager, alice, [createVault(alice.address)]);
-        const [vaults, count] = await vaultManager.getControlledVaults(alice.address);
+        const [vaults, count] = await helpers.getControlledVaults(vaultManager.address, alice.address);
         expect(vaults.length).to.be.equal(3);
         expect(count).to.be.equal(2);
         expect(vaults[0].toNumber()).to.be.equal(2);
@@ -214,7 +219,7 @@ contract('VaultManager - ERC721', () => {
         await angle(vaultManager, alice, [createVault(alice.address)]);
         await angle(vaultManager, alice, [createVault(alice.address)]);
         await angle(vaultManager, alice, [closeVault(2)]);
-        const [vaults, count] = await vaultManager.getControlledVaults(alice.address);
+        const [vaults, count] = await helpers.getControlledVaults(vaultManager.address, alice.address);
         expect(vaults.length).to.be.equal(3);
         expect(count).to.be.equal(1);
         expect(vaults[0].toNumber()).to.be.equal(3);

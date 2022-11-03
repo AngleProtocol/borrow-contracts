@@ -12,7 +12,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('Now deploying the implementation for VaultManager');
   console.log(`Dust for this collateral is going to be ${dust}`);
   await deploy('VaultManager_Implementation', {
-    contract: 'VaultManager',
+    contract: 'VaultManagerLiquidationBoost',
     from: deployer.address,
     args: [parseEther(dust), parseEther(dust)],
     log: !argv.ci,

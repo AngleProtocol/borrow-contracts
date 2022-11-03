@@ -3,7 +3,7 @@ import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Contract
 import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
-import { IERC20Metadata, IOracle, Reactor, TransparentUpgradeableProxy__factory, VaultManager } from '../../../typechain';
+import { IERC20Metadata, IOracle, Reactor, TransparentUpgradeableProxy__factory, VaultManager, VaultManagerLiquidationBoost } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
 import { TypePermit } from '../utils/sigUtils';
 
@@ -228,7 +228,7 @@ async function displayReactorState(reactor: Reactor, log: boolean): Promise<void
 }
 
 async function displayVaultState(
-  vaultManager: VaultManager,
+  vaultManager: VaultManager | VaultManagerLiquidationBoost,
   vaultID: BigNumberish,
   log: boolean,
   collatBase: number,
@@ -276,7 +276,7 @@ async function displayVaultState(
 }
 
 async function angle(
-  vaultManager: VaultManager,
+  vaultManager: VaultManager | VaultManagerLiquidationBoost,
   signer: SignerWithAddress,
   calls: Call[],
   from: string = signer.address,
@@ -300,7 +300,7 @@ async function angle(
 }
 
 async function angleUnprotected(
-  vaultManager: VaultManager,
+  vaultManager: VaultManager | VaultManagerLiquidationBoost,
   signer: SignerWithAddress,
   calls: Call[],
   from: string = signer.address,
