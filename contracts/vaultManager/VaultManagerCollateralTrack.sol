@@ -15,8 +15,8 @@ contract VaultManagerCollateralTrack is VaultManager {
 
     // ================================== STORAGE ==================================
 
-    // Mapping from owner address to the sum of all collateral owned accross all vaults
-    mapping(address => uint256) internal _collateralBalances;
+    // @notice Mapping from owner address to all his vaults
+    mapping(address => uint256[]) internal _ownerListVaults;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint256 dust_, uint256 dustCollateral_) VaultManager(dust_, dustCollateral_) {}
@@ -27,39 +27,50 @@ contract VaultManagerCollateralTrack is VaultManager {
     /// @dev Protect against reentrancy for external contract reading first the value and then allow
     /// the caller to call functions reducing the collateral amount.
     /// Same protection needed as for `virtual_price` on Curve contracts
-    function getUserCollateral(address user) external nonReentrant returns (uint256) {
-        return _collateralBalances[user];
+    function getUserVaults(address user) external nonReentrant returns (uint256[] memory) {
+        return _ownerListVaults[user];
     }
 
     // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
 
-    /// @inheritdoc VaultManager
-    /// @dev No need to checkpoint token when adding collateral because when the transfer will happen
-    /// it will do itself a checkpoint on the right account as the only discrepancy is when the tokens
-    /// are owned by a `vaultManager`
-    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal override {
-        if (!_exists(vaultID)) revert NonexistentVault();
-        vaultData[vaultID].collateralAmount += collateralAmount;
-        _collateralBalances[_ownerOf(vaultID)] += collateralAmount;
-        emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
+    /// @inheritdoc VaultManagerERC721
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 vaultID
+    ) internal override {
+        // if this is not a mint remove from the `from` vault list `vaultID`
+        if (from != address(0)) _removeVaultFromList(from, vaultID);
+        if (to != address(0)) _ownerListVaults[to].push(vaultID);
     }
 
     /// @inheritdoc VaultManager
-    /// @dev We need to checkpoint for the user owning the vault otherwise when transferring the `collateral`
-    /// the claimed Reawards won't be acknowledge properly to each users because the staker will consider
-    /// that the vaultManager had a null balance
-    function _removeCollateral(
+    /// @dev Update the collateralAmount for the owner of the vault and checkpooint if necessary
+    /// the `staker`rewards before getting liquidated
+    function _checkpointLiquidate(
         uint256 vaultID,
-        uint256 collateralAmount,
-        uint256 oracleValue,
-        uint256 interestAccumulator_
-    ) internal override onlyApprovedOrOwner(msg.sender, vaultID) {
+        uint256,
+        uint256,
+        bool burn
+    ) internal override {
         address owner = _ownerOf(vaultID);
-        vaultData[vaultID].collateralAmount -= collateralAmount;
-        _collateralBalances[owner] -= collateralAmount;
+        if (burn) _removeVaultFromList(owner, vaultID);
         IBorrowStaker(address(collateral)).checkpoint(owner);
-        (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
-        if (healthFactor <= BASE_PARAMS) revert InsolventVault();
-        emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
+    }
+
+    /// @notice Remove `vaultID` from `user` stroed vault list
+    /// @param user Address to look out for the vault list
+    /// @param vaultID VaultId to remove from the list
+    /// @dev The vault is necessarily in the list
+    function _removeVaultFromList(address user, uint256 vaultID) internal {
+        uint256[] storage vaultList = _ownerListVaults[user];
+        uint256 vaultListLength = vaultList.length;
+        for (uint256 i = 0; i < vaultListLength - 1; i++) {
+            if (vaultList[i] == vaultID) {
+                vaultList[i] = vaultList[vaultListLength - 1];
+                break;
+            }
+        }
+        vaultList.pop();
     }
 }

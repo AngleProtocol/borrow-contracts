@@ -2,7 +2,7 @@
 pragma solidity 0.8.12;
 
 import "../swapper/LevSwapper/BaseLevSwapper.sol";
-import "./MockBorrowStaker.sol";
+import { MockBorrowStaker } from "./MockBorrowStaker.sol";
 
 /// @title MockBaseLevSwapper
 /// @author Angle Labs, Inc

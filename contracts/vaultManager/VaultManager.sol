@@ -694,6 +694,13 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     liqData.newInterestAccumulator
                 );
             }
+            _checkpointLiquidate(
+                vaultIDs[i],
+                collateralReleased,
+                amounts[i],
+                vault.collateralAmount == collateralReleased
+            );
+
             liqData.collateralAmountToGive += collateralReleased;
             liqData.stablecoinAmountToReceive += amounts[i];
         }
@@ -921,4 +928,18 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         // even though a single oracle contract could be used in different places
         oracle.setTreasury(_treasury);
     }
+
+    // ============================= VIRTUAL FUNCTIONS =============================
+
+    /// @notice Hook called before any liquidation occurs
+    /// @param vaultID Vault to be liquidated
+    /// @param collateralAmount Collateral amount to send to the liquidator
+    /// @param stablecoinAmount Stablecoin amount to receive from the liquidator
+    /// @param burn Whether the vault was emptied from all its collateral
+    function _checkpointLiquidate(
+        uint256 vaultID,
+        uint256 collateralAmount,
+        uint256 stablecoinAmount,
+        bool burn
+    ) internal virtual {}
 }
