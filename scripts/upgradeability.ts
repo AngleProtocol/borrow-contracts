@@ -28,24 +28,24 @@ async function main() {
   // Uncomment to check all valid build names
   // console.log((await artifacts.getAllFullyQualifiedNames()));
 
-  testUpgradeability('MockPolygonAgEUR', 'contracts/mock/MockPolygonAgEUR.sol');
-  testUpgradeability('TokenPolygonUpgradeable', 'contracts/agToken/polygon/TokenPolygonUpgradeable.sol');
+  testUpgradeability('OldVaultManager', 'contracts/deprecated/OldVaultManager.sol');
+  testUpgradeability('VaultManagerLiquidationBoost', 'contracts/vaultmanager/VaultManagerLiquidationBoost.sol');
 
-  testUpgradeability('MockSidechainAgEUR', 'contracts/mock/MockSidechainAgEUR.sol');
-  testUpgradeability('AgTokenSideChainMultiBridge', 'contracts/agToken/AgTokenSideChainMultiBridge.sol');
+  testUpgradeability('OldAngleHelpers', 'contracts/deprecated/OldAngleHelpers.sol');
+  testUpgradeability('AngleHelpers', 'contracts/ui-helpers/AngleHelpers.sol');
 
   testStorage(
-    'MockPolygonAgEUR',
-    'contracts/mock/MockPolygonAgEUR.sol',
-    'TokenPolygonUpgradeable',
-    'contracts/agToken/polygon/TokenPolygonUpgradeable.sol',
+    'OldVaultManager',
+    'contracts/deprecated/OldVaultManager.sol',
+    'VaultManagerLiquidationBoost',
+    'contracts/vaultmanager/VaultManagerLiquidationBoost.sol',
   );
 
   testStorage(
-    'MockSidechainAgEUR',
-    'contracts/mock/MockSidechainAgEUR.sol',
-    'AgTokenSideChainMultiBridge',
-    'contracts/agToken/AgTokenSideChainMultiBridge.sol',
+    'OldAngleHelpers',
+    'contracts/deprecated/OldAngleHelpers.sol',
+    'AngleHelpers',
+    'contracts/ui-helpers/AngleHelpers.sol'
   );
 }
 
