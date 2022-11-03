@@ -796,21 +796,9 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
-    /// @param liquidator Address for which boost should be computed
     /// @return The slope of the discount function
-    function _computeLiquidationBoost(address liquidator) internal view returns (uint256) {
-        if (address(veBoostProxy) == address(0)) {
-            return yLiquidationBoost[0];
-        } else {
-            uint256 adjustedBalance = veBoostProxy.adjusted_balance_of(liquidator);
-            if (adjustedBalance >= xLiquidationBoost[1]) return yLiquidationBoost[1];
-            else if (adjustedBalance <= xLiquidationBoost[0]) return yLiquidationBoost[0];
-            else
-                return
-                    yLiquidationBoost[0] +
-                    ((yLiquidationBoost[1] - yLiquidationBoost[0]) * (adjustedBalance - xLiquidationBoost[0])) /
-                    (xLiquidationBoost[1] - xLiquidationBoost[0]);
-        }
+    function _computeLiquidationBoost(address) internal view virtual returns (uint256) {
+        return yLiquidationBoost[0];
     }
 
     // ============================== Setters ======================================

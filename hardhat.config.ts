@@ -75,6 +75,15 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/vaultManager/VaultManagerLiquidationBoost.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
       'contracts/helpers/AngleHelpers.sol': {
         version: '0.8.12',
         settings: {
