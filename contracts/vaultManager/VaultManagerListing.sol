@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.12;
 
-import "../interfaces/IBorrowStaker.sol";
+import { IBorrowStakerCheckpoint } from "../interfaces/IBorrowStaker.sol";
 import "./VaultManager.sol";
 
 /// @title VaultManagerListing
@@ -40,28 +40,23 @@ contract VaultManagerListing is VaultManager {
         uint256 vaultID
     ) internal override {
         // if this is not a mint remove from the `from` vault list `vaultID`
-        if (from != address(0)) _removeVaultFromList(from, vaultID);
-        if (to != address(0)) _ownerListVaults[to].push(vaultID);
-        // if it is a transfer checkpoint for both
-        // we can also remove and let them do the checkpoint by hand
-        if (from != address(0) && to != address(0)) {
-            IBorrowStaker(address(collateral)).checkpoint(from);
-            IBorrowStaker(address(collateral)).checkpoint(to);
+        if (from != address(0)) {
+            _removeVaultFromList(from, vaultID);
+            _checkpointWrapper(from);
+        }
+        if (to != address(0)) {
+            _ownerListVaults[to].push(vaultID);
+            _checkpointWrapper(to);
         }
     }
 
     /// @inheritdoc VaultManager
     /// @dev Update the collateralAmount for the owner of the vault and checkpooint if necessary
     /// the `staker`rewards before getting liquidated
-    function _checkpointLiquidate(
-        uint256 vaultID,
-        uint256,
-        uint256,
-        bool burn
-    ) internal override {
+    function _checkpointLiquidate(uint256 vaultID, bool burn) internal override {
         address owner = _ownerOf(vaultID);
         if (burn) _removeVaultFromList(owner, vaultID);
-        IBorrowStaker(address(collateral)).checkpoint(owner);
+        _checkpointWrapper(owner);
     }
 
     /// @notice Remove `vaultID` from `user` stroed vault list
@@ -78,5 +73,13 @@ contract VaultManagerListing is VaultManager {
             }
         }
         vaultList.pop();
+    }
+
+    /// @notice Checkpoint rewards for `uset` in the `staker` contract
+    /// @param user Address to look out for the vault list
+    /// @dev Whenever there is an internal transfer or a transfer from the `vaultManager`,
+    /// we need to update the rewards to track correctly everyone's claim
+    function _checkpointWrapper(address user) internal {
+        IBorrowStakerCheckpoint(address(collateral)).checkpoint(user);
     }
 }

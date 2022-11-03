@@ -245,7 +245,7 @@ interface IVaultManagerStorage {
 /// @author Angle Core Team
 /// @notice Interface for the `VaultManager` contract
 interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721Metadata {
-
+    function isApprovedOrOwner(address spender, uint256 vaultID) external view returns (bool);
 }
 
 /// @title IVaultManagerListing

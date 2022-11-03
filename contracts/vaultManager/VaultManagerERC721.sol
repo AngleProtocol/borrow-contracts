@@ -28,27 +28,6 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
 
     // =============================== ERC721 Logic ================================
 
-    /// @notice Returns all the vaults owned or controlled (under the form of approval) by an address
-    /// @param spender Address for which vault ownerships should be checked
-    /// @return List of `vaultID` controlled by this address
-    /// @return Count of vaults owned by the address
-    /// @dev This function is never to be called on-chain since it iterates over all vaultIDs. It is here
-    /// to reduce dependency on an external graph to link an ID to its owner
-    function getControlledVaults(address spender) external view returns (uint256[] memory, uint256) {
-        uint256 arraySize = vaultIDCount;
-        uint256[] memory vaultsControlled = new uint256[](arraySize);
-        address owner;
-        uint256 count;
-        for (uint256 i = 1; i <= arraySize; i++) {
-            owner = _owners[i];
-            if (spender == owner || _getApproved(i) == spender || _operatorApprovals[owner][spender] == 1) {
-                vaultsControlled[count] = i;
-                count += 1;
-            }
-        }
-        return (vaultsControlled, count);
-    }
-
     /// @notice Checks whether a given address is approved for a vault or owns this vault
     /// @param spender Address for which vault ownership should be checked
     /// @param vaultID ID of the vault to check

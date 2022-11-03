@@ -3,7 +3,11 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IBorrowStaker is IERC20 {
+interface IBorrowStakerCheckpoint {
+    function checkpoint(address from) external;
+}
+
+interface IBorrowStaker is IBorrowStakerCheckpoint, IERC20 {
     function asset() external returns (IERC20 stakingToken);
 
     function deposit(uint256 amount, address to) external;
@@ -15,6 +19,4 @@ interface IBorrowStaker is IERC20 {
     ) external;
 
     function claimRewards(address user) external returns (uint256[] memory);
-
-    function checkpoint(address from) external;
 }
