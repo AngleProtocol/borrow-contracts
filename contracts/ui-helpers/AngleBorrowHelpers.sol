@@ -25,10 +25,14 @@ contract AngleBorrowHelpers is Initializable {
         uint256[] memory vaultsControlled = new uint256[](arraySize);
         uint256 count;
         for (uint256 i = 1; i <= arraySize; i++) {
-            if (vaultManager.isApprovedOrOwner(spender, i)) {
-                vaultsControlled[count] = i;
-                count += 1;
-            }
+            try vaultManager.isApprovedOrOwner(spender, i) returns (bool _isApprovedOrOwner) {
+                if (_isApprovedOrOwner) {
+                    vaultsControlled[count] = i;
+                    count += 1;
+                }
+            } catch {
+                continue;
+            } // This happen if nobody owns the vaultID=i (if there has been a burn)
         }
         return (vaultsControlled, count);
     }

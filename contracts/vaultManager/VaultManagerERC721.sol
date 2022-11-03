@@ -177,13 +177,18 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         if (whitelistingActivated && (isWhitelisted[to] != 1 || isWhitelisted[msg.sender] != 1))
             revert NotWhitelisted();
         if (to == address(0)) revert ZeroAddress();
+
+        unchecked {
+            vaultIDCount += 1;
+        }
+
         vaultID = vaultIDCount;
         _beforeTokenTransfer(address(0), to, vaultID);
 
         unchecked {
-            vaultIDCount += 1;
             _balances[to] += 1;
         }
+
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
         if (!_checkOnERC721Received(address(0), to, vaultID, "")) revert NonERC721Receiver();
