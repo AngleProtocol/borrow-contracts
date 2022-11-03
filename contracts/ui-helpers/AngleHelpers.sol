@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../interfaces/IAngleRouter.sol";
 import "../interfaces/coreModule/IAgTokenMainnet.sol";
 import "../interfaces/coreModule/ICore.sol";
@@ -8,6 +7,7 @@ import "../interfaces/coreModule/IOracleCore.sol";
 import "../interfaces/coreModule/IPerpetualManager.sol";
 import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
+import "./AngleBorrowHelpers.sol";
 
 pragma solidity 0.8.12;
 
@@ -50,7 +50,7 @@ struct CollateralAddresses {
 /// @author Angle Core Team
 /// @notice Contract with view functions designed to facilitate integrations on the Core module of the Angle Protocol
 /// @dev This contract only contains view functions to be queried off-chain. It was thus not optimized for gas consumption
-contract AngleHelpers is Initializable {
+contract AngleHelpers is AngleBorrowHelpers {
     // ======================== Helper View Functions ==============================
 
     /// @notice Gives the amount of `agToken` you'd be getting if you were executing in the same block a mint transaction
@@ -340,7 +340,4 @@ contract AngleHelpers is Initializable {
 
     error NotInitialized();
     error InvalidAmount();
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
 }

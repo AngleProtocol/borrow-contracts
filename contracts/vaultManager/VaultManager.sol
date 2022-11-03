@@ -397,7 +397,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @notice Increases the collateral balance of a vault
     /// @param vaultID ID of the vault to increase the collateral balance of
     /// @param collateralAmount Amount by which increasing the collateral balance of
-    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal virtual {
+    function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         if (!_exists(vaultID)) revert NonexistentVault();
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
@@ -414,7 +414,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 collateralAmount,
         uint256 oracleValue,
         uint256 interestAccumulator_
-    ) internal virtual onlyApprovedOrOwner(msg.sender, vaultID) {
+    ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
@@ -694,12 +694,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     liqData.newInterestAccumulator
                 );
             }
-            _checkpointLiquidate(
-                vaultIDs[i],
-                collateralReleased,
-                amounts[i],
-                vault.collateralAmount == collateralReleased
-            );
+            _checkpointLiquidate(vaultIDs[i], vault.collateralAmount == collateralReleased);
 
             liqData.collateralAmountToGive += collateralReleased;
             liqData.stablecoinAmountToReceive += amounts[i];
@@ -933,13 +928,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Hook called before any liquidation occurs
     /// @param vaultID Vault to be liquidated
-    /// @param collateralAmount Collateral amount to send to the liquidator
-    /// @param stablecoinAmount Stablecoin amount to receive from the liquidator
     /// @param burn Whether the vault was emptied from all its collateral
-    function _checkpointLiquidate(
-        uint256 vaultID,
-        uint256 collateralAmount,
-        uint256 stablecoinAmount,
-        bool burn
-    ) internal virtual {}
+    function _checkpointLiquidate(uint256 vaultID, bool burn) internal virtual {}
 }
