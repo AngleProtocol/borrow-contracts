@@ -106,7 +106,12 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
         totalBalance = balanceOf(from);
         for (uint256 i; i < _vaultManagers.length; i++) {
-            totalBalance += IVaultManagerCollateralTrack(_vaultManagers[i]).getUserCollateral(from);
+            uint256[] memory vaultList = IVaultManagerListing(_vaultManagers[i]).getUserVaults(from);
+            uint256 vaultListLength = vaultList.length;
+            for (uint256 k; k < vaultListLength; k++) {
+                (uint256 collateralAmount, ) = IVaultManagerListing(_vaultManagers[i]).vaultData(vaultList[k]);
+                totalBalance += collateralAmount;
+            }
         }
         return totalBalance;
     }

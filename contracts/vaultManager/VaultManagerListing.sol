@@ -5,11 +5,11 @@ pragma solidity 0.8.12;
 import "../interfaces/IBorrowStaker.sol";
 import "./VaultManager.sol";
 
-/// @title VaultManagerCollateralTrack
+/// @title VaultManagerListing
 /// @author Angle Core Team
 /// @notice Provide an additional viewer to `VaumtManager` to get the full collateral deposited
 /// by an owner
-contract VaultManagerCollateralTrack is VaultManager {
+contract VaultManagerListing is VaultManager {
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -42,6 +42,12 @@ contract VaultManagerCollateralTrack is VaultManager {
         // if this is not a mint remove from the `from` vault list `vaultID`
         if (from != address(0)) _removeVaultFromList(from, vaultID);
         if (to != address(0)) _ownerListVaults[to].push(vaultID);
+        // if it is a transfer checkpoint for both
+        // we can also remove and let them do the checkpoint by hand
+        if (from != address(0) && to != address(0)) {
+            IBorrowStaker(address(collateral)).checkpoint(from);
+            IBorrowStaker(address(collateral)).checkpoint(to);
+        }
     }
 
     /// @inheritdoc VaultManager

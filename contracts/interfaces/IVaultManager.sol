@@ -248,9 +248,9 @@ interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721
 
 }
 
-/// @title VaultManagerCollateralTrack
+/// @title IVaultManagerListing
 /// @author Angle Core Team
-/// @notice Interface for the `VaultManagerCollateralTrack` contract
-interface IVaultManagerCollateralTrack is IVaultManager {
-    function getUserCollateral(address user) external returns (uint256);
+/// @notice Interface for the `VaultManagerListing` contract
+interface IVaultManagerListing is IVaultManager {
+    function getUserVaults(address user) external returns (uint256[] memory);
 }

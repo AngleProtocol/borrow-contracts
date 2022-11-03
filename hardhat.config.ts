@@ -66,6 +66,15 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/vaultManager/VaultManagerListing.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
       'contracts/helpers/AngleHelpers.sol': {
         version: '0.8.12',
         settings: {
@@ -127,9 +136,9 @@ const config: HardhatUserConfig = {
       },
       mining: argv.disableAutoMining
         ? {
-            auto: false,
-            interval: 1000,
-          }
+          auto: false,
+          interval: 1000,
+        }
         : { auto: true },
       chainId: 1337,
     },
