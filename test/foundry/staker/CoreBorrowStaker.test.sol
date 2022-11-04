@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../BaseTest.test.sol";
 import "../../../contracts/interfaces/ICoreBorrow.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
+import "../../../contracts/mock/MockVaultManager.sol";
 import { MockBorrowStaker, BorrowStakerStorage } from "../../../contracts/mock/MockBorrowStaker.sol";
 
 contract CoreBorrowStakerTest is BaseTest {
@@ -228,6 +229,63 @@ contract CoreBorrowStakerTest is BaseTest {
 
         assertEq(asset.allowance(address(staker), address(_alice)), amount);
         assertEq(asset.allowance(address(staker), address(_bob)), amount2);
+    }
+
+    // ============================== ADDVAULTMANAGER ==============================
+
+    function testAddVaultManagersWrongCaller() public {
+        startHoax(_alice);
+
+        address _treasury = address(uint160(uint256(keccak256(abi.encodePacked("treasury")))));
+
+        MockVaultManager vaultManager1 = new MockVaultManagerListing(_treasury);
+        vaultManager1.setParams(_GOVERNOR, address(asset), address(otherToken), 1 ether, 0, BASE_PARAMS / 2, 0);
+
+        vm.expectRevert(BorrowStakerStorage.NotGovernorOrGuardian.selector);
+        staker.addVaultManager(IVaultManagerListing(address(vaultManager1)));
+    }
+
+    function testAddVaultManagers() public {
+        startHoax(_GUARDIAN);
+
+        address _treasury = address(uint160(uint256(keccak256(abi.encodePacked("treasury")))));
+
+        MockVaultManager vaultManager1 = new MockVaultManagerListing(_treasury);
+        MockVaultManager vaultManager2 = new MockVaultManagerListing(_treasury);
+        MockVaultManager vaultManagerWrong = new MockVaultManagerListing(_treasury);
+
+        vaultManager1.setParams(_GOVERNOR, address(asset), address(otherToken), 1 ether, 0, BASE_PARAMS / 2, 0);
+        vaultManager2.setParams(_GOVERNOR, address(asset), address(rewardToken), 1 ether, 0, BASE_PARAMS / 4, 0);
+        vaultManagerWrong.setParams(
+            _GOVERNOR,
+            address(rewardToken),
+            address(otherToken),
+            1 ether,
+            0,
+            BASE_PARAMS / 2,
+            0
+        );
+
+        staker.addVaultManager(IVaultManagerListing(address(vaultManager1)));
+
+        IVaultManagerListing[] memory vaultManagerList = staker.getVaultManagers();
+        assertEq(vaultManagerList.length, 1);
+        assertEq(address(vaultManagerList[0]), address(vaultManager1));
+
+        vm.expectRevert(BorrowStakerStorage.InvalidVaultManager.selector);
+        staker.addVaultManager(IVaultManagerListing(address(vaultManagerWrong)));
+
+        vm.expectRevert(BorrowStakerStorage.InvalidVaultManager.selector);
+        staker.addVaultManager(IVaultManagerListing(address(vaultManager1)));
+
+        staker.addVaultManager(IVaultManagerListing(address(vaultManager2)));
+        vaultManagerList = staker.getVaultManagers();
+        assertEq(vaultManagerList.length, 2);
+        assertEq(address(vaultManagerList[0]), address(vaultManager1));
+        assertEq(address(vaultManagerList[1]), address(vaultManager2));
+
+        vm.expectRevert(BorrowStakerStorage.InvalidVaultManager.selector);
+        staker.addVaultManager(IVaultManagerListing(address(vaultManager2)));
     }
 
     // ================================== DEPOSIT ==================================
@@ -581,6 +639,76 @@ contract CoreBorrowStakerTest is BaseTest {
                     estimatedNewClaimableRewards,
                     10**(decimalReward - 4)
                 );
+            }
+
+            vm.stopPrank();
+
+            assertApproxEqAbs(
+                rewardToken.balanceOf(account) + staker.pendingRewardsOf(rewardToken, account),
+                pendingRewards[randomIndex],
+                10**(decimalReward - 4)
+            );
+        }
+    }
+
+    // ================================= CHECKPOINT ================================
+
+    function testCheckpointRewardsSuccess(
+        uint256[CLAIM_LENGTH] memory amounts,
+        bool[CLAIM_LENGTH] memory isDeposit,
+        uint256[CLAIM_LENGTH] memory accounts
+    ) public {
+        deal(address(rewardToken), address(staker), rewardAmount * (amounts.length));
+
+        amounts[0] = bound(amounts[0], 1, maxTokenAmount);
+        deal(address(asset), _alice, amounts[0]);
+        vm.startPrank(_alice);
+        asset.approve(address(staker), amounts[0]);
+        staker.deposit(amounts[0], _alice);
+        vm.stopPrank();
+
+        uint256[4] memory pendingRewards;
+
+        for (uint256 i = 1; i < amounts.length; i++) {
+            staker.setRewardAmount(rewardAmount);
+            uint256 randomIndex = bound(accounts[i], 0, 3);
+            address account = randomIndex == 0 ? _alice : randomIndex == 1 ? _bob : randomIndex == 2
+                ? _charlie
+                : _dylan;
+            if (staker.balanceOf(account) == 0) isDeposit[i] = true;
+
+            {
+                uint256 totSupply = staker.totalSupply();
+                if (totSupply > 0) {
+                    pendingRewards[0] += (staker.balanceOf(_alice) * rewardAmount) / staker.totalSupply();
+                    pendingRewards[1] += (staker.balanceOf(_bob) * rewardAmount) / staker.totalSupply();
+                    pendingRewards[2] += (staker.balanceOf(_charlie) * rewardAmount) / staker.totalSupply();
+                    pendingRewards[3] += (staker.balanceOf(_dylan) * rewardAmount) / staker.totalSupply();
+                }
+            }
+
+            uint256 amount;
+            vm.startPrank(account);
+            if (isDeposit[i]) {
+                amount = bound(amounts[i], 1, maxTokenAmount);
+                deal(address(asset), account, amount);
+                asset.approve(address(staker), amount);
+                staker.deposit(amount, account);
+
+                // to disable new rewards when calling `claimableRewards` and `claimRewards`
+                staker.setRewardAmount(0);
+                uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
+                staker.checkpoint(account);
+                assertEq(functionClaimableRewards, staker.pendingRewardsOf(rewardToken, account));
+            } else {
+                amount = bound(amounts[i], 1, 10**9);
+                staker.withdraw((amount * staker.balanceOf(account)) / 10**9, account, account);
+
+                // to disable new rewards when calling `claimableRewards` and `claimRewards`
+                staker.setRewardAmount(0);
+                uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
+                staker.checkpoint(account);
+                assertEq(functionClaimableRewards, staker.pendingRewardsOf(rewardToken, account));
             }
 
             vm.stopPrank();

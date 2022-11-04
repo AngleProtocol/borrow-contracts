@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../interfaces/ICoreBorrow.sol";
-import "../interfaces/IVaultManager.sol";
+import { IVaultManagerListing } from "../interfaces/IVaultManager.sol";
 
 /// @title BaseStorage
 /// @author Angle Core Team
@@ -30,7 +30,7 @@ contract BorrowStakerStorage is Initializable {
     /// @notice Token decimal
     uint8 internal _decimals;
     /// @notice List of all the vaultManager which have the staker as collateral
-    address[] internal _vaultManagers;
+    IVaultManagerListing[] internal _vaultManagers;
     /// @notice Maps each reward token to a track record of cumulated rewards
     mapping(IERC20 => uint256) public integral;
     /// @notice Maps pairs of `(token,user)` to the currently pending claimable rewards
@@ -50,6 +50,7 @@ contract BorrowStakerStorage is Initializable {
 
     error InvalidToken();
     error NotGovernor();
+    error NotGovernorOrGuardian();
     error TransferAmountExceedsAllowance();
     error ZeroAddress();
     error InvalidVaultManager();
