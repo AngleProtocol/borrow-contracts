@@ -34,8 +34,14 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernorOrGuardian() {
-        if (!coreBorrow.isGovernorOrGuardian(msg.sender)) revert NotGovernor();
+        if (!coreBorrow.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         _;
+    }
+
+    // =============================== VIEW FUNCTIONS ==============================
+
+    function getVaultManagers() public view returns (IVaultManagerListing[] memory) {
+        return _vaultManagers;
     }
 
     // ============================= EXTERNAL FUNCTIONS ============================
@@ -101,15 +107,15 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     function totalBalanceOf(address from) public returns (uint256 totalBalance) {
         // If `from` is one of the whitelisted vaults, do not consider the rewards to not double count balances
         for (uint256 i; i < _vaultManagers.length; i++) {
-            if (_vaultManagers[i] == from) return 0;
+            if (address(_vaultManagers[i]) == from) return 0;
         }
 
         totalBalance = balanceOf(from);
         for (uint256 i; i < _vaultManagers.length; i++) {
-            uint256[] memory vaultList = IVaultManagerListing(_vaultManagers[i]).getUserVaults(from);
+            uint256[] memory vaultList = _vaultManagers[i].getUserVaults(from);
             uint256 vaultListLength = vaultList.length;
             for (uint256 k; k < vaultListLength; k++) {
-                (uint256 collateralAmount, ) = IVaultManagerListing(_vaultManagers[i]).vaultData(vaultList[k]);
+                (uint256 collateralAmount, ) = _vaultManagers[i].vaultData(vaultList[k]);
                 totalBalance += collateralAmount;
             }
         }
@@ -139,12 +145,12 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     /// @notice Add to the tracking list a vault manager which has as collateral the `asset`
     /// @param vaultManager Address of the new vaultManager to add to the list
-    function addVaultManager(IVaultManager vaultManager) external onlyGovernorOrGuardian {
+    function addVaultManager(IVaultManagerListing vaultManager) external onlyGovernorOrGuardian {
         if (address(vaultManager.collateral()) != address(asset)) revert InvalidVaultManager();
         for (uint256 i; i < _vaultManagers.length; i++) {
-            if (address(vaultManager) == _vaultManagers[i]) revert InvalidVaultManager();
+            if (vaultManager == _vaultManagers[i]) revert InvalidVaultManager();
         }
-        _vaultManagers.push(address(vaultManager));
+        _vaultManagers.push(vaultManager);
     }
 
     /// @notice Allows to recover any ERC20 token, including the asset managed by the reactor
