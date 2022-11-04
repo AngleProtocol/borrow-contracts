@@ -61,7 +61,7 @@ describe('MulticallWithFailure', async () => {
       } catch (e) {
         try {
           return mockAnything.interface.parseError(_data).signature;
-        } catch (e) { }
+        } catch (e) {}
       }
       return undefined;
     });

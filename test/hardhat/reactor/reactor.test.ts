@@ -1208,12 +1208,12 @@ contract('Reactor', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [1],
-        [parseEther(maxStablecoinAmountToRepay.toString())],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [1],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
       await displayVaultState(vaultManager, 1, log, collatBase);
       await expect(vaultManager.checkLiquidation(1, bob.address)).to.be.reverted;
       expect(await vaultManager.badDebt()).to.be.gt(0);
@@ -1234,12 +1234,12 @@ contract('Reactor', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [parseEther(maxStablecoinAmountToRepay.toString())],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
 
       expect(await vaultManager.badDebt()).to.be.gt(0);
       const gains = parseUnits('0.05', collatBase);

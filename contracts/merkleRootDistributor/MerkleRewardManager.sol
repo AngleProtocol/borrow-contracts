@@ -107,7 +107,7 @@ abstract contract MerkleRewardManager is Initializable {
         uint256 _fees
     ) public initializer {
         if (address(_coreBorrow) == address(0) || _merkleRootDistributor == address(0)) revert ZeroAddress();
-        if (_fees >= 10**9) revert InvalidParam();
+        if (_fees > 10**9) revert InvalidParam();
         merkleRootDistributor = _merkleRootDistributor;
         coreBorrow = _coreBorrow;
         fees = _fees;
@@ -131,13 +131,17 @@ abstract contract MerkleRewardManager is Initializable {
         uint256[] memory rewardAmounts = new uint256[](rewards.length);
         for (uint256 i = 0; i < rewards.length; ) {
             rewardAmounts[i] = _depositReward(rewards[i]);
+            unchecked {
+                ++i;
+            }
         }
         return rewardAmounts;
     }
 
     /// @notice Internal version of `depositReward`
     function _depositReward(RewardDistribution memory reward) internal returns (uint256 rewardAmount) {
-        uint256 epochStart = _getRoundedEpoch(reward.epochStart);
+        uint32 epochStart = _getRoundedEpoch(reward.epochStart);
+        reward.epochStart = epochStart;
         // Reward will not be accepted in the following conditions:
         if (
             // if epoch parameters would lead to a past distribution
@@ -223,7 +227,7 @@ abstract contract MerkleRewardManager is Initializable {
     }
 
     /// @notice Sets fee rebates for a given user
-    function setUserFeeRebates(address user, uint256 userFeeRebate) external onlyGovernorOrGuardian {
+    function setUserFeeRebate(address user, uint256 userFeeRebate) external onlyGovernorOrGuardian {
         feeRebate[user] = userFeeRebate;
         emit FeeRebateUpdated(user, userFeeRebate);
     }
@@ -255,7 +259,8 @@ abstract contract MerkleRewardManager is Initializable {
         view
         returns (bool)
     {
-        return reward.epochStart + reward.numEpoch * EPOCH_DURATION > roundedEpoch;
+        uint256 rewardEpochStart = reward.epochStart;
+        return rewardEpochStart <= roundedEpoch && rewardEpochStart + reward.numEpoch * EPOCH_DURATION > roundedEpoch;
     }
 
     /// @notice Gets the list of all active rewards during the epoch which started at `epochStart`

@@ -176,7 +176,7 @@ contract('VaultManager', () => {
       await expect(
         vaultManager
           .connect(governor)
-        ['angle(uint8[],bytes[],address,address)']([10], ['0x'], ZERO_ADDRESS, ZERO_ADDRESS),
+          ['angle(uint8[],bytes[],address,address)']([10], ['0x'], ZERO_ADDRESS, ZERO_ADDRESS),
       ).to.be.reverted;
     });
     it('reverts - zero length action', async () => {
@@ -1807,7 +1807,7 @@ contract('VaultManager', () => {
       await expect(
         vaultManager
           .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address)']([2, 0], [parseEther('1')], bob.address, bob.address),
+          ['liquidate(uint256[],uint256[],address,address)']([2, 0], [parseEther('1')], bob.address, bob.address),
       ).to.be.revertedWith('IncompatibleLengths');
     });
     it('reverts - zero length', async () => {
@@ -1823,14 +1823,14 @@ contract('VaultManager', () => {
       await expect(
         vaultManager
           .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
-          [1],
-          [1],
-          bob.address,
-          bob.address,
-          ZERO_ADDRESS,
-          '0x',
-        ),
+          ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
+            [1],
+            [1],
+            bob.address,
+            bob.address,
+            ZERO_ADDRESS,
+            '0x',
+          ),
       ).to.be.revertedWith('Paused');
     });
     it('success - no liquidation boost', async () => {
@@ -1858,12 +1858,12 @@ contract('VaultManager', () => {
       const receipt = await (
         await vaultManager
           .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address)'](
-          [2],
-          [parseEther(maxStablecoinAmountToRepay.toString())],
-          bob.address,
-          bob.address,
-        )
+          ['liquidate(uint256[],uint256[],address,address)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            bob.address,
+            bob.address,
+          )
       ).wait();
 
       inReceipt(receipt, 'LiquidatedVaults', {
@@ -1904,14 +1904,14 @@ contract('VaultManager', () => {
       const receipt = await (
         await vaultManager
           .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
-          [2],
-          [parseEther(maxStablecoinAmountToRepay.toString())],
-          bob.address,
-          bob.address,
-          mockSwapper.address,
-          web3.utils.keccak256('test'),
-        )
+          ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            bob.address,
+            bob.address,
+            mockSwapper.address,
+            web3.utils.keccak256('test'),
+          )
       ).wait();
       expect(await mockSwapper.counter()).to.be.equal(1);
 
@@ -1956,14 +1956,14 @@ contract('VaultManager', () => {
       const receipt = await (
         await vaultManager
           .connect(bob)
-        ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
-          [2],
-          [parseEther(maxStablecoinAmountToRepay.toString())],
-          bob.address,
-          mockSwapperWithSwap.address,
-          mockSwapperWithSwap.address,
-          web3.utils.keccak256('test'),
-        )
+          ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            bob.address,
+            mockSwapperWithSwap.address,
+            mockSwapperWithSwap.address,
+            web3.utils.keccak256('test'),
+          )
       ).wait();
       expect(await mockSwapperWithSwap.counter()).to.be.equal(1);
       expectApprox(
@@ -2009,12 +2009,12 @@ contract('VaultManager', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [parseEther(maxStablecoinAmountToRepay.toString())],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -2049,12 +2049,12 @@ contract('VaultManager', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [parseEther(maxStablecoinAmountToRepay.toString())],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -2092,12 +2092,12 @@ contract('VaultManager', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [parseEther(maxStablecoinAmountToRepay.toString())],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -2130,12 +2130,12 @@ contract('VaultManager', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [parseEther(maxStablecoinAmountToRepay.toString())],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -2173,12 +2173,12 @@ contract('VaultManager', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [(await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [(await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay],
+          bob.address,
+          bob.address,
+        );
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -2335,12 +2335,12 @@ contract('VaultManager', () => {
 
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [parseEther(maxStablecoinAmountToRepay.toString())],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [parseEther(maxStablecoinAmountToRepay.toString())],
+          bob.address,
+          bob.address,
+        );
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -2374,12 +2374,12 @@ contract('VaultManager', () => {
       );
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)'](
-        [2],
-        [(await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay],
-        bob.address,
-        bob.address,
-      );
+        ['liquidate(uint256[],uint256[],address,address)'](
+          [2],
+          [(await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay],
+          bob.address,
+          bob.address,
+        );
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -2476,7 +2476,7 @@ contract('VaultManager', () => {
         .maxStablecoinAmountToRepay;
       await vaultManager
         .connect(bob)
-      ['liquidate(uint256[],uint256[],address,address)']([2], [maxStablecoinAmountToRepay], bob.address, bob.address);
+        ['liquidate(uint256[],uint256[],address,address)']([2], [maxStablecoinAmountToRepay], bob.address, bob.address);
       expectApprox(
         await vaultManager.badDebt(),
         borrowAmount.sub(maxStablecoinAmountToRepay.mul(params.liquidationSurcharge).div(1e9)),

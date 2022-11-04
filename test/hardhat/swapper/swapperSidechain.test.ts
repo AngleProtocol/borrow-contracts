@@ -53,7 +53,12 @@ contract('Swapper', () => {
     });
     it('reverts - zero address', async () => {
       await expect(
-        new MockSwapperSidechain__factory(deployer).deploy(ZERO_ADDRESS, router.address, router.address, router.address),
+        new MockSwapperSidechain__factory(deployer).deploy(
+          ZERO_ADDRESS,
+          router.address,
+          router.address,
+          router.address,
+        ),
       ).to.be.revertedWith('ZeroAddress');
       await expect(
         new MockSwapperSidechain__factory(deployer).deploy(core.address, ZERO_ADDRESS, router.address, router.address),
