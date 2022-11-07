@@ -439,7 +439,7 @@ contract('VaultManager - ERC721', () => {
         await expect(
           vaultManager
             .connect(alice)
-          ['safeTransferFrom(address,address,uint256)'](alice.address, vaultManager.address, 2),
+            ['safeTransferFrom(address,address,uint256)'](alice.address, vaultManager.address, 2),
         ).to.be.reverted;
       });
 
@@ -452,7 +452,7 @@ contract('VaultManager - ERC721', () => {
         await vaultManager.connect(alice).approve(charlie.address, 2);
         await vaultManager
           .connect(charlie)
-        ['safeTransferFrom(address,address,uint256,bytes)'](alice.address, bob.address, 2, '0x');
+          ['safeTransferFrom(address,address,uint256,bytes)'](alice.address, bob.address, 2, '0x');
         expect(await vaultManager.ownerOf(2)).to.be.equal(bob.address);
       });
     });
@@ -473,7 +473,7 @@ contract('VaultManager - ERC721', () => {
       it('success', async () => {
         await vaultManager
           .connect(alice)
-        ['safeTransferFrom(address,address,uint256)'](alice.address, receiver.address, 1);
+          ['safeTransferFrom(address,address,uint256)'](alice.address, receiver.address, 1);
         expect(await vaultManager.balanceOf(receiver.address)).to.be.equal(1);
       });
       it('reverts - custom message', async () => {

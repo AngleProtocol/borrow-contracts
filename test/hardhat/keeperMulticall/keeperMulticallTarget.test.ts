@@ -368,7 +368,7 @@ describe('Keeper Multicall', async () => {
         const log = KeeperMulticall__factory.createInterface().parseLog(_log);
         if (log.eventFragment.name !== 'SentToMiner') return returnValue;
         return log;
-      } catch (e) { }
+      } catch (e) {}
       return returnValue;
     }, {} as utils.LogDescription | undefined);
 
