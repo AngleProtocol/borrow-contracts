@@ -2,25 +2,30 @@
 
 pragma solidity 0.8.12;
 
-import "./BaseAgTokenSideChain.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
-/// @title AgTokenSideChainMultiBridge
-/// @author Angle Core Team
-/// @notice Contract for Angle agTokens on other chains than Ethereum mainnet
-/// @dev This contract supports bridge tokens having a minting right on the stablecoin (also referred to as the canonical
-/// or the native token)
-/// @dev References:
-///      - FRAX implementation: https://polygonscan.com/address/0x45c32fA6DF82ead1e2EF74d17b76547EDdFaFF89#code
-///      - QiDAO implementation: https://snowtrace.io/address/0x5c49b268c9841AFF1Cc3B0a418ff5c3442eE3F3b#code
-contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
+import "../../interfaces/ICoreBorrow.sol";
+
+/// @title AngleSideChainMultiBridge
+/// @author Angle Labs, Inc.
+/// @notice Contract for the ANGLE token on other chains than Ethereum mainnet
+/// @dev This contract supports bridge tokens having a minting right on the ANGLE token (also referred to as the canonical
+/// of the chain)
+/// @dev While this contract works for the ANGLE token, it is suited to any token which is to exist on different chains
+contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Base used for fee computation
     uint256 public constant BASE_PARAMS = 10**9;
 
-    // =============================== Bridging Data ===============================
+    // ================================= PARAMETER =================================
+
+    /// @notice Reference to the core contract which handles access control
+    ICoreBorrow public core;
+
+    // =============================== BRIDGING DATA ===============================
 
     /// @notice Struct with some data about a specific bridge token
     struct BridgeDetails {
@@ -52,7 +57,16 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @notice Usage per hour on that chain. Maps an hourly timestamp to the total volume swapped out on the chain
     mapping(uint256 => uint256) public chainTotalUsage;
 
-    // ================================== Events ===================================
+    // =================================== ERRORS ==================================
+
+    error AssetStillControlledInReserves();
+    error HourlyLimitExceeded();
+    error InvalidToken();
+    error NotGovernor();
+    error NotGovernorOrGuardian();
+    error TooHighParameterValue();
+
+    // =================================== EVENTS ==================================
 
     event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint256 hourlyLimit, uint64 fee, bool paused);
     event BridgeTokenToggled(address indexed bridgeToken, bool toggleStatus);
@@ -64,45 +78,41 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event FeeToggled(address indexed theAddress, uint256 toggleStatus);
 
-    // =============================== Errors ================================
-
-    error AssetStillControlledInReserves();
-    error HourlyLimitExceeded();
-    error InvalidToken();
-    error NotGovernor();
-    error NotGovernorOrGuardian();
-    error TooHighParameterValue();
-
-    // ============================= Constructor ===================================
-
-    /// @notice Initializes the `AgToken` contract
-    /// @param name_ Name of the token
-    /// @param symbol_ Symbol of the token
-    /// @param _treasury Reference to the `Treasury` contract associated to this agToken
-    /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        address _treasury
-    ) external {
-        _initialize(name_, symbol_, _treasury);
-    }
-
-    // =============================== Modifiers ===================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        if (!ITreasury(treasury).isGovernor(msg.sender)) revert NotGovernor();
+        if (!core.isGovernor(msg.sender)) revert NotGovernor();
         _;
     }
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
-        if (!ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         _;
     }
 
-    // ==================== External Permissionless Functions ======================
+    // ================================ CONSTRUCTOR ================================
+
+    /// @notice Initializes the contract
+    /// @param name_ Name of the token
+    /// @param symbol_ Symbol of the token
+    /// @param _core Reference to the `CoreBorrow` contract
+    /// @dev By default, ANGLE tokens are ERC-20 tokens with 18 decimals
+    function initialize(
+        string memory name_,
+        string memory symbol_,
+        ICoreBorrow _core
+    ) external initializer {
+        __ERC20Permit_init(name_);
+        __ERC20_init(name_, symbol_);
+        core = _core;
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
+
+    // ===================== EXTERNAL PERMISSIONLESS FUNCTIONS =====================
 
     /// @notice Returns the list of all supported bridge tokens
     /// @dev Helpful for UIs
@@ -126,8 +136,8 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @notice Mints the canonical token from a supported bridge token
     /// @param bridgeToken Bridge token to use to mint
     /// @param amount Amount of bridge tokens to send
-    /// @param to Address to which the stablecoin should be sent
-    /// @return Amount of the canonical stablecoin actually minted
+    /// @param to Address to which the ANGLE token should be sent
+    /// @return Amount of canonical token actually minted
     /// @dev Some fees may be taken by the protocol depending on the token used and on the address calling
     function swapIn(
         address bridgeToken,
@@ -200,10 +210,18 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         return bridgeOut;
     }
 
-    // ======================= Governance Functions ================================
+    // ============================ GOVERNANCE FUNCTIONS ===========================
+
+    /// @notice Sets a new `core` contract
+    /// @dev One sanity check that can be performed here is to verify whether at least the governor
+    /// calling the contract is still a governor in the new core
+    function setCore(ICoreBorrow _core) external onlyGovernor {
+        if (!_core.isGovernor(msg.sender)) revert NotGovernor();
+        core = _core;
+    }
 
     /// @notice Adds support for a bridge token
-    /// @param bridgeToken Bridge token to add: it should be a version of the stablecoin from another bridge
+    /// @param bridgeToken Bridge token to add: it should be a version of the ANGLE token from another bridge
     /// @param limit Limit on the balance of bridge token this contract could hold
     /// @param hourlyLimit Limit on the hourly volume for this bridge
     /// @param paused Whether swapping for this token should be paused or not

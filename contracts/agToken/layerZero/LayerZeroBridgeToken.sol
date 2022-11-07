@@ -9,7 +9,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /// @title LayerZeroBridgeToken
 /// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
-/// @notice Contract to be deployed on a L2/sidechain for bridging an AgToken using a bridge intermediate token and LayerZero
+/// @notice Contract to be deployed on a L2/sidechain for bridging a token (AgToken or ANGLE for instance) using
+/// a bridge intermediate token and LayerZero
 contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable {
     /// @notice Address of the bridgeable token
     /// @dev Immutable
