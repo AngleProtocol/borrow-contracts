@@ -151,7 +151,7 @@ contract ERC20UpgradeableCustom is Initializable, ContextUpgradeable, IERC20Upgr
      *
      * - `sender` and `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
-     * - the caller must have allowance for ``sender``'s tokens of at least
+     * - the caller must have allowance for `sender`'s tokens of at least
      * `amount`.
      */
     function transferFrom(
@@ -357,10 +357,10 @@ contract ERC20UpgradeableCustom is Initializable, ContextUpgradeable, IERC20Upgr
      *
      * Calling conditions:
      *
-     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+     * - when `from` and `to` are both non-zero, `amount` of `from`'s tokens
      * will be transferred to `to`.
      * - when `from` is zero, `amount` tokens will be minted for `to`.
-     * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
+     * - when `to` is zero, `amount` of `from`'s tokens will be burned.
      * - `from` and `to` are never both zero.
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
@@ -377,10 +377,10 @@ contract ERC20UpgradeableCustom is Initializable, ContextUpgradeable, IERC20Upgr
      *
      * Calling conditions:
      *
-     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+     * - when `from` and `to` are both non-zero, `amount` of `from`'s tokens
      * has been transferred to `to`.
      * - when `from` is zero, `amount` tokens have been minted for `to`.
-     * - when `to` is zero, `amount` of ``from``'s tokens have been burned.
+     * - when `to` is zero, `amount` of `from`'s tokens have been burned.
      * - `from` and `to` are never both zero.
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].

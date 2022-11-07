@@ -7,10 +7,11 @@ pragma solidity 0.8.12;
 
 /// @title AngleBorrowHelpers
 /// @author Angle Core Team
-/// @notice Contract with view functions designed to facilitate integrations on the Core module of the Angle Protocol
+/// @notice Contract with view functions designed to facilitate integrations on the Borrow module of the Angle Protocol
 /// @dev This contract only contains view functions to be queried off-chain. It was thus not optimized for gas consumption
 contract AngleBorrowHelpers is Initializable {
     /// @notice Returns all the vaults owned or controlled (under the form of approval) by an address
+    /// @param vaultManager VaultManager address to query vaultIDs on
     /// @param spender Address for which vault ownerships should be checked
     /// @return List of `vaultID` controlled by this address
     /// @return Count of vaults owned by the address
@@ -32,7 +33,7 @@ contract AngleBorrowHelpers is Initializable {
                 }
             } catch {
                 continue;
-            } // This happen if nobody owns the vaultID=i (if there has been a burn)
+            } // This happens if nobody owns the vaultID=i (if there has been a burn)
         }
         return (vaultsControlled, count);
     }

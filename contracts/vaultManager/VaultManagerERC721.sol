@@ -297,10 +297,10 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @notice Hook that is called before any token transfer. This includes minting and burning.
     ///  Calling conditions:
     ///
-    ///  - When `from` and `to` are both non-zero, ``from``'s `vaultID` will be
+    ///  - When `from` and `to` are both non-zero, `from`'s `vaultID` will be
     ///  transferred to `to`.
     ///  - When `from` is zero, `vaultID` will be minted for `to`.
-    ///  - When `to` is zero, ``from``'s `vaultID` will be burned.
+    ///  - When `to` is zero, `from`'s `vaultID` will be burned.
     ///  - `from` and `to` are never both zero.
     function _beforeTokenTransfer(
         address from,
