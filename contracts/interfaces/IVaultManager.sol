@@ -252,5 +252,5 @@ interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721
 /// @author Angle Core Team
 /// @notice Interface for the `VaultManagerListing` contract
 interface IVaultManagerListing is IVaultManager {
-    function getUserVaults(address user) external returns (uint256[] memory);
+    function getUserCollateral(address user) external returns (uint256);
 }

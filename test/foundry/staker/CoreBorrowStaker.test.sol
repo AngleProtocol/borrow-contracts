@@ -239,7 +239,7 @@ contract CoreBorrowStakerTest is BaseTest {
         address _treasury = address(uint160(uint256(keccak256(abi.encodePacked("treasury")))));
 
         MockVaultManager vaultManager1 = new MockVaultManagerListing(_treasury);
-        vaultManager1.setParams(_GOVERNOR, address(asset), address(otherToken), 1 ether, 0, BASE_PARAMS / 2, 0);
+        vaultManager1.setParams(_GOVERNOR, address(asset), address(otherToken), 1 ether, 0, BASE_STAKER / 2, 0);
 
         vm.expectRevert(BorrowStakerStorage.NotGovernorOrGuardian.selector);
         staker.addVaultManager(IVaultManagerListing(address(vaultManager1)));
@@ -254,15 +254,15 @@ contract CoreBorrowStakerTest is BaseTest {
         MockVaultManager vaultManager2 = new MockVaultManagerListing(_treasury);
         MockVaultManager vaultManagerWrong = new MockVaultManagerListing(_treasury);
 
-        vaultManager1.setParams(_GOVERNOR, address(asset), address(otherToken), 1 ether, 0, BASE_PARAMS / 2, 0);
-        vaultManager2.setParams(_GOVERNOR, address(asset), address(rewardToken), 1 ether, 0, BASE_PARAMS / 4, 0);
+        vaultManager1.setParams(_GOVERNOR, address(asset), address(otherToken), 1 ether, 0, BASE_STAKER / 2, 0);
+        vaultManager2.setParams(_GOVERNOR, address(asset), address(rewardToken), 1 ether, 0, BASE_STAKER / 4, 0);
         vaultManagerWrong.setParams(
             _GOVERNOR,
             address(rewardToken),
             address(otherToken),
             1 ether,
             0,
-            BASE_PARAMS / 2,
+            BASE_STAKER / 2,
             0
         );
 
@@ -344,8 +344,8 @@ contract CoreBorrowStakerTest is BaseTest {
             staker.deposit(amount, account);
             vm.stopPrank();
 
-            integral += (rewardAmount * BASE_PARAMS) / totalSupply;
-            uint256 newClaimable = (balanceOf[randomIndex] * (integral - integralOf[randomIndex])) / BASE_PARAMS;
+            integral += (rewardAmount * BASE_STAKER) / totalSupply;
+            uint256 newClaimable = (balanceOf[randomIndex] * (integral - integralOf[randomIndex])) / BASE_STAKER;
             integralOf[randomIndex] = integral;
             totalSupply += amount;
             balanceOf[randomIndex] += amount;

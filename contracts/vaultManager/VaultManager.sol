@@ -3,6 +3,7 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerPermit.sol";
+import "hardhat/console.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -417,6 +418,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
+        console.log("healthFactor ", healthFactor);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
         emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
     }

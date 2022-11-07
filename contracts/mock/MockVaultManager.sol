@@ -117,6 +117,15 @@ contract MockVaultManagerListing is MockVaultManager {
         return _ownerListVaults[owner];
     }
 
+    function getUserCollateral(address owner) public view returns (uint256 totalCollateral) {
+        uint256[] memory vaultList = _ownerListVaults[owner];
+        uint256 vaultListLength = vaultList.length;
+        for (uint256 k; k < vaultListLength; k++) {
+            totalCollateral += vaultData[vaultList[k]].collateralAmount;
+        }
+        return totalCollateral;
+    }
+
     function setOwner(uint256 vaultID, address owner) external override {
         if (ownerOf[vaultID] != address(0)) _removeVaultFromList(ownerOf[vaultID], vaultID);
         _ownerListVaults[owner].push(vaultID);

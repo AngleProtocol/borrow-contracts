@@ -7,7 +7,7 @@ import "./VaultManager.sol";
 
 /// @title VaultManagerListing
 /// @author Angle Core Team
-/// @notice Provide an additional viewer to `VaumtManager` to get the full collateral deposited
+/// @notice Provide an additional viewer to `VaultManager` to get the full collateral deposited
 /// by an owner
 contract VaultManagerListing is VaultManager {
     using SafeERC20 for IERC20;
@@ -27,8 +27,13 @@ contract VaultManagerListing is VaultManager {
     /// @dev Protect against reentrancy for external contract reading first the value and then allow
     /// the caller to call functions reducing the collateral amount.
     /// Same protection needed as for `virtual_price` on Curve contracts
-    function getUserVaults(address user) external nonReentrant returns (uint256[] memory) {
-        return _ownerListVaults[user];
+    function getUserCollateral(address user) external nonReentrant returns (uint256 totalCollateral) {
+        uint256[] memory vaultList = _ownerListVaults[user];
+        uint256 vaultListLength = vaultList.length;
+        for (uint256 k; k < vaultListLength; k++) {
+            totalCollateral += vaultData[vaultList[k]].collateralAmount;
+        }
+        return totalCollateral;
     }
 
     // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================

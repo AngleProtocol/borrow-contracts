@@ -206,7 +206,7 @@ contract Treasury is ITreasury, Initializable {
     /// and/or a list of `VaultManager` contracts
     /// @param surplusBufferValue Value of the surplus buffer after the calls to the different modules
     /// @param badDebtValue Value of the bad debt after the calls to the different modules
-    /// @return Value of the `surplusBuffer` corrected from the `badDebt``
+    /// @return Value of the `surplusBuffer` corrected from the `badDebt`
     /// @return Value of the `badDebt` corrected from the `surplusBuffer` and from the surplus the treasury had accumulated
     /// previously
     /// @dev When calling this function, it is possible that there is a positive `surplusBufferValue` and `badDebtValue`,
