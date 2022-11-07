@@ -55,7 +55,6 @@ contract('MerkleRewardManager', () => {
       outOfRangeIncentivized: 0,
       epochStart: startTime,
       numEpoch: 1,
-      incentivizeOutOfRange: 0,
       boostedReward: 0,
       boostingAddress: ZERO_ADDRESS,
     };
@@ -170,7 +169,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: 0,
         numEpoch: 1,
-        incentivizeOutOfRange: 0,
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -185,7 +183,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime,
         numEpoch: 0,
-        incentivizeOutOfRange: 0,
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -200,7 +197,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime,
         numEpoch: 1,
-        incentivizeOutOfRange: 0,
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -215,7 +211,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime,
         numEpoch: 1,
-        incentivizeOutOfRange: 0,
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -230,7 +225,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime,
         numEpoch: 1,
-        incentivizeOutOfRange: 0,
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -245,7 +239,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime,
         numEpoch: 1,
-        incentivizeOutOfRange: 0,
         boostedReward: 9999,
         boostingAddress: bob.address,
       };
@@ -270,7 +263,6 @@ contract('MerkleRewardManager', () => {
       expect(reward.outOfRangeIncentivized).to.be.equal(0);
       expect(reward.epochStart).to.be.equal(await pool.round(startTime));
       expect(reward.numEpoch).to.be.equal(1);
-      expect(reward.incentivizeOutOfRange).to.be.equal(0);
       expect(reward.boostedReward).to.be.equal(0);
       expect(reward.boostingAddress).to.be.equal(ZERO_ADDRESS);
     });
@@ -290,7 +282,6 @@ contract('MerkleRewardManager', () => {
       expect(reward.outOfRangeIncentivized).to.be.equal(0);
       expect(reward.epochStart).to.be.equal(await pool.round(startTime));
       expect(reward.numEpoch).to.be.equal(1);
-      expect(reward.incentivizeOutOfRange).to.be.equal(0);
       expect(reward.boostedReward).to.be.equal(0);
       expect(reward.boostingAddress).to.be.equal(ZERO_ADDRESS);
     });
@@ -310,7 +301,6 @@ contract('MerkleRewardManager', () => {
       expect(reward.outOfRangeIncentivized).to.be.equal(0);
       expect(reward.epochStart).to.be.equal(await pool.round(startTime));
       expect(reward.numEpoch).to.be.equal(1);
-      expect(reward.incentivizeOutOfRange).to.be.equal(0);
       expect(reward.boostedReward).to.be.equal(0);
       expect(reward.boostingAddress).to.be.equal(ZERO_ADDRESS);
     });
@@ -330,7 +320,6 @@ contract('MerkleRewardManager', () => {
       expect(reward.outOfRangeIncentivized).to.be.equal(0);
       expect(reward.epochStart).to.be.equal(await pool.round(startTime));
       expect(reward.numEpoch).to.be.equal(1);
-      expect(reward.incentivizeOutOfRange).to.be.equal(0);
       expect(reward.boostedReward).to.be.equal(0);
       expect(reward.boostingAddress).to.be.equal(ZERO_ADDRESS);
     });
@@ -350,7 +339,6 @@ contract('MerkleRewardManager', () => {
       expect(reward.outOfRangeIncentivized).to.be.equal(0);
       expect(reward.epochStart).to.be.equal(await pool.round(startTime));
       expect(reward.numEpoch).to.be.equal(1);
-      expect(reward.incentivizeOutOfRange).to.be.equal(0);
       expect(reward.boostedReward).to.be.equal(0);
       expect(reward.boostingAddress).to.be.equal(ZERO_ADDRESS);
     });
@@ -370,7 +358,6 @@ contract('MerkleRewardManager', () => {
       expect(reward.outOfRangeIncentivized).to.be.equal(0);
       expect(reward.epochStart).to.be.equal(await pool.round(startTime));
       expect(reward.numEpoch).to.be.equal(1);
-      expect(reward.incentivizeOutOfRange).to.be.equal(0);
       expect(reward.boostedReward).to.be.equal(0);
       expect(reward.boostingAddress).to.be.equal(ZERO_ADDRESS);
       expect(allRewards[0].positionWrappers[0]).to.be.equal(alice.address);
@@ -417,7 +404,7 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime,
         numEpoch: 10,
-        incentivizeOutOfRange: 0,
+
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -454,7 +441,7 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime,
         numEpoch: 3,
-        incentivizeOutOfRange: 0,
+
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -469,7 +456,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime + 86400 * 7,
         numEpoch: 1,
-        incentivizeOutOfRange: 0,
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -484,7 +470,7 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime + 86400 * 7 * 2,
         numEpoch: 3,
-        incentivizeOutOfRange: 0,
+
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
@@ -499,7 +485,6 @@ contract('MerkleRewardManager', () => {
         outOfRangeIncentivized: 0,
         epochStart: startTime + 86400 * 7 * 10,
         numEpoch: 3,
-        incentivizeOutOfRange: 0,
         boostedReward: 0,
         boostingAddress: ZERO_ADDRESS,
       };
