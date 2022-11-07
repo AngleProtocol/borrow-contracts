@@ -16,7 +16,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @inheritdoc IERC721MetadataUpgradeable
     string public symbol;
 
-    // ============================== Modifiers ====================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks if the person interacting with the vault with `vaultID` is approved
     /// @param caller Address of the person seeking to interact with the vault
@@ -26,7 +26,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         _;
     }
 
-    // =============================== ERC721 Logic ================================
+    // ================================ ERC721 LOGIC ===============================
 
     /// @notice Checks whether a given address is approved for a vault or owns this vault
     /// @param spender Address for which vault ownership should be checked
@@ -120,7 +120,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         _safeTransfer(from, to, vaultID, _data);
     }
 
-    // =============================== ERC165 logic ================================
+    // ================================ ERC165 LOGIC ===============================
 
     /// @inheritdoc IERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
@@ -131,7 +131,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
             interfaceId == type(IERC165Upgradeable).interfaceId;
     }
 
-    // ============== Internal Functions for the ERC721 Logic ======================
+    // ================== INTERNAL FUNCTIONS FOR THE ERC721 LOGIC ==================
 
     /// @notice Internal version of the `ownerOf` function
     function _ownerOf(uint256 vaultID) internal view returns (address owner) {

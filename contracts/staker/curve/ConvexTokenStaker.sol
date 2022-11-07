@@ -41,7 +41,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
     }
 
     /// @inheritdoc BorrowStaker
-    /// @dev Should be override by implementation if there are more rewards
+    /// @dev Should be overriden by implementation if there are more rewards
     function _claimRewards() internal override {
         // Claim on Convex
         address[] memory rewardContracts = new address[](1);

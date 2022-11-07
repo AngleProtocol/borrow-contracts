@@ -7,7 +7,7 @@ import "./VaultManager.sol";
 
 /// @title VaultManagerListing
 /// @author Angle Core Team
-/// @notice Provide an additional viewer to `VaultManager` to get the full collateral deposited
+/// @notice Provides an additional viewer to `VaultManager` to get the full collateral deposited
 /// by an owner
 contract VaultManagerListing is VaultManager {
     using SafeERC20 for IERC20;
@@ -23,10 +23,7 @@ contract VaultManagerListing is VaultManager {
 
     // =============================== VIEW FUNCTIONS ==============================
 
-    /// @notice Get the collateral owned by the user in the vault manager
-    /// @dev Protect against reentrancy for external contract reading first the value and then allow
-    /// the caller to call functions reducing the collateral amount.
-    /// Same protection needed as for `virtual_price` on Curve contracts
+    /// @notice Get the collateral owned by the user in the contract
     function getUserCollateral(address user) external view returns (uint256 totalCollateral) {
         uint256[] memory vaultList = _ownerListVaults[user];
         uint256 vaultListLength = vaultList.length;
@@ -56,8 +53,8 @@ contract VaultManagerListing is VaultManager {
     }
 
     /// @inheritdoc VaultManager
-    /// @dev Update the collateralAmount for the owner of the vault and checkpooint if necessary
-    /// the `staker`rewards before getting liquidated
+    /// @dev Checkpoints the staker associated to the `collateral` of the contract after an update of the
+    /// `collateralAmount` of vaultID
     function _checkpointCollateral(uint256 vaultID, bool burn) internal override {
         address owner = _ownerOf(vaultID);
         _checkpointWrapper(owner);
@@ -83,7 +80,7 @@ contract VaultManagerListing is VaultManager {
     /// @notice Checkpoint rewards for `user` in the `staker` contract
     /// @param user Address to look out for the vault list
     /// @dev Whenever there is an internal transfer or a transfer from the `vaultManager`,
-    /// we need to update the rewards to track correctly everyone's claim
+    /// we need to update the rewards to correctly track everyone's claim
     function _checkpointWrapper(address user) internal {
         IBorrowStakerCheckpoint(address(collateral)).checkpoint(user);
     }
