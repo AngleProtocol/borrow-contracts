@@ -400,6 +400,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param collateralAmount Amount by which increasing the collateral balance of
     function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         if (!_exists(vaultID)) revert NonexistentVault();
+        _checkpointCollateral(vaultID, false);
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
     }
@@ -416,9 +417,9 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 oracleValue,
         uint256 interestAccumulator_
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
+        _checkpointCollateral(vaultID, false);
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
-        console.log("healthFactor ", healthFactor);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
         emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
     }
@@ -696,7 +697,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     liqData.newInterestAccumulator
                 );
             }
-            _checkpointLiquidate(vaultIDs[i], vault.collateralAmount == collateralReleased);
+            _checkpointCollateral(vaultIDs[i], vault.collateralAmount == collateralReleased);
 
             liqData.collateralAmountToGive += collateralReleased;
             liqData.stablecoinAmountToReceive += amounts[i];
@@ -916,8 +917,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     // ============================= VIRTUAL FUNCTIONS =============================
 
-    /// @notice Hook called before any liquidation occurs
-    /// @param vaultID Vault to be liquidated
+    /// @notice Hook called before any collateral internal changes
+    /// @param vaultID Vault which sees its collateral amount changed
     /// @param burn Whether the vault was emptied from all its collateral
-    function _checkpointLiquidate(uint256 vaultID, bool burn) internal virtual {}
+    function _checkpointCollateral(uint256 vaultID, bool burn) internal virtual {}
 }

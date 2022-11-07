@@ -27,7 +27,7 @@ contract VaultManagerListing is VaultManager {
     /// @dev Protect against reentrancy for external contract reading first the value and then allow
     /// the caller to call functions reducing the collateral amount.
     /// Same protection needed as for `virtual_price` on Curve contracts
-    function getUserCollateral(address user) external nonReentrant returns (uint256 totalCollateral) {
+    function getUserCollateral(address user) external view returns (uint256 totalCollateral) {
         uint256[] memory vaultList = _ownerListVaults[user];
         uint256 vaultListLength = vaultList.length;
         for (uint256 k; k < vaultListLength; k++) {
@@ -46,22 +46,22 @@ contract VaultManagerListing is VaultManager {
     ) internal override {
         // if this is not a mint remove from the `from` vault list `vaultID`
         if (from != address(0)) {
-            _removeVaultFromList(from, vaultID);
             _checkpointWrapper(from);
+            _removeVaultFromList(from, vaultID);
         }
         if (to != address(0)) {
-            _ownerListVaults[to].push(vaultID);
             _checkpointWrapper(to);
+            _ownerListVaults[to].push(vaultID);
         }
     }
 
     /// @inheritdoc VaultManager
     /// @dev Update the collateralAmount for the owner of the vault and checkpooint if necessary
     /// the `staker`rewards before getting liquidated
-    function _checkpointLiquidate(uint256 vaultID, bool burn) internal override {
+    function _checkpointCollateral(uint256 vaultID, bool burn) internal override {
         address owner = _ownerOf(vaultID);
-        if (burn) _removeVaultFromList(owner, vaultID);
         _checkpointWrapper(owner);
+        if (burn) _removeVaultFromList(owner, vaultID);
     }
 
     /// @notice Remove `vaultID` from `user` stroed vault list
@@ -80,7 +80,7 @@ contract VaultManagerListing is VaultManager {
         vaultList.pop();
     }
 
-    /// @notice Checkpoint rewards for `uset` in the `staker` contract
+    /// @notice Checkpoint rewards for `user` in the `staker` contract
     /// @param user Address to look out for the vault list
     /// @dev Whenever there is an internal transfer or a transfer from the `vaultManager`,
     /// we need to update the rewards to track correctly everyone's claim

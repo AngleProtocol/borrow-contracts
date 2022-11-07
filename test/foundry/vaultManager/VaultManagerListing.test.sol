@@ -211,6 +211,103 @@ contract VaultManagerListingTest is BaseTest {
         }
     }
 
+    function testBorrowStakerWithVaultManager(
+        uint256[TRANSFER_LENGTH] memory accounts,
+        uint256[TRANSFER_LENGTH] memory tos,
+        uint256[TRANSFER_LENGTH] memory actionTypes,
+        uint256[TRANSFER_LENGTH] memory amounts
+    ) public {
+        amounts[0] = bound(amounts[0], 1, maxTokenAmount);
+        _openVault(_alice, _alice, amounts[0]);
+
+        for (uint256 i = 1; i < amounts.length; i++) {
+            (, address account) = _getAccountByIndex(accounts[i]);
+            uint256 action = bound(actionTypes[i], 0, 5);
+            {
+                (, uint256 count) = helper.getControlledVaults(IVaultManager(address(_contractVaultManager)), account);
+                if (count == 0) action = 0;
+            }
+
+            if (action == 0) {
+                uint256 amount = bound(amounts[i], 1, maxTokenAmount);
+                (, address to) = _getAccountByIndex(tos[i]);
+                _openVault(account, to, amount);
+            } else if (action == 1) {
+                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+                    IVaultManager(address(_contractVaultManager)),
+                    account
+                );
+                amounts[i] = bound(amounts[i], 0, count);
+                uint256 vaultID = vaultIDs[amounts[i]];
+                _closeVault(account, vaultID);
+            } else if (action == 2) {
+                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+                    IVaultManager(address(_contractVaultManager)),
+                    account
+                );
+                (, address to) = _getAccountByIndex(tos[i]);
+                amounts[i] = bound(amounts[i], 0, count);
+                uint256 vaultID = vaultIDs[amounts[i]];
+                uint256 vaultDebt = _contractVaultManager.getVaultDebt(vaultID);
+                vm.startPrank(account);
+                _contractVaultManager.transferFrom(account, to, vaultID);
+                // so that if the other one close it he has enough
+                // this doesn't work if the debt increased, we would need to increase
+                // artificially the owner balance too
+                _contractAgToken.transfer(to, vaultDebt);
+                vm.stopPrank();
+            } else if (action == 3) {
+                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+                    IVaultManager(address(_contractVaultManager)),
+                    account
+                );
+                amounts[i] = bound(amounts[i], 1, maxTokenAmount);
+                tos[i] = bound(tos[i], 0, count);
+                uint256 vaultID = vaultIDs[tos[i]];
+                _addToVault(account, vaultID, amounts[i]);
+            } else if (action == 4) {
+                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+                    IVaultManager(address(_contractVaultManager)),
+                    account
+                );
+                tos[i] = bound(tos[i], 0, count);
+                uint256 vaultID = vaultIDs[tos[i]];
+                _removeFromVault(account, vaultID, amounts[i]);
+            } else if (action == 5) {
+                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+                    IVaultManager(address(_contractVaultManager)),
+                    account
+                );
+                amounts[i] = bound(amounts[i], 0, count);
+                uint256 vaultID = vaultIDs[amounts[i]];
+                _liquidateVault(_hacker, vaultID);
+            } else if (action == 6) {
+                // partial liquidation
+                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+                    IVaultManager(address(_contractVaultManager)),
+                    account
+                );
+                amounts[i] = bound(amounts[i], 0, count);
+                uint256 vaultID = vaultIDs[amounts[i]];
+                _partialLiquidationVault(_hacker, vaultID);
+            } else if (action == 7) {
+                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+                    IVaultManager(address(_contractVaultManager)),
+                    account
+                );
+                amounts[i] = bound(amounts[i], 0, count);
+                uint256 vaultID = vaultIDs[amounts[i]];
+                _partialLiquidationVault(_hacker, vaultID);
+            }
+            for (uint256 k = 0; k < 5; k++) {
+                address checkedAccount = k == 0 ? _alice : k == 1 ? _bob : k == 2 ? _charlie : k == 3
+                    ? _dylan
+                    : _hacker;
+                uint256[] memory vaultIDs = ownerListVaults[checkedAccount];
+            }
+        }
+    }
+
     // ============================= INTERNAL FUNCTIONS ============================
 
     function _getAccountByIndex(uint256 index) internal view returns (uint256, address) {
