@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "./VaultManagerPermit.sol";
-import "hardhat/console.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -60,7 +59,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint256 dust_, uint256 dustCollateral_) VaultManagerStorage(dust_, dustCollateral_) {}
 
-    // ============================== Modifiers ====================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
@@ -86,9 +85,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _;
     }
 
-    // =========================== Vault Functions =================================
-
-    // ========================= External Access Functions =========================
+    // ============================== VAULT FUNCTIONS ==============================
 
     /// @inheritdoc IVaultManagerFunctions
     function createVault(address toVault) external whenNotPaused returns (uint256) {
@@ -293,7 +290,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _repayDebt(vaultID, stablecoinAmountLessFeePaid, 0);
     }
 
-    // ============================= View Functions ================================
+    // =============================== VIEW FUNCTIONS ==============================
 
     /// @inheritdoc IVaultManagerFunctions
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
@@ -323,7 +320,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         );
     }
 
-    // =================== Internal Utility View Functions =========================
+    // ====================== INTERNAL UTILITY VIEW FUNCTIONS ======================
 
     /// @notice Computes the health factor of a given vault. This can later be used to check whether a given vault is solvent
     /// (i.e. should be liquidated or not)
@@ -371,7 +368,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
     }
 
-    // =============== Internal Utility State-Modifying Functions ==================
+    // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
 
     /// @notice Closes a vault without handling the repayment of the concerned address
     /// @param vaultID ID of the vault to close
@@ -418,7 +415,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
-        console.log("healthFactor ", healthFactor);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
         emit CollateralAmountUpdated(vaultID, collateralAmount, 0);
     }
@@ -577,7 +573,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         }
     }
 
-    // =================== Treasury Relationship Functions =========================
+    // ====================== TREASURY RELATIONSHIP FUNCTIONS ======================
 
     /// @inheritdoc IVaultManagerFunctions
     function accrueInterestToTreasury() external onlyTreasury returns (uint256 surplusValue, uint256 badDebtValue) {
@@ -612,7 +608,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return newInterestAccumulator;
     }
 
-    // ============================ Liquidations ===================================
+    // ================================ LIQUIDATIONS ===============================
 
     /// @notice Liquidates an ensemble of vaults specified by their IDs
     /// @dev This function is a simplified wrapper of the function below. It is built to remove for liquidators the need to specify
@@ -803,7 +799,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return yLiquidationBoost[0];
     }
 
-    // ============================== Setters ======================================
+    // ================================== SETTERS ==================================
 
     /// @notice Sets parameters encoded as uint64
     /// @param param Value for the parameter

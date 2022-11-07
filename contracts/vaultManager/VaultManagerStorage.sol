@@ -32,7 +32,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// @notice Used for interest rate computation
     uint256 public constant HALF_BASE_INTEREST = 10**27 / 2;
 
-    // =============================== References ==================================
+    // ================================= REFERENCES ================================
 
     /// @inheritdoc IVaultManagerStorage
     ITreasury public treasury;
@@ -47,7 +47,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// @notice Base of the collateral
     uint256 internal _collatBase;
 
-    // =============================== Parameters ==================================
+    // ================================= PARAMETERS ================================
     // Unless specified otherwise, parameters of this contract are expressed in `BASE_PARAMS`
 
     /// @inheritdoc IVaultManagerStorage
@@ -86,7 +86,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// @notice Whether the contract is paused or not
     bool public paused;
 
-    // =============================== Variables ===================================
+    // ================================= VARIABLES =================================
 
     /// @notice Timestamp at which the `interestAccumulator` was updated
     uint256 public lastInterestAccumulatorUpdated;
@@ -101,14 +101,14 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// of stablecoins
     uint256 public badDebt;
 
-    // ================================ Mappings ===================================
+    // ================================== MAPPINGS =================================
 
     /// @inheritdoc IVaultManagerStorage
     mapping(uint256 => Vault) public vaultData;
     /// @notice Maps an address to 1 if it's whitelisted and can open or own a vault
     mapping(address => uint256) public isWhitelisted;
 
-    // ================================ ERC721 Data ================================
+    // ================================ ERC721 DATA ================================
 
     /// @inheritdoc IVaultManagerStorage
     uint256 public vaultIDCount;
@@ -130,7 +130,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     uint256[50] private __gap;
 
-    // =============================== Events ======================================
+    // =================================== EVENTS ==================================
 
     event AccruedToTreasury(uint256 surplusEndValue, uint256 badDebtEndValue);
     event CollateralAmountUpdated(uint256 vaultID, uint256 collateralAmount, uint8 isIncrease);
@@ -142,7 +142,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event LiquidatedVaults(uint256[] vaultIDs);
     event DebtTransferred(uint256 srcVaultID, uint256 dstVaultID, address dstVaultManager, uint256 amount);
 
-    // =============================== Errors ======================================
+    // =================================== ERRORS ==================================
 
     error ApprovalToOwner();
     error ApprovalToCaller();

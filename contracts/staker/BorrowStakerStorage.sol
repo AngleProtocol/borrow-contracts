@@ -29,8 +29,12 @@ contract BorrowStakerStorage is Initializable {
 
     /// @notice Token decimal
     uint8 internal _decimals;
+    uint32 internal _lastRewardsClaimed;
     /// @notice List of all the vaultManager which have the staker as collateral
     IVaultManagerListing[] internal _vaultManagers;
+    /// @notice Maps an address to whether it is a compatible `VaultManager` that has this contract
+    /// as a collateral
+    mapping(address => uint256) public isCompatibleVaultManager;
     /// @notice Maps each reward token to a track record of cumulated rewards
     mapping(IERC20 => uint256) public integral;
     /// @notice Maps pairs of `(token,user)` to the currently pending claimable rewards
