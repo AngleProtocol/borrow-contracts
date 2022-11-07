@@ -211,9 +211,10 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     function _checkpointRewardsUser(address from, bool _claim) internal returns (uint256[] memory rewardAmounts) {
         IERC20[] memory rewardTokens = _getRewards();
         rewardAmounts = new uint256[](rewardTokens.length);
+        uint256 userBalance = totalBalanceOf(from);
         for (uint256 i = 0; i < rewardTokens.length; ++i) {
-            uint256 newClaimable = (totalBalanceOf(from) *
-                (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) / BASE_PARAMS;
+            uint256 newClaimable = (userBalance * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
+                BASE_PARAMS;
             uint256 previousClaimable = pendingRewardsOf[rewardTokens[i]][from];
             if (_claim && previousClaimable + newClaimable > 0) {
                 rewardTokens[i].safeTransfer(from, previousClaimable + newClaimable);
