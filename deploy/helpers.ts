@@ -76,7 +76,7 @@ export const deployProxy = async (
     });
     address = (await ethers.getContract(deploymentName)).address;
 
-    console.log(`Successfully deployed the contract ${deploymentName} at ${address}`);
+    console.log(`Successfully deployed the implementation for ${deploymentName} at ${address}`);
   }
   return address;
 };

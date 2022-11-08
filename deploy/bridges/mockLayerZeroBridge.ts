@@ -2,16 +2,16 @@ import { BigNumber, Contract } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { ZERO_ADDRESS } from '../../../test/hardhat/utils/helpers';
+import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
   AgTokenSideChainMultiBridge,
   AgTokenSideChainMultiBridge__factory,
   LayerZeroBridge__factory,
   MockTreasury,
   MockTreasury__factory,
-} from '../../../typechain';
-import LZ_ENDPOINTS from '../../constants/layerzeroEndpoints.json';
-import { deploy, deployImplem, deployProxy } from '../../helpers';
+} from '../../typechain';
+import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
+import { deploy, deployImplem, deployProxy } from '../helpers';
 
 const func: DeployFunction = async ({ ethers, network }) => {
   /*

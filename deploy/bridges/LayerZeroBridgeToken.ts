@@ -1,9 +1,9 @@
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { LayerZeroBridgeToken__factory } from '../../../typechain';
-import LZ_ENDPOINTS from '../../constants/layerzeroEndpoints.json';
-import { deployImplem, deployProxy } from '../../helpers';
+import { LayerZeroBridgeToken__factory } from '../../typechain';
+import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
+import { deployImplem, deployProxy } from '../helpers';
 
 const stable = 'EUR';
 
