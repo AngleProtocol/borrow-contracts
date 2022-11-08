@@ -109,9 +109,9 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     /// @dev The returned value takes into account the balance currently held by `from` and the balance held by `VaultManager`
     /// contracts on behalf of `from`
     function totalBalanceOf(address from) public view returns (uint256 totalBalance) {
+        if (isCompatibleVaultManager[from] == 1) return 0;
         // If `from` is one of the whitelisted vaults, do not consider the rewards to not double count balances
         IVaultManagerListing[] memory vaultManagerContracts = _vaultManagers;
-        if (isCompatibleVaultManager[from] == 1) return 0;
         totalBalance = balanceOf(from);
         for (uint256 i; i < vaultManagerContracts.length; i++) {
             totalBalance += vaultManagerContracts[i].getUserCollateral(from);
@@ -146,7 +146,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         if (
             address(vaultManager.collateral()) != address(asset) || isCompatibleVaultManager[address(vaultManager)] == 1
         ) revert InvalidVaultManager();
-        isCompatibleVaultManager[address(vaultManager)] == 1;
+        isCompatibleVaultManager[address(vaultManager)] = 1;
         _vaultManagers.push(vaultManager);
     }
 
@@ -193,6 +193,9 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     /// @dev `rewardAmounts` is a one dimension array because n-dimensional arrays are only supported by internal functions
     /// The `accounts` array need to be ordered to get the rewards for a specific account
     function _checkpoint(address[] memory accounts, bool _claim) internal returns (uint256[] memory rewardAmounts) {
+        // Cautious with this line, we need to be sure that rewards are not distributed in one time without
+        // linear vesting otherwise reward can be sent to the wrong owners.
+        // This should not be a hard requirement as this kind of distribution seems disastrous and front runnable
         if (_lastRewardsClaimed != block.timestamp) {
             _claimRewards();
             _lastRewardsClaimed = uint32(block.timestamp);

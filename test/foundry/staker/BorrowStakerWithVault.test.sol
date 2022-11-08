@@ -137,7 +137,8 @@ contract BorrowStakerWithVaultTest is BaseTest {
         uint256[WITHDRAW_LENGTH] memory vaultIdToWithdraw,
         uint256[WITHDRAW_LENGTH] memory propVault,
         bool[WITHDRAW_LENGTH] memory isDeposit,
-        uint256[WITHDRAW_LENGTH] memory accounts
+        uint256[WITHDRAW_LENGTH] memory accounts,
+        uint64[WITHDRAW_LENGTH] memory elapseTime
     ) public {
         uint256[4] memory realBalances;
         uint256[4] memory pendingRewards;
@@ -151,10 +152,16 @@ contract BorrowStakerWithVaultTest is BaseTest {
         staker.deposit(amounts[0], _alice);
         realBalances[0] += amounts[0];
         vm.stopPrank();
+        // advance in time for rewards to be taken into account
+        elapseTime[0] = uint64(bound(elapseTime[0], 1, 86400 * 7));
+        vm.warp(block.timestamp + elapseTime[0]);
         // directly put it on a vaultManager
         _fakeDepositVault(0, _alice, amounts[0]);
+        vm.warp(block.timestamp + elapseTime[0]);
 
         for (uint256 i = 1; i < amounts.length; i++) {
+            elapseTime[i] = uint64(bound(elapseTime[i], 1, 86400 * 7));
+
             uint256 randomIndex = bound(accounts[i], 0, 3);
             address account = randomIndex == 0 ? _alice : randomIndex == 1 ? _bob : randomIndex == 2
                 ? _charlie
@@ -188,6 +195,7 @@ contract BorrowStakerWithVaultTest is BaseTest {
                 realBalances[randomIndex] += amount;
                 vm.stopPrank();
                 assertEq(rewardToken.balanceOf(account), prevRewardTokenBalance);
+                vm.warp(block.timestamp + elapseTime[i]);
                 _fakeDepositVault(vaultNum, account, (amount * propVault[i]) / BASE_PARAMS);
                 assertEq(staker.pendingRewardsOf(rewardToken, account), 0);
             } else {
@@ -195,12 +203,14 @@ contract BorrowStakerWithVaultTest is BaseTest {
                 propVault[i] = bound(propVault[i], 0, BASE_PARAMS);
                 uint256[] memory vaultIDs = vaultManagers[vaultNum].getUserVaults(account);
                 vaultIdToWithdraw[i] = bound(vaultIdToWithdraw[i], 0, vaultIDs.length - 1);
-                uint256 withdrawnDirectly = (amount * staker.balanceOf(account)) / BASE_PARAMS;
-                staker.withdraw(withdrawnDirectly, account, account);
+                {
+                    uint256 withdrawnDirectly = (amount * staker.balanceOf(account)) / BASE_PARAMS;
+                    staker.withdraw(withdrawnDirectly, account, account);
+                    realBalances[randomIndex] = realBalances[randomIndex] - withdrawnDirectly;
+                }
                 vm.stopPrank();
+                vm.warp(block.timestamp + elapseTime[i]);
                 _fakeWithdrawVault(vaultNum, vaultIDs[vaultIdToWithdraw[i]], account, propVault[i]);
-
-                realBalances[randomIndex] = realBalances[randomIndex] - withdrawnDirectly;
                 assertEq(staker.pendingRewardsOf(rewardToken, account), 0);
             }
 
@@ -210,6 +220,9 @@ contract BorrowStakerWithVaultTest is BaseTest {
                 pendingRewards[randomIndex],
                 10**(decimalReward - 4)
             );
+
+            // advance in time for rewards to be taken into account
+            vm.warp(block.timestamp + elapseTime[i]);
         }
     }
 
@@ -221,7 +234,8 @@ contract BorrowStakerWithVaultTest is BaseTest {
         uint256[CLAIM_LENGTH] memory vaultIdToWithdraw,
         uint256[CLAIM_LENGTH] memory propVault,
         bool[CLAIM_LENGTH] memory isDeposit,
-        uint256[CLAIM_LENGTH] memory accounts
+        uint256[CLAIM_LENGTH] memory accounts,
+        uint64[CLAIM_LENGTH] memory elapseTime
     ) public {
         uint256[4] memory pendingRewards;
 
@@ -233,10 +247,15 @@ contract BorrowStakerWithVaultTest is BaseTest {
         asset.approve(address(staker), amounts[0]);
         staker.deposit(amounts[0], _alice);
         vm.stopPrank();
+        // advance in time for rewards to be taken into account
+        elapseTime[0] = uint64(bound(elapseTime[0], 1, 86400 * 7));
+        vm.warp(block.timestamp + elapseTime[0]);
         // directly put it on a vaultManager
         _fakeDepositVault(0, _alice, amounts[0]);
+        vm.warp(block.timestamp + elapseTime[0]);
 
         for (uint256 i = 1; i < amounts.length; i++) {
+            elapseTime[i] = uint64(bound(elapseTime[i], 1, 86400 * 7));
             staker.setRewardAmount(rewardAmount);
             uint256 randomIndex = bound(accounts[i], 0, 3);
             address account = randomIndex == 0 ? _alice : randomIndex == 1 ? _bob : randomIndex == 2
@@ -271,11 +290,12 @@ contract BorrowStakerWithVaultTest is BaseTest {
                 vm.stopPrank();
                 // to disable new rewards when calling `claimableRewards` and `claimRewards`
                 staker.setRewardAmount(0);
-                uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
-                uint256[] memory claimedRewards = staker.claimRewards(account);
-                assertEq(functionClaimableRewards, claimedRewards[0]);
-                assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
-
+                {
+                    uint256 functionClaimableRewards = staker.claimableRewards(account, rewardToken);
+                    uint256[] memory claimedRewards = staker.claimRewards(account);
+                    assertEq(functionClaimableRewards, claimedRewards[0]);
+                    assertEq(rewardToken.balanceOf(account) - prevRewardTokenBalance, functionClaimableRewards);
+                }
                 _fakeDepositVault(vaultNum, account, (amount * propVault[i]) / BASE_PARAMS);
                 assertEq(staker.pendingRewardsOf(rewardToken, account), 0);
             } else {
@@ -305,6 +325,9 @@ contract BorrowStakerWithVaultTest is BaseTest {
                 pendingRewards[randomIndex],
                 10**(decimalReward - 4)
             );
+
+            // advance in time for rewards to be taken into account
+            vm.warp(block.timestamp + elapseTime[0]);
         }
     }
 
