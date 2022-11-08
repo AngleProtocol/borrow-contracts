@@ -65,6 +65,7 @@ contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
     error NotGovernor();
     error NotGovernorOrGuardian();
     error TooHighParameterValue();
+    error ZeroAddress();
 
     // =================================== EVENTS ==================================
 
@@ -106,6 +107,7 @@ contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
     ) external initializer {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
+        if (address(_core) == address(0)) revert ZeroAddress();
         core = _core;
     }
 
@@ -158,16 +160,12 @@ contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
 
         // Checking requirement on the hourly volume
         uint256 hour = block.timestamp / 3600;
-        uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
-        if (hourlyUsage > bridgeDetails.hourlyLimit) {
+        uint256 hourlyUsage = usage[bridgeToken][hour];
+        if (hourlyUsage + amount > bridgeDetails.hourlyLimit) {
             // Edge case when the hourly limit changes
-            if (bridgeDetails.hourlyLimit > usage[bridgeToken][hour])
-                amount = bridgeDetails.hourlyLimit - usage[bridgeToken][hour];
-            else {
-                amount = 0;
-            }
+            amount = bridgeDetails.hourlyLimit > hourlyUsage ? bridgeDetails.hourlyLimit - hourlyUsage : 0;
         }
-        usage[bridgeToken][hour] = usage[bridgeToken][hour] + amount;
+        usage[bridgeToken][hour] = hourlyUsage + amount;
 
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
