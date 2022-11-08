@@ -1,8 +1,8 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { LayerZeroBridge__factory } from '../../typechain';
-import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
-import { deployImplem, deployProxy } from '../helpers';
+import { LayerZeroBridge__factory } from '../../../typechain';
+import LZ_ENDPOINTS from '../../constants/layerzeroEndpoints.json';
+import { deployImplem, deployProxy } from '../../helpers';
 
 const stable = 'EUR';
 
