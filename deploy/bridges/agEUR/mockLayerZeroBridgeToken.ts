@@ -2,16 +2,16 @@ import { BigNumber, Contract } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
+import { ZERO_ADDRESS } from '../../../test/hardhat/utils/helpers';
 import {
   AgTokenSideChainMultiBridge,
   AgTokenSideChainMultiBridge__factory,
   LayerZeroBridgeToken__factory,
   MockTreasury,
   MockTreasury__factory,
-} from '../../typechain';
-import { deploy, deployImplem, deployProxy } from '../helpers';
-import LZ_ENDPOINTS from './../constants/layerzeroEndpoints.json';
+} from '../../../typechain';
+import { deploy, deployImplem, deployProxy } from '../../helpers';
+import LZ_ENDPOINTS from './../../constants/layerzeroEndpoints.json';
 
 const func: DeployFunction = async ({ ethers, network }) => {
   // Using an EOA as proxyAdmin as it's a mock deployment

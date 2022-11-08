@@ -6,14 +6,15 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
-import "../../interfaces/ICoreBorrow.sol";
+import "../interfaces/ICoreBorrow.sol";
 
 /// @title AngleSideChainMultiBridge
 /// @author Angle Labs, Inc.
 /// @notice Contract for the ANGLE token on other chains than Ethereum mainnet
 /// @dev This contract supports bridge tokens having a minting right on the ANGLE token (also referred to as the canonical
 /// of the chain)
-/// @dev While this contract works for the ANGLE token, it is suited to any token which is to exist on different chains
+/// @dev While this contract works for the ANGLE token, it is suited to any token which is to exist on different chains and which
+/// can only be minted on a specific chain
 contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -100,15 +101,24 @@ contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
     /// @param symbol_ Symbol of the token
     /// @param _core Reference to the `CoreBorrow` contract
     /// @dev By default, ANGLE tokens are ERC-20 tokens with 18 decimals
+    /// @dev This implementation allows to add directly at deployment a bridge token
     function initialize(
         string memory name_,
         string memory symbol_,
-        ICoreBorrow _core
+        ICoreBorrow _core,
+        address bridgeToken,
+        uint256 limit,
+        uint256 hourlyLimit,
+        uint64 fee,
+        bool paused,
+        uint256 _chainTotalHourlyLimit
     ) external initializer {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         if (address(_core) == address(0)) revert ZeroAddress();
         core = _core;
+        _addBridgeToken(bridgeToken, limit, hourlyLimit, fee, paused);
+        _setChainTotalHourlyLimit(_chainTotalHourlyLimit);
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -231,17 +241,7 @@ contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
         uint64 fee,
         bool paused
     ) external onlyGovernor {
-        if (bridges[bridgeToken].allowed || bridgeToken == address(0)) revert InvalidToken();
-        if (fee > BASE_PARAMS) revert TooHighParameterValue();
-        BridgeDetails memory _bridge;
-        _bridge.limit = limit;
-        _bridge.hourlyLimit = hourlyLimit;
-        _bridge.paused = paused;
-        _bridge.fee = fee;
-        _bridge.allowed = true;
-        bridges[bridgeToken] = _bridge;
-        bridgeTokensList.push(bridgeToken);
-        emit BridgeTokenAdded(bridgeToken, limit, hourlyLimit, fee, paused);
+        _addBridgeToken(bridgeToken, limit, hourlyLimit, fee, paused);
     }
 
     /// @notice Removes support for a token
@@ -290,8 +290,7 @@ contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
 
     /// @notice Updates the `chainTotalHourlyLimit` amount
     function setChainTotalHourlyLimit(uint256 hourlyLimit) external onlyGovernorOrGuardian {
-        chainTotalHourlyLimit = hourlyLimit;
-        emit HourlyLimitUpdated(hourlyLimit);
+        _setChainTotalHourlyLimit(hourlyLimit);
     }
 
     /// @notice Updates the `fee` value for `bridgeToken`
@@ -315,5 +314,34 @@ contract AngleSideChainMultiBridge is ERC20PermitUpgradeable {
         uint256 feeExemptStatus = 1 - isFeeExempt[theAddress];
         isFeeExempt[theAddress] = feeExemptStatus;
         emit FeeToggled(theAddress, feeExemptStatus);
+    }
+
+    // ============================= INTERNAL FUNCTIONS ============================
+
+    /// @notice Internal version of the `addBridgeToken` function
+    function _addBridgeToken(
+        address bridgeToken,
+        uint256 limit,
+        uint256 hourlyLimit,
+        uint64 fee,
+        bool paused
+    ) internal {
+        if (bridges[bridgeToken].allowed || bridgeToken == address(0)) revert InvalidToken();
+        if (fee > BASE_PARAMS) revert TooHighParameterValue();
+        BridgeDetails memory _bridge;
+        _bridge.limit = limit;
+        _bridge.hourlyLimit = hourlyLimit;
+        _bridge.paused = paused;
+        _bridge.fee = fee;
+        _bridge.allowed = true;
+        bridges[bridgeToken] = _bridge;
+        bridgeTokensList.push(bridgeToken);
+        emit BridgeTokenAdded(bridgeToken, limit, hourlyLimit, fee, paused);
+    }
+
+    /// @notice Internal version of the `setChainTotalHourlyLimit`
+    function _setChainTotalHourlyLimit(uint256 hourlyLimit) internal {
+        chainTotalHourlyLimit = hourlyLimit;
+        emit HourlyLimitUpdated(hourlyLimit);
     }
 }

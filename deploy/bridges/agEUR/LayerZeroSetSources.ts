@@ -1,8 +1,8 @@
 import { Contract } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { LayerZeroBridge, LayerZeroBridge__factory } from '../../typechain';
-import LZ_CHAINIDS from '../constants/layerzeroChainIds.json';
+import { LayerZeroBridge, LayerZeroBridge__factory } from '../../../typechain';
+import LZ_CHAINIDS from '../../constants/layerzeroChainIds.json';
 
 const func: DeployFunction = async ({ ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
@@ -22,7 +22,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
   for (const chain of Object.keys(OFTs)) {
     if (chain !== network.name) {
       console.log(chain);
-      let trustedRemote = ethers.utils.solidityPack(['address', 'address'], [OFTs[chain], local]);
+      const trustedRemote = ethers.utils.solidityPack(['address', 'address'], [OFTs[chain], local]);
       console.log(`Trusted remote ${trustedRemote}`);
       console.log(
         contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [(LZ_CHAINIDS as any)[chain], trustedRemote]),

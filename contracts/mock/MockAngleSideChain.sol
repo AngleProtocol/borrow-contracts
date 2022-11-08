@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.12;
 
-import "../agToken/angle/AngleSideChainMultiBridge.sol";
+import "../bridgeERC20/AngleSideChainMultiBridge.sol";
 
 /// @title MockAngleSideChain
 /// @author Angle Core Team

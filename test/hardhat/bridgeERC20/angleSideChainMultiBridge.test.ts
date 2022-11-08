@@ -10,11 +10,11 @@ import {
   MockCoreBorrow__factory,
   MockToken,
   MockToken__factory,
-} from '../../../../typechain';
-import { parseAmount } from '../../../../utils/bignumber';
-import { expect } from '../../utils/chai-setup';
-import { inIndirectReceipt, inReceipt } from '../../utils/expectEvent';
-import { deployUpgradeable, time, ZERO_ADDRESS } from '../../utils/helpers';
+} from '../../../typechain';
+import { parseAmount } from '../../../utils/bignumber';
+import { expect } from '../utils/chai-setup';
+import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
+import { deployUpgradeable, time, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('AngleSideChainMultiBridge', () => {
   let deployer: SignerWithAddress;
@@ -54,13 +54,19 @@ contract('AngleSideChainMultiBridge', () => {
     // guardian is bob
     await coreBorrow.toggleGuardian(bob.address);
 
-    await angle.initialize('angle', 'ag', coreBorrow.address);
-    await angle.connect(alice).mint(alice.address, parseEther('1'));
     bridgeToken = (await new MockToken__factory(deployer).deploy('any-angle', 'any-angle', 18)) as MockToken;
-    // adding bridge token
-    await angle
-      .connect(deployer)
-      .addBridgeToken(bridgeToken.address, parseEther('10'), parseEther('1'), parseAmount.gwei(0.5), false);
+    await angle.initialize(
+      'angle',
+      'ag',
+      coreBorrow.address,
+      bridgeToken.address,
+      parseEther('10'),
+      parseEther('1'),
+      parseAmount.gwei(0.5),
+      false,
+      0,
+    );
+    await angle.connect(alice).mint(alice.address, parseEther('1'));
   });
 
   describe('initialize', () => {
@@ -68,11 +74,33 @@ contract('AngleSideChainMultiBridge', () => {
       expect(await angle.name()).to.be.equal('angle');
       expect(await angle.symbol()).to.be.equal('ag');
       expect(await angle.core()).to.be.equal(coreBorrow.address);
-      await expect(angle.initialize('angle', 'ag', coreBorrow.address)).to.be.revertedWith(
-        'Initializable: contract is already initialized',
-      );
+      await expect(
+        angle.initialize(
+          'angle',
+          'ag',
+          coreBorrow.address,
+          bridgeToken.address,
+          parseEther('10'),
+          parseEther('1'),
+          parseAmount.gwei(0.5),
+          false,
+          0,
+        ),
+      ).to.be.revertedWith('Initializable: contract is already initialized');
       const angleRevert = (await deployUpgradeable(new MockAngleSideChain__factory(deployer))) as MockAngleSideChain;
-      await expect(angleRevert.initialize('angle', 'ag', ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+      await expect(
+        angleRevert.initialize(
+          'angle',
+          'ag',
+          ZERO_ADDRESS,
+          bridgeToken.address,
+          parseEther('10'),
+          parseEther('1'),
+          parseAmount.gwei(0.5),
+          false,
+          0,
+        ),
+      ).to.be.revertedWith('ZeroAddress');
     });
   });
   describe('setCore', () => {

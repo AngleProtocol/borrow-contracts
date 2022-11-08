@@ -2,47 +2,48 @@
 
 pragma solidity 0.8.12;
 
-import "./utils/OFTCore.sol";
+import "./utils/OFTCoreERC20.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
-/// @title LayerZeroBridge
-/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
-/// @notice Contract to be deployed on Ethereum for bridging a token (AgToken for instance) using
+/// @title LayerZeroBridgeERC20
+/// @author Angle Labs, Inc., forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
+/// @notice Contract to be deployed on Ethereum for bridging an ERC20 token (ANGLE for instance) using
 /// a bridge intermediate token and LayerZero
-contract LayerZeroBridge is OFTCore, PausableUpgradeable {
+contract LayerZeroBridgeERC20 is OFTCoreERC20, PausableUpgradeable {
     /// @notice Name of the contract for indexing purposes
     string public name;
 
     /// @notice Address of the bridgeable token
-    /// @dev Immutable
     IERC20 public canonicalToken;
 
     /// @notice Maps an address to the amount of token bridged but not received
     mapping(address => uint256) public balanceOf;
 
-    // ============================= Constructor ===================================
+    // ================================ CONSTRUCTOR ================================
 
     /// @notice Initializes the contract
     /// @param _name Name of the token corresponding to this contract
     /// @param _lzEndpoint Layer zero endpoint to pass messages
-    /// @param _treasury Address of the treasury contract used for access control
+    /// @param _coreBorrow Address of the `CoreBorrow` contract used for access control
     function initialize(
         string memory _name,
         address _lzEndpoint,
-        address _treasury
+        address _coreBorrow,
+        IERC20 _canonicalToken
     ) external initializer {
-        __LzAppUpgradeable_init(_lzEndpoint, _treasury);
+        if (address(_canonicalToken) == address(0)) revert ZeroAddress();
+        __LzAppUpgradeable_init(_lzEndpoint, _coreBorrow);
         name = _name;
-        canonicalToken = IERC20(address(ITreasury(_treasury).stablecoin()));
+        canonicalToken = _canonicalToken;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    // ==================== External Permissionless Functions ======================
+    // ===================== EXTERNAL PERMISSIONLESS FUNCTIONS =====================
 
-    /// @inheritdoc OFTCore
+    /// @inheritdoc OFTCoreERC20
     function sendWithPermit(
         uint16 _dstChainId,
         bytes memory _toAddress,
@@ -59,7 +60,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
     }
 
-    /// @inheritdoc OFTCore
+    /// @inheritdoc OFTCoreERC20
     function withdraw(uint256 amount, address recipient) external override returns (uint256) {
         return _withdraw(amount, msg.sender, recipient);
     }
@@ -72,7 +73,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _withdraw(amount, recipient, recipient);
     }
 
-    // ========================== Internal Functions ===============================
+    // ============================= INTERNAL FUNCTIONS ============================
 
     /// @notice Withdraws `amount` from the balance of the `from` address and sends these tokens to the `to` address
     /// @dev It's important to make sure that `from` is either the `msg.sender` or that `from` and `to` are the same
@@ -87,7 +88,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return amount;
     }
 
-    /// @inheritdoc OFTCore
+    /// @inheritdoc OFTCoreERC20
     function _debitFrom(
         uint16,
         bytes memory,
@@ -98,7 +99,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
-    /// @inheritdoc OFTCore
+    /// @inheritdoc OFTCoreERC20
     function _debitCreditFrom(
         uint16,
         bytes memory,
@@ -108,7 +109,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
-    /// @inheritdoc OFTCore
+    /// @inheritdoc OFTCoreERC20
     function _creditTo(
         uint16,
         address _toAddress,
@@ -126,14 +127,14 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
-    // ========================= View Functions ====================================
+    // =============================== VIEW FUNCTIONS ==============================
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IOFTCore).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    // ======================= Governance Functions ================================
+    // ============================ GOVERNANCE FUNCTIONS ===========================
 
     /// @notice Pauses bridging through the contract
     /// @param pause Future pause status

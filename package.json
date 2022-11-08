@@ -16,7 +16,7 @@
     "lint:sol": "solhint --fix --max-warnings 20 \"contracts/**/*.sol\"",
     "mainnetForkRemote:deploy": "rm -rf ./deployments/mainnetForkRemote && hardhat deploy --network mainnetForkRemote --tags unpausing",
     "node:instant": "FORK=true hardhat node --tags instant",
-    "node:fork:implems": "FORK=true hardhat node --tags merkleRewardManager",
+    "node:fork": "FORK=true hardhat node --tags",
     "prettier": "yarn prettier:js && yarn prettier:sol",
     "prettier:sol": "prettier --write 'contracts/**/*.sol'",
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
