@@ -491,7 +491,7 @@ contract CoreBorrowStakerTest is BaseTest {
         address to,
         uint64 elapseTime
     ) public {
-        vm.assume(to != address(0) && to != _alice && to != address(staker));
+        vm.assume(to != address(0) && to != _alice && to != address(staker) && to != address(proxyAdmin));
         amount = bound(amount, 1, maxTokenAmount);
         deal(address(asset), address(_alice), amount);
         deal(address(rewardToken), address(staker), rewardAmount);
