@@ -6,12 +6,12 @@ import "../BaseTest.test.sol";
 import { VaultManagerListing } from "../../../contracts/vaultManager/VaultManagerListing.sol";
 import { ActionType } from "../../../contracts/interfaces/IVaultManager.sol";
 import "../../../contracts/treasury/Treasury.sol";
-import { MockBorrowStaker, BorrowStakerStorage } from "../../../contracts/mock/MockBorrowStaker.sol";
+import { MockBorrowStaker, MockBorrowStakerReset, BorrowStakerStorage } from "../../../contracts/mock/MockBorrowStaker.sol";
 import "../../../contracts/mock/MockStableMaster.sol";
 import "../../../contracts/mock/MockOracle.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
 import "../../../contracts/coreBorrow/CoreBorrow.sol";
-import "../../../contracts/agToken/AgToken.sol";
+import { AgToken } from "../../../contracts/agToken/AgToken.sol";
 import "../../../contracts/ui-helpers/AngleHelpers.sol";
 
 /// @notice Data stored to track someone's loan (or equivalently called position)
@@ -32,8 +32,8 @@ contract VaultManagerListingTest is BaseTest {
     CoreBorrow internal _contractCoreBorrow;
     Treasury internal _contractTreasury;
     AgToken internal _contractAgToken;
-    MockBorrowStaker public stakerImplementation;
-    MockBorrowStaker public staker;
+    MockBorrowStakerReset public stakerImplementation;
+    MockBorrowStakerReset public staker;
     AngleBorrowHelpers public helperImplementation;
     AngleBorrowHelpers public helper;
     MockTokenPermit public rewardToken;
@@ -50,7 +50,7 @@ contract VaultManagerListingTest is BaseTest {
     uint8 public decimalReward = 6;
     uint256 public maxTokenAmount = 10**15 * 10**decimalToken;
     uint256 public rewardAmount = 10**2 * 10**(decimalReward);
-    uint256 public constant TRANSFER_LENGTH = 50;
+    uint256 public constant TRANSFER_LENGTH = 5;
 
     function setUp() public override {
         super.setUp();
@@ -79,8 +79,8 @@ contract VaultManagerListingTest is BaseTest {
         _collateral = new MockTokenPermit("Name", "SYM", decimalToken);
         rewardToken = new MockTokenPermit("reward", "rwrd", decimalReward);
 
-        stakerImplementation = new MockBorrowStaker();
-        staker = MockBorrowStaker(
+        stakerImplementation = new MockBorrowStakerReset();
+        staker = MockBorrowStakerReset(
             deployUpgradeable(
                 address(stakerImplementation),
                 abi.encodeWithSelector(staker.initialize.selector, coreBorrow, _collateral)
@@ -90,19 +90,20 @@ contract VaultManagerListingTest is BaseTest {
         _contractVaultManager = new VaultManagerListing(0, 0);
         vm.store(address(_contractVaultManager), bytes32(uint256(0)), bytes32(uint256(0)));
 
+        // No protocol revenue for easier computation
         VaultParameters memory params = VaultParameters({
             debtCeiling: type(uint256).max / 10**27,
             collateralFactor: CF,
             targetHealthFactor: 1.1e9,
             interestRate: 1.547e18,
-            liquidationSurcharge: 0.9e9,
+            liquidationSurcharge: 1e9,
             maxLiquidationDiscount: 0.1e9,
             whitelistingActivated: false,
             baseBoost: 1e9
         });
         _contractVaultManager.initialize(_contractTreasury, IERC20(address(staker)), _oracle, params, "wETH");
 
-        vm.prank(0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
+        vm.prank(_GOVERNOR);
         _contractAgToken.setUpTreasury(address(_contractTreasury));
 
         helperImplementation = new AngleBorrowHelpers();
@@ -112,6 +113,9 @@ contract VaultManagerListingTest is BaseTest {
         _contractVaultManager.togglePause();
         _contractTreasury.addVaultManager(address(_contractVaultManager));
         vm.stopPrank();
+
+        vm.prank(address(_contractTreasury));
+        _contractAgToken.addMinter(_GOVERNOR);
     }
 
     function testVaultListAndCollateralAmounts(
@@ -120,30 +124,32 @@ contract VaultManagerListingTest is BaseTest {
         uint256[TRANSFER_LENGTH] memory actionTypes,
         uint256[TRANSFER_LENGTH] memory amounts
     ) public {
-        uint256[5] memory collateralAmounts;
+        uint256[5] memory collateralVaultAmounts;
+        uint256[5] memory collateralIdleAmounts;
 
         amounts[0] = bound(amounts[0], 1, maxTokenAmount);
         _openVault(_alice, _alice, amounts[0]);
-        collateralAmounts[0] += amounts[0];
+        collateralVaultAmounts[0] += amounts[0];
         ownerListVaults[_alice].push(_contractVaultManager.vaultIDCount());
 
         for (uint256 i = 1; i < amounts.length; i++) {
             (uint256 randomIndex, address account) = _getAccountByIndex(accounts[i]);
-            uint256 action = bound(actionTypes[i], 0, 5);
+            uint256 action = bound(actionTypes[i], 0, 6);
             if (ownerListVaults[account].length == 0) action = 0;
 
             if (action == 0) {
                 uint256 amount = bound(amounts[i], 1, maxTokenAmount);
                 (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
                 _openVault(account, to, amount);
-                collateralAmounts[randomIndexTo] += amount;
+                collateralVaultAmounts[randomIndexTo] += amount;
                 ownerListVaults[to].push(_contractVaultManager.vaultIDCount());
             } else if (action == 1) {
                 uint256[] storage vaultIDs = ownerListVaults[account];
                 amounts[i] = bound(amounts[i], 0, vaultIDs.length - 1);
                 uint256 vaultID = vaultIDs[amounts[i]];
                 uint256 collateralAmount = _closeVault(account, vaultID);
-                collateralAmounts[randomIndex] -= collateralAmount;
+                collateralVaultAmounts[randomIndex] -= collateralAmount;
+                collateralIdleAmounts[randomIndex] += collateralAmount;
                 _removeVaultFromList(vaultIDs, vaultID);
             } else if (action == 2) {
                 uint256[] storage vaultIDs = ownerListVaults[account];
@@ -152,8 +158,8 @@ contract VaultManagerListingTest is BaseTest {
                 uint256 vaultID = vaultIDs[amounts[i]];
                 uint256 vaultDebt = _contractVaultManager.getVaultDebt(vaultID);
                 (uint256 collateralAmount, ) = _contractVaultManager.vaultData(vaultID);
-                collateralAmounts[randomIndex] -= collateralAmount;
-                collateralAmounts[randomIndexTo] += collateralAmount;
+                collateralVaultAmounts[randomIndex] -= collateralAmount;
+                collateralVaultAmounts[randomIndexTo] += collateralAmount;
                 vm.startPrank(account);
                 _contractVaultManager.transferFrom(account, to, vaultID);
                 // so that if the other one close it he has enough
@@ -170,41 +176,66 @@ contract VaultManagerListingTest is BaseTest {
                 tos[i] = bound(tos[i], 0, vaultIDs.length - 1);
                 uint256 vaultID = vaultIDs[tos[i]];
                 _addToVault(account, vaultID, amounts[i]);
-                collateralAmounts[randomIndex] += amounts[i];
+                collateralVaultAmounts[randomIndex] += amounts[i];
             } else if (action == 4) {
                 uint256[] storage vaultIDs = ownerListVaults[account];
                 tos[i] = bound(tos[i], 0, vaultIDs.length - 1);
                 uint256 vaultID = vaultIDs[tos[i]];
                 uint256 collateralAmount = _removeFromVault(account, vaultID, amounts[i]);
-                collateralAmounts[randomIndex] -= collateralAmount;
+                collateralVaultAmounts[randomIndex] -= collateralAmount;
+                collateralIdleAmounts[randomIndex] += collateralAmount;
             } else if (action == 5) {
                 uint256[] storage vaultIDs = ownerListVaults[account];
                 amounts[i] = bound(amounts[i], 0, vaultIDs.length - 1);
                 uint256 vaultID = vaultIDs[amounts[i]];
                 (bool liquidated, uint256 collateralAmount) = _liquidateVault(_hacker, vaultID);
-                collateralAmounts[randomIndex] -= collateralAmount;
+                collateralVaultAmounts[randomIndex] -= collateralAmount;
+                collateralIdleAmounts[4] += collateralAmount;
                 if (liquidated) _removeVaultFromList(vaultIDs, vaultID);
             } else if (action == 6) {
                 // partial liquidation
                 uint256[] storage vaultIDs = ownerListVaults[account];
                 amounts[i] = bound(amounts[i], 0, vaultIDs.length - 1);
                 uint256 vaultID = vaultIDs[amounts[i]];
-                uint256 collateralAmount = _partialLiquidationVault(_hacker, vaultID);
-                collateralAmounts[randomIndex] -= collateralAmount;
+                (bool fullLiquidation, uint256 collateralAmount) = _partialLiquidationVault(_hacker, vaultID);
+                collateralVaultAmounts[randomIndex] -= collateralAmount;
+                collateralIdleAmounts[4] += collateralAmount;
+                if (fullLiquidation) _removeVaultFromList(vaultIDs, vaultID);
+            } else if (action == 7) {
+                // just deposit into the staker
+                amounts[i] = bound(amounts[i], 0, maxTokenAmount);
+                (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
+                deal(address(_collateral), account, amounts[i]);
+                vm.startPrank(account);
+                // first get the true collateral
+                _collateral.approve(address(staker), amounts[i]);
+                staker.deposit(amounts[i], to);
+                collateralIdleAmounts[randomIndexTo] += amounts[i];
+                vm.stopPrank();
+            } else if (action == 8) {
+                // just withdraw into the staker
+                amounts[i] = bound(amounts[i], 1, BASE_PARAMS);
+                (, address to) = _getAccountByIndex(tos[i]);
+                uint256 withdrawnDirectly = (amounts[i] * staker.balanceOf(account)) / BASE_PARAMS;
+                staker.withdraw(withdrawnDirectly, account, to);
+                collateralIdleAmounts[randomIndex] -= amounts[i];
+                vm.stopPrank();
             }
             for (uint256 k = 0; k < 5; k++) {
                 address checkedAccount = k == 0 ? _alice : k == 1 ? _bob : k == 2 ? _charlie : k == 3
                     ? _dylan
                     : _hacker;
-                assertEq(collateralAmounts[k], _contractVaultManager.getUserCollateral(checkedAccount));
+                assertEq(
+                    collateralVaultAmounts[k] + collateralIdleAmounts[k],
+                    staker.balanceOf(checkedAccount) + _contractVaultManager.getUserCollateral(checkedAccount)
+                );
+                assertEq(collateralVaultAmounts[k], _contractVaultManager.getUserCollateral(checkedAccount));
                 uint256[] memory vaultIDs = ownerListVaults[checkedAccount];
-                _logArray(vaultIDs, type(uint256).max, checkedAccount);
                 (uint256[] memory helperVaultIDs, uint256 count) = helper.getControlledVaults(
                     IVaultManager(address(_contractVaultManager)),
                     checkedAccount
                 );
                 (helperVaultIDs, count) = _removeBurntVaultLists(_contractVaultManager, helperVaultIDs, count);
-                _logArray(helperVaultIDs, count, checkedAccount);
                 _compareLists(vaultIDs, helperVaultIDs, count);
                 if (checkedAccount == _hacker) assertEq(vaultIDs.length, 0);
             }
@@ -217,55 +248,80 @@ contract VaultManagerListingTest is BaseTest {
         uint256[TRANSFER_LENGTH] memory actionTypes,
         uint256[TRANSFER_LENGTH] memory amounts
     ) public {
+        uint256[5] memory collateralAmounts;
+        uint256[5] memory pendingRewards;
+
         amounts[0] = bound(amounts[0], 1, maxTokenAmount);
         _openVault(_alice, _alice, amounts[0]);
+        collateralAmounts[0] += amounts[0];
 
         for (uint256 i = 1; i < amounts.length; i++) {
-            (, address account) = _getAccountByIndex(accounts[i]);
+            (uint256 randomIndex, address account) = _getAccountByIndex(accounts[i]);
             uint256 action = bound(actionTypes[i], 0, 5);
             {
                 (, uint256 count) = helper.getControlledVaults(IVaultManager(address(_contractVaultManager)), account);
                 if (count == 0) action = 0;
             }
 
+            {
+                uint256 totSupply = staker.totalSupply();
+                uint256 _rewardAmount = staker.rewardAmount();
+                if (totSupply > 0) {
+                    pendingRewards[0] += (collateralAmounts[0] * _rewardAmount) / totSupply;
+                    pendingRewards[1] += (collateralAmounts[1] * _rewardAmount) / totSupply;
+                    pendingRewards[2] += (collateralAmounts[2] * _rewardAmount) / totSupply;
+                    pendingRewards[3] += (collateralAmounts[3] * _rewardAmount) / totSupply;
+                }
+            }
+
             if (action == 0) {
                 uint256 amount = bound(amounts[i], 1, maxTokenAmount);
-                (, address to) = _getAccountByIndex(tos[i]);
+                (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
                 _openVault(account, to, amount);
+                collateralAmounts[randomIndexTo] += amount;
             } else if (action == 1) {
+                console.log("in the close");
                 (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
                     IVaultManager(address(_contractVaultManager)),
                     account
                 );
-                amounts[i] = bound(amounts[i], 0, count);
+                amounts[i] = bound(amounts[i], 0, count - 1);
                 uint256 vaultID = vaultIDs[amounts[i]];
                 _closeVault(account, vaultID);
             } else if (action == 2) {
+                console.log("in the transfer");
                 (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
                     IVaultManager(address(_contractVaultManager)),
                     account
                 );
-                (, address to) = _getAccountByIndex(tos[i]);
-                amounts[i] = bound(amounts[i], 0, count);
+                (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
+                amounts[i] = bound(amounts[i], 0, count - 1);
                 uint256 vaultID = vaultIDs[amounts[i]];
                 uint256 vaultDebt = _contractVaultManager.getVaultDebt(vaultID);
+                (uint256 collateralAmount, ) = _contractVaultManager.vaultData(vaultID);
                 vm.startPrank(account);
                 _contractVaultManager.transferFrom(account, to, vaultID);
                 // so that if the other one close it he has enough
                 // this doesn't work if the debt increased, we would need to increase
                 // artificially the owner balance too
                 _contractAgToken.transfer(to, vaultDebt);
+                collateralAmounts[randomIndex] -= collateralAmount;
+                collateralAmounts[randomIndexTo] += collateralAmount;
                 vm.stopPrank();
             } else if (action == 3) {
+                console.log("in the add");
                 (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
                     IVaultManager(address(_contractVaultManager)),
                     account
                 );
                 amounts[i] = bound(amounts[i], 1, maxTokenAmount);
-                tos[i] = bound(tos[i], 0, count);
+                tos[i] = bound(tos[i], 0, count - 1);
                 uint256 vaultID = vaultIDs[tos[i]];
                 _addToVault(account, vaultID, amounts[i]);
+                collateralAmounts[randomIndex] += amounts[i];
             } else if (action == 4) {
+                console.log("in the remove");
+
                 (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
                     IVaultManager(address(_contractVaultManager)),
                     account
@@ -274,36 +330,66 @@ contract VaultManagerListingTest is BaseTest {
                 uint256 vaultID = vaultIDs[tos[i]];
                 _removeFromVault(account, vaultID, amounts[i]);
             } else if (action == 5) {
+                console.log("in the liquidate");
                 (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
                     IVaultManager(address(_contractVaultManager)),
                     account
                 );
-                amounts[i] = bound(amounts[i], 0, count);
+                amounts[i] = bound(amounts[i], 0, count - 1);
                 uint256 vaultID = vaultIDs[amounts[i]];
-                _liquidateVault(_hacker, vaultID);
+                (, uint256 collateralAmount) = _liquidateVault(_hacker, vaultID);
+                collateralAmounts[randomIndex] -= collateralAmount;
+                collateralAmounts[4] += collateralAmount;
             } else if (action == 6) {
+                console.log("in the partial liquidate");
                 // partial liquidation
                 (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
                     IVaultManager(address(_contractVaultManager)),
                     account
                 );
-                amounts[i] = bound(amounts[i], 0, count);
+                amounts[i] = bound(amounts[i], 0, count - 1);
                 uint256 vaultID = vaultIDs[amounts[i]];
-                _partialLiquidationVault(_hacker, vaultID);
+                (, uint256 collateralAmount) = _partialLiquidationVault(_hacker, vaultID);
+                collateralAmounts[randomIndex] -= collateralAmount;
+                collateralAmounts[4] += collateralAmount;
             } else if (action == 7) {
-                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
-                    IVaultManager(address(_contractVaultManager)),
-                    account
-                );
-                amounts[i] = bound(amounts[i], 0, count);
-                uint256 vaultID = vaultIDs[amounts[i]];
-                _partialLiquidationVault(_hacker, vaultID);
+                // just deposit into the staker
+                amounts[i] = bound(amounts[i], 0, maxTokenAmount);
+                (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
+                deal(address(_collateral), account, amounts[i]);
+                vm.startPrank(account);
+                // first get the true collateral
+                _collateral.approve(address(staker), amounts[i]);
+                staker.deposit(amounts[i], to);
+                collateralAmounts[randomIndexTo] += amounts[i];
+                vm.stopPrank();
+            } else if (action == 8) {
+                // just withdraw into the staker
+                amounts[i] = bound(amounts[i], 1, BASE_PARAMS);
+                (, address to) = _getAccountByIndex(tos[i]);
+                uint256 withdrawnDirectly = (amounts[i] * staker.balanceOf(account)) / BASE_PARAMS;
+                staker.withdraw(withdrawnDirectly, account, to);
+                collateralAmounts[randomIndex] -= amounts[i];
+                vm.stopPrank();
+            } else if (action == 9) {
+                // add a reward
+                amounts[i] = bound(amounts[i], 0, 10_000_000 * 10**decimalReward);
+                deal(address(rewardToken), address(staker), amounts[i]);
+                staker.setRewardAmount(amounts[i]);
             }
-            for (uint256 k = 0; k < 5; k++) {
+            for (uint256 k = 0; k < 4; k++) {
                 address checkedAccount = k == 0 ? _alice : k == 1 ? _bob : k == 2 ? _charlie : k == 3
                     ? _dylan
                     : _hacker;
-                uint256[] memory vaultIDs = ownerListVaults[checkedAccount];
+                assertEq(
+                    collateralAmounts[k],
+                    staker.balanceOf(checkedAccount) + _contractVaultManager.getUserCollateral(checkedAccount)
+                );
+                assertApproxEqAbs(
+                    rewardToken.balanceOf(checkedAccount) + staker.pendingRewardsOf(rewardToken, checkedAccount),
+                    pendingRewards[k],
+                    10**(decimalReward - 4)
+                );
             }
         }
     }
@@ -425,6 +511,7 @@ contract VaultManagerListingTest is BaseTest {
         // to be able to liquidate it fully
         uint256 vaultDebt = _contractVaultManager.getVaultDebt(vaultID);
         (uint256 currentCollat, ) = _contractVaultManager.vaultData(vaultID);
+        if (currentCollat == 0) return (false, 0);
         {
             uint256 newOracleValue = (((vaultDebt * BASE_PARAMS) / CF) * 10**decimalToken) / currentCollat / 100;
             if (newOracleValue == 0) return (false, 0);
@@ -436,31 +523,38 @@ contract VaultManagerListingTest is BaseTest {
         return (true, currentCollat);
     }
 
-    function _partialLiquidationVault(address liquidator, uint256 vaultID) internal returns (uint256) {
+    function _partialLiquidationVault(address liquidator, uint256 vaultID) internal returns (bool, uint256) {
         // to be able to liquidate it fully
         uint256 vaultDebt = _contractVaultManager.getVaultDebt(vaultID);
         (uint256 currentCollat, ) = _contractVaultManager.vaultData(vaultID);
+
         {
-            uint256 newOracleValue = (((vaultDebt * BASE_PARAMS) / CF) * 10**decimalToken) / currentCollat - 1;
-            if (newOracleValue == 0) return 0;
+            uint256 newOracleValue = (((vaultDebt * BASE_PARAMS) / CF) * 10**decimalToken) / currentCollat;
+            if (newOracleValue < 2) return (false, 0);
+            else newOracleValue -= 1;
             _oracle.update(newOracleValue);
         }
 
         _internalLiquidateVault(liquidator, vaultID);
         _oracle.update(ORACLE_VALUE);
-        (currentCollat, ) = _contractVaultManager.vaultData(vaultID);
-        return currentCollat;
+        (uint256 newCollat, ) = _contractVaultManager.vaultData(vaultID);
+        return (newCollat == 0, currentCollat - newCollat);
     }
 
     function _internalLiquidateVault(address liquidator, uint256 vaultID) internal {
         LiquidationOpportunity memory liqOpp = _contractVaultManager.checkLiquidation(vaultID, liquidator);
+        console.log("liqOpp ", liqOpp.thresholdRepayAmount);
+        uint256 amountToReimburse = liqOpp.maxStablecoinAmountToRepay;
+
         uint256 numberActions = 1;
         uint256[] memory vaultIDs = new uint256[](numberActions);
         vaultIDs[0] = vaultID;
         uint256[] memory amounts = new uint256[](numberActions);
-        amounts[0] = liqOpp.maxStablecoinAmountToRepay;
+        amounts[0] = amountToReimburse;
 
-        deal(address(_contractAgToken), liquidator, liqOpp.maxStablecoinAmountToRepay);
+        vm.prank(_GOVERNOR);
+        _contractAgToken.mint(liquidator, amountToReimburse);
+
         vm.startPrank(liquidator);
         // can try with a to different than liquidator
         _contractVaultManager.liquidate(vaultIDs, amounts, liquidator, liquidator);

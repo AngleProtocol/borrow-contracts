@@ -10,7 +10,7 @@ import "../../../contracts/mock/MockStableMaster.sol";
 import "../../../contracts/mock/MockOracle.sol";
 import "../../../contracts/mock/MockToken.sol";
 import "../../../contracts/coreBorrow/CoreBorrow.sol";
-import "../../../contracts/agToken/AgToken.sol";
+import { AgToken } from "../../../contracts/agToken/AgToken.sol";
 
 contract VaultManagerTest is Test {
     using stdStorage for StdStorage;

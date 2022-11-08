@@ -670,6 +670,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // liqOpp.discount stores in fact `1-discount`
             uint256 collateralReleased = (amounts[i] * BASE_PARAMS * _collatBase) /
                 (liqOpp.discount * liqData.oracleValue);
+
+            _checkpointCollateral(vaultIDs[i], vault.collateralAmount <= collateralReleased);
             // Because we're rounding up in some divisions, `collateralReleased` can be greater than the `collateralAmount` of the vault
             // In this case, `stablecoinAmountToReceive` is still rounded up
             if (vault.collateralAmount <= collateralReleased) {
@@ -678,10 +680,12 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 totalNormalizedDebt -= vault.normalizedDebt;
                 // Reinitializing the `vaultID`: we're not burning the vault in this case for integration purposes
                 delete vaultData[vaultIDs[i]];
-                liqData.badDebtFromLiquidation +=
-                    liqOpp.currentDebt -
-                    (amounts[i] * liquidationSurcharge) /
-                    BASE_PARAMS;
+                {
+                    uint256 debtReimbursed = (amounts[i] * liquidationSurcharge) / BASE_PARAMS;
+                    liqData.badDebtFromLiquidation += debtReimbursed < liqOpp.currentDebt
+                        ? liqOpp.currentDebt - debtReimbursed
+                        : 0;
+                }
                 // There may be an edge case in which: `amounts[i] = (currentDebt * BASE_PARAMS) / surcharge + 1`
                 // In this case, as long as `surcharge < BASE_PARAMS`, there cannot be any underflow in the operation
                 // above
@@ -694,8 +698,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     liqData.newInterestAccumulator
                 );
             }
-            _checkpointCollateral(vaultIDs[i], vault.collateralAmount == collateralReleased);
-
             liqData.collateralAmountToGive += collateralReleased;
             liqData.stablecoinAmountToReceive += amounts[i];
         }
