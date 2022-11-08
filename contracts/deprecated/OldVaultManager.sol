@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.12;
 
-import "./VaultManagerPermit.sol";
+import "../vaultManager/VaultManagerPermit.sol";
 
 /// @title VaultManager
 /// @author Angle Core Team
@@ -10,7 +10,7 @@ import "./VaultManagerPermit.sol";
 /// logic (fees and interest rate) as well as the liquidation logic
 /// @dev This implementation only supports non-rebasing ERC20 tokens as collateral
 /// @dev This contract is encoded as a NFT contract
-contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
+contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -59,7 +59,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint256 dust_, uint256 dustCollateral_) VaultManagerStorage(dust_, dustCollateral_) {}
 
-    // ================================= MODIFIERS =================================
+    // ============================== Modifiers ====================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
@@ -85,7 +85,9 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _;
     }
 
-    // ============================== VAULT FUNCTIONS ==============================
+    // =========================== Vault Functions =================================
+
+    // ========================= External Access Functions =========================
 
     /// @inheritdoc IVaultManagerFunctions
     function createVault(address toVault) external whenNotPaused returns (uint256) {
@@ -290,7 +292,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _repayDebt(vaultID, stablecoinAmountLessFeePaid, 0);
     }
 
-    // =============================== VIEW FUNCTIONS ==============================
+    // ============================= View Functions ================================
 
     /// @inheritdoc IVaultManagerFunctions
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
@@ -320,7 +322,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         );
     }
 
-    // ====================== INTERNAL UTILITY VIEW FUNCTIONS ======================
+    // =================== Internal Utility View Functions =========================
 
     /// @notice Computes the health factor of a given vault. This can later be used to check whether a given vault is solvent
     /// (i.e. should be liquidated or not)
@@ -368,7 +370,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
     }
 
-    // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
+    // =============== Internal Utility State-Modifying Functions ==================
 
     /// @notice Closes a vault without handling the repayment of the concerned address
     /// @param vaultID ID of the vault to close
@@ -397,7 +399,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param collateralAmount Amount by which increasing the collateral balance of
     function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         if (!_exists(vaultID)) revert NonexistentVault();
-        _checkpointCollateral(vaultID, false);
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
     }
@@ -414,7 +415,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 oracleValue,
         uint256 interestAccumulator_
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
-        _checkpointCollateral(vaultID, false);
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
@@ -575,7 +575,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         }
     }
 
-    // ====================== TREASURY RELATIONSHIP FUNCTIONS ======================
+    // =================== Treasury Relationship Functions =========================
 
     /// @inheritdoc IVaultManagerFunctions
     function accrueInterestToTreasury() external onlyTreasury returns (uint256 surplusValue, uint256 badDebtValue) {
@@ -610,7 +610,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return newInterestAccumulator;
     }
 
-    // ================================ LIQUIDATIONS ===============================
+    // ============================ Liquidations ===================================
 
     /// @notice Liquidates an ensemble of vaults specified by their IDs
     /// @dev This function is a simplified wrapper of the function below. It is built to remove for liquidators the need to specify
@@ -670,8 +670,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // liqOpp.discount stores in fact `1-discount`
             uint256 collateralReleased = (amounts[i] * BASE_PARAMS * _collatBase) /
                 (liqOpp.discount * liqData.oracleValue);
-
-            _checkpointCollateral(vaultIDs[i], vault.collateralAmount <= collateralReleased);
             // Because we're rounding up in some divisions, `collateralReleased` can be greater than the `collateralAmount` of the vault
             // In this case, `stablecoinAmountToReceive` is still rounded up
             if (vault.collateralAmount <= collateralReleased) {
@@ -680,12 +678,10 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 totalNormalizedDebt -= vault.normalizedDebt;
                 // Reinitializing the `vaultID`: we're not burning the vault in this case for integration purposes
                 delete vaultData[vaultIDs[i]];
-                {
-                    uint256 debtReimbursed = (amounts[i] * liquidationSurcharge) / BASE_PARAMS;
-                    liqData.badDebtFromLiquidation += debtReimbursed < liqOpp.currentDebt
-                        ? liqOpp.currentDebt - debtReimbursed
-                        : 0;
-                }
+                liqData.badDebtFromLiquidation +=
+                    liqOpp.currentDebt -
+                    (amounts[i] * liquidationSurcharge) /
+                    BASE_PARAMS;
                 // There may be an edge case in which: `amounts[i] = (currentDebt * BASE_PARAMS) / surcharge + 1`
                 // In this case, as long as `surcharge < BASE_PARAMS`, there cannot be any underflow in the operation
                 // above
@@ -798,12 +794,24 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
+    /// @param liquidator Address for which boost should be computed
     /// @return The slope of the discount function
-    function _computeLiquidationBoost(address) internal view virtual returns (uint256) {
-        return yLiquidationBoost[0];
+    function _computeLiquidationBoost(address liquidator) internal view returns (uint256) {
+        if (address(veBoostProxy) == address(0)) {
+            return yLiquidationBoost[0];
+        } else {
+            uint256 adjustedBalance = veBoostProxy.adjusted_balance_of(liquidator);
+            if (adjustedBalance >= xLiquidationBoost[1]) return yLiquidationBoost[1];
+            else if (adjustedBalance <= xLiquidationBoost[0]) return yLiquidationBoost[0];
+            else
+                return
+                    yLiquidationBoost[0] +
+                    ((yLiquidationBoost[1] - yLiquidationBoost[0]) * (adjustedBalance - xLiquidationBoost[0])) /
+                    (xLiquidationBoost[1] - xLiquidationBoost[0]);
+        }
     }
 
-    // ================================== SETTERS ==================================
+    // ============================== Setters ======================================
 
     /// @notice Sets parameters encoded as uint64
     /// @param param Value for the parameter
@@ -913,11 +921,4 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         // even though a single oracle contract could be used in different places
         oracle.setTreasury(_treasury);
     }
-
-    // ============================= VIRTUAL FUNCTIONS =============================
-
-    /// @notice Hook called before any collateral internal changes
-    /// @param vaultID Vault which sees its collateral amount changed
-    /// @param burn Whether the vault was emptied from all its collateral
-    function _checkpointCollateral(uint256 vaultID, bool burn) internal virtual {}
 }

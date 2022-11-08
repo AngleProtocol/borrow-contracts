@@ -57,7 +57,7 @@ contract MockVaultManager {
         oracleValue = _oracleValue;
     }
 
-    function setOwner(uint256 vaultID, address owner) external {
+    function setOwner(uint256 vaultID, address owner) external virtual {
         ownerOf[vaultID] = owner;
     }
 
@@ -104,5 +104,47 @@ contract MockVaultManager {
         toVault;
         token;
         return 0;
+    }
+}
+
+contract MockVaultManagerListing is MockVaultManager {
+    // @notice Mapping from owner address to all his vaults
+    mapping(address => uint256[]) internal _ownerListVaults;
+
+    constructor(address _treasury) MockVaultManager(_treasury) {}
+
+    function getUserVaults(address owner) public view returns (uint256[] memory) {
+        return _ownerListVaults[owner];
+    }
+
+    function getUserCollateral(address owner) public view returns (uint256 totalCollateral) {
+        uint256[] memory vaultList = _ownerListVaults[owner];
+        uint256 vaultListLength = vaultList.length;
+        for (uint256 k; k < vaultListLength; k++) {
+            totalCollateral += vaultData[vaultList[k]].collateralAmount;
+        }
+        return totalCollateral;
+    }
+
+    function setOwner(uint256 vaultID, address owner) external override {
+        if (ownerOf[vaultID] != address(0)) _removeVaultFromList(ownerOf[vaultID], vaultID);
+        _ownerListVaults[owner].push(vaultID);
+        ownerOf[vaultID] = owner;
+    }
+
+    /// @notice Remove `vaultID` from `user` stroed vault list
+    /// @param user Address to look out for the vault list
+    /// @param vaultID VaultId to remove from the list
+    /// @dev The vault is necessarily in the list
+    function _removeVaultFromList(address user, uint256 vaultID) internal {
+        uint256[] storage vaultList = _ownerListVaults[user];
+        uint256 vaultListLength = vaultList.length;
+        for (uint256 i = 0; i < vaultListLength - 1; i++) {
+            if (vaultList[i] == vaultID) {
+                vaultList[i] = vaultList[vaultListLength - 1];
+                break;
+            }
+        }
+        vaultList.pop();
     }
 }

@@ -245,5 +245,14 @@ interface IVaultManagerStorage {
 /// @author Angle Core Team
 /// @notice Interface for the `VaultManager` contract
 interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721Metadata {
+    function isApprovedOrOwner(address spender, uint256 vaultID) external view returns (bool);
+}
 
+/// @title IVaultManagerListing
+/// @author Angle Core Team
+/// @notice Interface for the `VaultManagerListing` contract
+interface IVaultManagerListing is IVaultManager {
+    /// @notice Get the collateral owned by `user` in the contract
+    /// @dev This function effectively sums the collateral amounts of all the vaults owned by `user`
+    function getUserCollateral(address user) external view returns (uint256);
 }

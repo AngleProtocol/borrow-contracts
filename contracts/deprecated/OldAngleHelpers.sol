@@ -7,7 +7,8 @@ import "../interfaces/coreModule/IOracleCore.sol";
 import "../interfaces/coreModule/IPerpetualManager.sol";
 import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
-import "./AngleBorrowHelpers.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "../interfaces/IVaultManager.sol";
 
 pragma solidity 0.8.12;
 
@@ -48,10 +49,10 @@ struct CollateralAddresses {
 
 /// @title AngleHelpers
 /// @author Angle Core Team
-/// @notice Contract with view functions designed to facilitate integrations on the Core and Borrow module of the Angle Protocol
+/// @notice Contract with view functions designed to facilitate integrations on the Core module of the Angle Protocol
 /// @dev This contract only contains view functions to be queried off-chain. It was thus not optimized for gas consumption
-contract AngleHelpers is AngleBorrowHelpers {
-    // =========================== HELPER VIEW FUNCTIONS ===========================
+contract OldAngleHelpers is Initializable {
+    // ======================== Helper View Functions ==============================
 
     /// @notice Gives the amount of `agToken` you'd be getting if you were executing in the same block a mint transaction
     /// with `amount` of `collateral` in the Core module of the Angle protocol as well as the value of the fees
@@ -205,7 +206,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         (, poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
     }
 
-    // ============================= REPLICA FUNCTIONS =============================
+    // ======================== Replica Functions ==================================
     // These replicate what is done in the other contracts of the protocol
 
     function _previewBurnAndFees(
@@ -275,7 +276,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         if (stocksUsers + amountForUserInStable > feeData.capOnStableMinted) revert InvalidAmount();
     }
 
-    // ============================= UTILITY FUNCTIONS =============================
+    // ======================== Utility Functions ==================================
     // These utility functions are taken from other contracts of the protocol
 
     function _computeHedgeRatio(uint256 newStocksUsers, bytes memory data) internal view returns (uint64 ratio) {
@@ -330,7 +331,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         (poolManager, , , ) = ROUTER.mapPoolManagers(stableMaster, collateral);
     }
 
-    // ========================= CONSTANTS AND INITIALIZERS ========================
+    // ====================== Constants and Initializers ===========================
 
     IAngleRouter public constant ROUTER = IAngleRouter(0xBB755240596530be0c1DE5DFD77ec6398471561d);
     ICore public constant CORE = ICore(0x61ed74de9Ca5796cF2F8fD60D54160D47E30B7c3);
@@ -340,4 +341,7 @@ contract AngleHelpers is AngleBorrowHelpers {
 
     error NotInitialized();
     error InvalidAmount();
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 }

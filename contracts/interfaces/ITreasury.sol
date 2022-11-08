@@ -29,7 +29,7 @@ interface ITreasury {
     function isGovernorOrGuardian(address admin) external view returns (bool);
 
     /// @notice Checks whether a given address has well been initialized in this contract
-    /// as a `VaultManager``
+    /// as a `VaultManager`
     /// @param _vaultManager Address to check
     /// @return Whether the address has been initialized or not
     function isVaultManager(address _vaultManager) external view returns (bool);
