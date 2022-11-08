@@ -242,157 +242,157 @@ contract VaultManagerListingTest is BaseTest {
         }
     }
 
-    function testBorrowStakerWithVaultManager(
-        uint256[TRANSFER_LENGTH] memory accounts,
-        uint256[TRANSFER_LENGTH] memory tos,
-        uint256[TRANSFER_LENGTH] memory actionTypes,
-        uint256[TRANSFER_LENGTH] memory amounts
-    ) public {
-        uint256[5] memory collateralAmounts;
-        uint256[5] memory pendingRewards;
+    // function testBorrowStakerWithVaultManager(
+    //     uint256[TRANSFER_LENGTH] memory accounts,
+    //     uint256[TRANSFER_LENGTH] memory tos,
+    //     uint256[TRANSFER_LENGTH] memory actionTypes,
+    //     uint256[TRANSFER_LENGTH] memory amounts
+    // ) public {
+    //     uint256[5] memory collateralAmounts;
+    //     uint256[5] memory pendingRewards;
 
-        amounts[0] = bound(amounts[0], 1, maxTokenAmount);
-        _openVault(_alice, _alice, amounts[0]);
-        collateralAmounts[0] += amounts[0];
+    //     amounts[0] = bound(amounts[0], 1, maxTokenAmount);
+    //     _openVault(_alice, _alice, amounts[0]);
+    //     collateralAmounts[0] += amounts[0];
 
-        for (uint256 i = 1; i < amounts.length; i++) {
-            (uint256 randomIndex, address account) = _getAccountByIndex(accounts[i]);
-            uint256 action = bound(actionTypes[i], 0, 5);
-            {
-                (, uint256 count) = helper.getControlledVaults(IVaultManager(address(_contractVaultManager)), account);
-                if (count == 0) action = 0;
-            }
+    //     for (uint256 i = 1; i < amounts.length; i++) {
+    //         (uint256 randomIndex, address account) = _getAccountByIndex(accounts[i]);
+    //         uint256 action = bound(actionTypes[i], 0, 5);
+    //         {
+    //             (, uint256 count) = helper.getControlledVaults(IVaultManager(address(_contractVaultManager)), account);
+    //             if (count == 0) action = 0;
+    //         }
 
-            {
-                uint256 totSupply = staker.totalSupply();
-                uint256 _rewardAmount = staker.rewardAmount();
-                if (totSupply > 0) {
-                    pendingRewards[0] += (collateralAmounts[0] * _rewardAmount) / totSupply;
-                    pendingRewards[1] += (collateralAmounts[1] * _rewardAmount) / totSupply;
-                    pendingRewards[2] += (collateralAmounts[2] * _rewardAmount) / totSupply;
-                    pendingRewards[3] += (collateralAmounts[3] * _rewardAmount) / totSupply;
-                }
-            }
+    //         {
+    //             uint256 totSupply = staker.totalSupply();
+    //             uint256 _rewardAmount = staker.rewardAmount();
+    //             if (totSupply > 0) {
+    //                 pendingRewards[0] += (collateralAmounts[0] * _rewardAmount) / totSupply;
+    //                 pendingRewards[1] += (collateralAmounts[1] * _rewardAmount) / totSupply;
+    //                 pendingRewards[2] += (collateralAmounts[2] * _rewardAmount) / totSupply;
+    //                 pendingRewards[3] += (collateralAmounts[3] * _rewardAmount) / totSupply;
+    //             }
+    //         }
 
-            if (action == 0) {
-                uint256 amount = bound(amounts[i], 1, maxTokenAmount);
-                (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
-                _openVault(account, to, amount);
-                collateralAmounts[randomIndexTo] += amount;
-            } else if (action == 1) {
-                console.log("in the close");
-                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
-                    IVaultManager(address(_contractVaultManager)),
-                    account
-                );
-                amounts[i] = bound(amounts[i], 0, count - 1);
-                uint256 vaultID = vaultIDs[amounts[i]];
-                _closeVault(account, vaultID);
-            } else if (action == 2) {
-                console.log("in the transfer");
-                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
-                    IVaultManager(address(_contractVaultManager)),
-                    account
-                );
-                (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
-                amounts[i] = bound(amounts[i], 0, count - 1);
-                uint256 vaultID = vaultIDs[amounts[i]];
-                uint256 vaultDebt = _contractVaultManager.getVaultDebt(vaultID);
-                (uint256 collateralAmount, ) = _contractVaultManager.vaultData(vaultID);
-                vm.startPrank(account);
-                _contractVaultManager.transferFrom(account, to, vaultID);
-                // so that if the other one close it he has enough
-                // this doesn't work if the debt increased, we would need to increase
-                // artificially the owner balance too
-                _contractAgToken.transfer(to, vaultDebt);
-                collateralAmounts[randomIndex] -= collateralAmount;
-                collateralAmounts[randomIndexTo] += collateralAmount;
-                vm.stopPrank();
-            } else if (action == 3) {
-                console.log("in the add");
-                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
-                    IVaultManager(address(_contractVaultManager)),
-                    account
-                );
-                amounts[i] = bound(amounts[i], 1, maxTokenAmount);
-                tos[i] = bound(tos[i], 0, count - 1);
-                uint256 vaultID = vaultIDs[tos[i]];
-                _addToVault(account, vaultID, amounts[i]);
-                collateralAmounts[randomIndex] += amounts[i];
-            } else if (action == 4) {
-                console.log("in the remove");
+    //         if (action == 0) {
+    //             uint256 amount = bound(amounts[i], 1, maxTokenAmount);
+    //             (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
+    //             _openVault(account, to, amount);
+    //             collateralAmounts[randomIndexTo] += amount;
+    //         } else if (action == 1) {
+    //             console.log("in the close");
+    //             (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+    //                 IVaultManager(address(_contractVaultManager)),
+    //                 account
+    //             );
+    //             amounts[i] = bound(amounts[i], 0, count - 1);
+    //             uint256 vaultID = vaultIDs[amounts[i]];
+    //             _closeVault(account, vaultID);
+    //         } else if (action == 2) {
+    //             console.log("in the transfer");
+    //             (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+    //                 IVaultManager(address(_contractVaultManager)),
+    //                 account
+    //             );
+    //             (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
+    //             amounts[i] = bound(amounts[i], 0, count - 1);
+    //             uint256 vaultID = vaultIDs[amounts[i]];
+    //             uint256 vaultDebt = _contractVaultManager.getVaultDebt(vaultID);
+    //             (uint256 collateralAmount, ) = _contractVaultManager.vaultData(vaultID);
+    //             vm.startPrank(account);
+    //             _contractVaultManager.transferFrom(account, to, vaultID);
+    //             // so that if the other one close it he has enough
+    //             // this doesn't work if the debt increased, we would need to increase
+    //             // artificially the owner balance too
+    //             _contractAgToken.transfer(to, vaultDebt);
+    //             collateralAmounts[randomIndex] -= collateralAmount;
+    //             collateralAmounts[randomIndexTo] += collateralAmount;
+    //             vm.stopPrank();
+    //         } else if (action == 3) {
+    //             console.log("in the add");
+    //             (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+    //                 IVaultManager(address(_contractVaultManager)),
+    //                 account
+    //             );
+    //             amounts[i] = bound(amounts[i], 1, maxTokenAmount);
+    //             tos[i] = bound(tos[i], 0, count - 1);
+    //             uint256 vaultID = vaultIDs[tos[i]];
+    //             _addToVault(account, vaultID, amounts[i]);
+    //             collateralAmounts[randomIndex] += amounts[i];
+    //         } else if (action == 4) {
+    //             console.log("in the remove");
 
-                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
-                    IVaultManager(address(_contractVaultManager)),
-                    account
-                );
-                tos[i] = bound(tos[i], 0, count);
-                uint256 vaultID = vaultIDs[tos[i]];
-                _removeFromVault(account, vaultID, amounts[i]);
-            } else if (action == 5) {
-                console.log("in the liquidate");
-                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
-                    IVaultManager(address(_contractVaultManager)),
-                    account
-                );
-                amounts[i] = bound(amounts[i], 0, count - 1);
-                uint256 vaultID = vaultIDs[amounts[i]];
-                (, uint256 collateralAmount) = _liquidateVault(_hacker, vaultID);
-                collateralAmounts[randomIndex] -= collateralAmount;
-                collateralAmounts[4] += collateralAmount;
-            } else if (action == 6) {
-                console.log("in the partial liquidate");
-                // partial liquidation
-                (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
-                    IVaultManager(address(_contractVaultManager)),
-                    account
-                );
-                amounts[i] = bound(amounts[i], 0, count - 1);
-                uint256 vaultID = vaultIDs[amounts[i]];
-                (, uint256 collateralAmount) = _partialLiquidationVault(_hacker, vaultID);
-                collateralAmounts[randomIndex] -= collateralAmount;
-                collateralAmounts[4] += collateralAmount;
-            } else if (action == 7) {
-                // just deposit into the staker
-                amounts[i] = bound(amounts[i], 0, maxTokenAmount);
-                (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
-                deal(address(_collateral), account, amounts[i]);
-                vm.startPrank(account);
-                // first get the true collateral
-                _collateral.approve(address(staker), amounts[i]);
-                staker.deposit(amounts[i], to);
-                collateralAmounts[randomIndexTo] += amounts[i];
-                vm.stopPrank();
-            } else if (action == 8) {
-                // just withdraw into the staker
-                amounts[i] = bound(amounts[i], 1, BASE_PARAMS);
-                (, address to) = _getAccountByIndex(tos[i]);
-                uint256 withdrawnDirectly = (amounts[i] * staker.balanceOf(account)) / BASE_PARAMS;
-                staker.withdraw(withdrawnDirectly, account, to);
-                collateralAmounts[randomIndex] -= amounts[i];
-                vm.stopPrank();
-            } else if (action == 9) {
-                // add a reward
-                amounts[i] = bound(amounts[i], 0, 10_000_000 * 10**decimalReward);
-                deal(address(rewardToken), address(staker), amounts[i]);
-                staker.setRewardAmount(amounts[i]);
-            }
-            for (uint256 k = 0; k < 4; k++) {
-                address checkedAccount = k == 0 ? _alice : k == 1 ? _bob : k == 2 ? _charlie : k == 3
-                    ? _dylan
-                    : _hacker;
-                assertEq(
-                    collateralAmounts[k],
-                    staker.balanceOf(checkedAccount) + _contractVaultManager.getUserCollateral(checkedAccount)
-                );
-                assertApproxEqAbs(
-                    rewardToken.balanceOf(checkedAccount) + staker.pendingRewardsOf(rewardToken, checkedAccount),
-                    pendingRewards[k],
-                    10**(decimalReward - 4)
-                );
-            }
-        }
-    }
+    //             (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+    //                 IVaultManager(address(_contractVaultManager)),
+    //                 account
+    //             );
+    //             tos[i] = bound(tos[i], 0, count);
+    //             uint256 vaultID = vaultIDs[tos[i]];
+    //             _removeFromVault(account, vaultID, amounts[i]);
+    //         } else if (action == 5) {
+    //             console.log("in the liquidate");
+    //             (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+    //                 IVaultManager(address(_contractVaultManager)),
+    //                 account
+    //             );
+    //             amounts[i] = bound(amounts[i], 0, count - 1);
+    //             uint256 vaultID = vaultIDs[amounts[i]];
+    //             (, uint256 collateralAmount) = _liquidateVault(_hacker, vaultID);
+    //             collateralAmounts[randomIndex] -= collateralAmount;
+    //             collateralAmounts[4] += collateralAmount;
+    //         } else if (action == 6) {
+    //             console.log("in the partial liquidate");
+    //             // partial liquidation
+    //             (uint256[] memory vaultIDs, uint256 count) = helper.getControlledVaults(
+    //                 IVaultManager(address(_contractVaultManager)),
+    //                 account
+    //             );
+    //             amounts[i] = bound(amounts[i], 0, count - 1);
+    //             uint256 vaultID = vaultIDs[amounts[i]];
+    //             (, uint256 collateralAmount) = _partialLiquidationVault(_hacker, vaultID);
+    //             collateralAmounts[randomIndex] -= collateralAmount;
+    //             collateralAmounts[4] += collateralAmount;
+    //         } else if (action == 7) {
+    //             // just deposit into the staker
+    //             amounts[i] = bound(amounts[i], 0, maxTokenAmount);
+    //             (uint256 randomIndexTo, address to) = _getAccountByIndex(tos[i]);
+    //             deal(address(_collateral), account, amounts[i]);
+    //             vm.startPrank(account);
+    //             // first get the true collateral
+    //             _collateral.approve(address(staker), amounts[i]);
+    //             staker.deposit(amounts[i], to);
+    //             collateralAmounts[randomIndexTo] += amounts[i];
+    //             vm.stopPrank();
+    //         } else if (action == 8) {
+    //             // just withdraw into the staker
+    //             amounts[i] = bound(amounts[i], 1, BASE_PARAMS);
+    //             (, address to) = _getAccountByIndex(tos[i]);
+    //             uint256 withdrawnDirectly = (amounts[i] * staker.balanceOf(account)) / BASE_PARAMS;
+    //             staker.withdraw(withdrawnDirectly, account, to);
+    //             collateralAmounts[randomIndex] -= amounts[i];
+    //             vm.stopPrank();
+    //         } else if (action == 9) {
+    //             // add a reward
+    //             amounts[i] = bound(amounts[i], 0, 10_000_000 * 10**decimalReward);
+    //             deal(address(rewardToken), address(staker), amounts[i]);
+    //             staker.setRewardAmount(amounts[i]);
+    //         }
+    //         for (uint256 k = 0; k < 4; k++) {
+    //             address checkedAccount = k == 0 ? _alice : k == 1 ? _bob : k == 2 ? _charlie : k == 3
+    //                 ? _dylan
+    //                 : _hacker;
+    //             assertEq(
+    //                 collateralAmounts[k],
+    //                 staker.balanceOf(checkedAccount) + _contractVaultManager.getUserCollateral(checkedAccount)
+    //             );
+    //             assertApproxEqAbs(
+    //                 rewardToken.balanceOf(checkedAccount) + staker.pendingRewardsOf(rewardToken, checkedAccount),
+    //                 pendingRewards[k],
+    //                 10**(decimalReward - 4)
+    //             );
+    //         }
+    //     }
+    // }
 
     // ============================= INTERNAL FUNCTIONS ============================
 
