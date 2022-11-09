@@ -7,7 +7,6 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/curve/ITricryptoPool.sol";
 import "../../../interfaces/external/curve/ICurveCryptoSwapPool.sol";
-import "hardhat/console.sol";
 
 /// @title OracleCrvUSDBTCETH_EUR
 /// @author Angle Labs, Inc
