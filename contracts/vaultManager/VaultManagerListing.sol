@@ -18,6 +18,8 @@ contract VaultManagerListing is VaultManager {
     // @notice Mapping from owner address to all his vaults
     mapping(address => uint256[]) internal _ownerListVaults;
 
+    uint256[49] private __gapListing;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint256 dust_, uint256 dustCollateral_) VaultManager(dust_, dustCollateral_) {}
 
@@ -31,6 +33,18 @@ contract VaultManagerListing is VaultManager {
             totalCollateral += vaultData[vaultList[k]].collateralAmount;
         }
         return totalCollateral;
+    }
+
+    // ============================ OVERRIDEN FUNCTIONS ============================
+
+    /// @inheritdoc VaultManager
+    function _getDust() internal view override returns (uint256) {
+        return dustOverride;
+    }
+
+    /// @inheritdoc VaultManager
+    function _getDustCollateral() internal view override returns (uint256) {
+        return _dustCollateralOverride;
     }
 
     // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================

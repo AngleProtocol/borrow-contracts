@@ -43,7 +43,7 @@ contract VaultManagerLiquidationBoost is VaultManager {
         emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }
 
-    // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
+    // ======================== OVERRIDEN VIRTUAL FUNCTIONS ========================
 
     /// @inheritdoc VaultManager
     function _computeLiquidationBoost(address liquidator) internal view override returns (uint256) {
@@ -59,5 +59,15 @@ contract VaultManagerLiquidationBoost is VaultManager {
                     ((yLiquidationBoost[1] - yLiquidationBoost[0]) * (adjustedBalance - xLiquidationBoost[0])) /
                     (xLiquidationBoost[1] - xLiquidationBoost[0]);
         }
+    }
+
+    /// @inheritdoc VaultManager
+    function _getDust() internal view override returns (uint256) {
+        return dustOverride;
+    }
+
+    /// @inheritdoc VaultManager
+    function _getDustCollateral() internal view override returns (uint256) {
+        return _dustCollateralOverride;
     }
 }
