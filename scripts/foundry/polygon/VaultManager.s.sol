@@ -7,15 +7,15 @@ import "../../../contracts/treasury/Treasury.sol";
 import "../../../contracts/vaultManager/vaultManager.sol";
 import "./PolygonConstants.s.sol";
 
-contract DeployAMOBP is Script, PolygonConstants {
-    address public constant TREASURY = 0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8;
+contract DeployVaultManager is Script, PolygonConstants {
+    address public constant TREASURY = 0x2F2e0ba9746aae15888cf234c4EB5B301710927e;
     VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(0x18471f8629C5F284256a4eB0dfF901E3F4987223);
 
     // TODO to be changed at deployment depending on the vaultManager
     IOracle public constant ORACLE = IOracle(address(0));
     IERC20 public constant COLLATERAL = IERC20(address(0));
     string public constant SYMBOL = "crvUSDBTCETH-EUR";
-    uint256 public constant DEBT_CEILING = 10_000 ether;
+    uint256 public constant DEBT_CEILING = 1_000 ether;
     uint64 public constant CF = (7 * BASE_PARAMS) / 10;
     uint64 public constant THF = (11 * BASE_PARAMS) / 10;
     uint64 public constant BORROW_FEE = (3 * BASE_PARAMS) / 1000;

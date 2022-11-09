@@ -8,7 +8,7 @@ import "../../../contracts/treasury/Treasury.sol";
 import { OracleCrvUSDBTCETHEUR } from "../../../contracts/oracle/implementations/polygon/OracleCrvUSDBTCETH_EUR.sol";
 import "./PolygonConstants.s.sol";
 
-contract DeployOracle is Script, PolygonConstants {
+contract DeploySwapper is Script, PolygonConstants {
     // AGEUR Polygon treasury
     address public constant TREASURY = 0x2F2e0ba9746aae15888cf234c4EB5B301710927e;
 

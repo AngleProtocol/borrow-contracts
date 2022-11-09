@@ -12,11 +12,11 @@ enum CurveRemovalType {
     none
 }
 
-/// @title ConvexLevSwapper2Tokens
+/// @title CurveLevSwapper2Tokens
 /// @author Angle Core Team
-/// @dev Leverage swapper on Curve LP tokens with Convex staking
+/// @dev Leverage swapper on Curve LP tokens
 /// @dev This implementation is for Curve pools with 2 tokens
-abstract contract ConvexLevSwapper2Tokens is BaseLevSwapper {
+abstract contract CurveLevSwapper2Tokens is BaseLevSwapper {
     using SafeERC20 for IERC20;
 
     constructor(

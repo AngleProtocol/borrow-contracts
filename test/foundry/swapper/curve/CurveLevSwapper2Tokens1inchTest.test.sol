@@ -12,10 +12,10 @@ import "../../../../contracts/interfaces/external/curve/IMetaPool2.sol";
 import "../../../../contracts/interfaces/coreModule/IStableMaster.sol";
 import "../../../../contracts/interfaces/coreModule/IPoolManager.sol";
 import "../../../../contracts/mock/MockTokenPermit.sol";
-import { CurveRemovalType, SwapType, BaseLevSwapper, MockConvexLevSwapper2Tokens, SwapperSidechain, IUniswapV3Router, IAngleRouterSidechain } from "../../../../contracts/mock/MockConvexLevSwapper2Tokens.sol";
+import { CurveRemovalType, SwapType, BaseLevSwapper, MockCurveLevSwapper2Tokens, SwapperSidechain, IUniswapV3Router, IAngleRouterSidechain } from "../../../../contracts/mock/MockCurveLevSwapper2Tokens.sol";
 import { MockBorrowStaker } from "../../../../contracts/mock/MockBorrowStaker.sol";
 
-contract ConvexLevSwapper2TokensBaseTest is BaseTest {
+contract CurveLevSwapper2Tokens1InchTest is BaseTest {
     using stdStorage for StdStorage;
     using SafeERC20 for IERC20;
 
@@ -33,7 +33,7 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
     IMetaPool2 internal constant _METAPOOL = IMetaPool2(0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2);
 
     uint256 internal constant _BPS = 10000;
-    MockConvexLevSwapper2Tokens public swapper;
+    MockCurveLevSwapper2Tokens public swapper;
     MockBorrowStaker public stakerImplementation;
     MockBorrowStaker public staker;
     uint8 public decimalToken = 18;
@@ -66,7 +66,7 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
             )
         );
 
-        swapper = new MockConvexLevSwapper2Tokens(
+        swapper = new MockCurveLevSwapper2Tokens(
             coreBorrow,
             _UNI_V3_ROUTER,
             _ONE_INCH,
@@ -110,110 +110,16 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testLeverageNoUnderlyingTokensDeposited(uint256 amount, uint256 addLiquidityFRAX) public {
-        amount = bound(amount, 0, 10**15);
-        addLiquidityFRAX = bound(addLiquidityFRAX, 0, 10**27);
-
-        deal(address(asset), address(_alice), amount);
-        vm.startPrank(_alice);
-        // intermediary variables
-        bytes[] memory oneInchData = new bytes[](0);
-        uint256 minAmountOut = amount;
-
-        bytes memory addData;
-        bytes memory swapData = abi.encode(oneInchData, addData);
-        bytes memory leverageData = abi.encode(true, _alice, swapData);
-        bytes memory data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
-
-        // we first need to send the tokens before hand, you should always use the swapper
-        // in another tx to not losse your funds by front running
-        asset.transfer(address(swapper), amount);
-        swapper.swap(IERC20(address(asset)), IERC20(address(staker)), _alice, 0, amount, data);
-
-        vm.stopPrank();
-
-        assertEq(staker.balanceOf(_alice), minAmountOut);
-        assertEq(asset.balanceOf(address(staker)), minAmountOut);
-        assertEq(staker.balanceOf(_alice), staker.totalSupply());
-        assertEq(asset.balanceOf(_alice), 0);
-        assertEq(staker.balanceOf(address(swapper)), 0);
-        assertEq(asset.balanceOf(address(swapper)), 0);
-        assertEq(_FRAX.balanceOf(_alice), 0);
-        assertEq(_USDT.balanceOf(_alice), 0);
-        assertEq(_FRAX.balanceOf(address(swapper)), 0);
-        assertEq(_USDT.balanceOf(address(swapper)), 0);
-        assertEq(_FRAX.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(address(staker)), 0);
-    }
-
-    function testLeverageSuccess(uint256 amount, uint256 addLiquidityFRAX) public {
-        uint256 swappedFRAX = 10000 ether;
-        uint256 swappedUSDT = 10000 * 10**6;
-        amount = bound(amount, 0, 10**15);
-        addLiquidityFRAX = bound(addLiquidityFRAX, 0, 10**27);
-
-        deal(address(_USDC), address(_alice), amount);
-        deal(address(_USDT), address(_alice), swappedUSDT);
-        deal(address(_FRAX), address(_alice), swappedFRAX + addLiquidityFRAX);
-        vm.startPrank(_alice);
-        // intermediary variables
-        bytes[] memory oneInchData = new bytes[](2);
-        // swap 10000 FRAX for USDC
-        oneInchData[0] = abi.encode(
-            address(_FRAX),
-            0,
-            hex"e449022e00000000000000000000000000000000000000000000021e19e0c9bab2400000000000000000000000000000000000000000000000000000000000024dc9bbaa000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
-        );
-        // swap 10000 USDT for USDC
-        oneInchData[1] = abi.encode(
-            address(_USDT),
-            0,
-            hex"e449022e00000000000000000000000000000000000000000000000000000002540be400000000000000000000000000000000000000000000000000000000024e089f88000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000003416cf6c708da44db2624d63ea0aaef7113527c6cfee7c08"
-        );
-        uint256 minAmountOut;
-        {
-            uint256 lowerBoundSwap = (((amount + swappedUSDT + swappedFRAX / _DECIMAL_NORM_USDC) * SLIPPAGE_BPS) /
-                _BPS);
-            minAmountOut =
-                (IMetaPool2(address(_METAPOOL)).calc_token_amount([addLiquidityFRAX, lowerBoundSwap], true) *
-                    SLIPPAGE_BPS) /
-                _BPS;
-        }
-
-        bytes memory addData;
-        bytes memory swapData = abi.encode(oneInchData, addData);
-        bytes memory leverageData = abi.encode(true, _alice, swapData);
-        bytes memory data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
-
-        // we first need to send the tokens before hand, you should always use the swapper
-        // in another tx to not losse your funds by front running
-        _USDC.transfer(address(swapper), amount);
-        _FRAX.transfer(address(swapper), swappedFRAX + addLiquidityFRAX);
-        _USDT.safeTransfer(address(swapper), swappedUSDT);
-        swapper.swap(IERC20(address(_USDC)), IERC20(address(staker)), _alice, 0, amount, data);
-
-        vm.stopPrank();
-
-        assertGt(staker.balanceOf(_alice), minAmountOut);
-        assertGt(asset.balanceOf(address(staker)), minAmountOut);
-        assertEq(staker.balanceOf(_alice), staker.totalSupply());
-        assertEq(asset.balanceOf(_alice), 0);
-        assertEq(staker.balanceOf(address(swapper)), 0);
-        assertEq(asset.balanceOf(address(swapper)), 0);
-        assertEq(_FRAX.balanceOf(_alice), 0);
-        assertEq(_USDT.balanceOf(_alice), 0);
-        assertEq(_FRAX.balanceOf(address(swapper)), 0);
-        assertEq(_USDT.balanceOf(address(swapper)), 0);
-        assertEq(_FRAX.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(address(staker)), 0);
-    }
-
-    function testDeleverageOneCoinToken1(uint256 addLiquidityUSDC, uint256 addLiquidityFRAX) public {
+    function testRevertSlippageNoDeleverage1Inch(
+        uint256 addLiquidityUSDC,
+        uint256 addLiquidityFRAX,
+        uint256 swapAmount,
+        uint256 coinSwap
+    ) public {
         uint256 swappedFRAX = 10000 ether;
         uint256 swappedUSDT = 10000 * 10**6;
         addLiquidityUSDC = bound(addLiquidityUSDC, 0, 10**15);
         addLiquidityFRAX = bound(addLiquidityFRAX, 0, 10**27);
-        int128 coinIndex = 0;
 
         deal(address(_USDC), address(_alice), addLiquidityUSDC);
         deal(address(_USDT), address(_alice), swappedUSDT);
@@ -258,31 +164,159 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         _USDT.safeTransfer(address(swapper), swappedUSDT);
         swapper.swap(IERC20(address(_USDC)), IERC20(address(staker)), _alice, 0, addLiquidityUSDC, data);
 
+        vm.stopPrank();
+        vm.startPrank(_dylan);
         // do a swap to change the pool state and withdraw womething different than what has been deposited
+        coinSwap = coinSwap % 2;
+        if (coinSwap == 0) {
+            swapAmount = bound(swapAmount, 10**18, 10**26);
+            deal(address(_FRAX), address(_dylan), swapAmount);
+            _FRAX.approve(address(_METAPOOL), type(uint256).max);
+        } else {
+            swapAmount = bound(swapAmount, 10**6, 10**14);
+            deal(address(_USDC), address(_dylan), swapAmount);
+            _USDC.approve(address(_METAPOOL), type(uint256).max);
+        }
+        _METAPOOL.exchange(int128(uint128(coinSwap)), int128(1 - uint128(coinSwap)), swapAmount, 0);
 
+        vm.stopPrank();
+        vm.startPrank(_alice);
         // deleverage
         uint256 amount = staker.balanceOf(_alice);
-        uint256 minOneCoin;
+        deal(address(_USDC), address(_alice), 19000 ether / _DECIMAL_NORM_USDC);
         {
-            bytes[] memory oneInchData = new bytes[](0);
-            IERC20[] memory sweepTokens = new IERC20[](0);
-            // sweepTokens[0] = _USDC;
-            minOneCoin = (_METAPOOL.calc_withdraw_one_coin(amount, coinIndex) * SLIPPAGE_BPS) / _BPS;
-            bytes memory removeData = abi.encode(CurveRemovalType.oneCoin, abi.encode(coinIndex, minOneCoin));
+            bytes[] memory oneInchData;
+
+            oneInchData = new bytes[](1);
+            // swap 19000 USDC for FRAX
+            oneInchData[0] = abi.encode(
+                address(_USDC),
+                ((19000 ether) * _BPS) / SLIPPAGE_BPS,
+                hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
+            );
+            IERC20[] memory sweepTokens = new IERC20[](2);
+            sweepTokens[0] = _FRAX;
+            sweepTokens[1] = asset;
+            // Do an action that does not exist on the swapper --> keeps the LP tokens as is
+            bytes memory fakeData = "0";
+            bytes memory removeData = abi.encode(CurveRemovalType.none, fakeData);
             bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
-            data = abi.encode(address(0), minOneCoin, SwapType.Leverage, leverageData);
+            data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
         }
         staker.transfer(address(swapper), amount);
-        swapper.swap(IERC20(address(staker)), IERC20(address(_FRAX)), _alice, 0, amount, data);
+        _USDC.transfer(address(swapper), 19000 ether / _DECIMAL_NORM_USDC);
+        vm.expectRevert(SwapperSidechain.TooSmallAmountOut.selector);
+        swapper.swap(IERC20(address(staker)), IERC20(address(_USDC)), _alice, 0, amount, data);
+
+        vm.stopPrank();
+    }
+
+    function testNoDeleverage1Inch(
+        uint256 addLiquidityUSDC,
+        uint256 addLiquidityFRAX,
+        uint256 swapAmount,
+        uint256 coinSwap
+    ) public {
+        uint256 swappedFRAX = 10000 ether;
+        uint256 swappedUSDT = 10000 * 10**6;
+        addLiquidityUSDC = bound(addLiquidityUSDC, 0, 10**15);
+        addLiquidityFRAX = bound(addLiquidityFRAX, 0, 10**27);
+
+        deal(address(_USDC), address(_alice), addLiquidityUSDC);
+        deal(address(_USDT), address(_alice), swappedUSDT);
+        deal(address(_FRAX), address(_alice), swappedFRAX + addLiquidityFRAX);
+        vm.startPrank(_alice);
+
+        bytes memory data;
+        {
+            // intermediary variables
+            bytes[] memory oneInchData = new bytes[](2);
+            // swap 10000 FRAX for USDC
+            oneInchData[0] = abi.encode(
+                address(_FRAX),
+                0,
+                hex"e449022e00000000000000000000000000000000000000000000021e19e0c9bab2400000000000000000000000000000000000000000000000000000000000024dc9bbaa000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
+            );
+            // swap 10000 USDT for USDC
+            oneInchData[1] = abi.encode(
+                address(_USDT),
+                0,
+                hex"e449022e00000000000000000000000000000000000000000000000000000002540be400000000000000000000000000000000000000000000000000000000024e089f88000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000003416cf6c708da44db2624d63ea0aaef7113527c6cfee7c08"
+            );
+            uint256 minAmountOut;
+            {
+                uint256 lowerBoundSwap = (((addLiquidityUSDC + swappedUSDT + swappedFRAX / _DECIMAL_NORM_USDC) *
+                    SLIPPAGE_BPS) / _BPS);
+                minAmountOut =
+                    (IMetaPool2(address(_METAPOOL)).calc_token_amount([addLiquidityFRAX, lowerBoundSwap], true) *
+                        SLIPPAGE_BPS) /
+                    _BPS;
+            }
+
+            bytes memory addData;
+            bytes memory swapData = abi.encode(oneInchData, addData);
+            bytes memory leverageData = abi.encode(true, _alice, swapData);
+            data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
+        }
+        // we first need to send the tokens before hand, you should always use the swapper
+        // in another tx to not losse your funds by front running
+        _USDC.transfer(address(swapper), addLiquidityUSDC);
+        _FRAX.transfer(address(swapper), swappedFRAX + addLiquidityFRAX);
+        _USDT.safeTransfer(address(swapper), swappedUSDT);
+        swapper.swap(IERC20(address(_USDC)), IERC20(address(staker)), _alice, 0, addLiquidityUSDC, data);
+
+        vm.stopPrank();
+        vm.startPrank(_dylan);
+        // do a swap to change the pool state and withdraw womething different than what has been deposited
+        coinSwap = coinSwap % 2;
+        if (coinSwap == 0) {
+            swapAmount = bound(swapAmount, 10**18, 10**26);
+            deal(address(_FRAX), address(_dylan), swapAmount);
+            _FRAX.approve(address(_METAPOOL), type(uint256).max);
+        } else {
+            swapAmount = bound(swapAmount, 10**6, 10**14);
+            deal(address(_USDC), address(_dylan), swapAmount);
+            _USDC.approve(address(_METAPOOL), type(uint256).max);
+        }
+        _METAPOOL.exchange(int128(uint128(coinSwap)), int128(1 - uint128(coinSwap)), swapAmount, 0);
+
+        vm.stopPrank();
+        vm.startPrank(_alice);
+        // deleverage
+        uint256 amount = staker.balanceOf(_alice);
+        deal(address(_USDC), address(_alice), 19000 ether / _DECIMAL_NORM_USDC);
+        {
+            bytes[] memory oneInchData;
+
+            oneInchData = new bytes[](1);
+            // swap 19000 USDC for FRAX
+            oneInchData[0] = abi.encode(
+                address(_USDC),
+                ((19000 ether) * 9900) / _BPS,
+                hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
+            );
+            IERC20[] memory sweepTokens = new IERC20[](2);
+            sweepTokens[0] = _FRAX;
+            sweepTokens[1] = asset;
+            // Do an action that does not exist on the swapper --> keeps the LP tokens as is
+            bytes memory fakeData = "0";
+            bytes memory removeData = abi.encode(CurveRemovalType.none, fakeData);
+            bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
+            bytes memory leverageData = abi.encode(false, _alice, swapData);
+            data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
+        }
+        staker.transfer(address(swapper), amount);
+        _USDC.transfer(address(swapper), 19000 ether / _DECIMAL_NORM_USDC);
+        swapper.swap(IERC20(address(staker)), IERC20(address(_USDC)), _alice, 0, amount, data);
 
         vm.stopPrank();
 
-        assertEq(_USDC.balanceOf(_alice), 0);
-        assertGe(_FRAX.balanceOf(_alice), minOneCoin);
+        assertEq(asset.balanceOf(_alice), amount);
+        assertGe(_FRAX.balanceOf(_alice), (19000 ether * 9900) / _BPS);
         assertEq(staker.balanceOf(address(swapper)), 0);
         assertEq(staker.balanceOf(_alice), 0);
-        assertEq(asset.balanceOf(address(_alice)), 0);
+        assertEq(_USDC.balanceOf(address(_alice)), 0);
         assertEq(asset.balanceOf(address(swapper)), 0);
         assertEq(asset.balanceOf(address(staker)), 0);
         assertEq(_USDT.balanceOf(_alice), 0);
@@ -294,7 +328,7 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         assertEq(_USDT.balanceOf(address(staker)), 0);
     }
 
-    function testDeleverageOneCoinToken2(
+    function testDeleverageOneCoinTokenWithEndSwap(
         uint256 addLiquidityUSDC,
         uint256 addLiquidityFRAX,
         uint256 swapAmount,
@@ -304,7 +338,6 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         uint256 swappedUSDT = 10000 * 10**6;
         addLiquidityUSDC = bound(addLiquidityUSDC, 0, 10**15);
         addLiquidityFRAX = bound(addLiquidityFRAX, 0, 10**27);
-        int128 coinIndex = 1;
 
         deal(address(_USDC), address(_alice), addLiquidityUSDC);
         deal(address(_USDT), address(_alice), swappedUSDT);
@@ -370,22 +403,39 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         uint256 amount = staker.balanceOf(_alice);
         uint256 minOneCoin;
         {
-            bytes[] memory oneInchData = new bytes[](0);
-            IERC20[] memory sweepTokens = new IERC20[](0);
-            // sweepTokens[0] = _USDC;
-            minOneCoin = (_METAPOOL.calc_withdraw_one_coin(amount, coinIndex) * SLIPPAGE_BPS) / _BPS;
-            bytes memory removeData = abi.encode(CurveRemovalType.oneCoin, abi.encode(coinIndex, minOneCoin));
+            bytes[] memory oneInchData;
+            minOneCoin = (_METAPOOL.calc_withdraw_one_coin(amount, 1) * SLIPPAGE_BPS) / _BPS;
+            // If there isn't enough to do the swap don't do it
+            if (minOneCoin > 19000 * 10**6) {
+                oneInchData = new bytes[](1);
+                // swap 19000 USDC for FRAX
+                oneInchData[0] = abi.encode(
+                    address(_USDC),
+                    ((19000 ether) * 9900) / _BPS,
+                    hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
+                );
+            } else {
+                oneInchData = new bytes[](0);
+            }
+            IERC20[] memory sweepTokens = new IERC20[](1);
+            sweepTokens[0] = _USDC;
+            bytes memory removeData = abi.encode(CurveRemovalType.oneCoin, abi.encode(1, minOneCoin));
             bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
             data = abi.encode(address(0), minOneCoin, SwapType.Leverage, leverageData);
         }
         staker.transfer(address(swapper), amount);
-        swapper.swap(IERC20(address(staker)), IERC20(address(_USDC)), _alice, 0, amount, data);
+        swapper.swap(IERC20(address(staker)), IERC20(address(_FRAX)), _alice, 0, amount, data);
 
         vm.stopPrank();
 
-        assertGe(_USDC.balanceOf(_alice), minOneCoin);
-        assertEq(_FRAX.balanceOf(_alice), 0);
+        if (minOneCoin > 19000 * 10**6) {
+            assertGe(_USDC.balanceOf(_alice), minOneCoin - 19000 * 10**6);
+            assertGe(_FRAX.balanceOf(_alice), ((19000 ether) * 9900) / _BPS);
+        } else {
+            assertGe(_USDC.balanceOf(_alice), minOneCoin);
+            assertEq(_FRAX.balanceOf(_alice), 0);
+        }
         assertEq(staker.balanceOf(address(swapper)), 0);
         assertEq(staker.balanceOf(_alice), 0);
         assertEq(asset.balanceOf(address(_alice)), 0);
@@ -400,7 +450,7 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         assertEq(_USDT.balanceOf(address(staker)), 0);
     }
 
-    function testDeleverageBalance(
+    function testDeleverageBalance1Inch(
         uint256 addLiquidityUSDC,
         uint256 addLiquidityFRAX,
         uint256 swapAmount,
@@ -475,13 +525,26 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         uint256 amount = staker.balanceOf(_alice);
         uint256[2] memory minAmounts;
         {
-            bytes[] memory oneInchData = new bytes[](0);
-            IERC20[] memory sweepTokens = new IERC20[](1);
-            sweepTokens[0] = _USDC;
             minAmounts = [
                 (_METAPOOL.balances(0) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply()),
                 (_METAPOOL.balances(1) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply())
             ];
+            bytes[] memory oneInchData;
+            // If there isn't enough to do the swap don't do it
+            if (minAmounts[1] > 19000 * 10**6) {
+                oneInchData = new bytes[](1);
+                // swap 19000 USDC for FRAX
+                oneInchData[0] = abi.encode(
+                    address(_USDC),
+                    ((19000 ether) * 9900) / _BPS,
+                    hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
+                );
+            } else {
+                oneInchData = new bytes[](0);
+            }
+            IERC20[] memory sweepTokens = new IERC20[](1);
+            sweepTokens[0] = _USDC;
+
             bytes memory removeData = abi.encode(CurveRemovalType.balance, abi.encode(minAmounts));
             bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
             bytes memory leverageData = abi.encode(false, _alice, swapData);
@@ -492,8 +555,13 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
 
         vm.stopPrank();
 
-        assertGe(_USDC.balanceOf(_alice), minAmounts[1]);
-        assertGe(_FRAX.balanceOf(_alice), minAmounts[0]);
+        if (minAmounts[1] > 19000 * 10**6) {
+            assertGe(_USDC.balanceOf(_alice), minAmounts[1] - 19000 * 10**6);
+            assertGe(_FRAX.balanceOf(_alice), minAmounts[0] + ((19000 ether) * 9900) / _BPS);
+        } else {
+            assertGe(_USDC.balanceOf(_alice), minAmounts[1]);
+            assertGe(_FRAX.balanceOf(_alice), minAmounts[0]);
+        }
         assertEq(staker.balanceOf(address(swapper)), 0);
         assertEq(staker.balanceOf(_alice), 0);
         assertEq(asset.balanceOf(address(_alice)), 0);
@@ -508,7 +576,7 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
         assertEq(_USDT.balanceOf(address(staker)), 0);
     }
 
-    function testDeleverageImbalance(
+    function testDeleverageImbalance1Inch(
         uint256 addLiquidityUSDC,
         uint256 addLiquidityFRAX,
         uint256 proportionWithdrawUSDC,
@@ -624,7 +692,19 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
             }
             maxBurnAmount = IMetaPool2(address(_METAPOOL)).calc_token_amount(amountOuts, false);
 
-            bytes[] memory oneInchData = new bytes[](0);
+            bytes[] memory oneInchData;
+            // If there isn't enough to do the swap don't do it
+            if (amountOuts[1] > 19000 * 10**6) {
+                oneInchData = new bytes[](1);
+                // swap 19000 USDC for FRAX
+                oneInchData[0] = abi.encode(
+                    address(_USDC),
+                    ((19000 ether) * 9900) / _BPS,
+                    hex"e449022e000000000000000000000000000000000000000000000000000000046c7cfe000000000000000000000000000000000000000000000003fbfd1ac7f9631196a0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
+                );
+            } else {
+                oneInchData = new bytes[](0);
+            }
             IERC20[] memory sweepTokens = new IERC20[](1);
             sweepTokens[0] = _USDC;
             bytes memory removeData = abi.encode(CurveRemovalType.imbalance, abi.encode(_bob, amountOuts));
@@ -637,8 +717,13 @@ contract ConvexLevSwapper2TokensBaseTest is BaseTest {
 
         vm.stopPrank();
 
-        assertGe(_USDC.balanceOf(_alice), amountOuts[1]);
-        assertGe(_FRAX.balanceOf(_alice), amountOuts[0]);
+        if (amountOuts[1] > 19000 * 10**6) {
+            assertGe(_USDC.balanceOf(_alice), amountOuts[1] - 19000 * 10**6);
+            assertGe(_FRAX.balanceOf(_alice), amountOuts[0] + ((19000 ether) * 9900) / _BPS);
+        } else {
+            assertGe(_USDC.balanceOf(_alice), amountOuts[1]);
+            assertGe(_FRAX.balanceOf(_alice), amountOuts[0]);
+        }
         assertLe(staker.balanceOf(_bob), amount - maxBurnAmount);
         assertLe(staker.totalSupply(), amount - maxBurnAmount);
         assertLe(asset.balanceOf(address(staker)), amount - maxBurnAmount);
