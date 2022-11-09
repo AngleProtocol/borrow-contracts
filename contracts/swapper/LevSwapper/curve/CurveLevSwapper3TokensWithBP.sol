@@ -50,12 +50,10 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
         uint256 amountToken2 = tokens()[2].balanceOf(address(this));
         // Slippage is checked at the very end of the `swap` function
         if (amountToken1 > 0 || amountToken2 > 0) {
-            console.log("add liquidity");
             metapool().add_liquidity([amountTokenLP, amountToken1, amountToken2], 10);
         }
         // Other solution is also to let the user specify how many tokens have been sent + get
         // the return value from `add_liquidity`: it's more gas efficient but adds more verbose
-        console.log("we added the liquidity ");
         amountOut = lpToken().balanceOf(address(this));
     }
 

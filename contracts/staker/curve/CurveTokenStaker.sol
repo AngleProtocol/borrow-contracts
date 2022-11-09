@@ -36,11 +36,11 @@ abstract contract CurveTokenStaker is BorrowStaker {
     /// @inheritdoc BorrowStaker
     /// @dev Should be overriden by the implementation if there are more rewards
     function _claimRewards() internal virtual override {
-        uint256 prevBalanceAngle = _CRV.balanceOf(address(this));
+        uint256 prevBalanceCRV = _CRV.balanceOf(address(this));
         liquidityGauge().claim_rewards(address(this), address(0));
-        uint256 angleRewards = _CRV.balanceOf(address(this)) - prevBalanceAngle;
+        uint256 crvRewards = _CRV.balanceOf(address(this)) - prevBalanceCRV;
         // Do the same thing for additional rewards
-        _updateRewards(_CRV, angleRewards);
+        _updateRewards(_CRV, crvRewards);
     }
 
     /// @inheritdoc BorrowStaker
