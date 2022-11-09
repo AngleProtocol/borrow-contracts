@@ -787,7 +787,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     ((collateralAmountInStable - _dustCollateral) * liquidationDiscount) /
                     BASE_PARAMS;
                 // If there is from the beginning a dusty amount of collateral, liquidator should repay everything that's left
-            else thresholdRepayAmount = maxAmountToRepay;
+            else thresholdRepayAmount = 1;
         }
         liqOpp.maxStablecoinAmountToRepay = maxAmountToRepay;
         liqOpp.maxCollateralAmountGiven =
@@ -854,26 +854,12 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @notice Sets the parameters for the liquidation booster which encodes the slope of the discount
-    /// @param _veBoostProxy Address which queries veANGLE balances and adjusted balances from delegation
-    /// @param xBoost Threshold values of veANGLE adjusted balances
-    /// @param yBoost Values of the liquidation boost at the threshold values of x
-    /// @dev There are 2 modes:
-    /// When boost is enabled, `xBoost` and `yBoost` should have a length of 2, but if they have a
-    /// higher length contract will still work as expected. Contract will also work as expected if their
-    /// length differ
-    /// When boost is disabled, `_veBoostProxy` needs to be zero address and `yBoost[0]` is the base boost
     function setLiquidationBoostParameters(
         address _veBoostProxy,
         uint256[] memory xBoost,
         uint256[] memory yBoost
-    ) external onlyGovernorOrGuardian {
-        if (
-            (xBoost.length != yBoost.length) ||
-            (yBoost[0] == 0) ||
-            ((_veBoostProxy != address(0)) && (xBoost[1] <= xBoost[0] || yBoost[1] < yBoost[0]))
-        ) revert InvalidSetOfParameters();
-        veBoostProxy = IVeBoostProxy(_veBoostProxy);
-        xLiquidationBoost = xBoost;
+    ) external virtual onlyGovernorOrGuardian {
+        if ((yBoost[0] == 0)) revert InvalidSetOfParameters();
         yLiquidationBoost = yBoost;
         emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }
