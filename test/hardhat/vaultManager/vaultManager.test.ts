@@ -21,8 +21,8 @@ import {
   MockTreasury__factory,
   MockVeBoostProxy,
   MockVeBoostProxy__factory,
-  VaultManager,
-  VaultManager__factory,
+  VaultManagerLiquidationBoost,
+  VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
@@ -46,7 +46,7 @@ import {
 } from '../utils/helpers';
 import { signPermit } from '../utils/sigUtils';
 
-contract('VaultManager', () => {
+contract('VaultManagerLiquidationBoost', () => {
   const log = true;
 
   let deployer: SignerWithAddress;
@@ -61,7 +61,7 @@ contract('VaultManager', () => {
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
   let agToken: AgToken;
-  let vaultManager: VaultManager;
+  let vaultManager: VaultManagerLiquidationBoost;
   let mockSwapper: MockSwapper;
   let mockSwapperWithSwap: MockSwapperWithSwap;
 
@@ -111,7 +111,7 @@ contract('VaultManager', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e9, 0.1e9)) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -858,10 +858,10 @@ contract('VaultManager', () => {
       expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         0.1e9,
         0.1e9,
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
       await vaultManager2.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
@@ -895,10 +895,10 @@ contract('VaultManager', () => {
       expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         0.1e9,
         0.1e9,
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
 
       // 0 borrow fees in this case, which means 10% fees will be paid
       params.borrowFee = 0;
@@ -1016,10 +1016,10 @@ contract('VaultManager', () => {
       expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         0.1e9,
         0.1e9,
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
       await treasury.setVaultManager2(vaultManager2.address);
@@ -1059,10 +1059,10 @@ contract('VaultManager', () => {
       expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         0.1e9,
         0.1e9,
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
       await treasury.setVaultManager2(vaultManager2.address);
@@ -1102,10 +1102,10 @@ contract('VaultManager', () => {
       expect(await vaultManager.getVaultDebt(1)).to.be.equal(0);
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         0.1e9,
         0.1e9,
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
       await treasury.setVaultManager2(vaultManager2.address);
@@ -1145,10 +1145,10 @@ contract('VaultManager', () => {
         addCollateral(1, collatAmount),
       ]);
       const vaultManager2 = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         0.1e9,
         0.1e9,
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(governor).togglePause();
       await vaultManager2.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
@@ -1172,7 +1172,7 @@ contract('VaultManager', () => {
       stableMaster = await new MockStableMaster__factory(deployer).deploy();
       agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
       await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
-      vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
+      vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e9, 0.1e9)) as VaultManagerLiquidationBoost;
       treasury = await new MockTreasury__factory(deployer).deploy(
         agToken.address,
         governor.address,
@@ -2262,10 +2262,10 @@ contract('VaultManager', () => {
     const borrowAmount = parseEther('1');
     beforeEach(async () => {
       vaultManager = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         parseEther('0.5'),
         parseEther('0.5'),
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
 
       await treasury.addMinter(agToken.address, vaultManager.address);
       params.interestRate = parseEther('0');
@@ -2289,10 +2289,10 @@ contract('VaultManager', () => {
     });
     it('success - max amount to repay is changed because of dust', async () => {
       vaultManager = (await deployUpgradeable(
-        new VaultManager__factory(deployer),
+        new VaultManagerLiquidationBoost__factory(deployer),
         parseEther('0.5'),
         parseEther('0.5'),
-      )) as VaultManager;
+      )) as VaultManagerLiquidationBoost;
 
       await treasury.addMinter(agToken.address, vaultManager.address);
       params.interestRate = parseEther('0');

@@ -18,8 +18,8 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  VaultManager,
-  VaultManager__factory,
+  VaultManagerLiquidationBoost,
+  VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
 import { deployUpgradeable, expectApprox, expectApproxDelta, ZERO_ADDRESS } from '../utils/helpers';
@@ -40,7 +40,7 @@ contract('ReactorEuler', () => {
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
   let agEUR: AgToken;
-  let vaultManager: VaultManager;
+  let vaultManager: VaultManagerLiquidationBoost;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -89,7 +89,7 @@ contract('ReactorEuler', () => {
 
     ANGLE = await new MockToken__factory(deployer).deploy('ANGLE', 'ANGLE', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e15, 0.1e15)) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e15, 0.1e15)) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agEUR.address,

@@ -32,6 +32,20 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         _;
     }
 
+    /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
+    modifier onlyGovernorOrGuardian() {
+        if (!coreBorrow.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        _;
+    }
+
+    // =============================== VIEW FUNCTIONS ==============================
+
+    /// @notice Gets the list of all the `VaultManager` contracts which have this token
+    /// as a collateral
+    function getVaultManagers() public view returns (IVaultManagerListing[] memory) {
+        return _vaultManagers;
+    }
+
     // ============================= EXTERNAL FUNCTIONS ============================
 
     function decimals() public view override returns (uint8) {
@@ -82,6 +96,29 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         return _checkpoint(checkpointUser, true);
     }
 
+    /// @notice Checkpoints the rewards earned by user `from`
+    /// @param from Address to checkpoint for
+    function checkpoint(address from) external {
+        address[] memory checkpointUser = new address[](1);
+        checkpointUser[0] = address(from);
+        _checkpoint(checkpointUser, false);
+    }
+
+    /// @notice Gets the full `asset` balance of `from`
+    /// @param from Address to check the full balance of
+    /// @dev The returned value takes into account the balance currently held by `from` and the balance held by `VaultManager`
+    /// contracts on behalf of `from`
+    function totalBalanceOf(address from) public view returns (uint256 totalBalance) {
+        if (isCompatibleVaultManager[from] == 1) return 0;
+        // If `from` is one of the whitelisted vaults, do not consider the rewards to not double count balances
+        IVaultManagerListing[] memory vaultManagerContracts = _vaultManagers;
+        totalBalance = balanceOf(from);
+        for (uint256 i; i < vaultManagerContracts.length; i++) {
+            totalBalance += vaultManagerContracts[i].getUserCollateral(from);
+        }
+        return totalBalance;
+    }
+
     /// @notice Returns the exact amount that will be received if calling `claimRewards(from)` for a specific reward token
     /// @param from Address to claim for
     /// @param _rewardToken Token to get rewards for
@@ -90,7 +127,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         uint256 newIntegral = _totalSupply > 0
             ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * BASE_PARAMS) / _totalSupply
             : integral[_rewardToken];
-        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_PARAMS;
+        uint256 newClaimable = (totalBalanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_PARAMS;
         return pendingRewardsOf[_rewardToken][from] + newClaimable;
     }
 
@@ -101,6 +138,16 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     function setCoreBorrow(ICoreBorrow _coreBorrow) external onlyGovernor {
         if (!_coreBorrow.isGovernor(msg.sender)) revert NotGovernor();
         coreBorrow = _coreBorrow;
+    }
+
+    /// @notice Adds to the tracking list a `vaultManager` which has as collateral the `asset`
+    /// @param vaultManager Address of the new `vaultManager` to add to the list
+    function addVaultManager(IVaultManagerListing vaultManager) external onlyGovernorOrGuardian {
+        if (
+            address(vaultManager.collateral()) != address(asset) || isCompatibleVaultManager[address(vaultManager)] == 1
+        ) revert InvalidVaultManager();
+        isCompatibleVaultManager[address(vaultManager)] = 1;
+        _vaultManagers.push(vaultManager);
     }
 
     /// @notice Allows to recover any ERC20 token, including the asset managed by the reactor
@@ -146,9 +193,15 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     /// @dev `rewardAmounts` is a one dimension array because n-dimensional arrays are only supported by internal functions
     /// The `accounts` array need to be ordered to get the rewards for a specific account
     function _checkpoint(address[] memory accounts, bool _claim) internal returns (uint256[] memory rewardAmounts) {
-        _claimRewards();
+        // Cautious with this line, we need to be sure that rewards are not distributed in one time without
+        // linear vesting otherwise reward can be sent to the wrong owners.
+        // This should not be a hard requirement as this kind of distribution seems disastrous and front runnable
+        if (_lastRewardsClaimed != block.timestamp) {
+            _claimRewards();
+            _lastRewardsClaimed = uint32(block.timestamp);
+        }
         for (uint256 i = 0; i < accounts.length; ++i) {
-            if (accounts[i] == address(0)) continue;
+            if (accounts[i] == address(0) || isCompatibleVaultManager[accounts[i]] == 1) continue;
             if (i == 0) rewardAmounts = _checkpointRewardsUser(accounts[i], _claim);
             else _checkpointRewardsUser(accounts[i], _claim);
         }
@@ -161,8 +214,9 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     function _checkpointRewardsUser(address from, bool _claim) internal returns (uint256[] memory rewardAmounts) {
         IERC20[] memory rewardTokens = _getRewards();
         rewardAmounts = new uint256[](rewardTokens.length);
+        uint256 userBalance = totalBalanceOf(from);
         for (uint256 i = 0; i < rewardTokens.length; ++i) {
-            uint256 newClaimable = (balanceOf(from) * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
+            uint256 newClaimable = (userBalance * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
                 BASE_PARAMS;
             uint256 previousClaimable = pendingRewardsOf[rewardTokens[i]][from];
             if (_claim && previousClaimable + newClaimable > 0) {

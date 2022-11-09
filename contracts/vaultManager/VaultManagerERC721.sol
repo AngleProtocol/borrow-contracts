@@ -16,7 +16,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @inheritdoc IERC721MetadataUpgradeable
     string public symbol;
 
-    // ============================== Modifiers ====================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks if the person interacting with the vault with `vaultID` is approved
     /// @param caller Address of the person seeking to interact with the vault
@@ -26,28 +26,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         _;
     }
 
-    // =============================== ERC721 Logic ================================
-
-    /// @notice Returns all the vaults owned or controlled (under the form of approval) by an address
-    /// @param spender Address for which vault ownerships should be checked
-    /// @return List of `vaultID` controlled by this address
-    /// @return Count of vaults owned by the address
-    /// @dev This function is never to be called on-chain since it iterates over all vaultIDs. It is here
-    /// to reduce dependency on an external graph to link an ID to its owner
-    function getControlledVaults(address spender) external view returns (uint256[] memory, uint256) {
-        uint256 arraySize = vaultIDCount;
-        uint256[] memory vaultsControlled = new uint256[](arraySize);
-        address owner;
-        uint256 count;
-        for (uint256 i = 1; i <= arraySize; i++) {
-            owner = _owners[i];
-            if (spender == owner || _getApproved(i) == spender || _operatorApprovals[owner][spender] == 1) {
-                vaultsControlled[count] = i;
-                count += 1;
-            }
-        }
-        return (vaultsControlled, count);
-    }
+    // ================================ ERC721 LOGIC ===============================
 
     /// @notice Checks whether a given address is approved for a vault or owns this vault
     /// @param spender Address for which vault ownership should be checked
@@ -141,7 +120,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         _safeTransfer(from, to, vaultID, _data);
     }
 
-    // =============================== ERC165 logic ================================
+    // ================================ ERC165 LOGIC ===============================
 
     /// @inheritdoc IERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
@@ -152,7 +131,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
             interfaceId == type(IERC165Upgradeable).interfaceId;
     }
 
-    // ============== Internal Functions for the ERC721 Logic ======================
+    // ================== INTERNAL FUNCTIONS FOR THE ERC721 LOGIC ==================
 
     /// @notice Internal version of the `ownerOf` function
     function _ownerOf(uint256 vaultID) internal view returns (address owner) {
@@ -198,11 +177,18 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         if (whitelistingActivated && (isWhitelisted[to] != 1 || isWhitelisted[msg.sender] != 1))
             revert NotWhitelisted();
         if (to == address(0)) revert ZeroAddress();
+
         unchecked {
             vaultIDCount += 1;
+        }
+
+        vaultID = vaultIDCount;
+        _beforeTokenTransfer(address(0), to, vaultID);
+
+        unchecked {
             _balances[to] += 1;
         }
-        vaultID = vaultIDCount;
+
         _owners[vaultID] = to;
         emit Transfer(address(0), to, vaultID);
         if (!_checkOnERC721Received(address(0), to, vaultID, "")) revert NonERC721Receiver();
@@ -214,6 +200,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     function _burn(uint256 vaultID) internal {
         address owner = _ownerOf(vaultID);
 
+        _beforeTokenTransfer(owner, address(0), vaultID);
         // Clear approvals
         _approve(address(0), vaultID);
         // The following line cannot underflow as the owner's balance is necessarily
@@ -240,6 +227,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         if (_ownerOf(vaultID) != from) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
         if (whitelistingActivated && isWhitelisted[to] != 1) revert NotWhitelisted();
+
+        _beforeTokenTransfer(from, to, vaultID);
+
         // Clear approvals from the previous owner
         _approve(address(0), vaultID);
         unchecked {
@@ -303,4 +293,18 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
             return true;
         }
     }
+
+    /// @notice Hook that is called before any token transfer. This includes minting and burning.
+    ///  Calling conditions:
+    ///
+    ///  - When `from` and `to` are both non-zero, `from`'s `vaultID` will be
+    ///  transferred to `to`.
+    ///  - When `from` is zero, `vaultID` will be minted for `to`.
+    ///  - When `to` is zero, `from`'s `vaultID` will be burned.
+    ///  - `from` and `to` are never both zero.
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 vaultID
+    ) internal virtual {}
 }
