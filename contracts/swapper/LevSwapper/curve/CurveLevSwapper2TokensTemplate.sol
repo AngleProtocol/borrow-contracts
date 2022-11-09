@@ -21,13 +21,8 @@ contract CurveLevSwapper2TokensTemplate is CurveLevSwapper2Tokens {
     }
 
     /// @inheritdoc CurveLevSwapper2Tokens
-    function token1() public pure override returns (IERC20) {
-        return IERC20(address(0));
-    }
-
-    /// @inheritdoc CurveLevSwapper2Tokens
-    function token2() public pure override returns (IERC20) {
-        return IERC20(address(0));
+    function tokens() public pure override returns (IERC20[2] memory) {
+        return [IERC20(address(0)), IERC20(address(0))];
     }
 
     /// @inheritdoc CurveLevSwapper2Tokens

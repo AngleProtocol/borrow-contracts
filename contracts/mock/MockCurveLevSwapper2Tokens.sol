@@ -26,13 +26,11 @@ contract MockCurveLevSwapper2Tokens is CurveLevSwapper2Tokens {
     }
 
     /// @inheritdoc CurveLevSwapper2Tokens
-    function token1() public pure override returns (IERC20) {
-        return IERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
-    }
-
-    /// @inheritdoc CurveLevSwapper2Tokens
-    function token2() public pure override returns (IERC20) {
-        return IERC20(address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48));
+    function tokens() public pure override returns (IERC20[2] memory) {
+        return [
+            IERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e),
+            IERC20(address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48))
+        ];
     }
 
     /// @inheritdoc CurveLevSwapper2Tokens
