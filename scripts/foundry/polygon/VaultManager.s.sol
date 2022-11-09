@@ -9,7 +9,7 @@ import "./PolygonConstants.s.sol";
 
 contract DeployVaultManager is Script, PolygonConstants {
     address public constant TREASURY = 0x2F2e0ba9746aae15888cf234c4EB5B301710927e;
-    VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(0x18471f8629C5F284256a4eB0dfF901E3F4987223);
+    VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(address(0));
 
     // TODO to be changed at deployment depending on the vaultManager
     IOracle public constant ORACLE = IOracle(address(0));
@@ -45,7 +45,11 @@ contract DeployVaultManager is Script, PolygonConstants {
         uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 0);
         vm.startBroadcast(deployerPrivateKey);
 
-        if (address(ORACLE) == address(0) || address(COLLATERAL) == address(0)) revert ZeroAdress();
+        if (
+            address(VAULT_MANAGER_IMPL) == address(0) ||
+            address(ORACLE) == address(0) ||
+            address(COLLATERAL) == address(0)
+        ) revert ZeroAdress();
 
         vaultManager = VaultManager(
             deployUpgradeable(
@@ -60,6 +64,8 @@ contract DeployVaultManager is Script, PolygonConstants {
                 )
             )
         );
+
+        console.log("Successfully deployed vaultManager tricrypto at the address: ", address(vaultManager));
 
         vm.stopBroadcast();
     }

@@ -15,8 +15,6 @@ contract DeployOracle is Script, PolygonConstants {
     // TODO to be changed at deployment depending on the vaultManager
     uint32 public constant STALE_PERIOD = 3600 * 24;
 
-    error ZeroAdress();
-
     function run() external {
         uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 0);
         vm.startBroadcast(deployerPrivateKey);
