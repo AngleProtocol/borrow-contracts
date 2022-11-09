@@ -7,9 +7,10 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/curve/ITricryptoPool.sol";
 import "../../../interfaces/external/curve/ICurveCryptoSwapPool.sol";
+import "hardhat/console.sol";
 
 /// @title OracleCrvUSDBTCETH_EUR
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Gives the price of Curve TriCrypto2 in Euro in base 18
 contract OracleCrvUSDBTCETHEUR is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "crvUSDBTCETH/EUR Oracle";
@@ -54,9 +55,9 @@ contract OracleCrvUSDBTCETHEUR is BaseOracleChainlinkMulti {
 
     /// @notice Get the meta LP token price
     function _lpPriceMeta() internal view returns (uint256 maxPrice) {
-        uint256 virtualPrice = TRI_CRYPTO_POOL.virtual_price();
         uint256 priceBTC = TRI_CRYPTO_POOL.price_oracle(0);
         uint256 priceETH = TRI_CRYPTO_POOL.price_oracle(1);
+        uint256 virtualPrice = TRI_CRYPTO_POOL.get_virtual_price();
 
         maxPrice = (3 * virtualPrice * _cubicRoot(priceBTC * priceETH)) / 10**18;
 

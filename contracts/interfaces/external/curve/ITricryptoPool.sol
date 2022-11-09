@@ -10,7 +10,7 @@ interface ITricryptoPool is IERC20 {
 
     function gamma() external view returns (uint256);
 
-    function virtual_price() external view returns (uint256);
+    function get_virtual_price() external view returns (uint256);
 
     function price_oracle(uint256 k) external view returns (uint256);
 }
