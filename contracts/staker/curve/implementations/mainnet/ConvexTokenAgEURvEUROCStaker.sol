@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.12;
 
-import "../ConvexTokenStaker.sol";
+import "../../ConvexTokenStaker.sol";
 
 /// @title ConvexTokenStaker
 /// @author Angle Core Team

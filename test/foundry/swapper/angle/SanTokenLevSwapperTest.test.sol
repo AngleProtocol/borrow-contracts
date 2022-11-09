@@ -5,14 +5,14 @@ import "@openzeppelin/contracts-upgradeable/interfaces/IERC20MetadataUpgradeable
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "../BaseTest.test.sol";
-import "../../../contracts/interfaces/IBorrowStaker.sol";
-import "../../../contracts/interfaces/ICoreBorrow.sol";
-import "../../../contracts/interfaces/coreModule/IStableMaster.sol";
-import "../../../contracts/interfaces/coreModule/IPoolManager.sol";
-import "../../../contracts/mock/MockTokenPermit.sol";
-import { SwapType, BaseLevSwapper, MockSanTokenLevSwapper, SwapperSidechain, IUniswapV3Router, IAngleRouterSidechain } from "../../../contracts/mock/MockSanTokenLevSwapper.sol";
-import { MockBorrowStaker } from "../../../contracts/mock/MockBorrowStaker.sol";
+import "../../BaseTest.test.sol";
+import "../../../../contracts/interfaces/IBorrowStaker.sol";
+import "../../../../contracts/interfaces/ICoreBorrow.sol";
+import "../../../../contracts/interfaces/coreModule/IStableMaster.sol";
+import "../../../../contracts/interfaces/coreModule/IPoolManager.sol";
+import "../../../../contracts/mock/MockTokenPermit.sol";
+import { SwapType, BaseLevSwapper, MockSanTokenLevSwapper, SwapperSidechain, IUniswapV3Router, IAngleRouterSidechain } from "../../../../contracts/mock/MockSanTokenLevSwapper.sol";
+import { MockBorrowStaker } from "../../../../contracts/mock/MockBorrowStaker.sol";
 
 contract SanTokenLevSwapperTest is BaseTest {
     using stdStorage for StdStorage;

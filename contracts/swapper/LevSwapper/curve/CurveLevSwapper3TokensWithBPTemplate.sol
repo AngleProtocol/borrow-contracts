@@ -21,8 +21,8 @@ contract CurveLevSwapper3TokensWithBPTemplate is CurveLevSwapper3TokensWithBP {
     }
 
     /// @inheritdoc CurveLevSwapper3TokensWithBP
-    function tokens() public pure override returns (IERC20[2] memory) {
-        return [IERC20(address(0)), IERC20(address(0))];
+    function tokens() public pure override returns (IERC20[3] memory) {
+        return [IERC20(address(0)), IERC20(address(0)), IERC20(address(0))];
     }
 
     /// @inheritdoc CurveLevSwapper3TokensWithBP
@@ -43,10 +43,5 @@ contract CurveLevSwapper3TokensWithBPTemplate is CurveLevSwapper3TokensWithBP {
     /// @inheritdoc CurveLevSwapper3TokensWithBP
     function basepool() public pure override returns (IMetaPool3) {
         return IMetaPool3(address(0));
-    }
-
-    /// @inheritdoc CurveLevSwapper3TokensWithBP
-    function lpTokenBP() public pure override returns (IERC20) {
-        return IERC20(address(0));
     }
 }

@@ -45,18 +45,22 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
             basepool().add_liquidity([amountTokenBP1, amountTokenBP2, amountTokenBP3], 0);
         }
         // Instead of doing sweeps at the end just use the full balance to add liquidity
-        uint256 amountTokenLP = lpTokenBP().balanceOf(address(this));
-        uint256 amountToken1 = tokens()[0].balanceOf(address(this));
-        uint256 amountToken2 = tokens()[1].balanceOf(address(this));
+        uint256 amountTokenLP = tokens()[0].balanceOf(address(this));
+        uint256 amountToken1 = tokens()[1].balanceOf(address(this));
+        uint256 amountToken2 = tokens()[2].balanceOf(address(this));
         // Slippage is checked at the very end of the `swap` function
-        if (amountToken1 > 0 || amountToken2 > 0)
-            metapool().add_liquidity([amountTokenLP, amountToken1, amountToken2], 0);
+        if (amountToken1 > 0 || amountToken2 > 0) {
+            console.log("add liquidity");
+            metapool().add_liquidity([amountTokenLP, amountToken1, amountToken2], 10);
+        }
         // Other solution is also to let the user specify how many tokens have been sent + get
         // the return value from `add_liquidity`: it's more gas efficient but adds more verbose
+        console.log("we added the liquidity ");
         amountOut = lpToken().balanceOf(address(this));
     }
 
     /// @inheritdoc BaseLevSwapper
+    /// @dev For some pools `CurveRemovalType.imbalance` may be impossible
     function _remove(uint256 burnAmount, bytes memory data) internal override returns (uint256 amountOut) {
         CurveRemovalType removalType;
         bool swapLPBP;
@@ -105,7 +109,7 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
     // ============================= VIRTUAL FUNCTIONS =============================
 
     /// @notice Reference to the native `tokens` of the Curve pool
-    function tokens() public pure virtual returns (IERC20[2] memory);
+    function tokens() public pure virtual returns (IERC20[3] memory);
 
     /// @notice Reference to the Curve Pool contract
     function metapool() public pure virtual returns (IMetaPool3);
@@ -119,7 +123,4 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
 
     /// @notice Reference to the Curve Pool contract
     function basepool() public pure virtual returns (IMetaPool3);
-
-    /// @notice Reference to the `basepool` LP token
-    function lpTokenBP() public pure virtual returns (IERC20);
 }
