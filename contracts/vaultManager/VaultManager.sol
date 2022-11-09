@@ -715,7 +715,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         address liquidator,
         uint256 oracleValue,
         uint256 newInterestAccumulator
-    ) internal view returns (LiquidationOpportunity memory liqOpp) {
+    ) internal view virtual returns (LiquidationOpportunity memory liqOpp) {
         // Checking if the vault can be liquidated
         (uint256 healthFactor, uint256 currentDebt, uint256 collateralAmountInStable) = _isSolvent(
             vault,
@@ -761,13 +761,14 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     (vault.normalizedDebt * newInterestAccumulator * BASE_PARAMS) /
                     (surcharge * BASE_INTEREST) +
                     1;
-                // In this case the threshold amount is such that it leaves just enough dust
-                // This line cannot underflow as long as the  `dust` parameter is constant: it is always checked that
-                // the debt is greater than the  `dust`. If the `dust` was to increase due to an implementation upgrade
-                // we would need to add some extra checks to avoid underflows
-                // Here the `thresholdRepayAmount` is also rounded down: which means that if a liquidator repays this amount
-                // then there would be more than `dust` left in the vault
-                thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
+                // In this case the threshold amount is such that it leaves just enough dust: amount is rounded
+                // down such that if a liquidator repays this amount then there would be more than `dust` left in
+                // the liquidated vault
+                // We can have `currentDebt < dust` if `dust` is to increase after an implementation upgrade
+                if (currentDebt > dust)
+                    thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
+                    // If there is from the beginning a dusty debt, then liquidator should repay everything that's left
+                else thresholdRepayAmount = 1;
             }
         } else {
             // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
