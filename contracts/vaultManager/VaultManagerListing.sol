@@ -35,18 +35,6 @@ contract VaultManagerListing is VaultManager {
         return totalCollateral;
     }
 
-    // ============================ OVERRIDEN FUNCTIONS ============================
-
-    /// @inheritdoc VaultManager
-    function _getDust() internal view override returns (uint256) {
-        return dustOverride;
-    }
-
-    /// @inheritdoc VaultManager
-    function _getDustCollateral() internal view override returns (uint256) {
-        return _dustCollateralOverride;
-    }
-
     // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
 
     /// @inheritdoc VaultManagerERC721

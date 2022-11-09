@@ -60,14 +60,4 @@ contract VaultManagerLiquidationBoost is VaultManager {
                     (xLiquidationBoost[1] - xLiquidationBoost[0]);
         }
     }
-
-    /// @inheritdoc VaultManager
-    function _getDust() internal view override returns (uint256) {
-        return dustOverride;
-    }
-
-    /// @inheritdoc VaultManager
-    function _getDustCollateral() internal view override returns (uint256) {
-        return _dustCollateralOverride;
-    }
 }

@@ -773,10 +773,10 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 // In this case the threshold amount is such that it leaves just enough dust: amount is rounded
                 // down such that if a liquidator repays this amount then there would be more than `dust` left in
                 // the liquidated vault
-                // We can have `currentDebt < dust` if `dust` is to increase after an implementation upgrade
                 if (currentDebt > _getDust())
                     thresholdRepayAmount = ((currentDebt - _getDust()) * BASE_PARAMS) / surcharge;
-                    // If there is from the beginning a dusty debt, then liquidator should repay everything that's left
+                    // If there is from the beginning a dusty debt (because of an implementation upgrade), then
+                    // liquidator should repay everything that's left
                 else thresholdRepayAmount = 1;
             }
         } else {
@@ -921,13 +921,13 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Returns the minimum amount of debt a vault can have
     function _getDust() internal view virtual returns (uint256) {
-        return dust;
+        return dustOverride;
     }
 
     /// @notice Returns the minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
     /// in a vault during a liquidation where the health factor function is decreasing
     function _getDustCollateral() internal view virtual returns (uint256) {
-        return _dustCollateral;
+        return _dustCollateralOverride;
     }
 
     /// @notice Hook called before any collateral internal changes
