@@ -31,8 +31,8 @@ abstract contract CurveLevSwapper2Tokens is BaseLevSwapper {
     /// @inheritdoc BaseLevSwapper
     function _add(bytes memory) internal override returns (uint256 amountOut) {
         // Instead of doing sweeps at the end just use the full balance to add liquidity
-        uint256 amountToken1 = token1().balanceOf(address(this));
-        uint256 amountToken2 = token2().balanceOf(address(this));
+        uint256 amountToken1 = tokens()[0].balanceOf(address(this));
+        uint256 amountToken2 = tokens()[1].balanceOf(address(this));
         // Slippage is checked at the very end of the `swap` function
         if (amountToken1 > 0 || amountToken2 > 0) metapool().add_liquidity([amountToken1, amountToken2], 0);
         // Other solution is also to let the user specify how many tokens have been sent + get
@@ -61,11 +61,8 @@ abstract contract CurveLevSwapper2Tokens is BaseLevSwapper {
 
     // ============================= VIRTUAL FUNCTIONS =============================
 
-    /// @notice Reference to the `token1` of the Curve pool
-    function token1() public pure virtual returns (IERC20);
-
-    /// @notice Reference to the `token2` of the Curve pool
-    function token2() public pure virtual returns (IERC20);
+    /// @notice Reference to the native `tokens` of the Curve pool
+    function tokens() public pure virtual returns (IERC20[2] memory);
 
     /// @notice Reference to the Curve Pool contract
     function metapool() public pure virtual returns (IMetaPool2);
