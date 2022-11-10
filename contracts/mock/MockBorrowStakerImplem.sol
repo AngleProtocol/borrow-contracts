@@ -2,24 +2,76 @@
 
 pragma solidity 0.8.12;
 
-import "./BorrowStakerStorage.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-/// @title BorrowStaker
+import "../interfaces/ICoreBorrow.sol";
+import { IVaultManagerListing } from "../interfaces/IVaultManager.sol";
+
+/// @title MockBorrowStaker
 /// @author Angle Core Team
-/// @dev Staking contract keeping track of user rewards and minting a wrapper token
-/// that can be hassle free on any other protocol without loosing the rewards
-/// @dev If Angle is to accept a Curve LP token accruing CRV rewards, what is to be a collateral on the Borrowing module
-/// is not going to be the LP token in itself, but the token corresponding to this type of contract
-abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
+contract MockBorrowStakerImplem is ERC20 {
     using SafeERC20 for IERC20;
 
-    /// @notice Initializes the `BorrowStaker`
-    function initialize(ICoreBorrow _coreBorrow, IERC20Metadata _asset) external initializer {
-        __ERC20_init_unchained(
+    error IncompatibleLengths();
+
+    IERC20 public rewardToken;
+    uint256 public rewardAmount;
+
+    /// @notice Base used for parameter computation
+    /// @dev Large base because when `(amount * BASE_PARAMS) / totalSupply()` if `amount << totalSupply`
+    /// rounding can be terrible. Setting the base higher limits the maximum decimals a reward can have - overflows.
+    uint256 public constant BASE_PARAMS = 10**36;
+
+    // ================================= REFERENCES ================================
+
+    /// @notice Reference to the staked token
+    IERC20 public asset;
+    /// @notice Core borrow contract handling access control
+    ICoreBorrow public coreBorrow;
+
+    // ================================= VARIABLES =================================
+
+    /// @notice Token decimal
+    uint8 internal _decimals;
+    uint32 internal _lastRewardsClaimed;
+    /// @notice List of all the vaultManager which have the staker as collateral
+    IVaultManagerListing[] internal _vaultManagers;
+    /// @notice Maps an address to whether it is a compatible `VaultManager` that has this contract
+    /// as a collateral
+    mapping(address => uint256) public isCompatibleVaultManager;
+    /// @notice Maps each reward token to a track record of cumulated rewards
+    mapping(IERC20 => uint256) public integral;
+    /// @notice Maps pairs of `(token,user)` to the currently pending claimable rewards
+    mapping(IERC20 => mapping(address => uint256)) public pendingRewardsOf;
+    /// @notice Maps pairs of `(token,user)` to a track record of cumulated personal rewards
+    mapping(IERC20 => mapping(address => uint256)) public integralOf;
+
+    uint256[43] private __gap;
+
+    // =================================== EVENTS ==================================
+
+    event Deposit(address indexed from, address indexed to, uint256 amount);
+    event Withdraw(address indexed from, address indexed to, uint256 amount);
+    event Recovered(address indexed token, address indexed to, uint256 amount);
+
+    // =================================== ERRROS ==================================
+
+    error InvalidToken();
+    error NotGovernor();
+    error NotGovernorOrGuardian();
+    error TransferAmountExceedsAllowance();
+    error ZeroAddress();
+    error InvalidVaultManager();
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(ICoreBorrow _coreBorrow, IERC20Metadata _asset)
+        ERC20(
             string(abi.encodePacked("Angle ", _asset.name(), " Staker")),
             string(abi.encodePacked("agstk-", _asset.symbol()))
-        );
+        )
+    {
         coreBorrow = _coreBorrow;
         asset = IERC20(_asset);
         _decimals = _asset.decimals();
@@ -169,7 +221,6 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
 
     // ============================= INTERNAL FUNCTIONS ============================
 
-    /// @inheritdoc ERC20Upgradeable
     function _beforeTokenTransfer(
         address _from,
         address _to,
@@ -256,18 +307,45 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         }
     }
 
-    // ============================= VIRTUAL FUNCTIONS =============================
+    /// @notice Changes allowance of a set of tokens to addresses
+    /// @param tokens Tokens to change allowance for
+    /// @param spenders Addresses to approve
+    /// @param amounts Approval amounts for each address
+    /// @dev You can only change allowance for approved strategies
+    function changeAllowance(
+        IERC20[] calldata tokens,
+        address[] calldata spenders,
+        uint256[] calldata amounts
+    ) external onlyGovernor {
+        if (tokens.length != amounts.length || spenders.length != amounts.length || tokens.length == 0)
+            revert IncompatibleLengths();
+        for (uint256 i = 0; i < spenders.length; i++) {
+            _changeAllowance(tokens[i], spenders[i], amounts[i]);
+        }
+    }
 
-    /// @notice Claims all available rewards and increases the associated integral
-    function _claimRewards() internal virtual;
+    function _withdrawFromProtocol(uint256 amount) internal {}
 
-    /// @notice Returns a list of all reward tokens supported by this contract
-    function _getRewards() internal view virtual returns (IERC20[] memory reward);
+    /// @dev Should be overriden by the implementation if there are more rewards
+    function _claimRewards() internal virtual {
+        _updateRewards(rewardToken, rewardAmount);
+    }
 
-    /// @notice Withdraws the staking token from the protocol rewards contract
-    function _withdrawFromProtocol(uint256 amount) internal virtual;
+    function _getRewards() internal view returns (IERC20[] memory rewards) {
+        rewards = new IERC20[](1);
+        rewards[0] = rewardToken;
+        return rewards;
+    }
 
-    /// @notice Checks all unclaimed rewards in `rewardToken`
-    /// @dev For some `rewardToken` this may not be precise (i.e lower bound) on what can be claimed
-    function _rewardsToBeClaimed(IERC20 rewardToken) internal view virtual returns (uint256 amount);
+    function _rewardsToBeClaimed(IERC20) internal view returns (uint256 amount) {
+        amount = rewardAmount;
+    }
+
+    function setRewardToken(IERC20 token) public {
+        rewardToken = token;
+    }
+
+    function setRewardAmount(uint256 amount) public {
+        rewardAmount = amount;
+    }
 }
