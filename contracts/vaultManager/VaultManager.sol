@@ -862,7 +862,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256[] memory xBoost,
         uint256[] memory yBoost
     ) external virtual onlyGovernorOrGuardian {
-        if ((yBoost[0] == 0)) revert InvalidSetOfParameters();
+        if (yBoost[0] == 0) revert InvalidSetOfParameters();
         yLiquidationBoost = yBoost;
         emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }

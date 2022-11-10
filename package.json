@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "hardhat:compile": "hardhat compile",
+    "check-upgradeability": "hardhat run scripts/upgradeability.ts",
     "coverage": "hardhat coverage",
     "coverage:foundry": "forge coverage --report lcov",
     "deploy": "hardhat deploy --tags merkleRewardManager --network",

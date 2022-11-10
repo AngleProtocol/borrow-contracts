@@ -84,9 +84,12 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e9, 0.1e9)) as VaultManagerLiquidationBoost;
+    vaultManager = (await deployUpgradeable(
+      new VaultManagerLiquidationBoost__factory(deployer),
+      0.1e9,
+      0.1e9,
+    )) as VaultManagerLiquidationBoost;
     helpers = (await deployUpgradeable(new AngleHelpers__factory(deployer))) as AngleHelpers;
-
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -100,6 +103,7 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
     await treasury.addMinter(agToken.address, vaultManager.address);
 
     oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, treasury.address);
+    await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
   });
 
   describe('initializer', () => {
