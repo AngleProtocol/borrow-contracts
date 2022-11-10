@@ -70,7 +70,7 @@ contract CurveLevSwapper3TokensWithBPBaseTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"), 35401716);
+        _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"), 35439623);
         vm.selectFork(_polygon);
 
         // reset coreBorrow because the `makePersistent()` doens't work on my end

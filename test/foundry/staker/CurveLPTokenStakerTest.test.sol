@@ -11,7 +11,7 @@ import "../../../contracts/interfaces/external/convex/IBooster.sol";
 import "../../../contracts/interfaces/external/convex/IConvexToken.sol";
 import "../../../contracts/interfaces/ICoreBorrow.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
-import { CurveTokenTricrypto3Staker, BorrowStakerStorage, ILiquidityGauge } from "../../../contracts/staker/curve/implementations/polygon/CurveTokenTricrypto3Staker.sol";
+import { MockCurveStaker3TokensWithBP, BorrowStakerStorage, ILiquidityGauge } from "../../../contracts/mock/MockCurveStaker3TokensWithBP.sol";
 
 interface IMinimalLiquidityGauge {
     // solhint-disable-next-line
@@ -24,13 +24,13 @@ contract CurveLPTokenStakerTest is BaseTest {
     address internal _hacker = address(uint160(uint256(keccak256(abi.encodePacked("hacker")))));
     address public CRVDistributor = address(uint160(uint256(keccak256(abi.encodePacked("CRVDistributor")))));
 
-    IERC20 private constant _CRV = IERC20(address(0));
     IERC20 public asset = IERC20(0xdAD97F7713Ae9437fa9249920eC8507e5FbB23d3);
-    IERC20 public rewardToken = _CRV;
+    IERC20 public CRV;
+    IERC20 public rewardToken;
     uint256 public constant NBR_REWARD = 1;
 
-    CurveTokenTricrypto3Staker public stakerImplementation;
-    CurveTokenTricrypto3Staker public staker;
+    MockCurveStaker3TokensWithBP public stakerImplementation;
+    MockCurveStaker3TokensWithBP public staker;
     ILiquidityGauge public gauge;
     uint8 public decimalToken;
     uint256 public minTokenAmount;
@@ -41,12 +41,12 @@ contract CurveLPTokenStakerTest is BaseTest {
     uint256 public constant WITHDRAW_LENGTH = 3;
 
     function setUp() public override {
-        _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"), 35401716);
+        _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"), 35447035);
         vm.selectFork(_ethereum);
 
         super.setUp();
-        stakerImplementation = new CurveTokenTricrypto3Staker();
-        staker = CurveTokenTricrypto3Staker(
+        stakerImplementation = new MockCurveStaker3TokensWithBP();
+        staker = MockCurveStaker3TokensWithBP(
             deployUpgradeable(
                 address(stakerImplementation),
                 abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
@@ -55,8 +55,11 @@ contract CurveLPTokenStakerTest is BaseTest {
         gauge = staker.liquidityGauge();
 
         // CRV rewards are distributed on mainnet not on polygon - fake rewards
-        rewardToken = IERC20(new MockTokenPermit("CRV", "CRV", 18));
-        vm.startPrank(0xbabe61887f1de2713c6f97e567623453d3C79f67);
+        CRV = IERC20(new MockTokenPermit("CRV", "CRV", 18));
+        rewardToken = CRV;
+        staker.setFakeReward(rewardToken);
+
+        vm.startPrank(0x8A97FBD532A5C1eD67fd67c11dD76013abAc840e);
         IMinimalLiquidityGauge(address(gauge)).add_reward(address(rewardToken), CRVDistributor);
         vm.stopPrank();
 
@@ -127,7 +130,9 @@ contract CurveLPTokenStakerTest is BaseTest {
                     assertEq(rewardToken.balanceOf(account), prevRewardTokenBalance);
                 } else {
                     amount = bound(amounts[i], 1, 10**9);
-                    staker.withdraw((amount * staker.balanceOf(account)) / 10**9, account, account);
+                    amount = (amount * staker.balanceOf(account)) / 10**9;
+                    amount = amount == 0 ? staker.balanceOf(account) : amount;
+                    staker.withdraw(amount, account, account);
                     assertEq(staker.pendingRewardsOf(rewardToken, account), 0);
                 }
                 vm.stopPrank();
@@ -163,7 +168,7 @@ contract CurveLPTokenStakerTest is BaseTest {
     // ================================== INTERNAL =================================
 
     function _depositRewards(uint256 amount) internal {
-        deal(address(_CRV), CRVDistributor, amount);
+        deal(address(rewardToken), CRVDistributor, amount);
         vm.startPrank(CRVDistributor);
         rewardToken.approve(address(gauge), amount);
         gauge.deposit_reward_token(address(rewardToken), amount);
