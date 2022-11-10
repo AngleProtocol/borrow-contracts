@@ -724,7 +724,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         address liquidator,
         uint256 oracleValue,
         uint256 newInterestAccumulator
-    ) internal view virtual returns (LiquidationOpportunity memory liqOpp) {
+    ) internal view returns (LiquidationOpportunity memory liqOpp) {
         // Checking if the vault can be liquidated
         (uint256 healthFactor, uint256 currentDebt, uint256 collateralAmountInStable) = _isSolvent(
             vault,
