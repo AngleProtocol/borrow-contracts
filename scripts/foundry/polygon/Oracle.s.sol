@@ -21,7 +21,8 @@ contract DeployOracle is Script, PolygonConstants {
 
         IOracle oracle = new OracleCrvUSDBTCETHEUR(STALE_PERIOD, address(TREASURY));
 
-        console.log("Successfully deployed Oracle BTC/EUR at the address: ", address(oracle));
+        console.log("Successfully deployed Oracle tricrypto3 at the address: ", address(oracle));
+
         vm.stopBroadcast();
     }
 }

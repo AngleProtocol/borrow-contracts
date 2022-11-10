@@ -13,6 +13,7 @@ contract DeployVaultManager is Script, PolygonConstants {
 
     // TODO to be changed at deployment depending on the vaultManager
     IOracle public constant ORACLE = IOracle(address(0));
+    // the staker address
     IERC20 public constant COLLATERAL = IERC20(address(0));
     string public constant SYMBOL = "crvUSDBTCETH-EUR";
     uint256 public constant DEBT_CEILING = 1_000 ether;

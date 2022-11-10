@@ -14,6 +14,9 @@ contract PolygonConstants {
     address public constant ONE_INCH = 0x1111111254fb6c44bAC0beD2854e76F90643097d;
     address public constant UNI_V3_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
+    // AGEUR Polygon treasury
+    address public constant AGEUR_TREASURY = 0x2F2e0ba9746aae15888cf234c4EB5B301710927e;
+
     uint256 public constant BASE_TOKENS = 10**18;
     uint64 public constant BASE_PARAMS = 10**9;
 

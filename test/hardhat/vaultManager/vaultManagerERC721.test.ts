@@ -84,9 +84,12 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e9, 0.1e9)) as VaultManagerLiquidationBoost;
+    vaultManager = (await deployUpgradeable(
+      new VaultManagerLiquidationBoost__factory(deployer),
+      0.1e9,
+      0.1e9,
+    )) as VaultManagerLiquidationBoost;
     helpers = (await deployUpgradeable(new AngleHelpers__factory(deployer))) as AngleHelpers;
-
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,

@@ -111,7 +111,11 @@ contract('VaultManagerLiquidationBoost', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e9, 0.1e9)) as VaultManagerLiquidationBoost;
+    vaultManager = (await deployUpgradeable(
+      new VaultManagerLiquidationBoost__factory(deployer),
+      0.1e9,
+      0.1e9,
+    )) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -1172,7 +1176,11 @@ contract('VaultManagerLiquidationBoost', () => {
       stableMaster = await new MockStableMaster__factory(deployer).deploy();
       agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
       await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
-      vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e9, 0.1e9)) as VaultManagerLiquidationBoost;
+      vaultManager = (await deployUpgradeable(
+        new VaultManagerLiquidationBoost__factory(deployer),
+        0.1e9,
+        0.1e9,
+      )) as VaultManagerLiquidationBoost;
       treasury = await new MockTreasury__factory(deployer).deploy(
         agToken.address,
         governor.address,
