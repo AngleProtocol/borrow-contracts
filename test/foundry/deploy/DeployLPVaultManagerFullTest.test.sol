@@ -110,7 +110,11 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
         );
 
         console.log("Successfully deployed swapper tricrypto at the address: ", address(swapper));
+        vm.stopPrank();
 
+        vm.startPrank(GOVERNOR);
+        vaultManager.togglePause();
+        Treasury(AGEUR_TREASURY).addVaultManager(address(vaultManager));
         vm.stopPrank();
 
         assertEq(staker.name(), "Angle Curve USD-BTC-ETH Staker");
