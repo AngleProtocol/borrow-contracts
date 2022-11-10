@@ -3,7 +3,14 @@ import { BigNumber, BigNumberish, BytesLike, Contract, ContractFactory, Contract
 import { formatEther, formatUnits, parseUnits } from 'ethers/lib/utils';
 import hre, { ethers } from 'hardhat';
 
-import { IERC20Metadata, IOracle, Reactor, TransparentUpgradeableProxy__factory, VaultManager, VaultManagerLiquidationBoost } from '../../../typechain';
+import {
+  IERC20Metadata,
+  IOracle,
+  Reactor,
+  TransparentUpgradeableProxy__factory,
+  VaultManager,
+  VaultManagerLiquidationBoost,
+} from '../../../typechain';
 import { expect } from '../utils/chai-setup';
 import { TypePermit } from '../utils/sigUtils';
 
@@ -36,8 +43,8 @@ async function resetFork(options?: { blockNumber?: number; jsonRpcUrl?: string }
   } = {
     forking: jsonRpcUrl
       ? {
-        jsonRpcUrl,
-      }
+          jsonRpcUrl,
+        }
       : undefined,
   };
 
@@ -269,7 +276,7 @@ async function displayVaultState(
       console.log(`Min stablecoin to send:    ${formatEther(params.thresholdRepayAmount)}`);
       console.log(`Collateral given:          ${formatUnits(params.maxCollateralAmountGiven, collatBase)}`);
       console.log(`Discount:                  ${(1 - params.discount.toNumber() / 1e9) * 100}%`);
-    } catch { }
+    } catch {}
     console.log('==========================================');
     console.log('');
   }
@@ -293,7 +300,7 @@ async function angle(
   if (who !== ZERO_ADDRESS) {
     return await vaultManager
       .connect(signer)
-    ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
+      ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
   } else {
     return await vaultManager.connect(signer)['angle(uint8[],bytes[],address,address)'](actions, datas, from, to);
   }
@@ -316,7 +323,7 @@ async function angleUnprotected(
   });
   return await vaultManager
     .connect(signer)
-  ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
+    ['angle(uint8[],bytes[],address,address,address,bytes)'](actions, datas, from, to, who, repayData);
 }
 
 export {

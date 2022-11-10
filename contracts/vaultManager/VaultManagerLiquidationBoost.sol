@@ -16,11 +16,36 @@ contract VaultManagerLiquidationBoost is VaultManager {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint256 dust_, uint256 dustCollateral_) VaultManager(dust_, dustCollateral_) {}
 
-    // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
+    // =================================== SETTER ==================================
 
-    /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
-    /// @param liquidator Address for which boost should be computed
-    /// @return The slope of the discount function
+    /// @inheritdoc VaultManager
+    /// @param _veBoostProxy Address which queries veANGLE balances and adjusted balances from delegation
+    /// @param xBoost Threshold values of veANGLE adjusted balances
+    /// @param yBoost Values of the liquidation boost at the threshold values of x
+    /// @dev There are 2 modes:
+    /// When boost is enabled, `xBoost` and `yBoost` should have a length of 2, but if they have a
+    /// higher length contract will still work as expected. Contract will also work as expected if their
+    /// length differ
+    /// When boost is disabled, `_veBoostProxy` needs to be zero address and `yBoost[0]` is the base boost
+    function setLiquidationBoostParameters(
+        address _veBoostProxy,
+        uint256[] memory xBoost,
+        uint256[] memory yBoost
+    ) external override onlyGovernorOrGuardian {
+        if (
+            (xBoost.length != yBoost.length) ||
+            (yBoost[0] == 0) ||
+            ((_veBoostProxy != address(0)) && (xBoost[1] <= xBoost[0] || yBoost[1] < yBoost[0]))
+        ) revert InvalidSetOfParameters();
+        veBoostProxy = IVeBoostProxy(_veBoostProxy);
+        xLiquidationBoost = xBoost;
+        yLiquidationBoost = yBoost;
+        emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
+    }
+
+    // ======================== OVERRIDEN VIRTUAL FUNCTIONS ========================
+
+    /// @inheritdoc VaultManager
     function _computeLiquidationBoost(address liquidator) internal view override returns (uint256) {
         if (address(veBoostProxy) == address(0)) {
             return yLiquidationBoost[0];

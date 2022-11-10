@@ -14,6 +14,14 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     using SafeERC20 for IERC20;
     using Address for address;
 
+    /// @notice Variable to potentially override the immutable `dust`
+    uint256 public dustOverride;
+
+    /// @notice Variable to potentially override the immutable `_dustCollateral` variable
+    uint256 internal _dustCollateralOverride;
+
+    uint256[48] private __gapVaultManager;
+
     /// @inheritdoc IVaultManagerFunctions
     function initialize(
         ITreasury _treasury,
@@ -494,7 +502,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 changeAmount = (stablecoinAmount * BASE_INTEREST) / newInterestAccumulator;
         // if there was no previous debt, we have to check that the debt creation will be higher than `dust`
         if (vaultData[vaultID].normalizedDebt == 0)
-            if (stablecoinAmount <= dust) revert DustyLeftoverAmount();
+            if (stablecoinAmount <= _getDust()) revert DustyLeftoverAmount();
         vaultData[vaultID].normalizedDebt += changeAmount;
         totalNormalizedDebt += changeAmount;
         if (totalNormalizedDebt * newInterestAccumulator > debtCeiling * BASE_INTEREST) revert DebtCeilingExceeded();
@@ -534,8 +542,9 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         }
         newVaultNormalizedDebt -= changeAmount;
         totalNormalizedDebt -= changeAmount;
-        if (newVaultNormalizedDebt != 0 && newVaultNormalizedDebt * newInterestAccumulator <= dust * BASE_INTEREST)
-            revert DustyLeftoverAmount();
+        if (
+            newVaultNormalizedDebt != 0 && newVaultNormalizedDebt * newInterestAccumulator <= _getDust() * BASE_INTEREST
+        ) revert DustyLeftoverAmount();
         vaultData[vaultID].normalizedDebt = newVaultNormalizedDebt;
         emit InternalDebtUpdated(vaultID, changeAmount, 0);
         return stablecoinAmount;
@@ -753,7 +762,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // The quantity below tends to be rounded in the above direction, which means that governance or guardians should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dust * BASE_PARAMS) {
+            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + _getDust() * BASE_PARAMS) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
                 // We're rounding up the max amount to repay to make sure all the debt ends up being paid
                 // and we're computing again the real value of the debt to avoid propagation of rounding errors
@@ -761,13 +770,14 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     (vault.normalizedDebt * newInterestAccumulator * BASE_PARAMS) /
                     (surcharge * BASE_INTEREST) +
                     1;
-                // In this case the threshold amount is such that it leaves just enough dust
-                // This line cannot underflow as long as the  `dust` parameter is constant: it is always checked that
-                // the debt is greater than the  `dust`. If the `dust` was to increase due to an implementation upgrade
-                // we would need to add some extra checks to avoid underflows
-                // Here the `thresholdRepayAmount` is also rounded down: which means that if a liquidator repays this amount
-                // then there would be more than `dust` left in the vault
-                thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
+                // In this case the threshold amount is such that it leaves just enough dust: amount is rounded
+                // down such that if a liquidator repays this amount then there would be more than `dust` left in
+                // the liquidated vault
+                if (currentDebt > _getDust())
+                    thresholdRepayAmount = ((currentDebt - _getDust()) * BASE_PARAMS) / surcharge;
+                    // If there is from the beginning a dusty debt (because of an implementation upgrade), then
+                    // liquidator should repay everything that's left
+                else thresholdRepayAmount = 1;
             }
         } else {
             // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
@@ -780,13 +790,13 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 (BASE_PARAMS * _collatBase) +
                 1;
             // It should however make sure not to leave a dusty amount of collateral (in stablecoin value) in the vault
-            if (collateralAmountInStable > _dustCollateral)
+            if (collateralAmountInStable > _getDustCollateral())
                 // There's no issue with this amount being rounded down
                 thresholdRepayAmount =
-                    ((collateralAmountInStable - _dustCollateral) * liquidationDiscount) /
+                    ((collateralAmountInStable - _getDustCollateral()) * liquidationDiscount) /
                     BASE_PARAMS;
                 // If there is from the beginning a dusty amount of collateral, liquidator should repay everything that's left
-            else thresholdRepayAmount = maxAmountToRepay;
+            else thresholdRepayAmount = 1;
         }
         liqOpp.maxStablecoinAmountToRepay = maxAmountToRepay;
         liqOpp.maxCollateralAmountGiven =
@@ -795,12 +805,6 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         liqOpp.thresholdRepayAmount = thresholdRepayAmount;
         liqOpp.discount = liquidationDiscount;
         liqOpp.currentDebt = currentDebt;
-    }
-
-    /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
-    /// @return The slope of the discount function
-    function _computeLiquidationBoost(address) internal view virtual returns (uint256) {
-        return yLiquidationBoost[0];
     }
 
     // ================================== SETTERS ==================================
@@ -853,26 +857,12 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @notice Sets the parameters for the liquidation booster which encodes the slope of the discount
-    /// @param _veBoostProxy Address which queries veANGLE balances and adjusted balances from delegation
-    /// @param xBoost Threshold values of veANGLE adjusted balances
-    /// @param yBoost Values of the liquidation boost at the threshold values of x
-    /// @dev There are 2 modes:
-    /// When boost is enabled, `xBoost` and `yBoost` should have a length of 2, but if they have a
-    /// higher length contract will still work as expected. Contract will also work as expected if their
-    /// length differ
-    /// When boost is disabled, `_veBoostProxy` needs to be zero address and `yBoost[0]` is the base boost
     function setLiquidationBoostParameters(
         address _veBoostProxy,
         uint256[] memory xBoost,
         uint256[] memory yBoost
-    ) external onlyGovernorOrGuardian {
-        if (
-            (xBoost.length != yBoost.length) ||
-            (yBoost[0] == 0) ||
-            ((_veBoostProxy != address(0)) && (xBoost[1] <= xBoost[0] || yBoost[1] < yBoost[0]))
-        ) revert InvalidSetOfParameters();
-        veBoostProxy = IVeBoostProxy(_veBoostProxy);
-        xLiquidationBoost = xBoost;
+    ) external virtual onlyGovernorOrGuardian {
+        if (yBoost[0] == 0) revert InvalidSetOfParameters();
         yLiquidationBoost = yBoost;
         emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }
@@ -906,6 +896,13 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         oracle = IOracle(_oracle);
     }
 
+    /// @notice Sets the dust variables
+    /// @dev These variables are not taken into account in all circumstances as the actual dust variables
+    function setDusts(uint256 newDust, uint256 newDustCollateral) external onlyGovernor {
+        dustOverride = newDust;
+        _dustCollateralOverride = newDustCollateral;
+    }
+
     /// @inheritdoc IVaultManagerFunctions
     function setTreasury(address _treasury) external onlyTreasury {
         treasury = ITreasury(_treasury);
@@ -915,6 +912,23 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     // ============================= VIRTUAL FUNCTIONS =============================
+
+    /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
+    /// @return The slope of the discount function
+    function _computeLiquidationBoost(address) internal view virtual returns (uint256) {
+        return yLiquidationBoost[0];
+    }
+
+    /// @notice Returns the minimum amount of debt a vault can have
+    function _getDust() internal view virtual returns (uint256) {
+        return dustOverride;
+    }
+
+    /// @notice Returns the minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
+    /// in a vault during a liquidation where the health factor function is decreasing
+    function _getDustCollateral() internal view virtual returns (uint256) {
+        return _dustCollateralOverride;
+    }
 
     /// @notice Hook called before any collateral internal changes
     /// @param vaultID Vault which sees its collateral amount changed

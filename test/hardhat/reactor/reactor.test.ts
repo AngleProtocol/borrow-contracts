@@ -101,7 +101,11 @@ contract('Reactor', () => {
 
     ANGLE = await new MockToken__factory(deployer).deploy('ANGLE', 'ANGLE', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManagerLiquidationBoost__factory(deployer), 0.1e15, 0.1e15)) as VaultManagerLiquidationBoost;
+    vaultManager = (await deployUpgradeable(
+      new VaultManagerLiquidationBoost__factory(deployer),
+      0.1e15,
+      0.1e15,
+    )) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agEUR.address,
@@ -120,6 +124,7 @@ contract('Reactor', () => {
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
     await vaultManager.initialize(treasury.address, ANGLE.address, oracle.address, params, 'USDC/agEUR');
+    await vaultManager.connect(governor).setDusts(0.1e15, 0.1e15);
     await vaultManager.connect(guardian).togglePause();
 
     reactor = (await deployUpgradeable(new Reactor__factory(deployer))) as Reactor;
