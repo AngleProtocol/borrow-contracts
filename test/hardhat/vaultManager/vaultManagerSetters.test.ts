@@ -14,13 +14,13 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  VaultManager,
-  VaultManager__factory,
+  VaultManagerLiquidationBoost,
+  VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
 import { deployUpgradeable, latestTime, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('VaultManager - Setters', () => {
+contract('VaultManagerLiquidationBoost - Setters', () => {
   let deployer: SignerWithAddress;
   let governor: SignerWithAddress;
   let guardian: SignerWithAddress;
@@ -31,7 +31,7 @@ contract('VaultManager - Setters', () => {
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
   let agToken: AgToken;
-  let vaultManager: VaultManager;
+  let vaultManager: VaultManagerLiquidationBoost;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
 
@@ -77,7 +77,11 @@ contract('VaultManager - Setters', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
+    vaultManager = (await deployUpgradeable(
+      new VaultManagerLiquidationBoost__factory(deployer),
+      0.1e9,
+      0.1e9,
+    )) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,

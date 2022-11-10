@@ -103,7 +103,6 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
     await treasury.addMinter(agToken.address, vaultManager.address);
 
     oracle = await new MockOracle__factory(deployer).deploy(2 * 10 ** collatBase, treasury.address);
-    await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
   });
 
   describe('initializer', () => {
@@ -115,6 +114,7 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
 
     it('success - setters', async () => {
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
+      await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
       expect(await vaultManager.oracle()).to.be.equal(oracle.address);
       expect(await vaultManager.treasury()).to.be.equal(treasury.address);
       expect(await vaultManager.collateral()).to.be.equal(collateral.address);
@@ -128,6 +128,7 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
 
     it('success - access control', async () => {
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
+      await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
       await expect(vaultManager.connect(alice).togglePause()).to.be.reverted;
       await expect(vaultManager.connect(deployer).togglePause()).to.be.reverted;
       await expect(vaultManager.connect(proxyAdmin).togglePause()).to.be.reverted;
@@ -178,6 +179,7 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
   describe('ERC721', () => {
     beforeEach(async () => {
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
+      await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
       await vaultManager.connect(guardian).togglePause();
     });
     describe('getControlledVaults & vaultIDCount', () => {

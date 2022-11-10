@@ -2374,11 +2374,7 @@ contract('VaultManagerLiquidationBoost', () => {
         parseEther(maxStablecoinAmountToRepay.toString()),
         0.0001,
       );
-      expectApprox(
-        (await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount,
-        parseEther(maxStablecoinAmountToRepay.toString()),
-        0.0001,
-      );
+      expect((await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount).to.be.equal(1);
       expectApprox(
         (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
         collatAmount,

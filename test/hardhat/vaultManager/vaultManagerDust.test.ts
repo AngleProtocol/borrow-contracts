@@ -1,8 +1,7 @@
-import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, Signer, utils } from 'ethers';
-import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
-import hre, { contract, ethers, web3 } from 'hardhat';
+import { BigNumber, Signer } from 'ethers';
+import { parseEther, parseUnits } from 'ethers/lib/utils';
+import hre, { contract, ethers } from 'hardhat';
 
 import {
   AgToken,
@@ -11,25 +10,18 @@ import {
   MockOracle__factory,
   MockStableMaster,
   MockStableMaster__factory,
-  MockSwapper,
-  MockSwapper__factory,
-  MockSwapperWithSwap,
-  MockSwapperWithSwap__factory,
   MockToken,
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  MockVeBoostProxy,
-  MockVeBoostProxy__factory,
   VaultManager,
   VaultManager__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
-import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
+import { inReceipt } from '../utils/expectEvent';
 import {
   addCollateral,
   angle,
-  angleUnprotected,
   borrow,
   closeVault,
   createVault,
@@ -37,14 +29,10 @@ import {
   displayVaultState,
   expectApprox,
   getDebtIn,
-  increaseTime,
   latestTime,
-  permit,
-  removeCollateral,
   repayDebt,
   ZERO_ADDRESS,
 } from '../utils/helpers';
-import { signPermit } from '../utils/sigUtils';
 
 contract('VaultManager - Dust Modification interactions', () => {
   const log = true;
@@ -54,7 +42,6 @@ contract('VaultManager - Dust Modification interactions', () => {
   let guardian: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
-  let charlie: SignerWithAddress;
 
   let treasury: MockTreasury;
   let collateral: MockToken;
@@ -80,7 +67,7 @@ contract('VaultManager - Dust Modification interactions', () => {
   };
 
   before(async () => {
-    ({ deployer, alice, bob, governor, guardian, charlie } = await ethers.getNamedSigners());
+    ({ deployer, alice, bob, governor, guardian } = await ethers.getNamedSigners());
     // add any addresses you want to impersonate here
     const impersonatedAddresses = [{ address: '0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8', name: 'governor' }];
 
