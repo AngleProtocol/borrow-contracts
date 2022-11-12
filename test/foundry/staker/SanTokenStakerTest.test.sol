@@ -38,7 +38,7 @@ contract SanTokenStakerTest is BaseTest {
         staker = MockSanTokenStaker(
             deployUpgradeable(
                 address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
+                abi.encodeWithSelector(staker.initialize.selector, coreBorrow)
             )
         );
         gauge = staker.liquidityGauge();

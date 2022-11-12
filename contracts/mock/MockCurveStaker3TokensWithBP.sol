@@ -22,7 +22,7 @@ contract MockCurveStaker3TokensWithBP is BorrowStaker {
         // Stake on the gauge if it is a deposit
         if (from == address(0)) {
             // Deposit the sanTokens into the liquidity gauge contract
-            _changeAllowance(asset, address(liquidityGauge()), amount);
+            _changeAllowance(asset(), address(liquidityGauge()), amount);
             liquidityGauge().deposit(amount, address(this), true);
         }
     }
@@ -56,6 +56,10 @@ contract MockCurveStaker3TokensWithBP is BorrowStaker {
 
     function setFakeReward(IERC20 _reward) public {
         fakeReward = _reward;
+    }
+
+    function asset() public pure override returns (IERC20) {
+        return IERC20(0xdAD97F7713Ae9437fa9249920eC8507e5FbB23d3);
     }
 
     function liquidityGauge() public pure returns (ILiquidityGauge) {

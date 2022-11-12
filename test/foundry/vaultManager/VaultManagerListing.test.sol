@@ -83,9 +83,10 @@ contract VaultManagerListingTest is BaseTest {
         staker = MockBorrowStakerReset(
             deployUpgradeable(
                 address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, _collateral)
+                abi.encodeWithSelector(staker.setAsset.selector, _collateral)
             )
         );
+        staker.initialize(coreBorrow);
 
         _contractVaultManager = new VaultManagerListing(0, 0);
         vm.store(address(_contractVaultManager), bytes32(uint256(0)), bytes32(uint256(0)));

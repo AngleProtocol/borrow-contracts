@@ -17,7 +17,6 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
     address internal constant _alice = address(uint160(uint256(keccak256(abi.encodePacked("_alice")))));
 
     // TODO to be changed at deployment depending on the vaultManager
-    IERC20 public constant ASSET = IERC20(0xdAD97F7713Ae9437fa9249920eC8507e5FbB23d3);
     string public constant SYMBOL = "crvUSDBTCETH-EUR";
     uint256 public constant DEBT_CEILING = 1_000 ether;
     uint64 public constant CF = (7 * BASE_PARAMS) / 10;
@@ -70,7 +69,7 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
         staker = MockCurveTokenTricrypto3Staker(
             deployUpgradeable(
                 address(stakerImplementation),
-                abi.encodeWithSelector(stakerImplementation.initialize.selector, CORE_BORROW, ASSET)
+                abi.encodeWithSelector(stakerImplementation.initialize.selector, CORE_BORROW)
             )
         );
 

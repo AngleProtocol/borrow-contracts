@@ -49,9 +49,10 @@ contract CurveLPTokenStakerTest is BaseTest {
         staker = MockCurveStaker3TokensWithBP(
             deployUpgradeable(
                 address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
+                abi.encodeWithSelector(staker.initialize.selector, coreBorrow)
             )
         );
+
         gauge = staker.liquidityGauge();
 
         // CRV rewards are distributed on mainnet not on polygon - fake rewards

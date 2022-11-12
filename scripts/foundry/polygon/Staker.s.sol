@@ -9,18 +9,17 @@ import { MockCurveTokenTricrypto3Staker } from "../../../contracts/staker/curve/
 import "./PolygonConstants.s.sol";
 
 contract DeploySwapper is Script, PolygonConstants {
-    // TODO to be changed at deployment
-    IERC20 public constant ASSET = IERC20(0xdAD97F7713Ae9437fa9249920eC8507e5FbB23d3);
-
     function run() external {
-        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 0);
+        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 2);
+        address deployer = vm.rememberKey(deployerPrivateKey);
+
         vm.startBroadcast(deployerPrivateKey);
 
         MockCurveTokenTricrypto3Staker stakerImplementation = new MockCurveTokenTricrypto3Staker();
         MockCurveTokenTricrypto3Staker staker = MockCurveTokenTricrypto3Staker(
             deployUpgradeable(
                 address(stakerImplementation),
-                abi.encodeWithSelector(stakerImplementation.initialize.selector, CORE_BORROW, ASSET)
+                abi.encodeWithSelector(stakerImplementation.initialize.selector, CORE_BORROW)
             )
         );
 

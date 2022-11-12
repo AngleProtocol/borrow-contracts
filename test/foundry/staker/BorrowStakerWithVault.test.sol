@@ -38,11 +38,9 @@ contract BorrowStakerWithVaultTest is BaseTest {
         otherToken = new MockTokenPermit("other", "other", 18);
         stakerImplementation = new MockBorrowStaker();
         staker = MockBorrowStaker(
-            deployUpgradeable(
-                address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
-            )
+            deployUpgradeable(address(stakerImplementation), abi.encodeWithSelector(staker.setAsset.selector, asset))
         );
+        staker.initialize(coreBorrow);
 
         staker.setRewardToken(rewardToken);
         staker.setRewardAmount(rewardAmount);
