@@ -30,7 +30,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
         // Stake on Convex if it is a deposit
         if (from == address(0)) {
             // Deposit the Curve LP tokens into the convex contract and stake
-            _changeAllowance(asset, address(_CONVEX_BOOSTER), amount);
+            _changeAllowance(asset(), address(_CONVEX_BOOSTER), amount);
             _CONVEX_BOOSTER.deposit(poolPid(), amount, true);
         }
     }

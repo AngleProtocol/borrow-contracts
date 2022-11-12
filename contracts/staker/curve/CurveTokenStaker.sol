@@ -23,7 +23,7 @@ abstract contract CurveTokenStaker is BorrowStaker {
         // Stake on the gauge if it is a deposit
         if (from == address(0)) {
             // Deposit the sanTokens into the liquidity gauge contract
-            _changeAllowance(asset, address(liquidityGauge()), amount);
+            _changeAllowance(asset(), address(liquidityGauge()), amount);
             liquidityGauge().deposit(amount, address(this), true);
         }
     }

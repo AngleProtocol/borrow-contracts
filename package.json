@@ -9,6 +9,8 @@
     "coverage:foundry": "forge coverage --report lcov",
     "deploy": "hardhat deploy --tags merkleRewardManager --network",
     "etherscan": "hardhat etherscan-verify --network",
+    "foundry:deploy:mainnet": "forge script --rpc-url mainnet --broadcast --verify -vvvv",
+    "foundry:deploy:polygon": "forge script --rpc-url polygon --broadcast --verify -vvvv",
     "sources": "hardhat deploy --tags LayerZeroSources --network",
     "license": "hardhat prepend-spdx-license",
     "lint": "yarn lint:sol && yarn lint:js:fix",

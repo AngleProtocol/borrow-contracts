@@ -59,11 +59,9 @@ contract SanTokenLevSwapperTest is BaseTest {
 
         stakerImplementation = new MockBorrowStaker();
         staker = MockBorrowStaker(
-            deployUpgradeable(
-                address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
-            )
+            deployUpgradeable(address(stakerImplementation), abi.encodeWithSelector(staker.setAsset.selector, asset))
         );
+        staker.initialize(coreBorrow);
         swapper = new MockSanTokenLevSwapper(
             coreBorrow,
             _UNI_V3_ROUTER,

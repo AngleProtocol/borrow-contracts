@@ -11,6 +11,7 @@ contract MockBorrowStaker is BorrowStaker {
 
     error IncompatibleLengths();
 
+    IERC20 public asset_;
     IERC20 public rewardToken;
     uint256 public rewardAmount;
 
@@ -29,6 +30,15 @@ contract MockBorrowStaker is BorrowStaker {
         for (uint256 i = 0; i < spenders.length; i++) {
             _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
+    }
+
+    /// @inheritdoc BorrowStaker
+    function asset() public view override returns (IERC20) {
+        return asset_;
+    }
+
+    function setAsset(IERC20 _asset) public {
+        asset_ = _asset;
     }
 
     /// @inheritdoc BorrowStaker

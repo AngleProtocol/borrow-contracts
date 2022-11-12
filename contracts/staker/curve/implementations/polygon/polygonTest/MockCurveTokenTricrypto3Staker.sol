@@ -22,7 +22,7 @@ contract MockCurveTokenTricrypto3Staker is BorrowStaker {
         // Stake on the gauge if it is a deposit
         if (from == address(0)) {
             // Deposit the sanTokens into the liquidity gauge contract
-            _changeAllowance(asset, address(liquidityGauge()), amount);
+            _changeAllowance(asset(), address(liquidityGauge()), amount);
             liquidityGauge().deposit(amount, address(this), true);
         }
     }
@@ -52,6 +52,10 @@ contract MockCurveTokenTricrypto3Staker is BorrowStaker {
     /// @inheritdoc BorrowStaker
     function _rewardsToBeClaimed(IERC20 rewardToken) internal view override returns (uint256 amount) {
         amount = liquidityGauge().claimable_reward(address(this), address(rewardToken));
+    }
+
+    function asset() public pure override returns (IERC20) {
+        return IERC20(0xdAD97F7713Ae9437fa9249920eC8507e5FbB23d3);
     }
 
     function liquidityGauge() public pure returns (ILiquidityGauge) {

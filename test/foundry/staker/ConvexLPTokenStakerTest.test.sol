@@ -44,7 +44,7 @@ contract ConvexLPTokenStakerTest is BaseTest {
         staker = MockConvexTokenStaker(
             deployUpgradeable(
                 address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
+                abi.encodeWithSelector(staker.initialize.selector, coreBorrow)
             )
         );
         decimalToken = IERC20Metadata(address(asset)).decimals();

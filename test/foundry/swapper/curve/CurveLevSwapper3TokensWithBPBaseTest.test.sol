@@ -81,11 +81,9 @@ contract CurveLevSwapper3TokensWithBPBaseTest is BaseTest {
 
         stakerImplementation = new MockBorrowStaker();
         staker = MockBorrowStaker(
-            deployUpgradeable(
-                address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
-            )
+            deployUpgradeable(address(stakerImplementation), abi.encodeWithSelector(staker.setAsset.selector, asset))
         );
+        staker.initialize(coreBorrow);
 
         swapper = new MockCurveLevSwapper3TokensWithBP(
             coreBorrow,
