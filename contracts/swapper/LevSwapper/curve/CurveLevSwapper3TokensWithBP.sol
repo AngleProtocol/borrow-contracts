@@ -50,10 +50,12 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
         uint256 amountToken1 = tokens()[1].balanceOf(address(this));
         uint256 amountToken2 = tokens()[2].balanceOf(address(this));
         // Slippage is checked at the very end of the `swap` function
-        if (amountToken1 > 0 || amountToken2 > 0) {
-            console.log("just before adding liquidity ");
+        if (amountTokenLP > 0 || amountToken1 > 0 || amountToken2 > 0) {
+            console.log("gas left before add_liquidity", gasleft());
             metapool().add_liquidity([amountTokenLP, amountToken1, amountToken2], 0);
+            console.log("just after adding liquidity ");
         }
+
         // Other solution is also to let the user specify how many tokens have been sent + get
         // the return value from `add_liquidity`: it's more gas efficient but adds more verbose
         amountOut = lpToken().balanceOf(address(this));
@@ -67,7 +69,7 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
         (removalType, swapLPBP, data) = abi.decode(data, (CurveRemovalType, bool, bytes));
         uint256 lpTokenBPReceived;
         if (removalType == CurveRemovalType.oneCoin) {
-            (int128 whichCoin, uint256 minAmountOut) = abi.decode(data, (int128, uint256));
+            (uint256 whichCoin, uint256 minAmountOut) = abi.decode(data, (uint256, uint256));
             amountOut = metapool().remove_liquidity_one_coin(burnAmount, whichCoin, minAmountOut);
             lpTokenBPReceived = whichCoin == 0 ? amountOut : 0;
         } else if (removalType == CurveRemovalType.balance) {
@@ -82,7 +84,7 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
             // lp tokens staked. Solution is to do a sweep on all tokens in the `BaseLevSwapper` contract
             if (burnAmount > actualBurnAmount) angleStaker().deposit(burnAmount - actualBurnAmount, to);
         }
-        if (swapLPBP) _removeBP(amountOut, data);
+        if (swapLPBP) _removeBP(lpTokenBPReceived, data);
     }
 
     /// @notice Remove liquidity from the `basepool`

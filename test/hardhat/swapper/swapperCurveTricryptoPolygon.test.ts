@@ -97,7 +97,7 @@ contract('SwapperCurveTricryptoPolygon', () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.ETH_NODE_URI_FORKPOLYGON,
-                        blockNumber: 35401716,
+                        blockNumber: 35439623,
                     },
                 },
             ],
@@ -193,9 +193,9 @@ contract('SwapperCurveTricryptoPolygon', () => {
     describe('leverage', () => {
         it('success - no Aave tokens', async () => {
 
-            let amountAaveBP = BigNumber.from(1).pow(BigNumber.from(18));
-            let amountAmWBTC = BigNumber.from(1).pow(BigNumber.from(8));
-            let amountAmWETH = BigNumber.from(1).pow(BigNumber.from(18));
+            let amountAaveBP = BigNumber.from(10).pow(BigNumber.from(18));
+            let amountAmWBTC = BigNumber.from(10).pow(BigNumber.from(8));
+            let amountAmWETH = BigNumber.from(10).pow(BigNumber.from(18));
 
             await AaveBPToken.connect(impersonatedSigners[_AAVE_BPPOOL]).mint(alice.address, amountAaveBP);
             await amWETHAToken.connect(impersonatedSigners[_AAVE_LENDING_POOL]).mint(alice.address, amountAmWETH.mul(BigNumber.from(10)), BigNumber.from(10));
