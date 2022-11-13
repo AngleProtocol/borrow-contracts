@@ -689,7 +689,6 @@ contract CurveLevSwapper3TokensWithBPBaseTest is BaseTest {
             IERC20(address(_amWETH)).approve(address(_METAPOOL), type(uint256).max);
         }
         _METAPOOL.exchange(coinSwapFrom, coinSwapTo, swapAmount, 0);
-        console.log("after exchanging");
 
         vm.stopPrank();
     }

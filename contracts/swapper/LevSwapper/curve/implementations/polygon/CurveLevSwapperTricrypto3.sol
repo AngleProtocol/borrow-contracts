@@ -15,7 +15,7 @@ contract CurveLevSwapperTricrypto3 is CurveLevSwapper3TokensWithBP {
     ) CurveLevSwapper3TokensWithBP(_core, _uniV3Router, _oneInch, _angleRouter) {}
 
     /// @inheritdoc BaseLevSwapper
-    function angleStaker() public view override returns (IBorrowStaker) {
+    function angleStaker() public view virtual override returns (IBorrowStaker) {
         return IBorrowStaker(address(0));
     }
 

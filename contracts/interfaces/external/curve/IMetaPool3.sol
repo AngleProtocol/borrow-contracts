@@ -61,14 +61,6 @@ interface IMetaPool3 is IMetaPoolBase {
         uint256 min_dy
     ) external returns (uint256);
 
-    function calc_withdraw_one_coin(uint256 _burn_amount, uint256 i) external view returns (uint256);
-
-    function remove_liquidity_one_coin(
-        uint256 _burn_amount,
-        uint256 i,
-        uint256 _min_received
-    ) external returns (uint256);
-
     function remove_liquidity(uint256 _burn_amount, uint256[N_COINS] memory _min_amounts)
         external
         returns (uint256[N_COINS] memory);
@@ -87,5 +79,14 @@ interface IMetaPool3 is IMetaPoolBase {
         uint256[N_COINS] memory _amounts,
         uint256 _max_burn_amount,
         address _receiver
+    ) external returns (uint256);
+
+    // overload functions because some pools requires i to be an int128 or an uint256
+    function calc_withdraw_one_coin(uint256 _burn_amount, uint256 i) external view returns (uint256);
+
+    function remove_liquidity_one_coin(
+        uint256 _burn_amount,
+        uint256 i,
+        uint256 _min_received
     ) external returns (uint256);
 }

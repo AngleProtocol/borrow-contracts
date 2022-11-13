@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.12;
 
-import "../swapper/LevSwapper/curve/implementations/mainnet/CurveLevSwapperAgEUREUROC.sol";
+import "../swapper/LevSwapper/curve/implementations/polygon/CurveLevSwapperAaveBP.sol";
 
-/// @title MockCurveLevSwapper2Tokens
-/// @author Angle Labs, Inc
-/// @notice Implement a leverage swapper to gain/reduce exposure to the FRAXBP Curve LP token
-contract MockCurveLevSwapper2Tokens is CurveLevSwapperAgEUREUROC {
+/// @title CurveLevSwapperAavePool
+/// @author Angle Core Team
+/// @notice Implement a leverage swapper to gain/reduce exposure to the Aave BP (amUSDC - amUSDT - amDAI) Curve LP token
+contract MockCurveLevSwapper3Tokens is CurveLevSwapperAaveBP {
     IBorrowStaker internal _angleStaker;
 
     constructor(
@@ -15,7 +15,7 @@ contract MockCurveLevSwapper2Tokens is CurveLevSwapperAgEUREUROC {
         address _oneInch,
         IAngleRouterSidechain _angleRouter,
         IBorrowStaker angleStaker_
-    ) CurveLevSwapperAgEUREUROC(_core, _uniV3Router, _oneInch, _angleRouter) {
+    ) CurveLevSwapperAaveBP(_core, _uniV3Router, _oneInch, _angleRouter) {
         _angleStaker = angleStaker_;
     }
 
