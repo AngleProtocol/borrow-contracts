@@ -202,223 +202,80 @@ contract CurveLevSwapperTricryptoTest is BaseTest {
         assertEq(_USDT.balanceOf(address(staker)), 0);
     }
 
-    function testLeverageSuccess(uint256[5] memory amounts) public {
-        // DAI - USDC - USDT - WBTC - WETH
-        amounts[0] = bound(amounts[0], 1, 10**25);
-        amounts[1] = bound(amounts[1], 1, 10**13);
-        amounts[2] = bound(amounts[2], 1, 10**13);
-        amounts[3] = bound(amounts[3], 1000000, 10**11);
-        amounts[4] = bound(amounts[4], 1 ether, 10**21);
+    // function testLeverageSuccess(uint256[5] memory amounts) public {
+    //     // DAI - USDC - USDT - WBTC - WETH
+    //     amounts[0] = bound(amounts[0], 1, 10**25);
+    //     amounts[1] = bound(amounts[1], 1, 10**13);
+    //     amounts[2] = bound(amounts[2], 1, 10**13);
+    //     amounts[3] = bound(amounts[3], 1000000, 10**11);
+    //     amounts[4] = bound(amounts[4], 1 ether, 10**21);
 
-        uint256 minAmountOut = _depositSwapAndAddLiquidity(amounts, true);
+    //     uint256 minAmountOut = _depositSwapAndAddLiquidity(amounts, true);
 
-        assertGt(staker.balanceOf(_alice), minAmountOut);
-        assertGt(asset.balanceOf(address(staker)), minAmountOut);
-        assertEq(staker.balanceOf(_alice), staker.totalSupply());
-        assertEq(asset.balanceOf(_alice), 0);
-        assertEq(staker.balanceOf(address(swapper)), 0);
-        assertEq(asset.balanceOf(address(swapper)), 0);
-        assertEq(_DAI.balanceOf(_alice), 0);
-        assertEq(_USDT.balanceOf(_alice), 0);
-        assertEq(_DAI.balanceOf(address(swapper)), 0);
-        assertEq(_USDT.balanceOf(address(swapper)), 0);
-        assertEq(_DAI.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(address(staker)), 0);
-    }
+    //     assertGt(staker.balanceOf(_alice), minAmountOut);
+    //     assertGt(asset.balanceOf(address(staker)), minAmountOut);
+    //     assertEq(staker.balanceOf(_alice), staker.totalSupply());
+    //     assertEq(asset.balanceOf(_alice), 0);
+    //     assertEq(staker.balanceOf(address(swapper)), 0);
+    //     assertEq(asset.balanceOf(address(swapper)), 0);
+    //     assertEq(_DAI.balanceOf(_alice), 0);
+    //     assertEq(_USDT.balanceOf(_alice), 0);
+    //     assertEq(_DAI.balanceOf(address(swapper)), 0);
+    //     assertEq(_USDT.balanceOf(address(swapper)), 0);
+    //     assertEq(_DAI.balanceOf(address(staker)), 0);
+    //     assertEq(_USDT.balanceOf(address(staker)), 0);
+    // }
 
-    function testNoDepositDeleverageOneCoinToken0(uint256 amount) public {
-        amount = bound(amount, 10**20, 10**24);
-        uint256 coinIndex = 0;
-        IERC20 outToken = IERC20(address(_AaveBPToken));
+    // function testNoDepositDeleverageOneCoinToken0(uint256 amount) public {
+    //     amount = bound(amount, 10**20, 10**24);
+    //     uint256 coinIndex = 0;
+    //     IERC20 outToken = IERC20(address(_AaveBPToken));
 
-        _depositDirect(amount);
-        uint256 minOneCoin = _deleverageOneCoin(coinIndex, outToken);
+    //     _depositDirect(amount);
+    //     uint256 minOneCoin = _deleverageOneCoin(coinIndex, outToken);
 
-        assertEq(_USDC.balanceOf(_alice), 0);
-        assertGe(_DAI.balanceOf(_alice), minOneCoin);
-        assertEq(staker.balanceOf(address(swapper)), 0);
-        assertEq(staker.balanceOf(_alice), 0);
-        assertEq(asset.balanceOf(address(_alice)), 0);
-        assertEq(asset.balanceOf(address(swapper)), 0);
-        assertEq(asset.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(_alice), 0);
-        assertEq(_USDC.balanceOf(address(swapper)), 0);
-        assertEq(_DAI.balanceOf(address(swapper)), 0);
-        assertEq(_USDT.balanceOf(address(swapper)), 0);
-        assertEq(_USDC.balanceOf(address(staker)), 0);
-        assertEq(_DAI.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(address(staker)), 0);
-    }
+    //     assertEq(_USDC.balanceOf(_alice), 0);
+    //     assertGe(_DAI.balanceOf(_alice), minOneCoin);
+    //     assertEq(staker.balanceOf(address(swapper)), 0);
+    //     assertEq(staker.balanceOf(_alice), 0);
+    //     assertEq(asset.balanceOf(address(_alice)), 0);
+    //     assertEq(asset.balanceOf(address(swapper)), 0);
+    //     assertEq(asset.balanceOf(address(staker)), 0);
+    //     assertEq(_USDT.balanceOf(_alice), 0);
+    //     assertEq(_USDC.balanceOf(address(swapper)), 0);
+    //     assertEq(_DAI.balanceOf(address(swapper)), 0);
+    //     assertEq(_USDT.balanceOf(address(swapper)), 0);
+    //     assertEq(_USDC.balanceOf(address(staker)), 0);
+    //     assertEq(_DAI.balanceOf(address(staker)), 0);
+    //     assertEq(_USDT.balanceOf(address(staker)), 0);
+    // }
 
-    function testNoDepositDeleverageBalance(uint256 amount, uint256 coinSwap) public {
-        amount = bound(amount, 10**20, 10**24);
-        _depositDirect(amount);
+    // function testNoDepositDeleverageBalance(uint256 amount, uint256 coinSwap) public {
+    //     amount = bound(amount, 10**20, 10**24);
+    //     _depositDirect(amount);
 
-        vm.startPrank(_alice);
-        // deleverage
-        amount = staker.balanceOf(_alice);
-        uint256[3] memory minAmounts;
-        bytes memory data;
-        {
-            bytes[] memory oneInchData = new bytes[](0);
-            IERC20[] memory sweepTokens = new IERC20[](2);
-            sweepTokens[0] = _amWBTC;
-            sweepTokens[1] = _amWETH;
-            minAmounts = [
-                (_METAPOOL.balances(0) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply()),
-                (_METAPOOL.balances(1) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply()),
-                (_METAPOOL.balances(2) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply())
-            ];
-            bytes memory removeData = abi.encode(CurveRemovalType.balance, false, abi.encode(minAmounts));
-            bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
-            bytes memory leverageData = abi.encode(false, _alice, swapData);
-            data = abi.encode(address(0), minAmounts[1], SwapType.Leverage, leverageData);
-        }
-        staker.transfer(address(swapper), amount);
-        swapper.swap(IERC20(address(staker)), IERC20(address(_AaveBPToken)), _alice, 0, amount, data);
-
-        vm.stopPrank();
-
-        assertGe(_USDC.balanceOf(_alice), minAmounts[1]);
-        assertGe(_DAI.balanceOf(_alice), minAmounts[0]);
-        assertEq(staker.balanceOf(address(swapper)), 0);
-        assertEq(staker.balanceOf(_alice), 0);
-        assertEq(asset.balanceOf(address(_alice)), 0);
-        assertEq(asset.balanceOf(address(swapper)), 0);
-        assertEq(asset.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(_alice), 0);
-        assertEq(_USDC.balanceOf(address(swapper)), 0);
-        assertEq(_DAI.balanceOf(address(swapper)), 0);
-        assertEq(_USDT.balanceOf(address(swapper)), 0);
-        assertEq(_USDC.balanceOf(address(staker)), 0);
-        assertEq(_DAI.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(address(staker)), 0);
-    }
-
-    function testDeleverageOneCoinToken2(
-        uint256[5] memory amounts,
-        uint256 swapAmount,
-        uint256 coinSwap
-    ) public {
-        // DAI - USDC - USDT - WBTC - WETH
-        amounts[0] = bound(amounts[0], 1, 10**25);
-        amounts[1] = bound(amounts[1], 1, 10**13);
-        amounts[2] = bound(amounts[2], 1, 10**13);
-        amounts[3] = bound(amounts[3], 1000000, 10**11);
-        amounts[4] = bound(amounts[4], 1 ether, 10**21);
-        uint256 coinIndex = 0;
-        IERC20 outToken = IERC20(address(_AaveBPToken));
-
-        uint256 minAmountOut = _depositSwapAndAddLiquidity(amounts, true);
-        _swapToImbalance(1, 2, swapAmount);
-
-        uint256 minOneCoin = _deleverageOneCoin(coinIndex, outToken);
-
-        assertGe(_USDC.balanceOf(_alice), minOneCoin);
-        assertEq(_DAI.balanceOf(_alice), 0);
-        assertEq(staker.balanceOf(address(swapper)), 0);
-        assertEq(staker.balanceOf(_alice), 0);
-        assertEq(asset.balanceOf(address(_alice)), 0);
-        assertEq(asset.balanceOf(address(swapper)), 0);
-        assertEq(asset.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(_alice), 0);
-        assertEq(_USDC.balanceOf(address(swapper)), 0);
-        assertEq(_DAI.balanceOf(address(swapper)), 0);
-        assertEq(_USDT.balanceOf(address(swapper)), 0);
-        assertEq(_USDC.balanceOf(address(staker)), 0);
-        assertEq(_DAI.balanceOf(address(staker)), 0);
-        assertEq(_USDT.balanceOf(address(staker)), 0);
-    }
-
-    // function testDeleverageBalance(
-    //     uint256 addLiquidityUSDC,
-    //     uint256 addLiquidityFRAX,
-    //     uint256 swapAmount,
-    //     uint256 coinSwap
-    // ) public {
-    //     uint256 swappedFRAX = 10000 ether;
-    //     uint256 swappedUSDT = 10000 * 10**6;
-    //     addLiquidityUSDC = bound(addLiquidityUSDC, 0, 10**15);
-    //     addLiquidityFRAX = bound(addLiquidityFRAX, 0, 10**27);
-
-    //     deal(address(_USDC), address(_alice), addLiquidityUSDC);
-    //     deal(address(_USDT), address(_alice), swappedUSDT);
-    //     deal(address(_DAI), address(_alice), swappedFRAX + addLiquidityFRAX);
-    //     vm.startPrank(_alice);
-
-    //     bytes memory data;
-    //     {
-    //         // intermediary variables
-    //         bytes[] memory oneInchData = new bytes[](2);
-    //         // swap 10000 FRAX for USDC
-    //         oneInchData[0] = abi.encode(
-    //             address(_DAI),
-    //             0,
-    //             hex"e449022e00000000000000000000000000000000000000000000021e19e0c9bab2400000000000000000000000000000000000000000000000000000000000024dc9bbaa000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009a834b70c07c81a9fcd6f22e842bf002fbffbe4dcfee7c08"
-    //         );
-    //         // swap 10000 USDT for USDC
-    //         oneInchData[1] = abi.encode(
-    //             address(_USDT),
-    //             0,
-    //             hex"e449022e00000000000000000000000000000000000000000000000000000002540be400000000000000000000000000000000000000000000000000000000024e089f88000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000018000000000000000000000003416cf6c708da44db2624d63ea0aaef7113527c6cfee7c08"
-    //         );
-    //         uint256 minAmountOut;
-    //         {
-    //             uint256 lowerBoundSwap = (((addLiquidityUSDC + swappedUSDT + swappedFRAX / _DECIMAL_NORM_USDC) *
-    //                 SLIPPAGE_BPS) / _BPS);
-    //             minAmountOut =
-    //                 (IMetaPool2(address(_METAPOOL)).calc_token_amount([addLiquidityFRAX, lowerBoundSwap], true) *
-    //                     SLIPPAGE_BPS) /
-    //                 _BPS;
-    //         }
-
-    //         bytes memory addData;
-    //         bytes memory swapData = abi.encode(oneInchData, addData);
-    //         bytes memory leverageData = abi.encode(true, _alice, swapData);
-    //         data = abi.encode(address(0), 0, SwapType.Leverage, leverageData);
-    //     }
-    //     // we first need to send the tokens before hand, you should always use the swapper
-    //     // in another tx to not losse your funds by front running
-    //     _USDC.transfer(address(swapper), addLiquidityUSDC);
-    //     _DAI.transfer(address(swapper), swappedFRAX + addLiquidityFRAX);
-    //     _USDT.safeTransfer(address(swapper), swappedUSDT);
-    //     swapper.swap(IERC20(address(_USDC)), IERC20(address(staker)), _alice, 0, addLiquidityUSDC, data);
-
-    //     vm.stopPrank();
-    //     vm.startPrank(_dylan);
-    //     // do a swap to change the pool state and withdraw womething different than what has been deposited
-    //     coinSwap = coinSwap % 2;
-    //     if (coinSwap == 0) {
-    //         swapAmount = bound(swapAmount, 10**18, 10**26);
-    //         deal(address(_DAI), address(_dylan), swapAmount);
-    //         _DAI.approve(address(_METAPOOL), type(uint256).max);
-    //     } else {
-    //         swapAmount = bound(swapAmount, 10**6, 10**14);
-    //         deal(address(_USDC), address(_dylan), swapAmount);
-    //         _USDC.approve(address(_METAPOOL), type(uint256).max);
-    //     }
-    //     _METAPOOL.exchange(int128(uint128(coinSwap)), int128(1 - uint128(coinSwap)), swapAmount, 0);
-
-    //     vm.stopPrank();
     //     vm.startPrank(_alice);
     //     // deleverage
-    //     uint256 amount = staker.balanceOf(_alice);
-    //     uint256[2] memory minAmounts;
+    //     amount = staker.balanceOf(_alice);
+    //     uint256[3] memory minAmounts;
+    //     bytes memory data;
     //     {
     //         bytes[] memory oneInchData = new bytes[](0);
-    //         IERC20[] memory sweepTokens = new IERC20[](1);
-    //         sweepTokens[0] = _USDC;
+    //         IERC20[] memory sweepTokens = new IERC20[](2);
+    //         sweepTokens[0] = _amWBTC;
+    //         sweepTokens[1] = _amWETH;
     //         minAmounts = [
     //             (_METAPOOL.balances(0) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply()),
-    //             (_METAPOOL.balances(1) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply())
+    //             (_METAPOOL.balances(1) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply()),
+    //             (_METAPOOL.balances(2) * amount * SLIPPAGE_BPS) / (_BPS * asset.totalSupply())
     //         ];
-    //         bytes memory removeData = abi.encode(CurveRemovalType.balance, abi.encode(minAmounts));
+    //         bytes memory removeData = abi.encode(CurveRemovalType.balance, false, abi.encode(minAmounts));
     //         bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
     //         bytes memory leverageData = abi.encode(false, _alice, swapData);
-    //         data = abi.encode(address(0), minAmounts[0], SwapType.Leverage, leverageData);
+    //         data = abi.encode(address(0), minAmounts[1], SwapType.Leverage, leverageData);
     //     }
     //     staker.transfer(address(swapper), amount);
-    //     swapper.swap(IERC20(address(staker)), IERC20(address(_DAI)), _alice, 0, amount, data);
+    //     swapper.swap(IERC20(address(staker)), IERC20(address(_AaveBPToken)), _alice, 0, amount, data);
 
     //     vm.stopPrank();
 
@@ -438,84 +295,32 @@ contract CurveLevSwapperTricryptoTest is BaseTest {
     //     assertEq(_USDT.balanceOf(address(staker)), 0);
     // }
 
-    // // remove_liquidity_imbalance doesn't exist on this pool just let it here for future 3 tokens with BP pools
-    // function testNoDepositDeleverageImbalance(
-    //     uint256 amount,
-    //     uint256 proportionWithdrawToken1,
-    //     uint256 proportionWithdrawToken2,
-    //     uint256 coinSwap,
-    //     uint256 swapAmount
+    // function testDeleverageOneCoinToken2(
+    //     uint256[5] memory amounts,
+    //     uint256 swapAmount,
+    //     uint256 coinSwap
     // ) public {
-    //     amount = bound(amount, 10**20, 10**24);
-    //     proportionWithdrawToken1 = bound(proportionWithdrawToken1, 0, 10**9);
-    //     proportionWithdrawToken2 = bound(proportionWithdrawToken2, 0, 10**9 - proportionWithdrawToken1);
+    //     // DAI - USDC - USDT - WBTC - WETH
+    //     amounts[0] = bound(amounts[0], 1, 10**25);
+    //     amounts[1] = bound(amounts[1], 1, 10**13);
+    //     amounts[2] = bound(amounts[2], 1, 10**13);
+    //     amounts[3] = bound(amounts[3], 1000000, 10**11);
+    //     amounts[4] = bound(amounts[4], 1 ether, 10**21);
+    //     uint256 coinIndex = 0;
+    //     IERC20 outToken = IERC20(address(_AaveBPToken));
 
-    //     _depositDirect(amount);
-    //     // _swapToImbalance(1, 2, swapAmount);
+    //     uint256 minAmountOut = _depositSwapAndAddLiquidity(amounts, true);
+    //     _swapToImbalance(1, 2, swapAmount);
 
-    //     vm.startPrank(_alice);
-    //     // deleverage
-    //     amount = staker.balanceOf(_alice);
-    //     uint256[3] memory amountOuts;
-    //     uint256 maxBurnAmount;
-    //     bytes memory data;
-    //     {
-    //         {
-    //             uint256[3] memory minAmounts = [
-    //                 (_METAPOOL.balances(0) * amount) / (asset.totalSupply()),
-    //                 (_METAPOOL.balances(1) * amount) / (asset.totalSupply()),
-    //                 (_METAPOOL.balances(2) * amount) / (asset.totalSupply())
-    //             ];
-    //             // We do as if there were no slippage withdrawing in an imbalance manner vs a balance one and then
-    //             // addd a slippage on the returned amount
-    //             amountOuts = [
-    //                 ((minAmounts[0] + minAmounts[1] * _DECIMAL_NORM_WBTC + minAmounts[1]) *
-    //                     (10**9 - proportionWithdrawToken1 - proportionWithdrawToken2) *
-    //                     SLIPPAGE_BPS) / (10**9 * _BPS),
-    //                 ((minAmounts[0] / _DECIMAL_NORM_WBTC + minAmounts[1] + minAmounts[1] / _DECIMAL_NORM_WBTC) *
-    //                     proportionWithdrawToken1 *
-    //                     SLIPPAGE_BPS) / (10**9 * _BPS),
-    //                 ((minAmounts[0] + minAmounts[1] * _DECIMAL_NORM_WBTC + minAmounts[1]) *
-    //                     proportionWithdrawToken2 *
-    //                     SLIPPAGE_BPS) / (10**9 * _BPS)
-    //             ];
-    //             // if we try to withdraw more than the curve balances -> rebalance
-    //             uint256 curveBalanceAave = _METAPOOL.balances(0);
-    //             uint256 curveBalanceWBTC = _METAPOOL.balances(1);
-    //             uint256 curveBalanceWETH = _METAPOOL.balances(1);
-    //             if (curveBalanceAave < amountOuts[0]) {
-    //                 amountOuts[0] = curveBalanceAave**99 / 100;
-    //             } else if (curveBalanceWBTC < amountOuts[1]) {
-    //                 amountOuts[1] = curveBalanceWBTC**99 / 100;
-    //             } else if (curveBalanceWETH < amountOuts[2]) {
-    //                 amountOuts[2] = curveBalanceWETH**99 / 100;
-    //             }
-    //         }
-    //         maxBurnAmount = IMetaPool3(address(_METAPOOL)).calc_token_amount(amountOuts, false);
+    //     uint256 minOneCoin = _deleverageOneCoin(coinIndex, outToken);
 
-    //         bytes[] memory oneInchData = new bytes[](0);
-    //         IERC20[] memory sweepTokens = new IERC20[](2);
-    //         sweepTokens[0] = _amWBTC;
-    //         sweepTokens[1] = _amWETH;
-    //         bytes memory removeData = abi.encode(CurveRemovalType.imbalance, false, abi.encode(_bob, amountOuts));
-    //         bytes memory swapData = abi.encode(amount, sweepTokens, oneInchData, removeData);
-    //         bytes memory leverageData = abi.encode(false, _alice, swapData);
-    //         data = abi.encode(address(0), amountOuts[0], SwapType.Leverage, leverageData);
-    //     }
-    //     staker.transfer(address(swapper), amount);
-    //     swapper.swap(IERC20(address(staker)), IERC20(address(_AaveBPToken)), _alice, 0, amount, data);
-
-    //     vm.stopPrank();
-
-    //     assertGe(_USDC.balanceOf(_alice), amountOuts[1]);
-    //     assertGe(_DAI.balanceOf(_alice), amountOuts[0]);
-    //     assertLe(staker.balanceOf(_bob), amount - maxBurnAmount);
-    //     assertLe(staker.totalSupply(), amount - maxBurnAmount);
-    //     assertLe(asset.balanceOf(address(staker)), amount - maxBurnAmount);
-    //     assertEq(staker.balanceOf(_alice), 0);
+    //     assertGe(_USDC.balanceOf(_alice), minOneCoin);
+    //     assertEq(_DAI.balanceOf(_alice), 0);
     //     assertEq(staker.balanceOf(address(swapper)), 0);
+    //     assertEq(staker.balanceOf(_alice), 0);
     //     assertEq(asset.balanceOf(address(_alice)), 0);
     //     assertEq(asset.balanceOf(address(swapper)), 0);
+    //     assertEq(asset.balanceOf(address(staker)), 0);
     //     assertEq(_USDT.balanceOf(_alice), 0);
     //     assertEq(_USDC.balanceOf(address(swapper)), 0);
     //     assertEq(_DAI.balanceOf(address(swapper)), 0);
@@ -669,7 +474,6 @@ contract CurveLevSwapperTricryptoTest is BaseTest {
             IERC20(address(_amWETH)).approve(address(_METAPOOL), type(uint256).max);
         }
         _METAPOOL.exchange(coinSwapFrom, coinSwapTo, swapAmount, 0);
-        console.log("after exchanging");
 
         vm.stopPrank();
     }

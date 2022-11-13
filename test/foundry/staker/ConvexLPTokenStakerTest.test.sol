@@ -11,7 +11,7 @@ import "../../../contracts/interfaces/external/convex/IBooster.sol";
 import "../../../contracts/interfaces/external/convex/IConvexToken.sol";
 import "../../../contracts/interfaces/ICoreBorrow.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
-import { MockConvexTokenStaker, BorrowStakerStorage, IERC20Metadata } from "../../../contracts/mock/MockConvexTokenStaker.sol";
+import { ConvexTokenAgEURvEUROCStaker, BorrowStakerStorage, IERC20Metadata } from "../../../contracts/staker/curve/implementations/mainnet/ConvexTokenAgEURvEUROCStaker.sol";
 
 contract ConvexLPTokenStakerTest is BaseTest {
     using stdStorage for StdStorage;
@@ -26,8 +26,8 @@ contract ConvexLPTokenStakerTest is BaseTest {
     IConvexBaseRewardPool public baseRewardPool = IConvexBaseRewardPool(0xA91fccC1ec9d4A2271B7A86a7509Ca05057C1A98);
     uint256 public constant POOL_ID = 113;
 
-    MockConvexTokenStaker public stakerImplementation;
-    MockConvexTokenStaker public staker;
+    ConvexTokenAgEURvEUROCStaker public stakerImplementation;
+    ConvexTokenAgEURvEUROCStaker public staker;
     uint8 public decimalToken;
     uint256 public maxTokenAmount;
     uint8[] public decimalReward;
@@ -40,8 +40,8 @@ contract ConvexLPTokenStakerTest is BaseTest {
         vm.selectFork(_ethereum);
 
         super.setUp();
-        stakerImplementation = new MockConvexTokenStaker();
-        staker = MockConvexTokenStaker(
+        stakerImplementation = new ConvexTokenAgEURvEUROCStaker();
+        staker = ConvexTokenAgEURvEUROCStaker(
             deployUpgradeable(
                 address(stakerImplementation),
                 abi.encodeWithSelector(staker.initialize.selector, coreBorrow)
