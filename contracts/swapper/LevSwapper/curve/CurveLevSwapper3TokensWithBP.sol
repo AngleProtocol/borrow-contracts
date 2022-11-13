@@ -3,7 +3,6 @@ pragma solidity 0.8.12;
 
 import "../BaseLevSwapper.sol";
 import "../../../interfaces/external/curve/IMetaPool3.sol";
-import "hardhat/console.sol";
 
 /// @notice All possible removals on Curve
 enum CurveRemovalType {
@@ -50,11 +49,8 @@ abstract contract CurveLevSwapper3TokensWithBP is BaseLevSwapper {
         uint256 amountToken1 = tokens()[1].balanceOf(address(this));
         uint256 amountToken2 = tokens()[2].balanceOf(address(this));
         // Slippage is checked at the very end of the `swap` function
-        if (amountTokenLP > 0 || amountToken1 > 0 || amountToken2 > 0) {
-            console.log("gas left before add_liquidity", gasleft());
+        if (amountTokenLP > 0 || amountToken1 > 0 || amountToken2 > 0)
             metapool().add_liquidity([amountTokenLP, amountToken1, amountToken2], 0);
-            console.log("just after adding liquidity ");
-        }
 
         // Other solution is also to let the user specify how many tokens have been sent + get
         // the return value from `add_liquidity`: it's more gas efficient but adds more verbose

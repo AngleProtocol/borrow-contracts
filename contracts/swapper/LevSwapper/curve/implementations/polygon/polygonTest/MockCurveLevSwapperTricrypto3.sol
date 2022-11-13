@@ -16,7 +16,7 @@ contract MockCurveLevSwapperTricrypto3 is CurveLevSwapper3TokensWithBP {
 
     /// @inheritdoc BaseLevSwapper
     function angleStaker() public pure override returns (IBorrowStaker) {
-        return IBorrowStaker(0xeA5E13E0Ec9D1093790CD51f1EE80EA896d6d715);
+        return IBorrowStaker(0x36b41Bdd49265C6820f71002dC2FE5cB1Aa290fc);
     }
 
     /// @inheritdoc CurveLevSwapper3TokensWithBP

@@ -3,7 +3,6 @@
 pragma solidity 0.8.12;
 
 import "./BorrowStakerStorage.sol";
-import "hardhat/console.sol";
 
 /// @title BorrowStaker
 /// @author Angle Core Team
