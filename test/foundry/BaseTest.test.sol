@@ -16,6 +16,7 @@ contract BaseTest is Test {
     address internal constant _GUARDIAN = 0x0C2553e4B9dFA9f83b1A6D3EAB96c4bAaB42d430;
     address internal constant _KEEPER = address(uint160(uint256(keccak256(abi.encodePacked("_keeper")))));
     address internal constant _ANGLE = 0x31429d1856aD1377A8A0079410B297e1a9e214c2;
+    address internal constant _GOVERNOR_POLYGON = 0xdA2D2f638D6fcbE306236583845e5822554c02EA;
 
     address internal constant _alice = address(uint160(uint256(keccak256(abi.encodePacked("_alice")))));
     address internal constant _bob = address(uint160(uint256(keccak256(abi.encodePacked("_bob")))));

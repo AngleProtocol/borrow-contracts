@@ -11,7 +11,7 @@ import "./PolygonConstants.s.sol";
 
 contract DeploySwapper is Script, PolygonConstants {
     function run() external {
-        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 0);
+        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 2);
         vm.startBroadcast(deployerPrivateKey);
 
         MockCurveLevSwapperTricrypto3 swapper = new MockCurveLevSwapperTricrypto3(
