@@ -3,7 +3,7 @@
 pragma solidity ^0.8.12;
 
 /// @title IPoolManager
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 interface IPoolManager {
     function feeManager() external view returns (address);
 

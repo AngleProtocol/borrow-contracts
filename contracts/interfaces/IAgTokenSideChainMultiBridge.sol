@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20P
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /// @title IAgTokenSideChainMultiBridge
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the canonical `AgToken` contracts
 /// @dev This interface only contains functions useful for bridge tokens to interact with the canonical token
 interface IAgTokenSideChainMultiBridge is IERC20PermitUpgradeable, IERC20Upgradeable {

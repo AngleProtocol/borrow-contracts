@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "./ITreasury.sol";
 
 /// @title IOracle
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `Oracle` contract
 /// @dev This interface only contains functions of the contract which are called by other contracts
 /// of this module

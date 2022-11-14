@@ -38,11 +38,9 @@ contract BorrowStakerWithVaultTest is BaseTest {
         otherToken = new MockTokenPermit("other", "other", 18);
         stakerImplementation = new MockBorrowStaker();
         staker = MockBorrowStaker(
-            deployUpgradeable(
-                address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
-            )
+            deployUpgradeable(address(stakerImplementation), abi.encodeWithSelector(staker.setAsset.selector, asset))
         );
+        staker.initialize(coreBorrow);
 
         staker.setRewardToken(rewardToken);
         staker.setRewardAmount(rewardAmount);
@@ -116,12 +114,7 @@ contract BorrowStakerWithVaultTest is BaseTest {
                 uint256 withdrawnDirectly = (amount * staker.balanceOf(account)) / BASE_PARAMS;
                 staker.withdraw(withdrawnDirectly, account, account);
                 vm.stopPrank();
-                uint256 withdrawnVault = _fakeWithdrawVault(
-                    vaultNum,
-                    vaultIDs[vaultIdToWithdraw[i]],
-                    account,
-                    propVault[i]
-                );
+                _fakeWithdrawVault(vaultNum, vaultIDs[vaultIdToWithdraw[i]], account, propVault[i]);
                 realBalances[randomIndex] = realBalances[randomIndex] - withdrawnDirectly;
             }
 

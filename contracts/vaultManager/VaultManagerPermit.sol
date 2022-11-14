@@ -6,7 +6,7 @@ import "./VaultManagerERC721.sol";
 import "../interfaces/external/IERC1271.sol";
 
 /// @title VaultManagerPermit
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Base Implementation of permit functions for the `VaultManager` contract
 abstract contract VaultManagerPermit is Initializable, VaultManagerERC721 {
     using Address for address;

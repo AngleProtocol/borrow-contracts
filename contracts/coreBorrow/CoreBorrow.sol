@@ -10,7 +10,7 @@ import "../interfaces/IFlashAngle.sol";
 import "../interfaces/ITreasury.sol";
 
 /// @title CoreBorrow
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Core contract of the borrowing module. This contract handles the access control across all contracts
 /// (it is read by all treasury contracts), and manages the `flashLoanModule`. It has no minting rights over the
 /// stablecoin contracts

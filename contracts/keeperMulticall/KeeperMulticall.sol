@@ -11,7 +11,7 @@ import "./RevertReasonParser.sol";
 
 /// @title KeeperMulticall
 /// @notice Allows an authorized caller (keeper) to execute multiple actions in a single tx.
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Special features:
 ///         - ability to pay the miner (for private Flashbots transactions)
 ///         - swap tokens through 1inch

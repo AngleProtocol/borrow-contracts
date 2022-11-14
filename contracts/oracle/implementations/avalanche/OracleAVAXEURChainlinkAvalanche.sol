@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleAVAXEURChainlinkAvalanche
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of AVAX in Euro in base 18
 /// @dev This contract is built to be deployed on Avalanche
 contract OracleAVAXEURChainlinkAvalanche is BaseOracleChainlinkMulti {

@@ -3,7 +3,7 @@
 pragma solidity 0.8.12;
 
 /// @title IWStETH
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `WStETH` contract
 /// @dev This interface only contains functions of the `WStETH` which are called by other contracts
 /// of this module

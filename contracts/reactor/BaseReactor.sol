@@ -6,7 +6,7 @@ import "./BaseReactorStorage.sol";
 
 /// @title BaseReactor
 /// @notice Reactor for using a token as collateral for agTokens. ERC4646 tokenized Vault implementation.
-/// @author Angle Core Team, based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
+/// @author Angle Labs, Inc., based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
 /// @dev A token used as an asset built to exploit this reactor could perform reentrancy attacks if not enough checks
 /// are performed: as such the protocol implements reentrancy checks on all external entry point
 abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpgradeable, IERC4626 {

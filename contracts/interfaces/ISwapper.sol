@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title ISwapper
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for Swapper contracts
 /// @dev This interface defines the key functions `Swapper` contracts should have when interacting with
 /// Angle

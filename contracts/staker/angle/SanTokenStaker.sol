@@ -6,7 +6,7 @@ import "../../interfaces/ILiquidityGauge.sol";
 import "../BorrowStaker.sol";
 
 /// @title SanTokenStaker
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Borrow staker adapted to sanToken deposited on the liquidity gauge associated
 abstract contract SanTokenStaker is BorrowStaker {
     /// @notice Angle-related constants
@@ -23,7 +23,7 @@ abstract contract SanTokenStaker is BorrowStaker {
         // Stake on the gauge if it is a deposit
         if (from == address(0)) {
             // Deposit the sanTokens into the liquidity gauge contract
-            _changeAllowance(asset, address(liquidityGauge()), amount);
+            _changeAllowance(asset(), address(liquidityGauge()), amount);
             liquidityGauge().deposit(amount, address(this), true);
         }
     }

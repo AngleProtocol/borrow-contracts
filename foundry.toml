@@ -6,6 +6,7 @@ libs = ['node_modules', 'lib']
 script = 'scripts/foundry'
 cache_path = 'cache-forge'
 gas_reports = ["*"]
+optimizer_runs=1
 
 # solc_version = '0.8.14'
 

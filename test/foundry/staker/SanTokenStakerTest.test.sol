@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../BaseTest.test.sol";
 import "../../../contracts/interfaces/ICoreBorrow.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
-import { MockSanTokenStaker, BorrowStakerStorage, ILiquidityGauge } from "../../../contracts/mock/MockSanTokenStaker.sol";
+import { SanTokenUSDCvAgEURStaker, BorrowStakerStorage, ILiquidityGauge } from "../../../contracts/staker/angle/implementations/mainnet/SanTokenUSDCvAgEURStaker.sol";
 
 contract SanTokenStakerTest is BaseTest {
     using stdStorage for StdStorage;
@@ -18,8 +18,8 @@ contract SanTokenStakerTest is BaseTest {
     IERC20 public rewardToken = IERC20(_ANGLE);
     address internal _hacker = address(uint160(uint256(keccak256(abi.encodePacked("hacker")))));
 
-    MockSanTokenStaker public stakerImplementation;
-    MockSanTokenStaker public staker;
+    SanTokenUSDCvAgEURStaker public stakerImplementation;
+    SanTokenUSDCvAgEURStaker public staker;
     ILiquidityGauge public gauge;
     uint8 public decimalToken;
     uint256 public minTokenAmount;
@@ -34,11 +34,11 @@ contract SanTokenStakerTest is BaseTest {
         vm.selectFork(_ethereum);
 
         super.setUp();
-        stakerImplementation = new MockSanTokenStaker();
-        staker = MockSanTokenStaker(
+        stakerImplementation = new SanTokenUSDCvAgEURStaker();
+        staker = SanTokenUSDCvAgEURStaker(
             deployUpgradeable(
                 address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
+                abi.encodeWithSelector(staker.initialize.selector, coreBorrow)
             )
         );
         gauge = staker.liquidityGauge();

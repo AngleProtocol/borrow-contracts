@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "./BorrowStakerStorage.sol";
 
 /// @title BorrowStaker
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Staking contract keeping track of user rewards and minting a wrapper token
 /// that can be hassle free on any other protocol without loosing the rewards
 /// @dev If Angle is to accept a Curve LP token accruing CRV rewards, what is to be a collateral on the Borrowing module
@@ -14,14 +14,13 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Initializes the `BorrowStaker`
-    function initialize(ICoreBorrow _coreBorrow, IERC20Metadata _asset) external initializer {
+    function initialize(ICoreBorrow _coreBorrow) external initializer {
         __ERC20_init_unchained(
-            string(abi.encodePacked("Angle ", _asset.name(), " Staker")),
-            string(abi.encodePacked("agstk-", _asset.symbol()))
+            string(abi.encodePacked("Angle ", IERC20Metadata(address(asset())).name(), " Staker")),
+            string(abi.encodePacked("agstk-", IERC20Metadata(address(asset())).symbol()))
         );
         coreBorrow = _coreBorrow;
-        asset = IERC20(_asset);
-        _decimals = _asset.decimals();
+        _decimals = IERC20Metadata(address(asset())).decimals();
     }
 
     // ================================= MODIFIERS =================================
@@ -57,7 +56,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     /// @param to Address for which the token is deposited
     function deposit(uint256 amount, address to) external returns (uint256) {
         // Need to transfer before minting or ERC777s could reenter.
-        asset.safeTransferFrom(msg.sender, address(this), amount);
+        asset().safeTransferFrom(msg.sender, address(this), amount);
         _mint(to, amount);
         emit Deposit(msg.sender, to, amount);
         return amount;
@@ -83,7 +82,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         }
         _burn(from, amount);
         emit Withdraw(from, to, amount);
-        asset.safeTransfer(to, amount);
+        asset().safeTransfer(to, amount);
         return amount;
     }
 
@@ -144,7 +143,8 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     /// @param vaultManager Address of the new `vaultManager` to add to the list
     function addVaultManager(IVaultManagerListing vaultManager) external onlyGovernorOrGuardian {
         if (
-            address(vaultManager.collateral()) != address(asset) || isCompatibleVaultManager[address(vaultManager)] == 1
+            address(vaultManager.collateral()) != address(asset()) ||
+            isCompatibleVaultManager[address(vaultManager)] == 1
         ) revert InvalidVaultManager();
         isCompatibleVaultManager[address(vaultManager)] = 1;
         _vaultManagers.push(vaultManager);
@@ -161,7 +161,7 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
         address to,
         uint256 amountToRecover
     ) external onlyGovernor {
-        if (tokenAddress == address(asset)) revert InvalidToken();
+        if (tokenAddress == address(asset())) revert InvalidToken();
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }
@@ -256,6 +256,9 @@ abstract contract BorrowStaker is BorrowStakerStorage, ERC20Upgradeable {
     }
 
     // ============================= VIRTUAL FUNCTIONS =============================
+
+    /// @notice Underlying token to be staked
+    function asset() public virtual returns (IERC20);
 
     /// @notice Claims all available rewards and increases the associated integral
     function _claimRewards() internal virtual;

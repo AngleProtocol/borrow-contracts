@@ -21,7 +21,7 @@ import "../interfaces/IVaultManager.sol";
 import "../interfaces/governance/IVeBoostProxy.sol";
 
 /// @title VaultManagerStorage
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Variables, references, parameters and events needed in the `VaultManager` contract
 // solhint-disable-next-line max-states-count
 contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {

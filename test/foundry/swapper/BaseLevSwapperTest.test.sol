@@ -49,11 +49,9 @@ contract BaseLevSwapperTest is BaseTest {
         asset = IERC20(new MockTokenPermit("agEUR", "agEUR", decimalToken));
         stakerImplementation = new MockBorrowStaker();
         staker = MockBorrowStaker(
-            deployUpgradeable(
-                address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
-            )
+            deployUpgradeable(address(stakerImplementation), abi.encodeWithSelector(staker.setAsset.selector, asset))
         );
+        staker.initialize(coreBorrow);
         swapper = new MockBaseLevSwapper(
             coreBorrow,
             _UNI_V3_ROUTER,
@@ -75,11 +73,9 @@ contract BaseLevSwapperTest is BaseTest {
         asset = _USDC;
         stakerImplementation = new MockBorrowStaker();
         staker = MockBorrowStaker(
-            deployUpgradeable(
-                address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
-            )
+            deployUpgradeable(address(stakerImplementation), abi.encodeWithSelector(staker.setAsset.selector, asset))
         );
+        staker.initialize(coreBorrow);
         swapper = new MockBaseLevSwapper(
             coreBorrow,
             _UNI_V3_ROUTER,

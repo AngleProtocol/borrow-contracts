@@ -47,7 +47,7 @@ struct CollateralAddresses {
 }
 
 /// @title AngleHelpers
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Contract with view functions designed to facilitate integrations on the Core and Borrow module of the Angle Protocol
 /// @dev This contract only contains view functions to be queried off-chain. It was thus not optimized for gas consumption
 contract AngleHelpers is AngleBorrowHelpers {

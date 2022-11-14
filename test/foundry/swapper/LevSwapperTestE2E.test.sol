@@ -62,11 +62,9 @@ contract LevSwapperTestE2E is BaseTest {
         asset = _USDC;
         stakerImplementation = new MockBorrowStakerReset();
         staker = MockBorrowStakerReset(
-            deployUpgradeable(
-                address(stakerImplementation),
-                abi.encodeWithSelector(staker.initialize.selector, coreBorrow, asset)
-            )
+            deployUpgradeable(address(stakerImplementation), abi.encodeWithSelector(staker.setAsset.selector, asset))
         );
+        staker.initialize(coreBorrow);
         swapper = new MockBaseLevSwapper(
             coreBorrow,
             _UNI_V3_ROUTER,

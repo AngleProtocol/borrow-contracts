@@ -5,12 +5,13 @@ pragma solidity 0.8.12;
 import "../staker/BorrowStaker.sol";
 
 /// @title MockBorrowStaker
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 contract MockBorrowStaker is BorrowStaker {
     using SafeERC20 for IERC20;
 
     error IncompatibleLengths();
 
+    IERC20 public asset_;
     IERC20 public rewardToken;
     uint256 public rewardAmount;
 
@@ -29,6 +30,15 @@ contract MockBorrowStaker is BorrowStaker {
         for (uint256 i = 0; i < spenders.length; i++) {
             _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
+    }
+
+    /// @inheritdoc BorrowStaker
+    function asset() public view override returns (IERC20) {
+        return asset_;
+    }
+
+    function setAsset(IERC20 _asset) public {
+        asset_ = _asset;
     }
 
     /// @inheritdoc BorrowStaker
@@ -62,7 +72,7 @@ contract MockBorrowStaker is BorrowStaker {
 }
 
 /// @title MockBorrowStakerReset
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 contract MockBorrowStakerReset is MockBorrowStaker {
     /// @inheritdoc BorrowStaker
     /// @dev Reset to 0 when rewards are claimed

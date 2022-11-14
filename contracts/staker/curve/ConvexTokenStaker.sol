@@ -10,7 +10,7 @@ import "../../interfaces/external/convex/IConvexToken.sol";
 import "../BorrowStaker.sol";
 
 /// @title ConvexTokenStaker
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Borrow staker adapted to Curve LP tokens deposited on Convex
 abstract contract ConvexTokenStaker is BorrowStaker {
     /// @notice Convex-related constants
@@ -30,7 +30,7 @@ abstract contract ConvexTokenStaker is BorrowStaker {
         // Stake on Convex if it is a deposit
         if (from == address(0)) {
             // Deposit the Curve LP tokens into the convex contract and stake
-            _changeAllowance(asset, address(_CONVEX_BOOSTER), amount);
+            _changeAllowance(asset(), address(_CONVEX_BOOSTER), amount);
             _CONVEX_BOOSTER.deposit(poolPid(), amount, true);
         }
     }

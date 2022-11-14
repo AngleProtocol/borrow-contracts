@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleMATICEURChainlinkPolygon
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of MATIC in Euro in base 18
 /// @dev This contract is built to be deployed on Polygon
 contract OracleMATICEURChainlinkPolygon is BaseOracleChainlinkMulti {

@@ -10,7 +10,7 @@ import "../interfaces/ICoreBorrow.sol";
 import { IVaultManagerListing } from "../interfaces/IVaultManager.sol";
 
 /// @title BaseStorage
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Variables, references, parameters and events needed in the `BorrowStaker` contract
 contract BorrowStakerStorage is Initializable {
     /// @notice Base used for parameter computation
@@ -20,8 +20,6 @@ contract BorrowStakerStorage is Initializable {
 
     // ================================= REFERENCES ================================
 
-    /// @notice Reference to the staked token
-    IERC20 public asset;
     /// @notice Core borrow contract handling access control
     ICoreBorrow public coreBorrow;
 
@@ -42,7 +40,7 @@ contract BorrowStakerStorage is Initializable {
     /// @notice Maps pairs of `(token,user)` to a track record of cumulated personal rewards
     mapping(IERC20 => mapping(address => uint256)) public integralOf;
 
-    uint256[43] private __gap;
+    uint256[44] private __gap;
 
     // =================================== EVENTS ==================================
 

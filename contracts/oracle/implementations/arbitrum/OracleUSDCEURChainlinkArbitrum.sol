@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleUSDCEURChainlinkArbitrum
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of USDC in Euro in base 18
 /// @dev This contract is built to be deployed on Arbitrum
 contract OracleUSDCEURChainlinkArbitrum is BaseOracleChainlinkMulti {

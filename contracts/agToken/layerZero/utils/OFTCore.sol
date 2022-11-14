@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeabl
 
 /// @title OFTCore
 /// @author Forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFTCore.sol
-/// but with slight modifications from the Angle Core Team which added return values to the `_creditTo` and `_debitFrom` functions
+/// but with slight modifications from the Angle Labs, Inc. which added return values to the `_creditTo` and `_debitFrom` functions
 /// @notice Base contract for bridging using LayerZero
 abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
     // ==================== External Permissionless Functions ======================
