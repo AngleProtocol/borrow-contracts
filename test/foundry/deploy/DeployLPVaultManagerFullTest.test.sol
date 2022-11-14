@@ -9,7 +9,7 @@ import "../../../contracts/vaultManager/vaultManager.sol";
 import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBP_EUR.sol";
 import { IAngleRouterSidechain } from "../../../contracts/interfaces/IAngleRouterSidechain.sol";
 import { IUniswapV3Router } from "../../../contracts/interfaces/external/uniswap/IUniswapRouter.sol";
-import { MockCurveLevSwapperTricrypto3 } from "../../../contracts/swapper/LevSwapper/curve/implementations/polygon/polygonTest/MockCurveLevSwapperTricrypto3.sol";
+import { MockCurveLevSwapperAaveBP } from "../../../contracts/swapper/LevSwapper/curve/implementations/polygon/polygonTest/MockCurveLevSwapperAaveBP.sol";
 import { MockCurveTokenStakerAaveBP } from "../../../contracts/staker/curve/implementations/polygon/polygonTest/MockCurveTokenStakerAaveBP.sol";
 import "../../../scripts/foundry/polygon/PolygonConstants.s.sol";
 
@@ -37,7 +37,7 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
     error ZeroAdress();
 
     function setUp() public {
-        uint256 _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"), 35438415);
+        uint256 _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"), 35598389);
         vm.selectFork(_polygon);
     }
 
@@ -99,16 +99,16 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
             )
         );
 
-        console.log("Successfully deployed vaultManager tricrypto at the address: ", address(vaultManager));
+        console.log("Successfully deployed vaultManager Curve Aave BP at the address: ", address(vaultManager));
 
-        MockCurveLevSwapperTricrypto3 swapper = new MockCurveLevSwapperTricrypto3(
+        MockCurveLevSwapperAaveBP swapper = new MockCurveLevSwapperAaveBP(
             ICoreBorrow(CORE_BORROW),
             IUniswapV3Router(UNI_V3_ROUTER),
             ONE_INCH,
             IAngleRouterSidechain(ANGLE_ROUTER)
         );
 
-        console.log("Successfully deployed swapper tricrypto at the address: ", address(swapper));
+        console.log("Successfully deployed swapper Curve Aave BP at the address: ", address(swapper));
         vm.stopPrank();
 
         vm.startPrank(GOVERNOR);

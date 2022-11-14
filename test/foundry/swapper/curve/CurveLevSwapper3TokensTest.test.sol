@@ -174,7 +174,7 @@ contract CurveLevSwapper3TokensTest is BaseTest {
         _assertCommonDeleverage();
     }
 
-    function testNoDepositDeleverageBalance(uint256 amount, int128 coinSwap) public {
+    function testNoDepositDeleverageBalance(uint256 amount) public {
         amount = bound(amount, 10**20, 10**24);
         _depositDirect(amount);
         uint256[3] memory minAmounts = _deleverageBalance();

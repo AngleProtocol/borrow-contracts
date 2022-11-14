@@ -49,7 +49,7 @@ contract OracleTest is BaseTest {
                 10**8 +
                 (uint256(1267) * uint256(6950798106072563439294)) /
                 10**18);
-            uint256 truePrice = (usdTotal * 10**18) / 29396520412868861416651;
+            // uint256 truePrice = (usdTotal * 10**18) / 29396520412868861416651;
             // console.log("api usd total ", usdTotal);
             // console.log("api price ", truePrice);
         }
@@ -88,13 +88,13 @@ contract OracleTest is BaseTest {
 
         // console.log("lpTriGrossPrice ", lpTriGrossPrice);
 
-        uint256 lpPriceInEUR = oracleTriCrypto.read();
+        // uint256 lpPriceInEUR = oracleTriCrypto.read();
         // console.log("lpPriceInEUR ", lpPriceInEUR);
 
         // assertEq(lpPriceInEUR, lpTriGrossPrice);
     }
 
-    function testReadAaveUSDBPPool() public {
+    function testReadAaveUSDBPPool() public view {
         uint256 lpAaveBPGrossPrice;
         {
             uint256 daiAmount = ICurvePoolBalance(address(AaveBP)).balances(0);

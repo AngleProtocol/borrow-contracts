@@ -114,12 +114,7 @@ contract BorrowStakerWithVaultTest is BaseTest {
                 uint256 withdrawnDirectly = (amount * staker.balanceOf(account)) / BASE_PARAMS;
                 staker.withdraw(withdrawnDirectly, account, account);
                 vm.stopPrank();
-                uint256 withdrawnVault = _fakeWithdrawVault(
-                    vaultNum,
-                    vaultIDs[vaultIdToWithdraw[i]],
-                    account,
-                    propVault[i]
-                );
+                _fakeWithdrawVault(vaultNum, vaultIDs[vaultIdToWithdraw[i]], account, propVault[i]);
                 realBalances[randomIndex] = realBalances[randomIndex] - withdrawnDirectly;
             }
 

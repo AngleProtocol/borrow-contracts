@@ -3,19 +3,17 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import "../../../contracts/interfaces/IOracle.sol";
-import "../../../contracts/treasury/Treasury.sol";
 import "../../../contracts/vaultManager/vaultManager.sol";
 import "./PolygonConstants.s.sol";
 
 contract DeployVaultManager is Script, PolygonConstants {
-    address public constant TREASURY = 0x2F2e0ba9746aae15888cf234c4EB5B301710927e;
-    VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(address(0));
-
     // TODO to be changed at deployment depending on the vaultManager
-    IOracle public constant ORACLE = IOracle(address(0));
+    VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(address(0));
+    IOracle public constant ORACLE = IOracle(0x2e9e48b515bC6D0128B7022A5d868137f0173bF6);
     // the staker address
-    IERC20 public constant COLLATERAL = IERC20(address(0));
-    string public constant SYMBOL = "crvUSDBTCETH-EUR";
+    IERC20 public constant COLLATERAL = IERC20(0x583EE5b0b2999679d1DdE7aa178B225ad57c481b);
+
+    string public constant SYMBOL = "am3CRV-EUR";
     uint256 public constant DEBT_CEILING = 1_000 ether;
     uint64 public constant CF = (7 * BASE_PARAMS) / 10;
     uint64 public constant THF = (11 * BASE_PARAMS) / 10;
@@ -57,7 +55,7 @@ contract DeployVaultManager is Script, PolygonConstants {
                 address(VAULT_MANAGER_IMPL),
                 abi.encodeWithSelector(
                     VAULT_MANAGER_IMPL.initialize.selector,
-                    TREASURY,
+                    AGEUR_TREASURY,
                     COLLATERAL,
                     ORACLE,
                     params,
