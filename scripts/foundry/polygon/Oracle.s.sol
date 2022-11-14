@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
 import "../../../contracts/interfaces/IOracle.sol";
 import "../../../contracts/treasury/Treasury.sol";
-import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBP_EUR.sol";
+import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBPEUR.sol";
 import "./PolygonConstants.s.sol";
 
 contract DeployOracle is Script, PolygonConstants {

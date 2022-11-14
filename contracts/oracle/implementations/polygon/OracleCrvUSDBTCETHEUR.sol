@@ -8,12 +8,13 @@ import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/curve/ITricryptoPool.sol";
 import "../../../interfaces/external/curve/ICurveCryptoSwapPool.sol";
 
-/// @title OracleCrvUSDBTCETH_EUR
+/// @title OracleCrvUSDBTCETHEUR
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of Curve TriCrypto2 in Euro in base 18
 contract OracleCrvUSDBTCETHEUR is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "crvUSDBTCETH/EUR Oracle";
     ITricryptoPool public constant TRI_CRYPTO_POOL = ITricryptoPool(0x92215849c439E1f8612b6646060B4E3E5ef822cC);
+    //solhint-disable-next-line
     ICurveCryptoSwapPool public constant AaveBP = ICurveCryptoSwapPool(0x445FE580eF8d70FF569aB36e80c647af338db351);
     uint256 public constant GAMMA0 = 28000000000000; // 2.8e-5
     uint256 public constant A0 = 2 * 3**3 * 10000;
@@ -92,9 +93,11 @@ contract OracleCrvUSDBTCETHEUR is BaseOracleChainlinkMulti {
         // result is at base 1e18
         // Will have convergence problems when ETH*BTC is cheaper than 0.01 squared dollar
         // (for example, when BTC < $0.1 and ETH < $0.1)
+        //solhint-disable-next-line
         uint256 D = x / 10**18;
         for (uint256 i; i < 255; i++) {
             uint256 diff;
+            //solhint-disable-next-line
             uint256 DPrev = D;
             D = (D * (2 * 10**18 + ((((x / D) * 10**18) / D) * 10**18) / D)) / (3 * 10**18);
             diff = D > DPrev ? D - DPrev : DPrev - D;

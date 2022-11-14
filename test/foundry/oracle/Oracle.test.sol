@@ -3,8 +3,8 @@ pragma solidity ^0.8.12;
 
 import "../BaseTest.test.sol";
 import { SafeERC20 } from "../../../contracts/mock/MockTokenPermit.sol";
-import { OracleCrvUSDBTCETHEUR, IOracle } from "../../../contracts/oracle/implementations/polygon/OracleCrvUSDBTCETH_EUR.sol";
-import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBP_EUR.sol";
+import { OracleCrvUSDBTCETHEUR, IOracle } from "../../../contracts/oracle/implementations/polygon/OracleCrvUSDBTCETHEUR.sol";
+import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBPEUR.sol";
 import "../../../contracts/interfaces/external/curve/ITricryptoPool.sol";
 import "../../../contracts/interfaces/external/curve/ICurveCryptoSwapPool.sol";
 
