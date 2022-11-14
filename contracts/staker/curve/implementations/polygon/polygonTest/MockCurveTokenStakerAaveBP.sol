@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.12;
 
-import "../../interfaces/ILiquidityGauge.sol";
+import "../../../../../interfaces/ILiquidityGauge.sol";
+import "../../../../BorrowStaker.sol";
 
-import "../BorrowStaker.sol";
-
-/// @title SanTokenStaker
+/// @title MockCurveTokenStakerAaveBP
 /// @author Angle Labs, Inc
-/// @dev Borrow staker adapted to sanToken deposited on the liquidity gauge associated
-abstract contract SanTokenStaker is BorrowStaker {
-    /// @notice Angle-related constants
-    IERC20 private constant _ANGLE = IERC20(0x31429d1856aD1377A8A0079410B297e1a9e214c2);
+/// @dev Implements CurveTokenStaker for the Aave BP pool (amDAI - amUSDC - amUSDT)
+contract MockCurveTokenStakerAaveBP is BorrowStaker {
+    IERC20 private constant _FAKE_REWARD = IERC20(0x02Cb0586F9252626e992B2C6c1B792d9751f2Ede);
 
     // ============================= INTERNAL FUNCTIONS ============================
 
@@ -36,17 +34,17 @@ abstract contract SanTokenStaker is BorrowStaker {
     /// @inheritdoc BorrowStaker
     /// @dev Should be overriden by the implementation if there are more rewards
     function _claimRewards() internal virtual override {
-        uint256 prevBalanceAngle = _ANGLE.balanceOf(address(this));
+        uint256 prevBalanceCRV = _FAKE_REWARD.balanceOf(address(this));
         liquidityGauge().claim_rewards(address(this), address(0));
-        uint256 angleRewards = _ANGLE.balanceOf(address(this)) - prevBalanceAngle;
+        uint256 crvRewards = _FAKE_REWARD.balanceOf(address(this)) - prevBalanceCRV;
         // Do the same thing for additional rewards
-        _updateRewards(_ANGLE, angleRewards);
+        _updateRewards(_FAKE_REWARD, crvRewards);
     }
 
     /// @inheritdoc BorrowStaker
     function _getRewards() internal pure override returns (IERC20[] memory rewards) {
         rewards = new IERC20[](1);
-        rewards[0] = _ANGLE;
+        rewards[0] = _FAKE_REWARD;
         return rewards;
     }
 
@@ -55,8 +53,11 @@ abstract contract SanTokenStaker is BorrowStaker {
         amount = liquidityGauge().claimable_reward(address(this), address(rewardToken));
     }
 
-    // ============================= VIRTUAL FUNCTIONS =============================
+    function asset() public pure override returns (IERC20) {
+        return IERC20(0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171);
+    }
 
-    /// @notice Address of the liquidity gauge contract on which to deposit the tokens to get the rewards
-    function liquidityGauge() public view virtual returns (ILiquidityGauge);
+    function liquidityGauge() public pure returns (ILiquidityGauge) {
+        return ILiquidityGauge(0x0f9F2B056Eb2Cc1661fD078F60793F8B0951BDf1);
+    }
 }

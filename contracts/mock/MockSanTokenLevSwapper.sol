@@ -3,7 +3,7 @@ pragma solidity 0.8.12;
 
 import "../swapper/LevSwapper/angle/implementations/mainnet/SanUSDCEURLevSwapper.sol";
 
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Template leverage swapper on sanTokens
 contract MockSanTokenLevSwapper is SanUSDCEURLevSwapper {
     IBorrowStaker internal _angleStaker;

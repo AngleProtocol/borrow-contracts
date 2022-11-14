@@ -10,7 +10,7 @@ import "../interfaces/ICoreBorrow.sol";
 import { IVaultManagerListing } from "../interfaces/IVaultManager.sol";
 
 /// @title BaseStorage
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @dev Variables, references, parameters and events needed in the `BorrowStaker` contract
 contract BorrowStakerStorage is Initializable {
     /// @notice Base used for parameter computation

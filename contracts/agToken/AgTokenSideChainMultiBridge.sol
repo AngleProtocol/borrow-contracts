@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title AgTokenSideChainMultiBridge
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Contract for Angle agTokens on other chains than Ethereum mainnet
 /// @dev This contract supports bridge tokens having a minting right on the stablecoin (also referred to as the canonical
 /// or the native token)

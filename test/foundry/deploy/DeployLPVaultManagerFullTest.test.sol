@@ -6,18 +6,18 @@ import { console } from "forge-std/console.sol";
 import "../../../contracts/interfaces/IOracle.sol";
 import "../../../contracts/treasury/Treasury.sol";
 import "../../../contracts/vaultManager/vaultManager.sol";
-import { OracleCrvUSDBTCETHEUR } from "../../../contracts/oracle/implementations/polygon/OracleCrvUSDBTCETH_EUR.sol";
+import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBP_EUR.sol";
 import { IAngleRouterSidechain } from "../../../contracts/interfaces/IAngleRouterSidechain.sol";
 import { IUniswapV3Router } from "../../../contracts/interfaces/external/uniswap/IUniswapRouter.sol";
 import { MockCurveLevSwapperTricrypto3 } from "../../../contracts/swapper/LevSwapper/curve/implementations/polygon/polygonTest/MockCurveLevSwapperTricrypto3.sol";
-import { MockCurveTokenTricrypto3Staker } from "../../../contracts/staker/curve/implementations/polygon/polygonTest/MockCurveTokenTricrypto3Staker.sol";
+import { MockCurveTokenStakerAaveBP } from "../../../contracts/staker/curve/implementations/polygon/polygonTest/MockCurveTokenStakerAaveBP.sol";
 import "../../../scripts/foundry/polygon/PolygonConstants.s.sol";
 
 contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
     address internal constant _alice = address(uint160(uint256(keccak256(abi.encodePacked("_alice")))));
 
     // TODO to be changed at deployment depending on the vaultManager
-    string public constant SYMBOL = "crvUSDBTCETH-EUR";
+    string public constant SYMBOL = "am3CRV-EUR";
     uint256 public constant DEBT_CEILING = 1_000 ether;
     uint64 public constant CF = (7 * BASE_PARAMS) / 10;
     uint64 public constant THF = (11 * BASE_PARAMS) / 10;
@@ -32,7 +32,7 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
 
     VaultManager public vaultManagerImplementation;
     VaultManager public vaultManager;
-    MockCurveTokenTricrypto3Staker public staker;
+    MockCurveTokenStakerAaveBP public staker;
 
     error ZeroAdress();
 
@@ -54,9 +54,9 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
         });
 
         vm.startPrank(_alice);
-        IOracle oracle = new OracleCrvUSDBTCETHEUR(STALE_PERIOD, address(AGEUR_TREASURY));
+        IOracle oracle = new OracleAaveUSDBPEUR(STALE_PERIOD, address(AGEUR_TREASURY));
 
-        console.log("Successfully deployed Oracle tricrypto3 at the address: ", address(oracle));
+        console.log("Successfully deployed Oracle Curve AaveBP at the address: ", address(oracle));
 
         vaultManagerImplementation = new VaultManager(0, 0);
 
@@ -65,8 +65,8 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
             address(vaultManagerImplementation)
         );
 
-        MockCurveTokenTricrypto3Staker stakerImplementation = new MockCurveTokenTricrypto3Staker();
-        staker = MockCurveTokenTricrypto3Staker(
+        MockCurveTokenStakerAaveBP stakerImplementation = new MockCurveTokenStakerAaveBP();
+        staker = MockCurveTokenStakerAaveBP(
             deployUpgradeable(
                 address(stakerImplementation),
                 abi.encodeWithSelector(stakerImplementation.initialize.selector, CORE_BORROW)
@@ -74,10 +74,10 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
         );
 
         console.log(
-            "Successfully deployed staker tricrypto implementation at the address: ",
+            "Successfully deployed staker Curve AaveBP implementation at the address: ",
             address(stakerImplementation)
         );
-        console.log("Successfully deployed staker tricrypto proxy at the address: ", address(staker));
+        console.log("Successfully deployed staker Curve AaveBP proxy at the address: ", address(staker));
 
         if (
             address(vaultManagerImplementation) == address(0) ||
@@ -116,14 +116,14 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
         Treasury(AGEUR_TREASURY).addVaultManager(address(vaultManager));
         vm.stopPrank();
 
-        assertEq(staker.name(), "Angle Curve USD-BTC-ETH Staker");
-        assertEq(staker.symbol(), "agstk-crvUSDBTCETH");
+        assertEq(staker.name(), "Angle Curve.fi amDAI/amUSDC/amUSDT Staker");
+        assertEq(staker.symbol(), "agstk-am3CRV");
         assertEq(staker.decimals(), 18);
 
         // these depends on the staker and swapper deployed
-        // assertEq(address(staker.liquidityGauge()), 0xCD04f35105c2E696984c512Af3CB37f2b3F354b0);
+        assertEq(address(staker.liquidityGauge()), 0x0f9F2B056Eb2Cc1661fD078F60793F8B0951BDf1);
 
-        // assertEq(address(swapper.angleStaker()), address(staker));
-        // assertEq(address(vaultManager.collateral()), address(staker));
+        assertEq(address(swapper.angleStaker()), address(staker));
+        assertEq(address(vaultManager.collateral()), address(staker));
     }
 }

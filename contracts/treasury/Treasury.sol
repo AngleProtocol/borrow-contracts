@@ -13,7 +13,7 @@ import "../interfaces/ITreasury.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title Treasury
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Treasury of Angle Borrowing Module doing the accounting across all VaultManagers for
 /// a given stablecoin
 contract Treasury is ITreasury, Initializable {

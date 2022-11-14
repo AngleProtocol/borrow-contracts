@@ -11,10 +11,10 @@ contract CurveTokenStakerAaveBP is CurveTokenStaker {
 
     /// @inheritdoc BorrowStaker
     function asset() public pure override returns (IERC20) {
-        return IERC20(0xBa3436Fd341F2C8A928452Db3C5A3670d1d5Cc73);
+        return IERC20(0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171);
     }
 
     function liquidityGauge() public pure override returns (ILiquidityGauge) {
-        return ILiquidityGauge(0x20759F567BB3EcDB55c817c9a1d13076aB215EdC);
+        return ILiquidityGauge(address(0));
     }
 }

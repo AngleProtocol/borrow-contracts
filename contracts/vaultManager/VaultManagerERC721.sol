@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "./VaultManagerStorage.sol";
 
 /// @title VaultManagerERC721
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @dev Base ERC721 Implementation of VaultManager
 abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManagerStorage {
     using SafeERC20 for IERC20;

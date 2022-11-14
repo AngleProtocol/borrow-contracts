@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "./VaultManager.sol";
 
 /// @title VaultManagerLiquidationBoost
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Liquidation discount depending also on the liquidator veANGLE balance
 contract VaultManagerLiquidationBoost is VaultManager {
     using SafeERC20 for IERC20;

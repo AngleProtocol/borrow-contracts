@@ -13,7 +13,7 @@ enum CurveRemovalType {
 }
 
 /// @title CurveLevSwapper2Tokens
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @dev Leverage swapper on Curve LP tokens
 /// @dev This implementation is for Curve pools with 2 tokens
 abstract contract CurveLevSwapper3Tokens is BaseLevSwapper {

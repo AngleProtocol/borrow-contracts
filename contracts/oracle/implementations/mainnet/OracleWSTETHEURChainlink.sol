@@ -8,7 +8,7 @@ import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/lido/IStETH.sol";
 
 /// @title OracleWSTETHEURChainlink
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Gives the price of wSTETH in Euro in base 18
 contract OracleWSTETHEURChainlink is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "wSTETH/EUR Oracle";

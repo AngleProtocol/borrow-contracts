@@ -5,7 +5,7 @@ import "../BaseLevSwapper.sol";
 import "../../../interfaces/coreModule/IStableMaster.sol";
 
 /// @title SanTokenLevSwapper
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @dev Leverage Swapper on SanTokens
 abstract contract SanTokenLevSwapper is BaseLevSwapper {
     using SafeERC20 for IERC20;

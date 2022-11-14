@@ -8,7 +8,7 @@ import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/curve/ICurveOracle.sol";
 
 /// @title OracleTriCrypto2EURChainlink
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Gives the price of Curve TriCrypto2 in Euro in base 18
 contract OracleTriCrypto2EURChainlink is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "tricrypto2/EUR Oracle";

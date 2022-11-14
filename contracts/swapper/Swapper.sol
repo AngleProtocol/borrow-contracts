@@ -12,7 +12,7 @@ import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
 /// @title Swapper
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
 contract Swapper is ISwapper {
     using SafeERC20 for IERC20;
