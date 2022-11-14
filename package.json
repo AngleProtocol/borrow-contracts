@@ -8,7 +8,7 @@
     "check-upgradeability": "hardhat run scripts/upgradeability.ts",
     "coverage": "hardhat coverage",
     "coverage:foundry": "forge coverage --report lcov",
-    "deploy": "hardhat deploy --tags merkleRewardManager --network",
+    "deploy": "hardhat deploy --network",
     "etherscan": "hardhat etherscan-verify --network",
     "sources": "hardhat deploy --tags LayerZeroSources --network",
     "license": "hardhat prepend-spdx-license",
@@ -48,7 +48,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "1.1.2",
+    "@angleprotocol/sdk": "1.1.19",
     "@chainlink/contracts": "0.2.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "3.1.0",

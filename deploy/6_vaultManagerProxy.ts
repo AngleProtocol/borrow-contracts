@@ -16,7 +16,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
 
   let proxyAdminAddress: string;
-  const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
+  const implementation = (await ethers.getContract('VaultManagerNoDust_Implementation')).address;
   const treasuryAddress = (await ethers.getContract('Treasury')).address;
   const json = await import('./networks/' + network.name + '.json');
   const vaultsList = json.vaultsList;
@@ -43,6 +43,9 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
       console.log('Now deploying the Proxy for:', name);
       console.log(`The params for this vaultManager are:`);
+      console.log(`collateral: ${vaultManagerParams.collateral}`);
+      console.log(`oracle address: ${oracle}`);
+      console.log(`symbol: ${vaultManagerParams.symbol}`);
       console.log(`debtCeiling: ${vaultManagerParams.params.debtCeiling.toString()}`);
       console.log(`collateralFactor: ${vaultManagerParams.params.collateralFactor.toString()}`);
       console.log(`targetHealthFactor: ${vaultManagerParams.params.targetHealthFactor.toString()}`);
@@ -65,7 +68,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         vaultManagerParams.params,
         vaultManagerParams.symbol,
       ]);
-
       // await deployProxy(name, implementation, proxyAdminAddress, callData);
       await deploy(name, {
         contract: 'TransparentUpgradeableProxy',
@@ -85,5 +87,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['vaultManagerProxy'];
-func.dependencies = ['vaultManagerImplementation'];
+// func.dependencies = ['vaultManagerImplementation'];
 export default func;
