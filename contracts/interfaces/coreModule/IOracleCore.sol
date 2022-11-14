@@ -3,7 +3,7 @@
 pragma solidity ^0.8.12;
 
 /// @title IOracleCore
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 interface IOracleCore {
     function readUpper() external view returns (uint256);
 

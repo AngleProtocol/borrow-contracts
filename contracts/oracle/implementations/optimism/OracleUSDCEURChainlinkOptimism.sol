@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleUSDCEURChainlinkOptimism
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of USDC in Euro in base 18
 /// @dev This contract is built to be deployed on Optimism
 contract OracleUSDCEURChainlinkOptimism is BaseOracleChainlinkMulti {

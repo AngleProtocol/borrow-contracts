@@ -4,7 +4,7 @@ pragma solidity 0.8.12;
 import "../../CurveLevSwapper3Tokens.sol";
 
 /// @title CurveLevSwapperAavePool
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Implement a leverage swapper to gain/reduce exposure to the Aave BP (amUSDC - amUSDT - amDAI) Curve LP token
 contract CurveLevSwapperAaveBP is CurveLevSwapper3Tokens {
     constructor(

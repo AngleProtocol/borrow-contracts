@@ -4,7 +4,7 @@ pragma solidity 0.8.12;
 import "./CurveLevSwapper2Tokens.sol";
 import "../../../interfaces/external/curve/IMetaPool2.sol";
 
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Template leverage swapper on Curve LP tokens
 /// @dev This implementation is for Curve pools with 2 tokens
 contract CurveLevSwapper2TokensTemplate is CurveLevSwapper2Tokens {

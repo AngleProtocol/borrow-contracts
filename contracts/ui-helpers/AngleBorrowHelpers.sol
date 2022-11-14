@@ -6,7 +6,7 @@ import "../interfaces/IVaultManager.sol";
 pragma solidity 0.8.12;
 
 /// @title AngleBorrowHelpers
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Contract with view functions designed to facilitate integrations on the Borrow module of the Angle Protocol
 /// @dev This contract only contains view functions to be queried off-chain. It was thus not optimized for gas consumption
 contract AngleBorrowHelpers is Initializable {

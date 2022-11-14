@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
- * @dev Implementation of the {IERC20} interface modified by Angle Labs, Inc
+ * @dev Implementation of the {IERC20} interface modified by Angle Labs, Inc.
  *
  * This implementation has a custom burn function to avoid having a {Transfer} event to the zero address
  * in some specific burn cases to avoid having Polygon PoS bridge catching this event

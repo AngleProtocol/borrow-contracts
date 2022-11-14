@@ -5,7 +5,7 @@ import "../swapper/LevSwapper/BaseLevSwapper.sol";
 import { MockBorrowStaker } from "./MockBorrowStaker.sol";
 
 /// @title MockBaseLevSwapper
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 contract MockBaseLevSwapper is BaseLevSwapper {
     IBorrowStaker internal _staker;
     IERC20 internal _asset;

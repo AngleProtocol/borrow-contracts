@@ -6,7 +6,7 @@ import "../../interfaces/ILiquidityGauge.sol";
 import "../BorrowStaker.sol";
 
 /// @title SanTokenStaker
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @dev Borrow staker adapted to sanToken deposited on the liquidity gauge associated
 abstract contract SanTokenStaker is BorrowStaker {
     /// @notice Angle-related constants

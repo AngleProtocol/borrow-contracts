@@ -3,7 +3,7 @@ pragma solidity 0.8.12;
 
 import "./SanTokenLevSwapper.sol";
 
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Template leverage swapper on sanTokens
 contract SanTokenLevSwapperTemplate is SanTokenLevSwapper {
     constructor(

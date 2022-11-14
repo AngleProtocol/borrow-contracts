@@ -6,7 +6,7 @@ import { IBorrowStakerCheckpoint } from "../interfaces/IBorrowStaker.sol";
 import "./VaultManager.sol";
 
 /// @title VaultManagerListing
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Provides an additional viewer to `VaultManager` to get the full collateral deposited
 /// by an owner
 contract VaultManagerListing is VaultManager {

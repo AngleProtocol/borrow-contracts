@@ -3,7 +3,7 @@
 pragma solidity ^0.8.12;
 
 /// @title IPerpetualManager
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 interface IPerpetualManager {
     function totalHedgeAmount() external view returns (uint256);
 

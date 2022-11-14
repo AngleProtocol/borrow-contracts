@@ -9,7 +9,7 @@ import "./BaseReactor.sol";
 /// @title EulerReactor
 /// @notice Reactor to mint agEUR and deposit them on Euler Finance (https://www.euler.finance/)
 /// @notice Euler markets only work with token with decimal <= 18
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 contract EulerReactor is BaseReactor {
     using SafeERC20 for IERC20;
 

@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "../MerkleRewardManager.sol";
 
 /// @title MerkleRewardManagerPolygon
-/// @author Angle Labs, Inc.
+/// @author Angle Labs, Inc..
 /// @notice Polygon implementation of the MerkleRewardManager contract
 contract MerkleRewardManagerPolygon is MerkleRewardManager {
     /// @inheritdoc MerkleRewardManager

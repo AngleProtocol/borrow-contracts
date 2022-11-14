@@ -9,7 +9,7 @@ import "../../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
 import "../../../interfaces/ITreasury.sol";
 
 /// @title NonblockingLzApp
-/// @author Angle Labs, Inc, forked from https://github.com/LayerZero-Labs/solidity-examples/
+/// @author Angle Labs, Inc., forked from https://github.com/LayerZero-Labs/solidity-examples/
 /// @notice Base contract for bridging using LayerZero
 abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     /// @notice Layer Zero endpoint

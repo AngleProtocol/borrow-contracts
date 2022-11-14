@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "../MerkleRewardManager.sol";
 
 /// @title MerkleRewardManagerEthereum
-/// @author Angle Labs, Inc.
+/// @author Angle Labs, Inc..
 /// @notice Ethereum implementation of the MerkleRewardManager contract
 contract MerkleRewardManagerEthereum is MerkleRewardManager {
     /// @inheritdoc MerkleRewardManager

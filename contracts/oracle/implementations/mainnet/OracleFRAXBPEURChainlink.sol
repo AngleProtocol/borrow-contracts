@@ -8,7 +8,7 @@ import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/curve/ICurveCryptoSwapPool.sol";
 
 /// @title OracleFRAXBPEURChainlink
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Gives a lower bound of the price of Curve FRAXBP in Euro in base 18
 contract OracleFRAXBPEURChainlink is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "FRAXBP/EUR Oracle";

@@ -4,7 +4,7 @@ pragma solidity 0.8.12;
 import "../../ConvexTokenStaker.sol";
 
 /// @title ConvexTokenStaker
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @dev Implementation of `ConvexTokenStaker` for the agEUR-EUROC pool
 contract ConvexTokenAgEURvEUROCStaker is ConvexTokenStaker {
     // ============================= VIRTUAL FUNCTIONS =============================

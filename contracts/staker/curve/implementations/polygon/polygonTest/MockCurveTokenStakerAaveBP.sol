@@ -5,7 +5,7 @@ import "../../../../../interfaces/ILiquidityGauge.sol";
 import "../../../../BorrowStaker.sol";
 
 /// @title MockCurveTokenStakerAaveBP
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @dev Implements CurveTokenStaker for the Aave BP pool (amDAI - amUSDC - amUSDT)
 contract MockCurveTokenStakerAaveBP is BorrowStaker {
     IERC20 private constant _FAKE_REWARD = IERC20(0x02Cb0586F9252626e992B2C6c1B792d9751f2Ede);

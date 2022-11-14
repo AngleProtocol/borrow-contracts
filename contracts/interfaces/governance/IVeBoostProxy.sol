@@ -3,7 +3,7 @@
 pragma solidity 0.8.12;
 
 /// @title IVeBoostProxy
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VeBoostProxy` contract
 /// @dev This interface only contains functions of the contract which are called by other contracts
 /// of this module

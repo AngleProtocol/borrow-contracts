@@ -5,7 +5,7 @@ import "../../../../../interfaces/ILiquidityGauge.sol";
 import "../../../../BorrowStaker.sol";
 
 /// @title CurveTokenTricrypto3Staker
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @dev Implements CurveTokenStaker for the Tricrypto pool (amUSD - amWBTC - amWETH)
 contract MockCurveTokenTricrypto3Staker is BorrowStaker {
     /// @notice Curve-related constants

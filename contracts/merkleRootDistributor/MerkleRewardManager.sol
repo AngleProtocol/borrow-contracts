@@ -50,7 +50,7 @@ struct RewardDistribution {
 }
 
 /// @title MerkleRewardManager
-/// @author Angle Labs, Inc.
+/// @author Angle Labs, Inc..
 /// @notice Manages the distribution of rewards across different UniswapV3 pools
 /// @dev This contract is mostly a helper for APIs getting built on top and helping in Angle
 /// UniswapV3 incentivization scheme

@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleUSDCEURChainlinkPolygon
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of USDC in Euro in base 18
 /// @dev This contract is built to be deployed on Polygon
 contract OracleUSDCEURChainlinkPolygon is BaseOracleChainlinkMulti {

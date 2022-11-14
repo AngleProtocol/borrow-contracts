@@ -11,7 +11,7 @@ import "../interfaces/IKeeperRegistry.sol";
 
 /// @title KeeperRegistry
 /// @notice Maintains a mapping of keepers authorized to use the core module just after oracle updates
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 contract KeeperRegistry is Initializable, IKeeperRegistry {
     using SafeERC20 for IERC20;
 

@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "../swapper/SwapperSidechain.sol";
 
 /// @title MockSwapperSidechain
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 contract MockSwapperSidechain is SwapperSidechain {
     error NotImplemented();
 

@@ -9,7 +9,7 @@ import "../../../interfaces/external/curve/ITricryptoPool.sol";
 import "../../../interfaces/external/curve/ICurveCryptoSwapPool.sol";
 
 /// @title OracleCrvUSDBTCETH_EUR
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of Curve TriCrypto2 in Euro in base 18
 contract OracleCrvUSDBTCETHEUR is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "crvUSDBTCETH/EUR Oracle";
