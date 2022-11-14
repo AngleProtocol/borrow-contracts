@@ -38,6 +38,6 @@ contract CurveLevSwapperAaveBP is CurveLevSwapper3Tokens {
 
     /// @inheritdoc CurveLevSwapper3Tokens
     function lpToken() public pure override returns (IERC20) {
-        return IERC20(0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC);
+        return IERC20(0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171);
     }
 }
