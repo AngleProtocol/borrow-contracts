@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleETHEURChainlinkArbitrum
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of ETH in Euro in base 18
 /// @dev This contract is built to be deployed on Arbitrum
 contract OracleETHEURChainlinkArbitrum is BaseOracleChainlinkMulti {

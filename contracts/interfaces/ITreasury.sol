@@ -7,7 +7,7 @@ import "./ICoreBorrow.sol";
 import "./IFlashAngle.sol";
 
 /// @title ITreasury
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `Treasury` contract
 /// @dev This interface only contains functions of the `Treasury` which are called by other contracts
 /// of this module

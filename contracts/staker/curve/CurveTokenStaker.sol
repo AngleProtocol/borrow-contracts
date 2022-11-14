@@ -6,7 +6,7 @@ import "../../interfaces/ILiquidityGauge.sol";
 import "../BorrowStaker.sol";
 
 /// @title CurveTokenStaker
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @dev Borrow staker adapted to curve LP token deposited on the liquidity gauge associated
 abstract contract CurveTokenStaker is BorrowStaker {
     /// @notice Curve-related constants

@@ -15,7 +15,7 @@ import "../interfaces/IFlashAngle.sol";
 import "../interfaces/ITreasury.sol";
 
 /// @title FlashAngle
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Contract to take flash loans on top of several AgToken contracts
 contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;

@@ -32,7 +32,7 @@ struct PermitType {
 }
 
 /// @title IAngleRouterSidechain
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `AngleRouter` contract on other chains
 interface IAngleRouterSidechain {
     function mixer(

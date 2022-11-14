@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /// @title IAgToken
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the stablecoins `AgToken` contracts
 /// @dev This interface only contains functions of the `AgToken` contract which are called by other contracts
 /// of this module or of the first module of the Angle Protocol

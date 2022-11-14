@@ -13,7 +13,7 @@ enum CurveRemovalType {
 }
 
 /// @title CurveLevSwapper3TokensWithBP
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @dev Leverage swapper on Curve LP tokens
 /// @dev This implementation is for Curve pools with 3 tokens and 1 token is a Curve (3 token) LP token
 /// @dev The implementation suppose that the LP `basepool` token is at index 0

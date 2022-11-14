@@ -10,7 +10,7 @@ import "../interfaces/ICoreBorrow.sol";
 import { IVaultManagerListing } from "../interfaces/IVaultManager.sol";
 
 /// @title MockBorrowStaker
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 contract MockBorrowStakerImplem is ERC20 {
     using SafeERC20 for IERC20;
 

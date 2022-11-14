@@ -6,7 +6,7 @@ import { IBorrowStakerCheckpoint } from "../interfaces/IBorrowStaker.sol";
 import "./VaultManager.sol";
 
 /// @title VaultManagerListing
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Provides an additional viewer to `VaultManager` to get the full collateral deposited
 /// by an owner
 contract VaultManagerListing is VaultManager {
@@ -17,6 +17,8 @@ contract VaultManagerListing is VaultManager {
 
     // @notice Mapping from owner address to all his vaults
     mapping(address => uint256[]) internal _ownerListVaults;
+
+    uint256[49] private __gapListing;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint256 dust_, uint256 dustCollateral_) VaultManager(dust_, dustCollateral_) {}

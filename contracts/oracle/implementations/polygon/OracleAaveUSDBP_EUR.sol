@@ -8,7 +8,7 @@ import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/curve/ICurveCryptoSwapPool.sol";
 
 /// @title OracleAaveUSDBP_EUR
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of Curve USD Aave BP in Euro in base 18
 contract OracleAaveUSDBPEUR is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "am3CRV/EUR Oracle";

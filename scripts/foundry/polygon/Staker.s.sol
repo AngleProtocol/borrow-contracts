@@ -6,7 +6,7 @@ import { console } from "forge-std/console.sol";
 import { MockCurveTokenStakerAaveBP } from "../../../contracts/staker/curve/implementations/polygon/polygonTest/MockCurveTokenStakerAaveBP.sol";
 import "./PolygonConstants.s.sol";
 
-contract DeploySwapper is Script, PolygonConstants {
+contract DeployStaker is Script, PolygonConstants {
     function run() external {
         uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 2);
         vm.rememberKey(deployerPrivateKey);

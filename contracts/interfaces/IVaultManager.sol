@@ -93,7 +93,7 @@ enum ActionType {
 // ========================= Interfaces =============================
 
 /// @title IVaultManagerFunctions
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VaultManager` contract
 /// @dev This interface only contains functions of the contract which are called by other contracts
 /// of this module (without getters)
@@ -196,7 +196,7 @@ interface IVaultManagerFunctions {
 }
 
 /// @title IVaultManagerStorage
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VaultManager` contract
 /// @dev This interface contains getters of the contract's public variables used by other contracts
 /// of this module
@@ -242,14 +242,14 @@ interface IVaultManagerStorage {
 }
 
 /// @title IVaultManager
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VaultManager` contract
 interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721Metadata {
     function isApprovedOrOwner(address spender, uint256 vaultID) external view returns (bool);
 }
 
 /// @title IVaultManagerListing
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VaultManagerListing` contract
 interface IVaultManagerListing is IVaultManager {
     /// @notice Get the collateral owned by `user` in the contract

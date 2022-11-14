@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./BaseOracleChainlinkMulti.sol";
 
 /// @title OracleChainlinkMultiTemplate
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Oracle contract, one contract is deployed per collateral/stablecoin pair
 /// @dev This contract concerns an oracle that uses Chainlink with multiple pools to read from
 /// @dev This is a template and a more gas-efficient implementation of the `OracleChainlinkMulti` contract

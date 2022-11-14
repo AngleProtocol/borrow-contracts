@@ -23,7 +23,7 @@ enum SwapType {
 }
 
 /// @title SwapperSidechain
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
 abstract contract SwapperSidechain is ISwapper {
     using SafeERC20 for IERC20;

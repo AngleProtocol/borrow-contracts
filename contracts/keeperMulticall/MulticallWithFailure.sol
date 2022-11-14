@@ -2,7 +2,7 @@
 pragma solidity 0.8.12;
 
 /// @title MultiCallWithFailure
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Multicall contract allowing subcalls to fail without reverting the entire call
 contract MultiCallWithFailure {
     error SubcallFailed();

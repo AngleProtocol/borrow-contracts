@@ -10,7 +10,7 @@ import "../../interfaces/external/convex/IConvexToken.sol";
 import "../BorrowStaker.sol";
 
 /// @title ConvexTokenStaker
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @dev Borrow staker adapted to Curve LP tokens deposited on Convex
 abstract contract ConvexTokenStaker is BorrowStaker {
     /// @notice Convex-related constants

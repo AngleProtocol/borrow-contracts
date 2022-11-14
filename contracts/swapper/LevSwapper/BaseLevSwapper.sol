@@ -12,7 +12,7 @@ import "../../interfaces/external/uniswap/IUniswapRouter.sol";
 import "../SwapperSidechain.sol";
 
 /// @title BaseLevSwapper
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Swapper contract facilitating interactions with a `VaultManager` - liquidation, leverage, wrapping and unwrapping
 abstract contract BaseLevSwapper is SwapperSidechain {
     using SafeERC20 for IERC20;

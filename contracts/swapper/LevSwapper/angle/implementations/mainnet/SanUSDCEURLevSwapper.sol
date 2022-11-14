@@ -3,7 +3,7 @@ pragma solidity 0.8.12;
 
 import "../../SanTokenLevSwapper.sol";
 
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Implement a leverage swapper to gain/reduce exposure to the sanUSDCEUR on Angle mainnet
 contract SanUSDCEURLevSwapper is SanTokenLevSwapper {
     constructor(

@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleLUSDEURChainlink
-/// @author Angle Labs, Inc
+/// @author Angle Labs, Inc.
 /// @notice Gives the price of LUSD in Euro in base 18
 contract OracleLUSDEURChainlink is BaseOracleChainlinkMulti {
     uint256 public constant OUTBASE = 10**18;
