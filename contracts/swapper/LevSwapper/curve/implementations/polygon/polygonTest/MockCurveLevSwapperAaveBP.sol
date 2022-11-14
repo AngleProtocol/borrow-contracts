@@ -17,6 +17,6 @@ contract MockCurveLevSwapperAaveBP is CurveLevSwapperAaveBP {
 
     /// @inheritdoc BaseLevSwapper
     function angleStaker() public pure override returns (IBorrowStaker) {
-        return IBorrowStaker(address(0));
+        return IBorrowStaker(0x583EE5b0b2999679d1DdE7aa178B225ad57c481b);
     }
 }

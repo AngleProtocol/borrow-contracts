@@ -283,11 +283,11 @@ contract MockBorrowStakerImplem is ERC20 {
     }
 
     /// @notice Adds the contract claimed rewards to the distributed rewards
-    /// @param rewardToken Reward token that must be updated
+    /// @param _rewardToken Reward token that must be updated
     /// @param amount Amount to add to the claimable rewards
-    function _updateRewards(IERC20 rewardToken, uint256 amount) internal {
+    function _updateRewards(IERC20 _rewardToken, uint256 amount) internal {
         uint256 _totalSupply = totalSupply();
-        if (_totalSupply > 0) integral[rewardToken] += (amount * BASE_PARAMS) / _totalSupply;
+        if (_totalSupply > 0) integral[_rewardToken] += (amount * BASE_PARAMS) / _totalSupply;
     }
 
     /// @notice Changes allowance of this contract for a given token
