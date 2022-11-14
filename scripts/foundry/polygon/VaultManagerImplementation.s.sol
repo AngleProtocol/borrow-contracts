@@ -5,11 +5,11 @@ import "forge-std/Script.sol";
 import "../../../contracts/vaultManager/vaultManager.sol";
 import "./PolygonConstants.s.sol";
 
-contract DeployVaultManager is Script, PolygonConstants {
+contract DeployVaultManagerImplementation is Script, PolygonConstants {
     VaultManager public vaultManagerImplementation;
 
     function run() external {
-        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 0);
+        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 2);
         vm.startBroadcast(deployerPrivateKey);
 
         vaultManagerImplementation = new VaultManager(0, 0);

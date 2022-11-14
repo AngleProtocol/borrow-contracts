@@ -8,7 +8,7 @@ import "./PolygonConstants.s.sol";
 
 contract DeployVaultManager is Script, PolygonConstants {
     // TODO to be changed at deployment depending on the vaultManager
-    VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(address(0));
+    VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(0x0850bC07F8AeAd6bbC1F1cCb5506B6D5f78BE74d);
     IOracle public constant ORACLE = IOracle(0x2e9e48b515bC6D0128B7022A5d868137f0173bF6);
     // the staker address
     IERC20 public constant COLLATERAL = IERC20(0x583EE5b0b2999679d1DdE7aa178B225ad57c481b);
@@ -41,7 +41,7 @@ contract DeployVaultManager is Script, PolygonConstants {
             baseBoost: BASE_BOOST
         });
 
-        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 0);
+        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 2);
         vm.startBroadcast(deployerPrivateKey);
 
         if (

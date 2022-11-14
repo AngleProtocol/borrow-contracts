@@ -121,9 +121,8 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
         assertEq(staker.decimals(), 18);
 
         // these depends on the staker and swapper deployed
-        assertEq(address(staker.liquidityGauge()), 0x0f9F2B056Eb2Cc1661fD078F60793F8B0951BDf1);
-
-        assertEq(address(swapper.angleStaker()), address(staker));
-        assertEq(address(vaultManager.collateral()), address(staker));
+        // assertEq(address(staker.liquidityGauge()), 0x0f9F2B056Eb2Cc1661fD078F60793F8B0951BDf1);
+        // assertEq(address(swapper.angleStaker()), address(staker));
+        // assertEq(address(vaultManager.collateral()), address(staker));
     }
 }
