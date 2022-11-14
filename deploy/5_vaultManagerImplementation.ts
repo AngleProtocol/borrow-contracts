@@ -1,20 +1,16 @@
-import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 const argv = yargs.env('').boolean('ci').parseSync();
 
-const func: DeployFunction = async ({ deployments, ethers, network }) => {
+const func: DeployFunction = async ({ deployments, ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const json = await import('./networks/' + network.name + '.json');
-  const dust = json.dust;
 
   console.log('Now deploying the implementation for VaultManager');
-  console.log(`Dust for this collateral is going to be ${dust}`);
   await deploy('VaultManager_Implementation', {
     contract: 'VaultManagerLiquidationBoost',
     from: deployer.address,
-    args: [parseEther(dust), parseEther(dust)],
+    args: [0, 0],
     log: !argv.ci,
   });
 

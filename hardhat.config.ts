@@ -133,14 +133,16 @@ const config: HardhatUserConfig = {
       hardfork: 'london',
       forking: {
         enabled: argv.fork || false,
+        /*
         // Mainnet
         url: nodeUrl('fork'),
         blockNumber: 15868074,
-        // Polygon
-        /*
-        url: nodeUrl('forkpolygon'),
-        blockNumber: 31505333,
         */
+        // Polygon
+
+        url: nodeUrl('forkpolygon'),
+        blockNumber: 35592019,
+
         // Optimism
         /*
         url: nodeUrl('optimism'),
