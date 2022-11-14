@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "../BaseTest.test.sol";
 import { SafeERC20 } from "../../../contracts/mock/MockTokenPermit.sol";
 import { OracleCrvUSDBTCETHEUR, IOracle } from "../../../contracts/oracle/implementations/polygon/OracleCrvUSDBTCETH_EUR.sol";
+import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBP_EUR.sol";
 import "../../../contracts/interfaces/external/curve/ITricryptoPool.sol";
 import "../../../contracts/interfaces/external/curve/ICurveCryptoSwapPool.sol";
 
@@ -15,7 +16,8 @@ contract OracleTest is BaseTest {
     using stdStorage for StdStorage;
     using SafeERC20 for IERC20;
 
-    IOracle public oracle;
+    IOracle public oracleTriCrypto;
+    IOracle public oracleAaveBp;
     ITreasury public TREASURY = ITreasury(0x2F2e0ba9746aae15888cf234c4EB5B301710927e);
     ITricryptoPool public constant TRI_CRYPTO_POOL = ITricryptoPool(0x92215849c439E1f8612b6646060B4E3E5ef822cC);
     IERC20 public constant TRI_CRYPTO_LP = IERC20(0xdAD97F7713Ae9437fa9249920eC8507e5FbB23d3);
@@ -25,14 +27,16 @@ contract OracleTest is BaseTest {
 
     uint256 public constant BTC_PRICE = 18_500;
     uint256 public constant ETH_PRICE = 1300;
-    uint256 public constant EUR_PRICE = 1;
+    uint256 public constant EUR_PRICE = 10000;
+    uint256 internal constant _BPS = 10000;
 
     function setUp() public override {
         super.setUp();
         _polygon = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"), 35388701);
         vm.selectFork(_polygon);
 
-        oracle = new OracleCrvUSDBTCETHEUR(STALE_PERIOD, address(TREASURY));
+        oracleTriCrypto = new OracleCrvUSDBTCETHEUR(STALE_PERIOD, address(TREASURY));
+        oracleAaveBp = new OracleAaveUSDBPEUR(STALE_PERIOD, address(TREASURY));
     }
 
     // ================================== READ ==================================
@@ -46,8 +50,8 @@ contract OracleTest is BaseTest {
                 (uint256(1267) * uint256(6950798106072563439294)) /
                 10**18);
             uint256 truePrice = (usdTotal * 10**18) / 29396520412868861416651;
-            console.log("api usd total ", usdTotal);
-            console.log("api price ", truePrice);
+            // console.log("api usd total ", usdTotal);
+            // console.log("api price ", truePrice);
         }
         uint256 lpAaveBPGrossPrice;
         {
@@ -57,7 +61,7 @@ contract OracleTest is BaseTest {
             uint256 totSupplyAaveBP = AAVE_BP_LP.totalSupply();
             lpAaveBPGrossPrice = ((daiAmount + usdcAmount * 10**12 + usdtAmount * 10**12) * 10**18) / totSupplyAaveBP;
 
-            console.log("lpAaveBPGrossPrice ", lpAaveBPGrossPrice);
+            // console.log("lpAaveBPGrossPrice ", lpAaveBPGrossPrice);
         }
 
         uint256 lpTriGrossPrice;
@@ -67,25 +71,47 @@ contract OracleTest is BaseTest {
             uint256 ethAmount = ICurvePoolBalance(address(TRI_CRYPTO_POOL)).balances(2);
             uint256 totSupplyTri = TRI_CRYPTO_LP.totalSupply();
             lpTriGrossPrice =
-                (((lpAaveBPAmount * lpAaveBPGrossPrice) /
-                    10**18 +
-                    wbtcAmount *
-                    BTC_PRICE *
-                    10**10 +
-                    ethAmount *
-                    ETH_PRICE) * 10**18) /
+                (_BPS *
+                    (((lpAaveBPAmount * lpAaveBPGrossPrice) /
+                        10**18 +
+                        wbtcAmount *
+                        BTC_PRICE *
+                        10**10 +
+                        ethAmount *
+                        ETH_PRICE) * 10**18)) /
                 totSupplyTri /
                 EUR_PRICE;
 
-            console.log("estimated usd total ", (lpTriGrossPrice * totSupplyTri * EUR_PRICE) / 10**36);
-            console.log("total supply ", totSupplyTri / 10**18);
+            // console.log("estimated usd total ", (lpTriGrossPrice * totSupplyTri * EUR_PRICE) / 10**36);
+            // console.log("total supply ", totSupplyTri / 10**18);
         }
 
-        console.log("lpTriGrossPrice ", lpTriGrossPrice);
+        // console.log("lpTriGrossPrice ", lpTriGrossPrice);
 
-        uint256 lpPriceInEUR = oracle.read();
-        console.log("lpPriceInEUR ", lpPriceInEUR);
+        uint256 lpPriceInEUR = oracleTriCrypto.read();
+        // console.log("lpPriceInEUR ", lpPriceInEUR);
 
         // assertEq(lpPriceInEUR, lpTriGrossPrice);
+    }
+
+    function testReadAaveUSDBPPool() public {
+        uint256 lpAaveBPGrossPrice;
+        {
+            uint256 daiAmount = ICurvePoolBalance(address(AaveBP)).balances(0);
+            uint256 usdcAmount = ICurvePoolBalance(address(AaveBP)).balances(1);
+            uint256 usdtAmount = ICurvePoolBalance(address(AaveBP)).balances(2);
+            uint256 totSupplyAaveBP = AAVE_BP_LP.totalSupply();
+            lpAaveBPGrossPrice = ((daiAmount + usdcAmount * 10**12 + usdtAmount * 10**12) * 10**18) / totSupplyAaveBP;
+
+            console.log("lp gross price in USD:", lpAaveBPGrossPrice);
+        }
+
+        lpAaveBPGrossPrice = (lpAaveBPGrossPrice * _BPS) / EUR_PRICE;
+        console.log("lp gross price in EUR ", lpAaveBPGrossPrice);
+
+        uint256 lpPriceInEUR = oracleAaveBp.read();
+        console.log("our lowerbound lpPriceInEUR ", lpPriceInEUR);
+
+        // assertGe(lpAaveBPGrossPrice, lpPriceInEUR);
     }
 }
