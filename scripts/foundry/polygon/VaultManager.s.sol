@@ -3,12 +3,13 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import "../../../contracts/interfaces/IOracle.sol";
-import "../../../contracts/vaultManager/vaultManager.sol";
+import { IERC20, VaultParameters, VaultManagerListing } from "../../../contracts/vaultManager/VaultManagerListing.sol";
 import "./PolygonConstants.s.sol";
 
 contract DeployVaultManager is Script, PolygonConstants {
     // TODO to be changed at deployment depending on the vaultManager
-    VaultManager public constant VAULT_MANAGER_IMPL = VaultManager(0x0850bC07F8AeAd6bbC1F1cCb5506B6D5f78BE74d);
+    VaultManagerListing public constant VAULT_MANAGER_IMPL =
+        VaultManagerListing(0x3B01Fb6B9ce15d6b03d851E9a89F07Ea399871ab);
     IOracle public constant ORACLE = IOracle(0x2e9e48b515bC6D0128B7022A5d868137f0173bF6);
     // the staker address
     IERC20 public constant COLLATERAL = IERC20(0x583EE5b0b2999679d1DdE7aa178B225ad57c481b);
@@ -25,7 +26,7 @@ contract DeployVaultManager is Script, PolygonConstants {
     bool public constant WHITELISTING_ACTIVATED = false;
     uint256 public constant BASE_BOOST = (4 * BASE_PARAMS) / 10;
 
-    VaultManager public vaultManager;
+    VaultManagerListing public vaultManager;
 
     error ZeroAdress();
 
@@ -50,7 +51,7 @@ contract DeployVaultManager is Script, PolygonConstants {
             address(COLLATERAL) == address(0)
         ) revert ZeroAdress();
 
-        vaultManager = VaultManager(
+        vaultManager = VaultManagerListing(
             deployUpgradeable(
                 address(VAULT_MANAGER_IMPL),
                 abi.encodeWithSelector(

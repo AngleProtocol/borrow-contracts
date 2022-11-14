@@ -5,7 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 import "../../../contracts/interfaces/IOracle.sol";
 import "../../../contracts/treasury/Treasury.sol";
-import "../../../contracts/vaultManager/vaultManager.sol";
+import { VaultManagerListing } from "../../../contracts/vaultManager/VaultManagerListing.sol";
 import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBP_EUR.sol";
 import { IAngleRouterSidechain } from "../../../contracts/interfaces/IAngleRouterSidechain.sol";
 import { IUniswapV3Router } from "../../../contracts/interfaces/external/uniswap/IUniswapRouter.sol";
@@ -30,8 +30,8 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
     uint256 public constant BASE_BOOST = (4 * BASE_PARAMS) / 10;
     uint32 public constant STALE_PERIOD = 3600 * 24;
 
-    VaultManager public vaultManagerImplementation;
-    VaultManager public vaultManager;
+    VaultManagerListing public vaultManagerImplementation;
+    VaultManagerListing public vaultManager;
     MockCurveTokenStakerAaveBP public staker;
 
     error ZeroAdress();
@@ -58,7 +58,7 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
 
         console.log("Successfully deployed Oracle Curve AaveBP at the address: ", address(oracle));
 
-        vaultManagerImplementation = new VaultManager(0, 0);
+        vaultManagerImplementation = new VaultManagerListing(0, 0);
 
         console.log(
             "Successfully deployed vaultManagerImplementation at the address: ",
@@ -85,7 +85,7 @@ contract DeployLPVaultManagerFullTest is Test, PolygonConstants {
             address(staker) == address(0)
         ) revert ZeroAdress();
 
-        vaultManager = VaultManager(
+        vaultManager = VaultManagerListing(
             deployUpgradeable(
                 address(vaultManagerImplementation),
                 abi.encodeWithSelector(

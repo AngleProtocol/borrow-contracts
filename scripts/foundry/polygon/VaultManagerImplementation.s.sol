@@ -2,17 +2,17 @@
 pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
-import "../../../contracts/vaultManager/vaultManager.sol";
+import { VaultManagerListing } from "../../../contracts/vaultManager/VaultManagerListing.sol";
 import "./PolygonConstants.s.sol";
 
 contract DeployVaultManagerImplementation is Script, PolygonConstants {
-    VaultManager public vaultManagerImplementation;
+    VaultManagerListing public vaultManagerImplementation;
 
     function run() external {
         uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_POLYGON"), 2);
         vm.startBroadcast(deployerPrivateKey);
 
-        vaultManagerImplementation = new VaultManager(0, 0);
+        vaultManagerImplementation = new VaultManagerListing(0, 0);
 
         console.log(
             "Successfully deployed vaultManagerImplementation at the address: ",
