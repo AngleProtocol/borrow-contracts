@@ -3,7 +3,7 @@
 pragma solidity 0.8.12;
 
 /// @title IStETH
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Interface for the `StETH` contract
 /// @dev This interface only contains functions of the `StETH` which are called by other contracts
 /// of this module

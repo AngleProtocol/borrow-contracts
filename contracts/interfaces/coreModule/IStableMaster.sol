@@ -65,7 +65,7 @@ struct SLPData {
 }
 
 /// @title IStableMaster
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 interface IStableMaster {
     function agToken() external view returns (address);
 

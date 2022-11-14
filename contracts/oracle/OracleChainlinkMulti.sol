@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./BaseOracleChainlinkMulti.sol";
 
 /// @title OracleChainlinkMulti
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Oracle contract, one contract is deployed per collateral/stablecoin pair
 /// @dev This contract concerns an oracle that uses Chainlink with multiple pools to read from
 /// @dev Typically we expect to use this contract to read like the ETH/USD and then USD/EUR feed

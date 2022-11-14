@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "../vaultManager/VaultManagerPermit.sol";
 
 /// @title VaultManager
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice This contract allows people to deposit collateral and open up loans of a given AgToken. It handles all the loan
 /// logic (fees and interest rate) as well as the liquidation logic
 /// @dev This implementation only supports non-rebasing ERC20 tokens as collateral

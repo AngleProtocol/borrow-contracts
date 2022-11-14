@@ -4,7 +4,7 @@ pragma solidity 0.8.12;
 import "../CurveLevSwapperTricrypto3.sol";
 
 /// @title CurveLevSwapperFRAXBP
-/// @author Angle Core Team
+/// @author Angle Lasb, Inc
 /// @notice Implement a leverage swapper to gain/reduce exposure to the Polygon tricrypto2 Curve LP token
 /// with a moke staker
 contract MockCurveLevSwapperTricrypto3 is CurveLevSwapperTricrypto3 {

@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "./BaseAgTokenSideChain.sol";
 
 /// @title AgTokenSideChain
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Implementation for Angle agTokens to be deployed on other chains than Ethereum mainnet without
 /// supporting bridging and swapping in and out
 contract AgTokenSideChain is BaseAgTokenSideChain {

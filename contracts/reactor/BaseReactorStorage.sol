@@ -12,7 +12,7 @@ import "../interfaces/external/IERC4626.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title BaseReactorStorage
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @dev Variables, references, parameters and events needed in the `BaseReactor` contract
 // solhint-disable-next-line max-states-count
 contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {

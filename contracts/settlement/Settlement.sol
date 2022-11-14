@@ -11,7 +11,7 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title Settlement
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Settlement Contract for a VaultManager
 /// @dev This settlement contract should be activated by a careful governance which needs to have performed
 /// some key operations before activating this contract

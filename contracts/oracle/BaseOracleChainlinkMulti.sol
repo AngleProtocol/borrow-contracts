@@ -8,7 +8,7 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/ITreasury.sol";
 
 /// @title BaseOracleChainlinkMulti
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Base Contract to be overriden by all contracts of the protocol
 /// @dev This base contract concerns an oracle that uses Chainlink with multiple pools to read from
 /// @dev All gas-efficient implementation of the `OracleChainlinkMulti` contract should inherit from this

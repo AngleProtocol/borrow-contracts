@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleETHEURChainlinkAvalanche
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Gives the price of ETH in Euro in base 18
 /// @dev This contract is built to be deployed on Avalanche
 contract OracleETHEURChainlinkAvalanche is BaseOracleChainlinkMulti {

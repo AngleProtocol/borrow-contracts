@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "./BorrowStakerStorage.sol";
 
 /// @title BorrowStaker
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @dev Staking contract keeping track of user rewards and minting a wrapper token
 /// that can be hassle free on any other protocol without loosing the rewards
 /// @dev If Angle is to accept a Curve LP token accruing CRV rewards, what is to be a collateral on the Borrowing module

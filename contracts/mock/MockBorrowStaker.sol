@@ -5,7 +5,7 @@ pragma solidity 0.8.12;
 import "../staker/BorrowStaker.sol";
 
 /// @title MockBorrowStaker
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 contract MockBorrowStaker is BorrowStaker {
     using SafeERC20 for IERC20;
 
@@ -72,7 +72,7 @@ contract MockBorrowStaker is BorrowStaker {
 }
 
 /// @title MockBorrowStakerReset
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 contract MockBorrowStakerReset is MockBorrowStaker {
     /// @inheritdoc BorrowStaker
     /// @dev Reset to 0 when rewards are claimed

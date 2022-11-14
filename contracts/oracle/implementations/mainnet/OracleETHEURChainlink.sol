@@ -7,7 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 
 /// @title OracleETHEURChainlink
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Gives the price of ETH in Euro in base 18
 contract OracleETHEURChainlink is BaseOracleChainlinkMulti {
     uint256 public constant OUTBASE = 10**18;

@@ -3,7 +3,7 @@
 pragma solidity ^0.8.12;
 
 /// @title IAngleRouter
-/// @author Angle Core Team
+/// @author Angle Labs, Inc
 /// @notice Interface for the `AngleRouter` contract
 /// @dev This interface only contains functions of the `AngleRouter01` contract which are called by other contracts
 /// of this module
