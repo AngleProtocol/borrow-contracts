@@ -6,7 +6,7 @@ import { console } from "forge-std/console.sol";
 import "../../../contracts/interfaces/IOracle.sol";
 import "../../../contracts/treasury/Treasury.sol";
 import { VaultManagerListing } from "../../../contracts/vaultManager/VaultManagerListing.sol";
-import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBP_EUR.sol";
+import { OracleAaveUSDBPEUR } from "../../../contracts/oracle/implementations/polygon/OracleAaveUSDBPEUR.sol";
 import { IAngleRouterSidechain } from "../../../contracts/interfaces/IAngleRouterSidechain.sol";
 import { IUniswapV3Router } from "../../../contracts/interfaces/external/uniswap/IUniswapRouter.sol";
 import { MockCurveLevSwapperAaveBP } from "../../../contracts/swapper/LevSwapper/curve/implementations/polygon/polygonTest/MockCurveLevSwapperAaveBP.sol";

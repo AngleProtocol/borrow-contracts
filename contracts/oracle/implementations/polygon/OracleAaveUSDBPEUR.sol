@@ -7,11 +7,12 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "../../BaseOracleChainlinkMulti.sol";
 import "../../../interfaces/external/curve/ICurveCryptoSwapPool.sol";
 
-/// @title OracleAaveUSDBP_EUR
+/// @title OracleAaveUSDBPEUR
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of Curve USD Aave BP in Euro in base 18
 contract OracleAaveUSDBPEUR is BaseOracleChainlinkMulti {
     string public constant DESCRIPTION = "am3CRV/EUR Oracle";
+    //solhint-disable-next-line
     ICurveCryptoSwapPool public constant AaveUSDBP = ICurveCryptoSwapPool(0x445FE580eF8d70FF569aB36e80c647af338db351);
 
     /// @notice Constructor of the contract
