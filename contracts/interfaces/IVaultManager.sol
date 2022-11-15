@@ -193,6 +193,9 @@ interface IVaultManagerFunctions {
         VaultParameters calldata params,
         string memory _symbol
     ) external;
+
+    /// @notice Minimum amount of debt a vault can have, expressed in `BASE_TOKENS` that is to say the base of the agTokens
+    function dust() external view returns (uint256);
 }
 
 /// @title IVaultManagerStorage
@@ -201,9 +204,6 @@ interface IVaultManagerFunctions {
 /// @dev This interface contains getters of the contract's public variables used by other contracts
 /// of this module
 interface IVaultManagerStorage {
-    /// @notice Minimum amount of debt a vault can have, expressed in `BASE_TOKENS` that is to say the base of the agTokens
-    function dust() external view returns (uint256);
-
     /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     function collateralFactor() external view returns (uint64);

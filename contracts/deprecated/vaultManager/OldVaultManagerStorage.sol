@@ -13,18 +13,18 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../interfaces/IAgToken.sol";
-import "../interfaces/IOracle.sol";
-import "../interfaces/ISwapper.sol";
-import "../interfaces/ITreasury.sol";
-import "../interfaces/IVaultManager.sol";
-import "../interfaces/governance/IVeBoostProxy.sol";
+import "../../interfaces/IAgToken.sol";
+import "../../interfaces/IOracle.sol";
+import "../../interfaces/ISwapper.sol";
+import "../../interfaces/ITreasury.sol";
+import "../../interfaces/IVaultManager.sol";
+import "../../interfaces/governance/IVeBoostProxy.sol";
 
 /// @title VaultManagerStorage
 /// @author Angle Labs, Inc.
 /// @dev Variables, references, parameters and events needed in the `VaultManager` contract
 // solhint-disable-next-line max-states-count
-contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
+contract OldVaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Base used for parameter computation: almost all the parameters of this contract are set in `BASE_PARAMS`
     uint256 public constant BASE_PARAMS = 10**9;
     /// @notice Base used for interest rate computation
@@ -50,6 +50,10 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     // ================================= PARAMETERS ================================
     // Unless specified otherwise, parameters of this contract are expressed in `BASE_PARAMS`
 
+    uint256 public immutable dust;
+    /// @notice Minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
+    ///  in a vault during a liquidation where the health factor function is decreasing
+    uint256 internal immutable _dustCollateral;
     /// @notice Maximum amount of stablecoins that can be issued with this contract (in `BASE_TOKENS`). This parameter should
     /// not be bigger than `type(uint256).max / BASE_INTEREST` otherwise there may be some overflows in the `increaseDebt` function
     uint256 public debtCeiling;
@@ -163,6 +167,12 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     error TooSmallParameterValue();
     error ZeroAddress();
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
+    /// @param _dust Minimum amount of debt a vault from this implementation can have
+    /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
+    /// where the health factor function is decreasing
+    /// @dev Run only at the implementation level
+    constructor(uint256 _dust, uint256 dustCollateral_) initializer {
+        dust = _dust;
+        _dustCollateral = dustCollateral_;
+    }
 }

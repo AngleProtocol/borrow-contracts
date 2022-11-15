@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.12;
 
-import "../vaultManager/VaultManagerPermit.sol";
+import "./OldVaultManagerPermit.sol";
 
 /// @title VaultManager
 /// @author Angle Labs, Inc.
@@ -10,11 +10,10 @@ import "../vaultManager/VaultManagerPermit.sol";
 /// logic (fees and interest rate) as well as the liquidation logic
 /// @dev This implementation only supports non-rebasing ERC20 tokens as collateral
 /// @dev This contract is encoded as a NFT contract
-contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
+contract OldVaultManager is OldVaultManagerPermit {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    /// @inheritdoc IVaultManagerFunctions
     function initialize(
         ITreasury _treasury,
         IERC20 _collateral,
@@ -57,7 +56,7 @@ contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(uint256 dust_, uint256 dustCollateral_) VaultManagerStorage(dust_, dustCollateral_) {}
+    constructor(uint256 dust_, uint256 dustCollateral_) OldVaultManagerStorage(dust_, dustCollateral_) {}
 
     // ============================== Modifiers ====================================
 
@@ -89,12 +88,10 @@ contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     // ========================= External Access Functions =========================
 
-    /// @inheritdoc IVaultManagerFunctions
     function createVault(address toVault) external whenNotPaused returns (uint256) {
         return _mint(toVault);
     }
 
-    /// @inheritdoc IVaultManagerFunctions
     function angle(
         ActionType[] memory actions,
         bytes[] memory datas,
@@ -104,7 +101,6 @@ contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return angle(actions, datas, from, to, address(0), new bytes(0));
     }
 
-    /// @inheritdoc IVaultManagerFunctions
     function angle(
         ActionType[] memory actions,
         bytes[] memory datas,
@@ -262,7 +258,6 @@ contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
         }
     }
 
-    /// @inheritdoc IVaultManagerFunctions
     function getDebtOut(
         uint256 vaultID,
         uint256 stablecoinAmount,
@@ -294,12 +289,10 @@ contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     // ============================= View Functions ================================
 
-    /// @inheritdoc IVaultManagerFunctions
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
         return (vaultData[vaultID].normalizedDebt * _calculateCurrentInterestAccumulator()) / BASE_INTEREST;
     }
 
-    /// @inheritdoc IVaultManagerFunctions
     function getTotalDebt() external view returns (uint256) {
         return (totalNormalizedDebt * _calculateCurrentInterestAccumulator()) / BASE_INTEREST;
     }
@@ -577,7 +570,6 @@ contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     // =================== Treasury Relationship Functions =========================
 
-    /// @inheritdoc IVaultManagerFunctions
     function accrueInterestToTreasury() external onlyTreasury returns (uint256 surplusValue, uint256 badDebtValue) {
         _accrue();
         surplusValue = surplus;
@@ -914,7 +906,6 @@ contract OldVaultManager is VaultManagerPermit, IVaultManagerFunctions {
         oracle = IOracle(_oracle);
     }
 
-    /// @inheritdoc IVaultManagerFunctions
     function setTreasury(address _treasury) external onlyTreasury {
         treasury = ITreasury(_treasury);
         // This function makes sure to propagate the change to the associated contract
