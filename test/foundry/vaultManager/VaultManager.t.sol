@@ -47,7 +47,7 @@ contract VaultManagerTest is Test {
         _oracle = new MockOracle(5 ether, _contractTreasury);
         _collateral = new MockToken("Name", "SYM", 18);
 
-        _contractVaultManager = new VaultManager(10, 10);
+        _contractVaultManager = new VaultManager();
         vm.store(address(_contractVaultManager), bytes32(uint256(0)), bytes32(uint256(0)));
 
         VaultParameters memory params = VaultParameters({
