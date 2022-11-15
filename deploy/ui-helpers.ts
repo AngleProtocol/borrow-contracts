@@ -18,16 +18,16 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log('Now deploying the AngleHelpers contract');
   console.log('Starting with the implementation');
-  const angleHelpersImplementation = await deploy('AngleHelpers_Implementation', {
-    contract: 'AngleHelpers',
+  const angleHelpersImplementation = await deploy('AngleHelpers_Polygon_Implementation', {
+    contract: 'AngleBorrowHelpers',
     from: deployer.address,
   });
 
-  console.log(`Successfully deployed the implementation for AngleHelpers at ${angleHelpersImplementation.address}\n`);
+  console.log(`Successfully deployed the Polygon implementation for AngleBorrowHelpers at ${angleHelpersImplementation.address}\n`);
 
   console.log('Now deploying the Proxy');
   console.log(`Proxy admin: ${proxyAdmin}`);
-  const angleHelpers = await deploy('AngleHelpers', {
+  const angleHelpers = await deploy('AngleBorrowHelpers', {
     contract: 'TransparentUpgradeableProxy',
     from: deployer.address,
     args: [angleHelpersImplementation.address, proxyAdmin, '0x'],
