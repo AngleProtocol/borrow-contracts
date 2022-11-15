@@ -9,6 +9,7 @@
     "coverage": "hardhat coverage",
     "coverage:foundry": "forge coverage --report lcov",
     "deploy": "hardhat deploy --network",
+    "deploy:router:polygon": "hardhat deploy --network polygon --tags angleHelpers",
     "etherscan": "hardhat etherscan-verify --network",
     "foundry:deploy:mainnet": "forge script --rpc-url mainnet --broadcast --verify -vvvv",
     "foundry:deploy:polygon": "forge script --rpc-url polygon --broadcast --verify -vvvv",
