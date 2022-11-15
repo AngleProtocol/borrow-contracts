@@ -79,8 +79,6 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
 
     vaultManager = (await deployUpgradeable(
       new VaultManagerLiquidationBoost__factory(deployer),
-      0.1e9,
-      0.1e9,
     )) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(

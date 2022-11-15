@@ -10,7 +10,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   await deploy('VaultManagerNoDust_Implementation', {
     contract: 'VaultManagerLiquidationBoost',
     from: deployer.address,
-    args: [0, 0],
+    args: [],
     log: !argv.ci,
   });
 

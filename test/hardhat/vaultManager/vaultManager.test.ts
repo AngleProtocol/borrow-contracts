@@ -113,8 +113,6 @@ contract('VaultManagerLiquidationBoost', () => {
 
     vaultManager = (await deployUpgradeable(
       new VaultManagerLiquidationBoost__factory(deployer),
-      0.1e9,
-      0.1e9,
     )) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
@@ -1179,8 +1177,6 @@ contract('VaultManagerLiquidationBoost', () => {
       await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
       vaultManager = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        0.1e9,
-        0.1e9,
       )) as VaultManagerLiquidationBoost;
       treasury = await new MockTreasury__factory(deployer).deploy(
         agToken.address,
@@ -2273,8 +2269,6 @@ contract('VaultManagerLiquidationBoost', () => {
     beforeEach(async () => {
       vaultManager = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        parseEther('0.5'),
-        parseEther('0.5'),
       )) as VaultManagerLiquidationBoost;
 
       await treasury.addMinter(agToken.address, vaultManager.address);
@@ -2301,8 +2295,6 @@ contract('VaultManagerLiquidationBoost', () => {
     it('success - max amount to repay is changed because of dust', async () => {
       vaultManager = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        parseEther('0.5'),
-        parseEther('0.5'),
       )) as VaultManagerLiquidationBoost;
 
       await treasury.addMinter(agToken.address, vaultManager.address);

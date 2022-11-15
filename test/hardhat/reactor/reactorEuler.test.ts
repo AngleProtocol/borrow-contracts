@@ -91,8 +91,6 @@ contract('ReactorEuler', () => {
 
     vaultManager = (await deployUpgradeable(
       new VaultManagerLiquidationBoost__factory(deployer),
-      0.1e15,
-      0.1e15,
     )) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
