@@ -86,8 +86,6 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
 
     vaultManager = (await deployUpgradeable(
       new VaultManagerLiquidationBoost__factory(deployer),
-      0.1e9,
-      0.1e9,
     )) as VaultManagerLiquidationBoost;
     helpers = (await deployUpgradeable(new AngleHelpers__factory(deployer))) as AngleHelpers;
 

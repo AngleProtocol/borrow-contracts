@@ -94,7 +94,7 @@ contract('VaultManager - Dust Modification interactions', () => {
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
 
-    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer), 0.1e9, 0.1e9)) as VaultManager;
+    vaultManager = (await deployUpgradeable(new VaultManager__factory(deployer))) as VaultManager;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -133,7 +133,7 @@ contract('VaultManager - Dust Modification interactions', () => {
     });
     it('success - when governor is calling', async () => {
       await vaultManager.connect(governor).setDusts(1, 1);
-      expect(await vaultManager.dustOverride()).to.be.equal(1);
+      expect(await vaultManager.dust()).to.be.equal(1);
     });
   });
   describe('repayDebt - when dust has increased', () => {

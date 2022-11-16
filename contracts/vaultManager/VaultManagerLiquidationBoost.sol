@@ -11,11 +11,6 @@ contract VaultManagerLiquidationBoost is VaultManager {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    // ================================== STORAGE ==================================
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(uint256 dust_, uint256 dustCollateral_) VaultManager(dust_, dustCollateral_) {}
-
     // =================================== SETTER ==================================
 
     /// @inheritdoc VaultManager

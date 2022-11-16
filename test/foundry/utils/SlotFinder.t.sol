@@ -11,7 +11,7 @@ contract SlotFinder is Test {
     VaultManager internal _contractVaultManager;
 
     function setUp() public virtual {
-        _contractVaultManager = new VaultManager(10, 10);
+        _contractVaultManager = new VaultManager();
     }
 
     function testFindSlot() public {

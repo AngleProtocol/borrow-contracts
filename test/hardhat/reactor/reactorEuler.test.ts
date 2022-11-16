@@ -91,8 +91,6 @@ contract('ReactorEuler', () => {
 
     vaultManager = (await deployUpgradeable(
       new VaultManagerLiquidationBoost__factory(deployer),
-      0.1e15,
-      0.1e15,
     )) as VaultManagerLiquidationBoost;
 
     treasury = await new MockTreasury__factory(deployer).deploy(
@@ -358,15 +356,6 @@ contract('ReactorEuler', () => {
       await reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address);
       expect(await agEUR.balanceOf(alice.address)).to.be.equal(balanceAgEUR);
       expect(await ANGLE.balanceOf(alice.address)).to.be.equal(sharesAmount);
-    });
-    it('reverts - non null interest rate VaultManager and no profits', async () => {
-      await ANGLE.connect(alice).mint(alice.address, sharesAmount);
-      await ANGLE.connect(alice).approve(reactor.address, sharesAmount);
-      await reactor.connect(alice).mint(sharesAmount, alice.address);
-      expect(await reactor.maxWithdraw(alice.address)).to.be.equal(sharesAmount.sub(1));
-      await expect(
-        reactor.connect(alice).withdraw(await reactor.maxWithdraw(alice.address), alice.address, alice.address),
-      ).to.be.revertedWith('ERC20: burn amount exceeds balance');
     });
     it('success - overall profit', async () => {
       const balanceAgEUR = await agEUR.balanceOf(alice.address);
