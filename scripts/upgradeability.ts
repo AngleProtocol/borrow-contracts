@@ -21,16 +21,15 @@ const testStorage = async (name: string, file: string, nameUpgrade: string, file
   );
   console.log('Upgrade Testing');
   console.log(baseContract.getStorageUpgradeReport(upgradeContract).explain());
-  console.log('');
+  console.log('Done');
 };
 
 async function main() {
   // Uncomment to check all valid build names
   // console.log((await artifacts.getAllFullyQualifiedNames()));
 
+  testUpgradeability('VaultManagerLiquidationBoost', 'contracts/vaultManager/VaultManagerLiquidationBoost.sol');
   testUpgradeability('OldVaultManager', 'contracts/deprecated/OldVaultManager.sol');
-  testUpgradeability('VaultManagerLiquidationBoost', 'contracts/vaultmanager/VaultManagerLiquidationBoost.sol');
-
   testUpgradeability('OldAngleHelpers', 'contracts/deprecated/OldAngleHelpers.sol');
   testUpgradeability('AngleHelpers', 'contracts/ui-helpers/AngleHelpers.sol');
 
@@ -38,14 +37,7 @@ async function main() {
     'OldVaultManager',
     'contracts/deprecated/OldVaultManager.sol',
     'VaultManagerLiquidationBoost',
-    'contracts/vaultmanager/VaultManagerLiquidationBoost.sol',
-  );
-
-  testStorage(
-    'OldAngleHelpers',
-    'contracts/deprecated/OldAngleHelpers.sol',
-    'AngleHelpers',
-    'contracts/ui-helpers/AngleHelpers.sol'
+    'contracts/vaultManager/VaultManagerLiquidationBoost.sol',
   );
 }
 

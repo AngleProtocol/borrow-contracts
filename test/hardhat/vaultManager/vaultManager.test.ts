@@ -862,8 +862,6 @@ contract('VaultManagerLiquidationBoost', () => {
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        0.1e9,
-        0.1e9,
       )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
@@ -899,8 +897,6 @@ contract('VaultManagerLiquidationBoost', () => {
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        0.1e9,
-        0.1e9,
       )) as VaultManagerLiquidationBoost;
 
       // 0 borrow fees in this case, which means 10% fees will be paid
@@ -1020,8 +1016,6 @@ contract('VaultManagerLiquidationBoost', () => {
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        0.1e9,
-        0.1e9,
       )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
@@ -1063,8 +1057,6 @@ contract('VaultManagerLiquidationBoost', () => {
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        0.1e9,
-        0.1e9,
       )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
@@ -1106,8 +1098,6 @@ contract('VaultManagerLiquidationBoost', () => {
       expect((await vaultManager.vaultData(1)).collateralAmount).to.be.equal(collatAmount);
       const vaultManager2 = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        0.1e9,
-        0.1e9,
       )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(guardian).togglePause();
@@ -1149,8 +1139,6 @@ contract('VaultManagerLiquidationBoost', () => {
       ]);
       const vaultManager2 = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
-        0.1e9,
-        0.1e9,
       )) as VaultManagerLiquidationBoost;
       await vaultManager2.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC - 2/agEUR');
       await vaultManager2.connect(governor).togglePause();
