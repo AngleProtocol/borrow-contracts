@@ -15,19 +15,20 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
   }
+  console.log('deployer ', deployer.address);
 
   console.log('Now deploying the AngleHelpers contract');
   console.log('Starting with the implementation');
-  const angleHelpersImplementation = await deploy('AngleHelpers_Polygon_Implementation', {
+  const angleHelpersImplementation = await deploy('AngleHelpers_Arbitrum_Implementation', {
     contract: 'AngleBorrowHelpers',
     from: deployer.address,
   });
 
-  console.log(`Successfully deployed the Polygon implementation for AngleBorrowHelpers at ${angleHelpersImplementation.address}\n`);
+  console.log(`Successfully deployed the Arbitrum implementation for AngleBorrowHelpers at ${angleHelpersImplementation.address}\n`);
 
   console.log('Now deploying the Proxy');
   console.log(`Proxy admin: ${proxyAdmin}`);
-  const angleHelpers = await deploy('AngleBorrowHelpers', {
+  const angleHelpers = await deploy('AngleBorrowHelpersArbitrum', {
     contract: 'TransparentUpgradeableProxy',
     from: deployer.address,
     args: [angleHelpersImplementation.address, proxyAdmin, '0x'],
