@@ -127,7 +127,7 @@ abstract contract MerkleRewardManager is Initializable {
     /// @return List of all the reward amounts actually deposited for each `reward` in the `rewards` list
     function depositRewards(RewardDistribution[] memory rewards) external returns (uint256[] memory) {
         uint256[] memory rewardAmounts = new uint256[](rewards.length);
-        for (uint256 i = 0; i < rewards.length; ) {
+        for (uint256 i; i < rewards.length; ) {
             rewardAmounts[i] = _depositReward(rewards[i]);
             unchecked {
                 ++i;
@@ -232,7 +232,7 @@ abstract contract MerkleRewardManager is Initializable {
 
     /// @notice Recovers fees accrued on the contract for a list of `tokens`
     function recoverFees(IERC20[] memory tokens, address to) external onlyGovernorOrGuardian {
-        for (uint256 i = 0; i < tokens.length; ) {
+        for (uint256 i; i < tokens.length; ) {
             uint256 amount = tokens[i].balanceOf(address(this));
             tokens[i].safeTransfer(to, amount);
             unchecked {

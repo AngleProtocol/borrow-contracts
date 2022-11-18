@@ -218,7 +218,7 @@ contract Settlement {
         bytes memory data
     ) internal returns (uint256, uint256) {
         collateral.safeTransfer(to, collateralAmountToGive);
-        if (data.length > 0) {
+        if (data.length != 0) {
             ISwapper(who).swap(
                 collateral,
                 IERC20(address(stablecoin)),

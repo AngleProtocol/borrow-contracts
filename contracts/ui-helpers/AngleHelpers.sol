@@ -104,7 +104,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         addresses.oracle = address(oracle);
         addresses.feeManager = IPoolManager(poolManager).feeManager();
 
-        uint256 length = 0;
+        uint256 length;
         while (true) {
             try IPoolManager(poolManager).strategyList(length) returns (address) {
                 length += 1;
@@ -113,7 +113,7 @@ contract AngleHelpers is AngleBorrowHelpers {
             }
         }
         address[] memory strategies = new address[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             strategies[i] = IPoolManager(poolManager).strategyList(i);
         }
         addresses.strategies = strategies;
@@ -126,7 +126,7 @@ contract AngleHelpers is AngleBorrowHelpers {
     function getStablecoinAddresses() external view returns (address[] memory, address[] memory) {
         address[] memory stableMasterAddresses = CORE.stablecoinList();
         address[] memory agTokenAddresses = new address[](stableMasterAddresses.length);
-        for (uint256 i = 0; i < stableMasterAddresses.length; ++i) {
+        for (uint256 i; i < stableMasterAddresses.length; ++i) {
             agTokenAddresses[i] = IStableMaster(stableMasterAddresses[i]).agToken();
         }
         return (stableMasterAddresses, agTokenAddresses);
@@ -164,7 +164,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         params.perpFeeData.haBonusMalusDeposit = perpetualManager.haBonusMalusDeposit();
         params.perpFeeData.haBonusMalusWithdraw = perpetualManager.haBonusMalusWithdraw();
 
-        uint256 length = 0;
+        uint256 length;
         while (true) {
             try perpetualManager.xHAFeesDeposit(length) returns (uint64) {
                 length += 1;
@@ -174,7 +174,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         }
         uint64[] memory data = new uint64[](length);
         uint64[] memory data2 = new uint64[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesDeposit(i);
             data2[i] = perpetualManager.yHAFeesDeposit(i);
         }
@@ -191,7 +191,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         }
         data = new uint64[](length);
         data2 = new uint64[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesWithdraw(i);
             data2[i] = perpetualManager.yHAFeesWithdraw(i);
         }

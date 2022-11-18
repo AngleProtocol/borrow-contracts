@@ -71,7 +71,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         _transfer(msg.sender, address(this), amount);
         amountMinted = canonicalToken.swapIn(address(this), amount, recipient);
         uint256 leftover = balanceOf(address(this));
-        if (leftover > 0) {
+        if (leftover != 0) {
             _transfer(address(this), msg.sender, leftover);
         }
     }
@@ -111,7 +111,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         _mint(address(this), _amount);
         amountMinted = canonicalToken.swapIn(address(this), _amount, _toAddress);
         uint256 leftover = balanceOf(address(this));
-        if (leftover > 0) {
+        if (leftover != 0) {
             _transfer(address(this), _toAddress, leftover);
         }
     }

@@ -377,7 +377,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             datas[len] = abi.encodePacked(vaultID, toWithdraw - looseAssets);
         }
 
-        if (toRepay > 0) {
+        if (toRepay != 0) {
             toRepay = toRepay == type(uint256).max ? debt : toRepay;
             _pull(toRepay);
         }
@@ -392,7 +392,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         );
 
         // VaultManagers always round to their advantages + there can be a borrow fee taken
-        if (toBorrow > 0) {
+        if (toBorrow != 0) {
             lastDebt += paymentData.stablecoinAmountToGive;
             // If there is a borrow fee, then it will be seen as a loss at the next rebalance
             _push(paymentData.stablecoinAmountToGive);

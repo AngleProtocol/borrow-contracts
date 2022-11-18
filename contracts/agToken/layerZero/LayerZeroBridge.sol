@@ -81,7 +81,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         address from,
         address to
     ) internal whenNotPaused returns (uint256) {
-        balanceOf[from] = balanceOf[from] - amount; // Will overflow if the amount is too big
+        balanceOf[from] -= amount; // Will overflow if the amount is too big
         canonicalToken.transfer(to, amount);
         return amount;
     }
@@ -118,7 +118,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         uint256 balance = canonicalToken.balanceOf(address(this));
         if (balance < _amount) {
             balanceOf[_toAddress] = _amount - balance;
-            if (balance > 0) canonicalToken.transfer(_toAddress, balance);
+            if (balance != 0) canonicalToken.transfer(_toAddress, balance);
         } else {
             canonicalToken.transfer(_toAddress, _amount);
         }
@@ -144,7 +144,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @param amount Amount to withdraw from balance
     /// @param recipient Address to withdraw from
     function sweep(uint256 amount, address recipient) external onlyGovernorOrGuardian {
-        balanceOf[recipient] = balanceOf[recipient] - amount; // Will overflow if the amount is too big
+        balanceOf[recipient] -= amount; // Will overflow if the amount is too big
     }
 
     uint256[47] private __gap;

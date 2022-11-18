@@ -37,7 +37,7 @@ contract OracleChainlinkMultiTemplate is BaseOracleChainlinkMulti {
         uint8[2] memory circuitChainIsMultiplied = [0, 0];
         uint8[2] memory chainlinkDecimals = [0, 0];
         // =========================================================================
-        for (uint256 i = 0; i < _circuitChainlink.length; i++) {
+        for (uint256 i; i < _circuitChainlink.length; ++i) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
                 _circuitChainlink[i],

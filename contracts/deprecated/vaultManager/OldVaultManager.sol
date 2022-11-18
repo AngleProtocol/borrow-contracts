@@ -117,7 +117,7 @@ contract OldVaultManager is OldVaultManagerPermit {
         uint256 collateralAmount;
         uint256 stablecoinAmount;
         uint256 vaultID;
-        for (uint256 i = 0; i < actions.length; i++) {
+        for (uint256 i; i < actions.length; ++i) {
             ActionType action = actions[i];
             // Processing actions which do not need the value of the oracle or of the `interestAccumulator`
             if (action == ActionType.createVault) {
@@ -642,7 +642,7 @@ contract OldVaultManager is OldVaultManagerPermit {
         liqData.oracleValue = oracle.read();
         liqData.newInterestAccumulator = _accrue();
         emit LiquidatedVaults(vaultIDs);
-        for (uint256 i = 0; i < vaultIDs.length; i++) {
+        for (uint256 i; i < vaultIDs.length; ++i) {
             Vault memory vault = vaultData[vaultIDs[i]];
             // Computing if liquidation can take place for a vault
             LiquidationOpportunity memory liqOpp = _checkLiquidation(

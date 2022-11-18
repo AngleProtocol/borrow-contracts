@@ -127,7 +127,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
             if (address(IFlashAngle(_flashLoanModule).core()) != address(this)) revert InvalidCore();
         }
         uint256 count = getRoleMemberCount(FLASHLOANER_TREASURY_ROLE);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; ++i) {
             ITreasury(getRoleMember(FLASHLOANER_TREASURY_ROLE, i)).setFlashLoanModule(_flashLoanModule);
         }
         flashLoanModule = _flashLoanModule;
@@ -143,7 +143,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     function setCore(ICoreBorrow _core) external onlyRole(GOVERNOR_ROLE) {
         uint256 count = getRoleMemberCount(GOVERNOR_ROLE);
         bool success;
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; ++i) {
             success = _core.isGovernor(getRoleMember(GOVERNOR_ROLE, i));
             if (!success) break;
         }

@@ -30,7 +30,7 @@ contract OracleMAIEURChainlinkPolygon is BaseOracleChainlinkMulti {
         ];
         uint8[2] memory circuitChainIsMultiplied = [1, 0];
         uint8[2] memory chainlinkDecimals = [8, 8];
-        for (uint256 i = 0; i < circuitChainlink.length; i++) {
+        for (uint256 i; i < 2; ++i) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
                 circuitChainlink[i],
