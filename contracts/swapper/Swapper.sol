@@ -80,7 +80,7 @@ contract Swapper is ISwapper {
         ) revert ZeroAddress();
         core = _core;
         IERC20 stETH = IERC20(_wStETH.stETH());
-        stETH.safeApprove(address(_wStETH), type(uint256).max);
+        stETH.safeIncreaseAllowance(address(_wStETH), type(uint256).max);
         wStETH = _wStETH;
         uniV3Router = _uniV3Router;
         oneInch = _oneInch;
@@ -166,7 +166,7 @@ contract Swapper is ISwapper {
         // If there has been a burn, the whole `inToken` balance is burnt, but in this case the `inToken` variable has the
         // `intermediateToken` reference and what is sent back to the `to` address is the leftover balance of this token
         inTokenObtained = inToken.balanceOf(address(this));
-        if (inTokenObtained > 0) inToken.safeTransfer(to, inTokenObtained);
+        if (inTokenObtained != 0) inToken.safeTransfer(to, inTokenObtained);
     }
 
     // ========================= Governance Function ===============================
@@ -181,8 +181,9 @@ contract Swapper is ISwapper {
         uint256[] calldata amounts
     ) external {
         if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
-        if (tokens.length != spenders.length || tokens.length != amounts.length) revert IncompatibleLengths();
-        for (uint256 i = 0; i < tokens.length; i++) {
+        uint256 tokensLength = tokens.length;
+        if (tokensLength != spenders.length || tokensLength != amounts.length) revert IncompatibleLengths();
+        for (uint256 i; i < tokensLength; ++i) {
             _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
     }
@@ -280,7 +281,7 @@ contract Swapper is ISwapper {
     /// @notice Internal function used for error handling
     /// @param errMsg Error message received
     function _revertBytes(bytes memory errMsg) internal pure {
-        if (errMsg.length > 0) {
+        if (errMsg.length != 0) {
             //solhint-disable-next-line
             assembly {
                 revert(add(32, errMsg), mload(errMsg))

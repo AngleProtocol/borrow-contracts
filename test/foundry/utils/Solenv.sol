@@ -30,7 +30,7 @@ library Solenv {
         strings.slice memory commentDelim = "#".toSlice();
 
         uint256 length = data.count(lineDelim) + 1;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             strings.slice memory line = data.split(lineDelim);
             if (!line.startsWith(commentDelim)) {
                 string memory key = line.split(keyDelim).toString();
@@ -387,7 +387,7 @@ library strings {
             return 0;
         }
 
-        for (uint256 i = 1; i < length; i++) {
+        for (uint256 i = 1; i < length; ++i) {
             divisor = divisor / 256;
             b = (word / divisor) & 0xFF;
             if (b & 0xC0 != 0x80) {
@@ -799,7 +799,7 @@ library strings {
         if (parts.length == 0) return "";
 
         uint256 length = self._len * (parts.length - 1);
-        for (uint256 i = 0; i < parts.length; i++) length += parts[i]._len;
+        for (uint256 i; i < parts.length; ++i) length += parts[i]._len;
 
         string memory ret = new string(length);
         uint256 retptr;
@@ -807,7 +807,7 @@ library strings {
             retptr := add(ret, 32)
         }
 
-        for (uint256 i = 0; i < parts.length; i++) {
+        for (uint256 i; i < parts.length; ++i) {
             memcpy(retptr, parts[i]._ptr, parts[i]._len);
             retptr += parts[i]._len;
             if (i < parts.length - 1) {

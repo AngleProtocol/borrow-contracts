@@ -51,7 +51,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
         description = _description;
         uint256 circuitLength = _circuitChainlink.length;
         if (circuitLength == 0 || circuitLength != _circuitChainIsMultiplied.length) revert IncompatibleLengths();
-        for (uint256 i = 0; i < circuitLength; i++) {
+        for (uint256 i; i < circuitLength; ++i) {
             AggregatorV3Interface _pool = AggregatorV3Interface(_circuitChainlink[i]);
             circuitChainlink.push(_pool);
             chainlinkDecimals.push(_pool.decimals());
@@ -64,7 +64,8 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     /// @inheritdoc IOracle
     function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = outBase;
-        for (uint256 i = 0; i < circuitChainlink.length; i++) {
+        uint256 circuitLength = circuitChainlink.length;
+        for (uint256 i; i < circuitLength; ++i) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
                 circuitChainlink[i],

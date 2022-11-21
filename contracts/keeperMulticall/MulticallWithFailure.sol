@@ -16,7 +16,7 @@ contract MultiCallWithFailure {
     function multiCall(Call[] memory calls) external view returns (bytes[] memory) {
         bytes[] memory results = new bytes[](calls.length);
 
-        for (uint256 i; i < calls.length; i++) {
+        for (uint256 i; i < calls.length; ++i) {
             (bool success, bytes memory result) = calls[i].target.staticcall(calls[i].data);
             if (!calls[i].canFail) {
                 if (!success) {

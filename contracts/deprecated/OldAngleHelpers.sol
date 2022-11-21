@@ -114,7 +114,7 @@ contract OldAngleHelpers is Initializable {
             }
         }
         address[] memory strategies = new address[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             strategies[i] = IPoolManager(poolManager).strategyList(i);
         }
         addresses.strategies = strategies;
@@ -127,7 +127,7 @@ contract OldAngleHelpers is Initializable {
     function getStablecoinAddresses() external view returns (address[] memory, address[] memory) {
         address[] memory stableMasterAddresses = CORE.stablecoinList();
         address[] memory agTokenAddresses = new address[](stableMasterAddresses.length);
-        for (uint256 i = 0; i < stableMasterAddresses.length; ++i) {
+        for (uint256 i; i < stableMasterAddresses.length; ++i) {
             agTokenAddresses[i] = IStableMaster(stableMasterAddresses[i]).agToken();
         }
         return (stableMasterAddresses, agTokenAddresses);
@@ -175,7 +175,7 @@ contract OldAngleHelpers is Initializable {
         }
         uint64[] memory data = new uint64[](length);
         uint64[] memory data2 = new uint64[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesDeposit(i);
             data2[i] = perpetualManager.yHAFeesDeposit(i);
         }
@@ -192,7 +192,7 @@ contract OldAngleHelpers is Initializable {
         }
         data = new uint64[](length);
         data2 = new uint64[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesWithdraw(i);
             data2[i] = perpetualManager.yHAFeesWithdraw(i);
         }

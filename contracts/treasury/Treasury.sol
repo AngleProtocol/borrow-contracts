@@ -195,7 +195,8 @@ contract Treasury is ITreasury, Initializable {
         surplusBufferValue = surplusBuffer;
         uint256 newSurplus;
         uint256 newBadDebt;
-        for (uint256 i = 0; i < vaultManagers.length; i++) {
+        uint256 vaultManagersLength = vaultManagers.length;
+        for (uint256 i; i < vaultManagersLength; ++i) {
             (newSurplus, newBadDebt) = IVaultManager(vaultManagers[i]).accrueInterestToTreasury();
             surplusBufferValue += newSurplus;
             badDebtValue += newBadDebt;
@@ -216,7 +217,7 @@ contract Treasury is ITreasury, Initializable {
         internal
         returns (uint256, uint256)
     {
-        if (badDebtValue > 0) {
+        if (badDebtValue != 0) {
             // If we have bad debt we need to burn stablecoins that accrued to the protocol
             // We still need to make sure that we're not burning too much or as much as we can if the debt is big
             uint256 balance = stablecoin.balanceOf(address(this));
@@ -274,7 +275,7 @@ contract Treasury is ITreasury, Initializable {
         delete vaultManagerMap[vaultManager];
         // deletion from `vaultManagerList` loop
         uint256 vaultManagerListLength = vaultManagerList.length;
-        for (uint256 i = 0; i < vaultManagerListLength - 1; i++) {
+        for (uint256 i; i < vaultManagerListLength - 1; ++i) {
             if (vaultManagerList[i] == vaultManager) {
                 // replace the `VaultManager` to remove with the last of the list
                 vaultManagerList[i] = vaultManagerList[vaultManagerListLength - 1];
@@ -325,7 +326,8 @@ contract Treasury is ITreasury, Initializable {
         // Flash loan role should be removed before calling this function
         if (core.isFlashLoanerTreasury(address(this))) revert RightsNotRemoved();
         emit NewTreasurySet(_treasury);
-        for (uint256 i = 0; i < vaultManagerList.length; i++) {
+        uint256 vaultManagerListLength = vaultManagerList.length;
+        for (uint256 i; i < vaultManagerListLength; ++i) {
             IVaultManager(vaultManagerList[i]).setTreasury(_treasury);
         }
         // A `TreasuryUpdated` event is triggered in the stablecoin

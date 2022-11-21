@@ -120,7 +120,7 @@ abstract contract SwapperSidechain is ISwapper {
         // Sending back the remaining amount of inTokens to the `to` address: it is possible that not the full `inTokenObtained`
         // is swapped to `outToken` if we're using the `1Inch` payload
         inTokenObtained = inToken.balanceOf(address(this));
-        if (inTokenObtained > 0) inToken.safeTransfer(to, inTokenObtained);
+        if (inTokenObtained != 0) inToken.safeTransfer(to, inTokenObtained);
     }
 
     // ========================= Governance Function ===============================
@@ -135,8 +135,9 @@ abstract contract SwapperSidechain is ISwapper {
         uint256[] calldata amounts
     ) external {
         if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
-        if (tokens.length != spenders.length || tokens.length != amounts.length) revert IncompatibleLengths();
-        for (uint256 i = 0; i < tokens.length; i++) {
+        uint256 tokensLength = tokens.length;
+        if (tokensLength != spenders.length || tokensLength != amounts.length) revert IncompatibleLengths();
+        for (uint256 i; i < tokensLength; ++i) {
             _changeAllowance(tokens[i], spenders[i], amounts[i]);
         }
     }
@@ -238,7 +239,7 @@ abstract contract SwapperSidechain is ISwapper {
     /// @notice Internal function used for error handling
     /// @param errMsg Error message received
     function _revertBytes(bytes memory errMsg) internal pure {
-        if (errMsg.length > 0) {
+        if (errMsg.length != 0) {
             //solhint-disable-next-line
             assembly {
                 revert(add(32, errMsg), mload(errMsg))

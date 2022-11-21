@@ -125,7 +125,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 collateralAmount;
         uint256 stablecoinAmount;
         uint256 vaultID;
-        for (uint256 i = 0; i < actions.length; i++) {
+        for (uint256 i; i < actions.length; ++i) {
             ActionType action = actions[i];
             // Processing actions which do not need the value of the oracle or of the `interestAccumulator`
             if (action == ActionType.createVault) {
@@ -231,7 +231,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     repayData
                 );
             } else {
-                if (stablecoinPayment > 0) stablecoin.burnFrom(stablecoinPayment, from, msg.sender);
+                if (stablecoinPayment != 0) stablecoin.burnFrom(stablecoinPayment, from, msg.sender);
                 // In this case the collateral amount is necessarily non null
                 collateral.safeTransferFrom(
                     msg.sender,
@@ -247,8 +247,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 collateral.safeTransfer(to, paymentData.collateralAmountToGive - paymentData.collateralAmountToReceive);
             } else {
                 uint256 collateralPayment = paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive;
-                if (collateralPayment > 0) {
-                    if (repayData.length > 0) {
+                if (collateralPayment != 0) {
+                    if (repayData.length != 0) {
                         ISwapper(who).swap(
                             IERC20(address(stablecoin)),
                             collateral,
@@ -565,9 +565,9 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         address who,
         bytes memory data
     ) internal {
-        if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
-        if (stableAmountToRepay > 0) {
-            if (data.length > 0) {
+        if (collateralAmountToGive != 0) collateral.safeTransfer(to, collateralAmountToGive);
+        if (stableAmountToRepay != 0) {
+            if (data.length != 0) {
                 ISwapper(who).swap(
                     collateral,
                     IERC20(address(stablecoin)),
@@ -651,12 +651,13 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         address who,
         bytes memory data
     ) public whenNotPaused nonReentrant returns (LiquidatorData memory liqData) {
-        if (vaultIDs.length != amounts.length || amounts.length == 0) revert IncompatibleLengths();
+        uint256 vaultIDsLength = vaultIDs.length;
+        if (vaultIDsLength != amounts.length || vaultIDsLength == 0) revert IncompatibleLengths();
         // Stores all the data about an ongoing liquidation of multiple vaults
         liqData.oracleValue = oracle.read();
         liqData.newInterestAccumulator = _accrue();
         emit LiquidatedVaults(vaultIDs);
-        for (uint256 i = 0; i < vaultIDs.length; i++) {
+        for (uint256 i; i < vaultIDsLength; ++i) {
             Vault memory vault = vaultData[vaultIDs[i]];
             // Computing if liquidation can take place for a vault
             LiquidationOpportunity memory liqOpp = _checkLiquidation(
@@ -669,7 +670,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // Makes sure not to leave a dusty amount in the vault by either not liquidating too much
             // or everything
             if (
-                (liqOpp.thresholdRepayAmount > 0 && amounts[i] > liqOpp.thresholdRepayAmount) ||
+                (liqOpp.thresholdRepayAmount != 0 && amounts[i] > liqOpp.thresholdRepayAmount) ||
                 amounts[i] > liqOpp.maxStablecoinAmountToRepay
             ) amounts[i] = liqOpp.maxStablecoinAmountToRepay;
 
@@ -734,7 +735,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 liquidationDiscount = (_computeLiquidationBoost(liquidator) * (BASE_PARAMS - healthFactor)) /
             BASE_PARAMS;
         // In fact `liquidationDiscount` is stored here as 1 minus discount to save some computation costs
-        // This value is necessarily > 0 as `maxLiquidationDiscount < BASE_PARAMS`
+        // This value is necessarily != 0 as `maxLiquidationDiscount < BASE_PARAMS`
         liquidationDiscount = liquidationDiscount >= maxLiquidationDiscount
             ? BASE_PARAMS - maxLiquidationDiscount
             : BASE_PARAMS - liquidationDiscount;
