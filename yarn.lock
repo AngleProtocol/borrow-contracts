@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@angleprotocol/sdk@1.1.19":
-  version "1.1.19"
-  resolved "https://registry.yarnpkg.com/@angleprotocol/sdk/-/sdk-1.1.19.tgz#21a716676f0839159bcee44e5805f42e9f46b49d"
-  integrity sha512-AbE7ZGGEWdieSd+Vrxf66QMv6XsNl+A5XHI2BvlLC4ueypstrNQd0wdwfUGf33xEN7WkLF+SyPjPX6Q5vaB3oA==
+"@angleprotocol/sdk@1.1.24":
+  version "1.1.24"
+  resolved "https://registry.yarnpkg.com/@angleprotocol/sdk/-/sdk-1.1.24.tgz#116a3029f8f097b925f83701761a7fbbc1c13011"
+  integrity sha512-MgRmluVFD5Pk9rQnKv0hAiHoP0frePzykcOKUfc8DAqxeLbEDrscLjnMKBL2b1eyTyLG3TIck/PQxNp0aWlNUg==
   dependencies:
     "@typechain/ethers-v5" "^10.0.0"
     "@types/lodash" "^4.14.180"
