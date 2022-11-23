@@ -41,7 +41,7 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
     constructor() initializer {}
 
     /// @notice Initializes the contract
-    function initialize(address _stableMaster, address _poolManager) external initializer {
+    function initialize(address _stableMaster, address _poolManager) public initializer returns (address) {
         (address token, address sanToken, , , , , , , ) = IStableMaster(_stableMaster).collateralMap(_poolManager);
         __ERC20_init_unchained(
             string(abi.encodePacked("Angle ", IERC20MetadataUpgradeable(sanToken).name(), " Wrapper")),
@@ -51,53 +51,54 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
         stableMaster = IStableMaster(_stableMaster);
         _asset = IERC20(token);
         IERC20(token).safeIncreaseAllowance(_stableMaster, type(uint256).max);
+        return sanToken;
     }
 
     // ========================== IERC4626 VIEW FUNCTIONS ==========================
 
     /// @inheritdoc IERC4626Upgradeable
-    function asset() public view virtual override returns (address) {
+    function asset() public view returns (address) {
         return address(_asset);
     }
 
     /// @inheritdoc IERC4626Upgradeable
     /// @dev In this case the `totalAssets` function is not used to compute the share price
-    function totalAssets() public view override returns (uint256) {
+    function totalAssets() public view returns (uint256) {
         return IERC20(asset()).balanceOf(poolManager);
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function convertToShares(uint256 assets) public view virtual override returns (uint256 shares) {
+    function convertToShares(uint256 assets) public view returns (uint256 shares) {
         return _convertToShares(assets, MathUpgradeable.Rounding.Down);
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function convertToAssets(uint256 shares) public view virtual override returns (uint256 assets) {
+    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         return _convertToAssets(shares, MathUpgradeable.Rounding.Down);
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function maxDeposit(address) public pure override returns (uint256) {
+    function maxDeposit(address) public pure returns (uint256) {
         return type(uint256).max;
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function maxMint(address) public view virtual override returns (uint256) {
+    function maxMint(address) public pure returns (uint256) {
         return type(uint256).max;
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function previewDeposit(uint256 assets) public view virtual override returns (uint256) {
+    function previewDeposit(uint256 assets) public view returns (uint256) {
         return _convertToShares(assets, MathUpgradeable.Rounding.Down);
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function previewMint(uint256 shares) public view virtual override returns (uint256) {
+    function previewMint(uint256 shares) public view returns (uint256) {
         return _convertToAssets(shares, MathUpgradeable.Rounding.Up);
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function maxWithdraw(address owner) public view override returns (uint256) {
+    function maxWithdraw(address owner) public view returns (uint256) {
         return MathUpgradeable.min(previewRedeem(balanceOf(owner)), totalAssets());
     }
 
@@ -105,19 +106,19 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
     /// @dev This function returns an underestimate of the amount of shares that can be redeemed. If there is a slippage
     /// you can effectively burn more shares to receive `totalAssets()`, and slippage is not taken into account in the
     /// `_convertToShares` function
-    function maxRedeem(address owner) public view override returns (uint256 redeemable) {
+    function maxRedeem(address owner) public view returns (uint256 redeemable) {
         return MathUpgradeable.min(balanceOf(owner), _convertToShares(totalAssets(), MathUpgradeable.Rounding.Down));
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function previewWithdraw(uint256 assets) public view override returns (uint256) {
+    function previewWithdraw(uint256 assets) public view returns (uint256) {
         if (assets > totalAssets()) return type(uint256).max;
         (uint256 sanRate, uint256 slippage) = _estimateSanRate();
         return assets.mulDiv(_BASE * _BASE_PARAMS, (_BASE_PARAMS - slippage) * sanRate, MathUpgradeable.Rounding.Up);
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function previewRedeem(uint256 shares) public view override returns (uint256) {
+    function previewRedeem(uint256 shares) public view returns (uint256) {
         (uint256 sanRate, uint256 slippage) = _estimateSanRate();
         uint256 assets = shares.mulDiv(
             (_BASE_PARAMS - slippage) * sanRate,
@@ -131,14 +132,14 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
     // ========================= IERC4626 ACTION FUNCTIONS =========================
 
     /// @inheritdoc IERC4626Upgradeable
-    function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
+    function deposit(uint256 assets, address receiver) public returns (uint256) {
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares);
         return shares;
     }
 
     /// @inheritdoc IERC4626Upgradeable
-    function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
+    function mint(uint256 shares, address receiver) public returns (uint256) {
         uint256 assets = previewMint(shares);
         _deposit(_msgSender(), receiver, assets, shares);
 
@@ -150,7 +151,7 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
         uint256 assets,
         address receiver,
         address owner
-    ) public virtual override returns (uint256) {
+    ) public returns (uint256) {
         uint256 shares = previewWithdraw(assets);
         _withdraw(_msgSender(), receiver, owner, assets, shares);
         return shares;
@@ -161,7 +162,7 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
         uint256 shares,
         address receiver,
         address owner
-    ) public virtual override returns (uint256) {
+    ) public returns (uint256) {
         uint256 assets = previewRedeem(shares);
         _withdraw(_msgSender(), receiver, owner, assets, shares);
         return assets;

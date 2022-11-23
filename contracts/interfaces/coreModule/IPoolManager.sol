@@ -8,6 +8,4 @@ interface IPoolManager {
     function feeManager() external view returns (address);
 
     function strategyList(uint256) external view returns (address);
-
-    function token() external view returns (address);
 }
