@@ -277,6 +277,18 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       chainId: 1313161554,
     },
+    celo: {
+      live: true,
+      url: nodeUrl('celo'),
+      accounts: accounts('celo'),
+      gas: 'auto',
+      chainId: 42220,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('celo'),
+        },
+      },
+    },
   },
   paths: {
     sources: './contracts',

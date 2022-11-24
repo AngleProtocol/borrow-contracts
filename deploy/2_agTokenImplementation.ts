@@ -1,6 +1,7 @@
-import yargs from 'yargs';
-import { DeployFunction } from 'hardhat-deploy/types';
 import { ChainId } from '@angleprotocol/sdk';
+import { DeployFunction } from 'hardhat-deploy/types';
+import yargs from 'yargs';
+
 import { deployImplem } from './helpers';
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -22,7 +23,16 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   }
 
   console.log(`Now deploying the implementation for AgToken on ${network.name}`);
-  const agTokenImplementation = deployImplem(implementationName);
+  console.log(`Using implementation ${implementationName}`);
+
+  await deploy(implementationName, {
+    contract: implementationName,
+    from: deployer.address,
+    args: [],
+    log: !argv.ci,
+  });
+
+  const agTokenImplementation = (await deployments.get(implementationName)).address;
 
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
     console.log('Deploying the proxy for the agToken contract');
