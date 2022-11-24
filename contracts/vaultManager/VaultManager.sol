@@ -403,7 +403,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param collateralAmount Amount by which increasing the collateral balance of
     function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         if (!_exists(vaultID)) revert NonexistentVault();
-        _checkpointCollateral(vaultID, false);
+        _checkpointCollateral(vaultID, collateralAmount, true);
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
     }
@@ -420,7 +420,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 oracleValue,
         uint256 interestAccumulator_
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
-        _checkpointCollateral(vaultID, false);
+        _checkpointCollateral(vaultID, collateralAmount, false);
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
@@ -678,7 +678,11 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             uint256 collateralReleased = (amounts[i] * BASE_PARAMS * _collatBase) /
                 (liqOpp.discount * liqData.oracleValue);
 
-            _checkpointCollateral(vaultIDs[i], vault.collateralAmount <= collateralReleased);
+            _checkpointCollateral(
+                vaultIDs[i],
+                vault.collateralAmount <= collateralReleased ? vault.collateralAmount : collateralReleased,
+                false
+            );
             // Because we're rounding up in some divisions, `collateralReleased` can be greater than the `collateralAmount` of the vault
             // In this case, `stablecoinAmountToReceive` is still rounded up
             if (vault.collateralAmount <= collateralReleased) {
@@ -921,6 +925,12 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Hook called before any collateral internal changes
     /// @param vaultID Vault which sees its collateral amount changed
-    /// @param burn Whether the vault was emptied from all its collateral
-    function _checkpointCollateral(uint256 vaultID, bool burn) internal virtual {}
+    /// @param amount Collateral amount balance of the owner of vaultID increase/decrease
+    /// @param add Whether the balance should be increased/decreased
+    /// @param vaultID Vault which sees its collateral amount changed
+    function _checkpointCollateral(
+        uint256 vaultID,
+        uint256 amount,
+        bool add
+    ) internal virtual {}
 }
