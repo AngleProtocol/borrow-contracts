@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GNU-3
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 /// @title RevertReasonParser
 /// @author 1Inch team, taken from:
