@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 /// @title Interface for verifying contract-based account signatures
 /// @notice Interface that verifies provided signature for the data

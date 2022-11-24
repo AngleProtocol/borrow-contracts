@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./utils/ERC20UpgradeableCustom.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";

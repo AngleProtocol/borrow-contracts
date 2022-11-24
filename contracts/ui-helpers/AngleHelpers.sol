@@ -9,7 +9,7 @@ import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
 import "./AngleBorrowHelpers.sol";
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 struct Parameters {
     SLPData slpData;
