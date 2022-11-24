@@ -29,13 +29,11 @@ async function main() {
   // console.log((await artifacts.getAllFullyQualifiedNames()));
 
   testUpgradeability('VaultManagerLiquidationBoost', 'contracts/vaultManager/VaultManagerLiquidationBoost.sol');
-  testUpgradeability('OldVaultManager', 'contracts/deprecated/OldVaultManager.sol');
-  testUpgradeability('OldAngleHelpers', 'contracts/deprecated/OldAngleHelpers.sol');
-  testUpgradeability('AngleHelpers', 'contracts/ui-helpers/AngleHelpers.sol');
+  testUpgradeability('OldVaultManager', 'contracts/deprecated/vaultManager/OldVaultManager.sol');
 
   testStorage(
     'OldVaultManager',
-    'contracts/deprecated/OldVaultManager.sol',
+    'contracts/deprecated/vaultManager/OldVaultManager.sol',
     'VaultManagerLiquidationBoost',
     'contracts/vaultManager/VaultManagerLiquidationBoost.sol',
   );
