@@ -8,7 +8,7 @@ import { deployImplem, deployProxy } from '../helpers';
 const stable = 'EUR';
 
 const func: DeployFunction = async ({ ethers, network }) => {
-  const treasury = await ethers.getContract('Treasury_EUR');
+  const treasury = await ethers.getContract('Treasury');
   const proxyAdmin = await ethers.getContract('ProxyAdmin');
 
   const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
@@ -27,6 +27,12 @@ const func: DeployFunction = async ({ ethers, network }) => {
       parseEther('100000'),
     ]),
   );
+
+  /* The following things need to be done after this deployment:
+  - setSources on the LayerZeroBridgeToken
+  - addBridgeToken in the canonical agEUR -> limit should be higher than the limit which has already been minted in the contract
+  - setChainTotalHourlyLimit in the canonical agEUR
+  */
 };
 
 func.tags = ['LayerZeroBridgeToken'];

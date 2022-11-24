@@ -8,7 +8,7 @@
   "arbitrum": 110,
   "optimism": 111,
   "fantom": 112,
-
+  "celo": 125,
   "rinkeby": 10001,
   "bsc-testnet": 10002,
   "fuji": 10006,

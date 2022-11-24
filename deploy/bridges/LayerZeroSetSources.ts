@@ -14,6 +14,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
     mainnet: '0x4Fa745FCCC04555F2AFA8874cd23961636CdF982',
     avalanche: '0x14C00080F97B9069ae3B4Eb506ee8a633f8F5434',
     bsc: '0xe9f183FC656656f1F17af1F2b0dF79b8fF9ad8eD',
+    celo: '0xf1dDcACA7D17f8030Ab2eb54f2D9811365EFe123',
   };
 
   const local = OFTs[network.name];
@@ -22,11 +23,12 @@ const func: DeployFunction = async ({ ethers, network }) => {
   for (const chain of Object.keys(OFTs)) {
     if (chain !== network.name) {
       console.log(chain);
-      let trustedRemote = ethers.utils.solidityPack(['address', 'address'], [OFTs[chain], local]);
+      const trustedRemote = ethers.utils.solidityPack(['address', 'address'], [OFTs[chain], local]);
       console.log(`Trusted remote ${trustedRemote}`);
       console.log(
         contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [(LZ_CHAINIDS as any)[chain], trustedRemote]),
       );
+      console.log((LZ_CHAINIDS as any)[chain], trustedRemote);
       console.log('');
     }
   }
