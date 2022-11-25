@@ -20,8 +20,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     guardian = CONTRACTS_ADDRESSES[network.config.chainId as ChainId]?.Guardian!;
   }
 
-  guardian = '0x2ba5a55DBDAD03023e6872A8D57c458E9399bFE1';
-
   console.log(`Now deploying ProxyAdmin on the chain ${network.config.chainId}`);
   console.log('Guardian address is ', guardian);
   await deploy('ProxyAdmin', {
