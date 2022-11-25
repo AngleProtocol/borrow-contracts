@@ -16,7 +16,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
-    proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
+    proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
@@ -34,8 +34,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   });
 
   const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
-
-  // const coreBorrowImplementation = '0x4D144B7355bC2C33FA091339279e9D77261461fE';
 
   console.log(`Successfully deployed the implementation for CoreBorrow at ${coreBorrowImplementation}`);
   console.log('');
