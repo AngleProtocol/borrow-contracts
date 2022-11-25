@@ -33,12 +33,11 @@ async function main() {
   });
   await network.provider.send('hardhat_setBalance', [governor, '0x10000000000000000000000000000']);
   const signer = await ethers.getSigner(governor);
-  /*
+
   await proxyAdmin.connect(signer).upgrade(vaultManagerAddress, implementation);
 
   console.log('Upgrade OK');
   console.log(vaultManager.address);
-  */
 
   console.log(await vaultManager.treasury());
   console.log(await vaultManager.collateral());

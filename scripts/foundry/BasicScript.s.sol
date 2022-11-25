@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import "../../contracts/mock/MockToken.sol";

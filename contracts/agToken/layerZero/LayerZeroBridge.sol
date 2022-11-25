@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./utils/OFTCore.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
