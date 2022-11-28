@@ -161,7 +161,10 @@ contract('SanTokenERC4626Adapter', () => {
   describe('withdraw', () => {
     it('success - with approval', async () => {
       await usdc.connect(impersonatedSigners[usdcHolder]).approve(adapter.address, MAX_UINT256);
-      await adapter.connect(impersonatedSigners[usdcHolder]).mint(parseUnits('1', 6), alice.address);
+      await adapter.connect(impersonatedSigners[usdcHolder]).mint(parseUnits('0.3', 6), alice.address);
+      await adapter.connect(impersonatedSigners[usdcHolder]).mint(parseUnits('0.3', 6), alice.address);
+      await adapter.connect(impersonatedSigners[usdcHolder]).mint(parseUnits('0.2', 6), alice.address);
+      await adapter.connect(impersonatedSigners[usdcHolder]).mint(parseUnits('0.2', 6), alice.address);
       await adapter.connect(alice).approve(usdcHolder, MAX_UINT256);
       const amount = parseUnits('1', 6).mul(parseEther('1')).div(sanRateAtBlock);
       await adapter.connect(impersonatedSigners[usdcHolder]).withdraw(parseUnits('1', 6), bob.address, alice.address);
