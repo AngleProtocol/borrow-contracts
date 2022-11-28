@@ -4,15 +4,13 @@ pragma solidity ^0.8.12;
 
 import "./SanTokenERC4626Adapter.sol";
 
-import "../interfaces/coreModule/ILiquidityGauge.sol";
-
 /// @title SanTokenERC4626AdapterStakable
 /// @author Angle Labs, Inc.
 /// @notice IERC4626 Adapter for SanTokens of the Angle Protocol
 /// @dev In this implementation, sanTokens are staked and accumulate ANGLE rewards on top of the native rewards
 /// @dev Rewards are claimed at every transfer or withdrawal
 /// @dev This implementation could be generalized if multiple reward tokens are sent in the liquidity gauge contract
-contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
+abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     using MathUpgradeable for uint256;
     using SafeERC20 for IERC20;
 
@@ -21,8 +19,6 @@ contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
 
     // ================================= REFERENCES ================================
 
-    /// @notice Gauge in which sanTokens are staked
-    ILiquidityGauge public gauge;
     /// @notice Maps each reward token to a track record of cumulated rewards
     mapping(IERC20 => uint256) public integral;
     /// @notice Maps pairs of `(token,user)` to the currently pending claimable rewards
@@ -30,22 +26,11 @@ contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @notice Maps pairs of `(token,user)` to a track record of cumulated personal rewards
     mapping(IERC20 => mapping(address => uint256)) public integralOf;
 
-    // =================================== ERRORS ==================================
+    uint256[47] private __gapStakable;
 
-    error ZeroAddress();
-
-    uint256[45] private __gapStakable;
-
-    /// @notice Initializes the contract
-    function initializeStakable(
-        ILiquidityGauge _gauge,
-        address _stableMaster,
-        address _poolManager
-    ) public {
-        if (address(_gauge) == address(0)) revert ZeroAddress();
-        address sanToken = initialize(_stableMaster, _poolManager);
-        gauge = _gauge;
-        IERC20(sanToken).safeIncreaseAllowance(address(_gauge), type(uint256).max);
+    /// @inheritdoc SanTokenERC4626Adapter
+    function totalAssets() public view override returns (uint256) {
+        return _convertToAssetsWithSlippage(IERC20(address(gauge())).balanceOf(address(this)));
     }
 
     // ================================ ERC20 LOGIC ================================
@@ -62,8 +47,8 @@ contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
         _checkpointRewardsUser(_from, _claim);
         _checkpointRewardsUser(_to, _claim);
         // If the user is withdrawing, we need to unstake from the gauge
-        if (_to == address(0)) gauge.withdraw(amount, false);
-        if (_from == address(0)) gauge.deposit(amount, address(this), false);
+        if (_to == address(0)) gauge().withdraw(amount, false);
+        if (_from == address(0)) gauge().deposit(amount, address(this), false);
     }
 
     // ================================ USER ACTIONS ===============================
@@ -121,7 +106,7 @@ contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @notice Claims all available rewards and increases the associated integral
     function _claimRewards() internal virtual {
         uint256 prevBalanceAngle = _ANGLE.balanceOf(address(this));
-        gauge.claim_rewards(address(this), address(0));
+        gauge().claim_rewards(address(this), address(0));
         uint256 angleRewards = _ANGLE.balanceOf(address(this)) - prevBalanceAngle;
         // Do the same thing for additional rewards
         _updateRewards(_ANGLE, angleRewards);
@@ -144,6 +129,6 @@ contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
 
     /// @notice Checks all unclaimed rewards in `rewardToken`
     function _rewardsToBeClaimed(IERC20 rewardToken) internal view virtual returns (uint256 amount) {
-        return gauge.claimable_reward(address(this), address(rewardToken));
+        return gauge().claimable_reward(address(this), address(rewardToken));
     }
 }

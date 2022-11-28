@@ -36,6 +36,7 @@
 pragma solidity ^0.8.12;
 
 import "../interfaces/ICoreBorrow.sol";
+import "../interfaces/coreModule/ILiquidityGauge.sol";
 import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
 
@@ -50,7 +51,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title SanTokenERC4626Adapter
 /// @author Angle Labs, Inc.
 /// @notice IERC4626 Adapter for SanTokens of the Angle Protocol
-contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgradeable {
+abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgradeable {
     using MathUpgradeable for uint256;
     using SafeERC20 for IERC20;
 
@@ -59,54 +60,63 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
     uint256 internal constant _BASE_PARAMS = 10**9;
     uint256 internal constant _BASE = 10**18;
 
-    // =================================== ERRORS ==================================
+    // =================================== ERROR ===================================
 
-    error TooHighAmount();
+    error InsufficientAssets();
 
-    // ================================= REFERENCES ================================
+    uint256[50] private __gap;
 
-    /// @notice Asset handled by the contract
-    IERC20 private _asset;
-    /// @notice PoolManager of Angle Core Module associated to the sanToken of the contract
-    address public poolManager;
-    /// @notice Angle Core Module StableMaster contract
-    IStableMaster public stableMaster;
-
-    uint256[47] private __gap;
+    // =============================== INITIALIZATION ==============================
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
     /// @notice Initializes the contract
-    function initialize(address _stableMaster, address _poolManager) public initializer returns (address) {
-        (address token, address sanToken, , , , , , , ) = IStableMaster(_stableMaster).collateralMap(_poolManager);
+    function initialize() public initializer {
         __ERC20_init_unchained(
-            string(abi.encodePacked("Angle ", IERC20MetadataUpgradeable(sanToken).name(), " Wrapper")),
-            string(abi.encodePacked("ag-wrapper-", IERC20MetadataUpgradeable(sanToken).symbol()))
+            string(abi.encodePacked("Angle ", sanToken().name(), " Wrapper")),
+            string(abi.encodePacked("ag-wrapper-", sanToken().symbol()))
         );
-        poolManager = _poolManager;
-        stableMaster = IStableMaster(_stableMaster);
-        _asset = IERC20(token);
-        IERC20(token).safeIncreaseAllowance(_stableMaster, type(uint256).max);
-        return sanToken;
+        IERC20(asset()).safeIncreaseAllowance(address(stableMaster()), type(uint256).max);
+        if (address(gauge()) != address(0))
+            IERC20(address(sanToken())).safeIncreaseAllowance(address(gauge()), type(uint256).max);
+    }
+
+    // ============================= VIRTUAL FUNCTIONS =============================
+
+    /// @notice Address of the `StableMaster` in the Core module of the protocol
+    function stableMaster() public view virtual returns (IStableMaster);
+
+    /// @notice Address of the corresponding poolManager
+    function poolManager() public view virtual returns (address);
+
+    /// @notice Address of the associated sanToken
+    function sanToken() public view virtual returns (IERC20MetadataUpgradeable);
+
+    /// @inheritdoc IERC4626Upgradeable
+    function asset() public view virtual returns (address);
+
+    /// @inheritdoc IERC4626Upgradeable
+    function totalAssets() public view virtual returns (uint256) {
+        return _convertToAssetsWithSlippage(sanToken().balanceOf(address(this)));
+    }
+
+    /// @notice Returns the gauge address
+    /// @dev This function is only useful in the stakable implementation
+    function gauge() public view virtual returns (ILiquidityGauge) {
+        return ILiquidityGauge(address(0));
     }
 
     // ========================== IERC4626 VIEW FUNCTIONS ==========================
 
     /// @inheritdoc IERC20MetadataUpgradeable
     function decimals() public view override(ERC20Upgradeable, IERC20MetadataUpgradeable) returns (uint8) {
-        return IERC20MetadataUpgradeable(address(_asset)).decimals();
+        return IERC20MetadataUpgradeable(asset()).decimals();
     }
 
-    /// @inheritdoc IERC4626Upgradeable
-    function asset() public view returns (address) {
-        return address(_asset);
-    }
-
-    /// @inheritdoc IERC4626Upgradeable
-    /// @dev In this case the `totalAssets` function is not used to compute the share price
-    function totalAssets() public view returns (uint256) {
-        return IERC20(asset()).balanceOf(poolManager);
+    /// @notice Returns the available balance of the token in the associated `PoolManager`
+    function availableBalance() public view returns (uint256) {
+        return IERC20(asset()).balanceOf(poolManager());
     }
 
     /// @inheritdoc IERC4626Upgradeable
@@ -141,25 +151,24 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
 
     /// @inheritdoc IERC4626Upgradeable
     function maxWithdraw(address owner) public view returns (uint256) {
-        return MathUpgradeable.min(_convertToAssetsWithSlippage(balanceOf(owner)), totalAssets());
+        return MathUpgradeable.min(_convertToAssetsWithSlippage(balanceOf(owner)), availableBalance());
     }
 
     /// @inheritdoc IERC4626Upgradeable
     function maxRedeem(address owner) public view returns (uint256 redeemable) {
-        return MathUpgradeable.min(balanceOf(owner), previewWithdraw(totalAssets()));
+        return MathUpgradeable.min(balanceOf(owner), _convertToSharesWithSlippage(availableBalance()));
     }
 
     /// @inheritdoc IERC4626Upgradeable
     function previewWithdraw(uint256 assets) public view returns (uint256) {
-        if (assets > totalAssets()) return type(uint256).max;
-        (uint256 sanRate, uint256 slippage) = _estimateSanRate();
-        return assets.mulDiv(_BASE * _BASE_PARAMS, (_BASE_PARAMS - slippage) * sanRate, MathUpgradeable.Rounding.Up);
+        if (assets > availableBalance()) return type(uint256).max;
+        return _convertToSharesWithSlippage(assets);
     }
 
     /// @inheritdoc IERC4626Upgradeable
     function previewRedeem(uint256 shares) public view returns (uint256) {
         uint256 assets = _convertToAssetsWithSlippage(shares);
-        if (assets > totalAssets()) return 0;
+        if (assets > availableBalance()) return 0;
         else return assets;
     }
 
@@ -198,7 +207,7 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
     ) public returns (uint256) {
         uint256 assets = previewRedeem(shares);
         // This means that there are in fact not enough assets to cover for the shares that are being burnt
-        if (assets == 0) revert TooHighAmount();
+        if (assets == 0) revert InsufficientAssets();
         _withdraw(msg.sender, receiver, owner, assets, shares);
         return assets;
     }
@@ -207,11 +216,9 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
 
     /// @notice Estimates the current version of the sanRate for this collateral asset and the slippage value
     function _estimateSanRate() internal view returns (uint256, uint256) {
-        (, address sanToken, , , , uint256 sanRate, , SLPData memory slpData, ) = stableMaster.collateralMap(
-            poolManager
-        );
+        (, , , , , uint256 sanRate, , SLPData memory slpData, ) = stableMaster().collateralMap(poolManager());
         if (block.timestamp != slpData.lastBlockUpdated && slpData.lockedInterests > 0) {
-            uint256 sanMint = IERC20(sanToken).totalSupply();
+            uint256 sanMint = sanToken().totalSupply();
             if (slpData.lockedInterests > slpData.maxInterestsDistributed) {
                 sanRate += (slpData.maxInterestsDistributed * _BASE) / sanMint;
             } else {
@@ -229,7 +236,7 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
         uint256 shares
     ) internal {
         IERC20(asset()).safeTransferFrom(caller, address(this), assets);
-        stableMaster.deposit(assets, address(this), poolManager);
+        stableMaster().deposit(assets, address(this), poolManager());
         _mint(receiver, shares);
         emit Deposit(caller, receiver, assets, shares);
     }
@@ -248,7 +255,7 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
         _burn(owner, shares);
         // Performing two transfers here to be sure that `receiver` exactly receives assets and not
         // `assets+1`
-        stableMaster.withdraw(shares, address(this), address(this), poolManager);
+        stableMaster().withdraw(shares, address(this), address(this), poolManager());
         IERC20(asset()).safeTransfer(receiver, assets);
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
@@ -270,7 +277,13 @@ contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgr
         return shares.mulDiv(sanRate, _BASE, rounding);
     }
 
-    /// @notice Converts to assets with the slippage taken into account
+    /// @notice Converts an amount of `assets` to a shares amount with potential exit slippage taken into account
+    function _convertToSharesWithSlippage(uint256 assets) internal view returns (uint256 shares) {
+        (uint256 sanRate, uint256 slippage) = _estimateSanRate();
+        shares = assets.mulDiv(_BASE * _BASE_PARAMS, (_BASE_PARAMS - slippage) * sanRate, MathUpgradeable.Rounding.Up);
+    }
+
+    /// @notice Converts an amount of `shares` to an assets amount with potential exit slippage taken into account
     function _convertToAssetsWithSlippage(uint256 shares) internal view returns (uint256 assets) {
         (uint256 sanRate, uint256 slippage) = _estimateSanRate();
         assets = shares.mulDiv(

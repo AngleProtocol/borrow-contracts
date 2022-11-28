@@ -7,18 +7,18 @@ import hre, { contract, ethers } from 'hardhat';
 import {
   MockTokenPermit,
   MockTokenPermit__factory,
-  SanTokenERC4626AdapterStakable,
-  SanTokenERC4626AdapterStakable__factory,
+  SanUSDCEURERC4626AdapterStakable,
+  SanUSDCEURERC4626AdapterStakable__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
-import { deployUpgradeable, MAX_UINT256, ZERO_ADDRESS } from '../utils/helpers';
+import { deployUpgradeable, expectApprox, MAX_UINT256, ZERO_ADDRESS } from '../utils/helpers';
 
 contract('SanTokenERC4626AdapterStakable', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
 
-  let adapter: SanTokenERC4626AdapterStakable;
+  let adapter: SanUSDCEURERC4626AdapterStakable;
   let usdc: MockTokenPermit;
   let stableMaster: string;
   let poolManager: string;
@@ -68,10 +68,9 @@ contract('SanTokenERC4626AdapterStakable', () => {
       ],
     });
     adapter = (await deployUpgradeable(
-      new SanTokenERC4626AdapterStakable__factory(deployer),
-    )) as SanTokenERC4626AdapterStakable;
-    await adapter.initializeStakable(gauge, stableMaster, poolManager);
-
+      new SanUSDCEURERC4626AdapterStakable__factory(deployer),
+    )) as SanUSDCEURERC4626AdapterStakable;
+    await adapter.initialize();
     const impersonatedAddresses = [usdcHolder, governor];
     for (const address of impersonatedAddresses) {
       await hre.network.provider.request({
@@ -86,6 +85,10 @@ contract('SanTokenERC4626AdapterStakable', () => {
     it('success - stableMaster, name, symbol', async () => {
       expect(await adapter.gauge()).to.be.equal(gauge);
       expect(await sanToken.allowance(adapter.address, gauge)).to.be.equal(MAX_UINT256);
+      expect(await adapter.poolManager()).to.be.equal(poolManager);
+      expect(await adapter.stableMaster()).to.be.equal(stableMaster);
+      expect(await adapter.sanToken()).to.be.equal(sanToken.address);
+      expect(await adapter.stableMaster()).to.be.equal(stableMaster);
     });
   });
   describe('deposit', () => {
@@ -97,7 +100,8 @@ contract('SanTokenERC4626AdapterStakable', () => {
       expect(await sanToken.balanceOf(adapter.address)).to.be.equal(0);
       expect(await adapter.balanceOf(alice.address)).to.be.equal(amount);
       expect(await sanToken.balanceOf(gauge)).to.be.equal(gaugeBalance.add(amount));
-      expect(await adapter.totalAssets()).to.be.equal(parseUnits('1', 6).add(assets));
+      expect(await adapter.availableBalance()).to.be.equal(parseUnits('1', 6).add(assets));
+      expectApprox(await adapter.totalAssets(), parseUnits('1', 6), 0.1);
 
       await adapter.connect(impersonatedSigners[usdcHolder]).deposit(parseUnits('1', 6), alice.address);
       const integral = await adapter.integral(angle);

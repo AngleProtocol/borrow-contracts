@@ -7,18 +7,18 @@ import hre, { contract, ethers } from 'hardhat';
 import {
   MockTokenPermit,
   MockTokenPermit__factory,
-  SanTokenERC4626Adapter,
-  SanTokenERC4626Adapter__factory,
+  SanUSDCEURERC4626Adapter,
+  SanUSDCEURERC4626Adapter__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
-import { deployUpgradeable, expectApprox, MAX_UINT256 } from '../utils/helpers';
+import { deployUpgradeable, expectApprox, MAX_UINT256, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('SanTokenERC4626Adapter', () => {
+contract('SanTokenERC4626Adapter - USDC ', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
 
-  let adapter: SanTokenERC4626Adapter;
+  let adapter: SanUSDCEURERC4626Adapter;
   let usdc: MockTokenPermit;
   let stableMaster: string;
   let feeManager: string;
@@ -63,9 +63,8 @@ contract('SanTokenERC4626Adapter', () => {
         },
       ],
     });
-    adapter = (await deployUpgradeable(new SanTokenERC4626Adapter__factory(deployer))) as SanTokenERC4626Adapter;
-    await adapter.initialize(stableMaster, poolManager);
-
+    adapter = (await deployUpgradeable(new SanUSDCEURERC4626Adapter__factory(deployer))) as SanUSDCEURERC4626Adapter;
+    await adapter.initialize();
     const impersonatedAddresses = [usdcHolder, governor];
     for (const address of impersonatedAddresses) {
       await hre.network.provider.request({
@@ -78,12 +77,14 @@ contract('SanTokenERC4626Adapter', () => {
   });
   describe('initializer', () => {
     it('success - stableMaster, name, symbol', async () => {
-      await expect(adapter.initialize(stableMaster, poolManager)).to.be.reverted;
       expect(await adapter.decimals()).to.be.equal(6);
       expect(await adapter.name()).to.be.equal('Angle sanUSDC_EUR Wrapper');
       expect(await adapter.symbol()).to.be.equal('ag-wrapper-sanUSDC_EUR');
       expect(await adapter.poolManager()).to.be.equal(poolManager);
       expect(await adapter.stableMaster()).to.be.equal(stableMaster);
+      expect(await adapter.sanToken()).to.be.equal(sanToken.address);
+      expect(await adapter.gauge()).to.be.equal(ZERO_ADDRESS);
+      expect(await adapter.totalAssets()).to.be.equal(0);
       expect(await usdc.allowance(adapter.address, stableMaster)).to.be.equal(MAX_UINT256);
       expect(await adapter.asset()).to.be.equal(usdc.address);
       expect(await adapter.maxDeposit(alice.address)).to.be.equal(MAX_UINT256);
@@ -96,7 +97,7 @@ contract('SanTokenERC4626Adapter', () => {
       expect(await adapter.convertToShares(parseUnits('1', 6))).to.be.equal(
         parseUnits('1', 6).mul(parseEther('1')).div(sanRateAtBlock),
       );
-      expect(await adapter.totalAssets()).to.be.equal(assets);
+      expect(await adapter.availableBalance()).to.be.equal(assets);
       // maxWithdraw when address has no balance
       expect(await adapter.maxWithdraw(alice.address)).to.be.equal(0);
       expect(await adapter.maxRedeem(alice.address)).to.be.equal(0);
@@ -118,7 +119,8 @@ contract('SanTokenERC4626Adapter', () => {
       const amount = parseUnits('1', 6).mul(parseEther('1')).div(sanRateAtBlock);
       expect(await sanToken.balanceOf(adapter.address)).to.be.equal(amount);
       expect(await adapter.balanceOf(alice.address)).to.be.equal(amount);
-      expect(await adapter.totalAssets()).to.be.equal(parseUnits('1', 6).add(assets));
+      expect(await adapter.availableBalance()).to.be.equal(parseUnits('1', 6).add(assets));
+      expectApprox(await adapter.totalAssets(), parseUnits('1', 6), 0.1);
     });
     it('success - when compared to a stableMaster deposit', async () => {
       await usdc.connect(impersonatedSigners[usdcHolder]).approve(stableMaster, MAX_UINT256);
@@ -132,7 +134,7 @@ contract('SanTokenERC4626Adapter', () => {
         .deposit(parseUnits('1', 6), alice.address, poolManager);
       const amount = parseUnits('1', 6).mul(parseEther('1')).div(sanRateAtBlock);
       expect(await sanToken.balanceOf(alice.address)).to.be.equal(amount);
-      expect(await adapter.totalAssets()).to.be.equal(parseUnits('1', 6).add(assets));
+      expect(await adapter.availableBalance()).to.be.equal(parseUnits('1', 6).add(assets));
     });
   });
   describe('mint', () => {
@@ -143,7 +145,7 @@ contract('SanTokenERC4626Adapter', () => {
       expect(await sanToken.balanceOf(adapter.address)).to.be.equal(parseUnits('1', 6));
       expect(await adapter.balanceOf(alice.address)).to.be.equal(parseUnits('1', 6));
       // A bit more assets are used in the process
-      expect(await adapter.totalAssets()).to.be.equal(amount.add(assets).add(1));
+      expect(await adapter.availableBalance()).to.be.equal(amount.add(assets).add(1));
     });
     it('success - when compared to a stableMaster deposit', async () => {
       await usdc.connect(impersonatedSigners[usdcHolder]).approve(stableMaster, MAX_UINT256);
@@ -155,7 +157,7 @@ contract('SanTokenERC4626Adapter', () => {
       const amount = BigNumber.from(sanRateAtBlock).div(parseUnits('1', 12)).add(1);
       await stableMasterContract.connect(impersonatedSigners[usdcHolder]).deposit(amount, alice.address, poolManager);
       expect(await sanToken.balanceOf(alice.address)).to.be.equal(parseUnits('1', 6));
-      expect(await adapter.totalAssets()).to.be.equal(amount.add(assets));
+      expect(await adapter.availableBalance()).to.be.equal(amount.add(assets));
     });
   });
   describe('withdraw', () => {
@@ -190,7 +192,9 @@ contract('SanTokenERC4626Adapter', () => {
   });
   describe('redeem', () => {
     it('reverts - when too high amount', async () => {
-      await expect(adapter.redeem(parseEther('100'), alice.address, alice.address)).to.be.revertedWith('TooHighAmount');
+      await expect(adapter.redeem(parseEther('100'), alice.address, alice.address)).to.be.revertedWith(
+        'InsufficientAssets',
+      );
     });
     it('success - with approval', async () => {
       await usdc.connect(impersonatedSigners[usdcHolder]).approve(adapter.address, MAX_UINT256);
@@ -232,7 +236,7 @@ contract('SanTokenERC4626Adapter', () => {
       expect(await sanToken.balanceOf(adapter.address)).to.be.equal(parseUnits('1', 6));
       expect(await adapter.balanceOf(alice.address)).to.be.equal(parseUnits('1', 6));
       // A bit more assets are used in the process
-      expect(await adapter.totalAssets()).to.be.equal(amount.add(assets).add(1));
+      expect(await adapter.availableBalance()).to.be.equal(amount.add(assets).add(1));
       // Now has 1 USDC worth of sanToken
       expectApprox(
         await adapter.maxWithdraw(alice.address),
