@@ -1,7 +1,7 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { KeeperRegistry__factory, MerkleRootDistributor__factory } from '../typechain';
+import { KeeperRegistry__factory } from '../typechain';
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;

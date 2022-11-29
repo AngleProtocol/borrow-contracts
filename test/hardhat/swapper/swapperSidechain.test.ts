@@ -15,7 +15,7 @@ import {
 import { expect } from '../utils/chai-setup';
 import { MAX_UINT256, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('Swapper', () => {
+contract('SwapperSidechain', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
@@ -243,7 +243,6 @@ contract('Swapper', () => {
       expect(await collateral.balanceOf(swapper.address)).to.be.equal(parseEther('0'));
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
     });
     it('success - simple data and to in the data is the zero address', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -260,7 +259,6 @@ contract('Swapper', () => {
       expect(await collateral.balanceOf(swapper.address)).to.be.equal(parseEther('0'));
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
     });
 
     it('success - simple data but with an allowance already given and more collateral obtained 1/3 - to!=recipient', async () => {
@@ -284,7 +282,6 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await stablecoin.balanceOf(bob.address)).to.be.equal(parseEther('1.5'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('2')));
     });
     it('success - simple data but with an allowance already given and more collateral obtained 2/3 - to = zero address', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -304,7 +301,6 @@ contract('Swapper', () => {
       expect(await collateral.balanceOf(swapper.address)).to.be.equal(parseEther('0'));
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('2.5'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('2')));
     });
     it('success - simple data but with an allowance already given and more collateral obtained 3/3 - just enough collat obtained', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -331,7 +327,6 @@ contract('Swapper', () => {
       expect(await collateral.balanceOf(swapper.address)).to.be.equal(parseEther('0'));
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('2.5'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('2')));
     });
     it('reverts - too small amount obtained from Uniswap', async () => {
       await collateral.mint(swapper.address, parseEther('2'));
@@ -541,7 +536,6 @@ contract('Swapper', () => {
         data,
       );
       expect(await router.counterMixer()).to.be.equal(1);
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
       expect(await collateral.balanceOf(router.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(swapper.address)).to.be.equal(parseEther('0'));
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('0.7'));

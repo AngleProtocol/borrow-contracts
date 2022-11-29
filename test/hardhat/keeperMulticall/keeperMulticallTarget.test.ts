@@ -206,7 +206,7 @@ describe('Keeper Multicall', async () => {
 
     await expect(
       Token2.connect(deployer).transferFrom(keeperMulticall.address, randomUser, utils.parseEther('10')),
-    ).to.be.revertedWith('ERC20: transfer amount exceeds allowance');
+    ).to.be.revertedWith('ERC20: insufficient allowance');
 
     const tx1 = await populateTx(Token1, 'transfer', [user2.address, utils.parseEther('2')]);
     const tx2 = await populateTx(Token2, 'approve', [deployer.address, utils.parseEther('20')]);
@@ -427,7 +427,7 @@ describe('Keeper Multicall', async () => {
     expect(await Token1.balanceOf(randomUser)).to.equal(0);
     await expect(
       Token1.connect(user1).transferFrom(keeperMulticall.address, randomUser, utils.parseEther('85')),
-    ).to.be.revertedWith('ERC20: transfer amount exceeds allowance');
+    ).to.be.revertedWith('ERC20: insufficient allowance');
     await Token1.connect(user1).transferFrom(keeperMulticall.address, randomUser, utils.parseEther('60'));
     expect(await Token1.balanceOf(randomUser)).to.equal(utils.parseEther('60'));
 
