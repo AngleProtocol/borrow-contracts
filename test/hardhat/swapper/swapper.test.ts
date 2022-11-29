@@ -137,7 +137,6 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
       expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(true);
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
     });
     it('success - simple data and to in the data is the zero address', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -155,7 +154,6 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
       expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(true);
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
     });
 
     it('success - simple data but with an allowance already given and more collateral obtained 1/3 - to!=recipient', async () => {
@@ -180,7 +178,6 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(bob.address)).to.be.equal(parseEther('1.5'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
       expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(true);
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('2')));
     });
     it('success - simple data but with an allowance already given and more collateral obtained 2/3 - to = zero address', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -201,7 +198,6 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('2.5'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
       expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(true);
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('2')));
     });
     it('success - simple data but with an allowance already given and more collateral obtained 3/3 - just enough collat obtained', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
@@ -229,7 +225,6 @@ contract('Swapper', () => {
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('2.5'));
       expect(await collateral.balanceOf(alice.address)).to.be.equal(parseEther('0'));
       expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(true);
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('2')));
     });
     it('reverts - too small amount obtained from Uniswap', async () => {
       await collateral.mint(swapper.address, parseEther('2'));
@@ -481,7 +476,6 @@ contract('Swapper', () => {
       expect(await swapper.angleRouterAllowedToken(stETH.address)).to.be.equal(true);
       expect(await router.counterUni()).to.be.equal(0);
       expect(await router.counterAngleMint()).to.be.equal(1);
-      expect(await stETH.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
       expect(await stablecoin.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await stETH.balanceOf(router.address)).to.be.equal(parseEther('1'));
     });
@@ -567,7 +561,6 @@ contract('Swapper', () => {
       await swapper.swap(stablecoin.address, stETH.address, alice.address, parseEther('1'), parseEther('1'), data);
       expect(await swapper.uniAllowedToken(stETH.address)).to.be.equal(false);
       expect(await swapper.angleRouterAllowedToken(stablecoin.address)).to.be.equal(true);
-      expect(await stablecoin.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
       expect(await stablecoin.balanceOf(router.address)).to.be.equal(parseEther('1'));
       expect(await stETH.balanceOf(alice.address)).to.be.equal(parseEther('1'));
       expect(await router.counterAngleBurn()).to.be.equal(1);
@@ -862,7 +855,7 @@ contract('Swapper', () => {
       );
       await swapper.swap(collateral.address, stablecoin.address, alice.address, parseEther('1'), parseEther('1'), data);
       expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(true);
-      expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(MAX_UINT256.sub(parseEther('1')));
+
       await swapper.connect(alice).changeAllowance([collateral.address], [router.address], [parseEther('0.5')]);
       expect(await swapper.uniAllowedToken(collateral.address)).to.be.equal(false);
       expect(await collateral.allowance(swapper.address, router.address)).to.be.equal(parseEther('0.5'));
