@@ -44,7 +44,7 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/external/lido/IWStETH.sol";
 import "../interfaces/external/uniswap/IUniswapRouter.sol";
 
-// ================================== Enum =====================================
+// ==================================== ENUM ===================================
 
 /// @notice All possible swaps
 enum SwapType {
@@ -57,11 +57,12 @@ enum SwapType {
 
 /// @title SwapperSidechain
 /// @author Angle Labs, Inc.
-/// @notice Swapper contract facilitating interactions with the VaultManager: to liquidate and get leverage
-abstract contract SwapperSidechain is ISwapper {
+/// @notice Swapper contract facilitating interactions with Angle VaultManager contracts, notably
+/// liquidation and leverage transactions
+contract SwapperSidechain is ISwapper {
     using SafeERC20 for IERC20;
 
-    // ================ Constants and Immutable Variables ==========================
+    // ===================== CONSTANTS AND IMMUTABLE VARIABLES =====================
 
     /// @notice Reference to the `CoreBorrow` contract of the module which handles all AccessControl logic
     ICoreBorrow public immutable core;
@@ -72,7 +73,7 @@ abstract contract SwapperSidechain is ISwapper {
     /// @notice AngleRouter
     IAngleRouterSidechain public immutable angleRouter;
 
-    // ================================== Errors ===================================
+    // =================================== ERRORS ==================================
 
     error EmptyReturnMessage();
     error IncompatibleLengths();
@@ -103,7 +104,7 @@ abstract contract SwapperSidechain is ISwapper {
         angleRouter = _angleRouter;
     }
 
-    // ======================= External Access Function ============================
+    // ========================= EXTERNAL ACCESS FUNCTIONS =========================
 
     /// @inheritdoc ISwapper
     /// @dev This function swaps the `inToken` to the `outToken` by doing a UniV3 swap, a 1Inch swap or by interacting
@@ -156,7 +157,7 @@ abstract contract SwapperSidechain is ISwapper {
         if (inTokenObtained != 0) inToken.safeTransfer(to, inTokenObtained);
     }
 
-    // ========================= Governance Function ===============================
+    // ============================ GOVERNANCE FUNCTION ============================
 
     /// @notice Changes allowances of this contract for different tokens
     /// @param tokens Addresses of the tokens to allow
@@ -175,7 +176,7 @@ abstract contract SwapperSidechain is ISwapper {
         }
     }
 
-    // ======================= Internal Utility Functions ==========================
+    // ========================= INTERNAL UTILITY FUNCTIONS ========================
 
     /// @notice Internal version of the `_changeAllowance` function
     function _changeAllowance(
@@ -211,6 +212,8 @@ abstract contract SwapperSidechain is ISwapper {
     /// @param args Extra args for the swap: in the case of Uniswap it should be a path, for 1Inch it should be
     /// a payload
     /// @dev This function does nothing if `swapType` is None and it simply passes on the `amount` it received
+    /// @dev No slippage is specified in the actions given here as a final slippage check is performed
+    /// after the call to this function
     function _swap(
         IERC20 inToken,
         uint256 amount,
@@ -227,8 +230,6 @@ abstract contract SwapperSidechain is ISwapper {
     /// @param inToken Token to swap
     /// @param amount Amount of tokens to swap
     /// @param path Path for the UniswapV3 swap: this encodes the out token that is going to be obtained
-    /// @dev We don't specify a slippage here as in the `swap` function a final slippage check
-    /// is performed at the end
     /// @dev This function does not check the out token obtained here: if it is wrongly specified, either
     /// the `swap` function could fail or these tokens could stay on the contract
     function _swapOnUniswapV3(
@@ -244,8 +245,6 @@ abstract contract SwapperSidechain is ISwapper {
     /// @notice Allows to swap any token to an accepted collateral via 1Inch API
     /// @param inToken Token received for the 1Inch swap
     /// @param payload Bytes needed for 1Inch API
-    /// @dev Here again, we don't specify a slippage here as in the `swap` function a final slippage check
-    /// is performed at the end
     function _swapOn1Inch(IERC20 inToken, bytes memory payload) internal returns (uint256 amountOut) {
         _changeAllowance(inToken, oneInch, type(uint256).max);
         //solhint-disable-next-line
@@ -265,9 +264,9 @@ abstract contract SwapperSidechain is ISwapper {
 
     /// @notice Allows to take leverage or deleverage via a specific contract
     /// @param payload Bytes needed for 1Inch API
-    /// @dev Here again, we don't specify a slippage as in the `swap` function a final slippage check
-    /// is performed at the end
-    function _swapLeverage(bytes memory payload) internal virtual returns (uint256 amountOut);
+    /// @dev This function is to be implemented if the swapper concerns a token that requires some actions
+    /// not supported by 1Inch or UniV3
+    function _swapLeverage(bytes memory payload) internal virtual returns (uint256 amountOut) {}
 
     /// @notice Internal function used for error handling
     /// @param errMsg Error message received
