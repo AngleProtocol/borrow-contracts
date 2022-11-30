@@ -15,7 +15,7 @@ import {
 import { expect } from '../utils/chai-setup';
 import { MAX_UINT256, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('SwapperSidechain', () => {
+contract('Swapper', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
