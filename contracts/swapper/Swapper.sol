@@ -139,7 +139,7 @@ contract Swapper is ISwapper {
         if (outTokenBalance < minAmountOut) revert TooSmallAmountOut();
 
         // The `outTokenRecipient` may already have enough in balance, in which case there's no need to transfer
-        // this address the token and everything can be given already to the `to` address
+        // to this address the token and everything can be given to the `to` address
         uint256 outTokenBalanceRecipient = outToken.balanceOf(outTokenRecipient);
         if (outTokenBalanceRecipient >= outTokenOwed || to == outTokenRecipient)
             outToken.safeTransfer(to, outTokenBalance);
