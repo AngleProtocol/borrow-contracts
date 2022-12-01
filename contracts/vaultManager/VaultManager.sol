@@ -950,7 +950,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     // ============================= VIRTUAL FUNCTIONS =============================
 
-    /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
+    /// @notice Returns the liquidation boost of a given address, that is the slope of the discount function
     /// @return The slope of the discount function
     function _computeLiquidationBoost(address) internal view virtual returns (uint256) {
         return yLiquidationBoost[0];
