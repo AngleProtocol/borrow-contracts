@@ -24,7 +24,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     console.log('Success');
   } else {
     await deploy(`Swapper`, {
-      contract: 'SwapperSidechain',
+      contract: 'Swapper',
       from: deployer.address,
       args: [core, json.uniswapV3Router, json.oneInchRouter, json.angleRouter],
       log: !argv.ci,
