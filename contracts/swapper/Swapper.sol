@@ -68,7 +68,7 @@ contract Swapper is ISwapper {
     ICoreBorrow public immutable core;
     /// @notice Uniswap Router contract
     IUniswapV3Router public immutable uniV3Router;
-    /// @notice 1Inch Router
+    /// @notice 1inch Router
     address public immutable oneInch;
     /// @notice AngleRouter
     IAngleRouterSidechain public immutable angleRouter;
@@ -84,7 +84,7 @@ contract Swapper is ISwapper {
     /// @notice Constructor of the contract
     /// @param _core Core address
     /// @param _uniV3Router UniswapV3 Router address
-    /// @param _oneInch 1Inch Router address
+    /// @param _oneInch 1inch Router address
     /// @param _angleRouter AngleRouter contract address
     constructor(
         ICoreBorrow _core,
@@ -107,7 +107,7 @@ contract Swapper is ISwapper {
     // ========================= EXTERNAL ACCESS FUNCTIONS =========================
 
     /// @inheritdoc ISwapper
-    /// @dev This function swaps the `inToken` to the `outToken` by doing a UniV3 swap, a 1Inch swap or by interacting
+    /// @dev This function swaps the `inToken` to the `outToken` by doing a UniV3 swap, a 1inch swap or by interacting
     /// with the `AngleRouter` contract
     /// @dev One slippage check is performed at the end of the call
     /// @dev In this implementation, the function tries to make sure that the `outTokenRecipient` address has at the end
@@ -124,11 +124,11 @@ contract Swapper is ISwapper {
         address to;
         // For slippage protection, it is checked at the end of the call
         uint256 minAmountOut;
-        // Type of the swap to execute: if `swapType == 3`, then it is optional to swap
-        uint128 swapType;
-        // We're reusing the `data` variable (it can be `path` on UniswapV3, a payload for 1Inch or like encoded actions
+        // Type of the swap to execute: if `swapType == 4`, then it is optional to swap
+        uint256 swapType;
+        // We're reusing the `data` variable (it can be `path` on UniswapV3, a payload for 1inch or like encoded actions
         // for a router call)
-        (to, minAmountOut, swapType, data) = abi.decode(data, (address, uint256, uint128, bytes));
+        (to, minAmountOut, swapType, data) = abi.decode(data, (address, uint256, uint256, bytes));
 
         to = (to == address(0)) ? outTokenRecipient : to;
 
@@ -152,7 +152,7 @@ contract Swapper is ISwapper {
         }
         // Reusing the `inTokenObtained` variable for the `inToken` balance
         // Sending back the remaining amount of inTokens to the `to` address: it is possible that not the full `inTokenObtained`
-        // is swapped to `outToken` if we're using the `1Inch` payload
+        // is swapped to `outToken` if we're using the `1inch` payload
         inTokenObtained = inToken.balanceOf(address(this));
         if (inTokenObtained != 0) inToken.safeTransfer(to, inTokenObtained);
     }
@@ -205,11 +205,11 @@ contract Swapper is ISwapper {
         if (currentAllowance < amount) token.safeIncreaseAllowance(spender, type(uint256).max - currentAllowance);
     }
 
-    /// @notice Performs a swap using either Uniswap, 1Inch. This function can also stake stETH to wstETH
+    /// @notice Performs a swap using either Uniswap, 1inch. This function can also stake stETH to wstETH
     /// @param inToken Token to swap
     /// @param amount Amount of tokens to swap
     /// @param swapType Type of the swap to perform
-    /// @param args Extra args for the swap: in the case of Uniswap it should be a path, for 1Inch it should be
+    /// @param args Extra args for the swap: in the case of Uniswap it should be a path, for 1inch it should be
     /// a payload
     /// @dev This function does nothing if `swapType` is None and it simply passes on the `amount` it received
     /// @dev No slippage is specified in the actions given here as a final slippage check is performed
@@ -221,7 +221,7 @@ contract Swapper is ISwapper {
         bytes memory args
     ) internal {
         if (swapType == SwapType.UniswapV3) _swapOnUniswapV3(inToken, amount, args);
-        else if (swapType == SwapType.oneInch) _swapOn1Inch(inToken, args);
+        else if (swapType == SwapType.oneInch) _swapOn1inch(inToken, args);
         else if (swapType == SwapType.AngleRouter) _angleRouterActions(inToken, args);
         else if (swapType == SwapType.Leverage) _swapLeverage(args);
     }
@@ -242,10 +242,10 @@ contract Swapper is ISwapper {
         amountOut = uniV3Router.exactInput(ExactInputParams(path, address(this), block.timestamp, amount, 0));
     }
 
-    /// @notice Allows to swap any token to an accepted collateral via 1Inch API
-    /// @param inToken Token received for the 1Inch swap
-    /// @param payload Bytes needed for 1Inch API
-    function _swapOn1Inch(IERC20 inToken, bytes memory payload) internal returns (uint256 amountOut) {
+    /// @notice Allows to swap any token to an accepted collateral via 1inch API
+    /// @param inToken Token received for the 1inch swap
+    /// @param payload Bytes needed for 1inch API
+    function _swapOn1inch(IERC20 inToken, bytes memory payload) internal returns (uint256 amountOut) {
         _changeAllowance(inToken, oneInch, type(uint256).max);
         //solhint-disable-next-line
         (bool success, bytes memory result) = oneInch.call(payload);
@@ -263,9 +263,9 @@ contract Swapper is ISwapper {
     }
 
     /// @notice Allows to take leverage or deleverage via a specific contract
-    /// @param payload Bytes needed for 1Inch API
+    /// @param payload Bytes needed for 1inch API
     /// @dev This function is to be implemented if the swapper concerns a token that requires some actions
-    /// not supported by 1Inch or UniV3
+    /// not supported by 1inch or UniV3
     function _swapLeverage(bytes memory payload) internal virtual returns (uint256 amountOut) {}
 
     /// @notice Internal function used for error handling
