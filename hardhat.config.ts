@@ -317,11 +317,6 @@ const config: HardhatUserConfig = {
     overwrite: true,
     runOnCompile: false,
   },
-  docgen: {
-    path: './docs',
-    clear: true,
-    runOnCompile: false,
-  },
   abiExporter: {
     path: './export/abi',
     clear: true,
