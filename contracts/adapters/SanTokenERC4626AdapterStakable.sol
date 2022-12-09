@@ -17,7 +17,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @notice Angle-related constants
     IERC20 private constant _ANGLE = IERC20(0x31429d1856aD1377A8A0079410B297e1a9e214c2);
 
-    uint256 public constant BASE_36 = 10**36;
+    uint256 internal constant _BASE_36 = 10**36;
 
     // ================================= REFERENCES ================================
 
@@ -70,9 +70,9 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     function claimableRewards(address from, IERC20 _rewardToken) external view returns (uint256) {
         uint256 _totalSupply = totalSupply();
         uint256 newIntegral = _totalSupply != 0
-            ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * BASE_36) / _totalSupply
+            ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * _BASE_36) / _totalSupply
             : integral[_rewardToken];
-        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_36;
+        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / _BASE_36;
         return pendingRewardsOf[_rewardToken][from] + newClaimable;
     }
 
@@ -90,7 +90,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
         uint256 userBalance = balanceOf(from);
         for (uint256 i; i < rewardTokensLength; ++i) {
             uint256 totalClaimable = (userBalance * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
-                BASE_36 +
+                _BASE_36 +
                 pendingRewardsOf[rewardTokens[i]][from];
             if (totalClaimable != 0) {
                 if (_claim) {
@@ -119,7 +119,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @param amount Amount to add to the claimable rewards
     function _updateRewards(IERC20 rewardToken, uint256 amount) internal {
         uint256 _totalSupply = totalSupply();
-        if (_totalSupply != 0) integral[rewardToken] += (amount * BASE_36) / _totalSupply;
+        if (_totalSupply != 0) integral[rewardToken] += (amount * _BASE_36) / _totalSupply;
     }
 
     /// @notice Gets the reward tokens given in the liquidity gauge
