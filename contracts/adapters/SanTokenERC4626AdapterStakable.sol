@@ -17,6 +17,8 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @notice Angle-related constants
     IERC20 private constant _ANGLE = IERC20(0x31429d1856aD1377A8A0079410B297e1a9e214c2);
 
+    uint256 public constant BASE_36 = 10**36;
+
     // ================================= REFERENCES ================================
 
     /// @notice Maps each reward token to a track record of cumulated rewards
@@ -43,7 +45,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     ) internal override {
         // Not claiming only if it is a deposit
         bool _claim = !(_from == address(0));
-        _claimRewards();
+        _claimContractRewards();
         _checkpointRewardsUser(_from, _claim);
         _checkpointRewardsUser(_to, _claim);
         // If the user is withdrawing, we need to unstake from the gauge
@@ -58,7 +60,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @return rewardAmounts Amounts of each reward token claimed by the user
     //solhint-disable-next-line
     function claim_rewards(address from) external returns (uint256[] memory) {
-        _claimRewards();
+        _claimContractRewards();
         return _checkpointRewardsUser(from, true);
     }
 
@@ -68,9 +70,9 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     function claimableRewards(address from, IERC20 _rewardToken) external view returns (uint256) {
         uint256 _totalSupply = totalSupply();
         uint256 newIntegral = _totalSupply != 0
-            ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * _BASE_PARAMS) / _totalSupply
+            ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * BASE_36) / _totalSupply
             : integral[_rewardToken];
-        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / _BASE_PARAMS;
+        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / BASE_36;
         return pendingRewardsOf[_rewardToken][from] + newClaimable;
     }
 
@@ -88,7 +90,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
         uint256 userBalance = balanceOf(from);
         for (uint256 i; i < rewardTokensLength; ++i) {
             uint256 totalClaimable = (userBalance * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
-                _BASE_PARAMS +
+                BASE_36 +
                 pendingRewardsOf[rewardTokens[i]][from];
             if (totalClaimable != 0) {
                 if (_claim) {
@@ -104,7 +106,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     }
 
     /// @notice Claims all available rewards and increases the associated integral
-    function _claimRewards() internal virtual {
+    function _claimContractRewards() internal virtual {
         uint256 prevBalanceAngle = _ANGLE.balanceOf(address(this));
         gauge().claim_rewards(address(this), address(0));
         uint256 angleRewards = _ANGLE.balanceOf(address(this)) - prevBalanceAngle;
@@ -117,7 +119,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @param amount Amount to add to the claimable rewards
     function _updateRewards(IERC20 rewardToken, uint256 amount) internal {
         uint256 _totalSupply = totalSupply();
-        if (_totalSupply != 0) integral[rewardToken] += (amount * _BASE_PARAMS) / _totalSupply;
+        if (_totalSupply != 0) integral[rewardToken] += (amount * BASE_36) / _totalSupply;
     }
 
     /// @notice Gets the reward tokens given in the liquidity gauge

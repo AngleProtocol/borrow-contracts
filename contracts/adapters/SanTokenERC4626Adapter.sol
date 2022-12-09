@@ -219,10 +219,12 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
         (, , , , , uint256 sanRate, , SLPData memory slpData, ) = stableMaster().collateralMap(poolManager());
         if (block.timestamp != slpData.lastBlockUpdated && slpData.lockedInterests > 0) {
             uint256 sanMint = sanToken().totalSupply();
-            if (slpData.lockedInterests > slpData.maxInterestsDistributed) {
-                sanRate += (slpData.maxInterestsDistributed * _BASE) / sanMint;
-            } else {
-                sanRate += (slpData.lockedInterests * _BASE) / sanMint;
+            if (sanMint != 0) {
+                if (slpData.lockedInterests > slpData.maxInterestsDistributed) {
+                    sanRate += (slpData.maxInterestsDistributed * _BASE) / sanMint;
+                } else {
+                    sanRate += (slpData.lockedInterests * _BASE) / sanMint;
+                }
             }
         }
         return (sanRate, slpData.slippage);

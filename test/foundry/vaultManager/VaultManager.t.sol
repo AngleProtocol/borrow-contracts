@@ -6,7 +6,7 @@ import { stdStorage, StdStorage, Test } from "forge-std/Test.sol";
 import { VaultManager, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManager.sol";
 import { ActionType } from "../../../contracts/interfaces/IVaultManager.sol";
 import "../../../contracts/treasury/Treasury.sol";
-import "../../../contracts/mock/MockStableMaster.sol";
+import { MockStableMaster } from "../../../contracts/mock/MockStableMaster.sol";
 import "../../../contracts/mock/MockOracle.sol";
 import "../../../contracts/mock/MockToken.sol";
 import "../../../contracts/coreBorrow/CoreBorrow.sol";
