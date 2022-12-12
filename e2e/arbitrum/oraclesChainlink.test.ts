@@ -3,14 +3,14 @@ import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { contract, ethers } from 'hardhat';
 
-import {
-  OracleBTCEURChainlinkArbitrum,
-  OracleBTCEURChainlinkArbitrum__factory,
-  MockTreasury,
-  MockTreasury__factory,
-} from '../../typechain';
 import { expect } from '../../test/hardhat/utils/chai-setup';
 import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
+import {
+  MockTreasury,
+  MockTreasury__factory,
+  OracleBTCEURChainlinkArbitrum,
+  OracleBTCEURChainlinkArbitrum__factory,
+} from '../../typechain';
 
 contract('Oracles Chainlink', () => {
   let deployer: SignerWithAddress;
@@ -43,7 +43,6 @@ contract('Oracles Chainlink', () => {
       console.log(receipt.toString());
     });
     it('initialization', async () => {
-      expect(await oracleBTC.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleBTC.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleBTC.treasury()).to.be.equal(treasury.address);
     });

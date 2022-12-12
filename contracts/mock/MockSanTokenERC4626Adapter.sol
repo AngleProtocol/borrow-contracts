@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.12;
 
 import "../adapters/SanTokenERC4626Adapter.sol";
 import { SanTokenERC4626AdapterStakable } from "../adapters/SanTokenERC4626AdapterStakable.sol";

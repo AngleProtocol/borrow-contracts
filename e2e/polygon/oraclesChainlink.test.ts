@@ -47,7 +47,6 @@ contract('Oracles Chainlink', () => {
       console.log(receipt.toString());
     });
     it('initialization', async () => {
-      expect(await oracleBTC.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleBTC.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleBTC.treasury()).to.be.equal(treasury.address);
     });
@@ -60,7 +59,6 @@ contract('Oracles Chainlink', () => {
       console.log(receipt.toString());
     });
     it('initialization', async () => {
-      expect(await oracleMAI.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleMAI.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleMAI.treasury()).to.be.equal(treasury.address);
     });
