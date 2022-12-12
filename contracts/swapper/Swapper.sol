@@ -92,12 +92,8 @@ contract Swapper is ISwapper {
         address _oneInch,
         IAngleRouterSidechain _angleRouter
     ) {
-        if (
-            address(_core) == address(0) ||
-            address(_uniV3Router) == address(0) ||
-            _oneInch == address(0) ||
-            address(_angleRouter) == address(0)
-        ) revert ZeroAddress();
+        if (address(_core) == address(0) || _oneInch == address(0) || address(_angleRouter) == address(0))
+            revert ZeroAddress();
         core = _core;
         uniV3Router = _uniV3Router;
         oneInch = _oneInch;

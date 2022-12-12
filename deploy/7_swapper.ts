@@ -1,4 +1,4 @@
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
+import { ChainId, registry } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
@@ -12,29 +12,21 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const core = (await deployments.get('CoreBorrow')).address;
 
   console.log('Now deploying the swapper contract');
+  const angleRouter = registry(network.config.chainId as ChainId)?.AngleRouterV2;
+  console.log('Checking contract addresses');
+  console.log(`${core} ${json.uniswapV3Router} ${json.oneInchRouter} ${angleRouter}`);
 
-  if (network.live && network.config.chainId == 1) {
-    const routerAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].AngleRouter!;
-    await deploy(`Swapper`, {
-      contract: 'Swapper',
-      from: deployer.address,
-      args: [core, json.tokens.wstETH, json.uniswapV3Router, json.oneInchRouter, routerAddress],
-      log: !argv.ci,
-    });
-    console.log('Success');
-  } else {
-    await deploy(`Swapper`, {
-      contract: 'Swapper',
-      from: deployer.address,
-      args: [core, json.uniswapV3Router, json.oneInchRouter, json.angleRouter],
-      log: !argv.ci,
-    });
-    console.log('Success');
-    const swapperAddress = (await deployments.get('Swapper')).address;
-    console.log(`${swapperAddress} ${core} ${json.uniswapV3Router} ${json.oneInchRouter} ${json.angleRouter}`);
-  }
+  await deploy(`Swapper`, {
+    contract: 'Swapper',
+    from: deployer.address,
+    args: [core, json.uniswapV3Router, json.oneInchRouter, angleRouter],
+    log: !argv.ci,
+  });
+  console.log('Success');
+  const swapperAddress = (await deployments.get('Swapper')).address;
+  console.log(`${swapperAddress}`);
 };
 
 func.tags = ['swapper'];
-func.dependencies = ['vaultManagerProxy'];
+// func.dependencies = ['vaultManagerProxy'];
 export default func;

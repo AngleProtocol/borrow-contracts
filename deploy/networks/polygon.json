@@ -2,7 +2,7 @@
   "governor": "0xdA2D2f638D6fcbE306236583845e5822554c02EA",
   "guardian": "0x3b9D32D0822A6351F415BeaB05251c1457FF6f8D",
   "uniswapV3Router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
-  "oneInchRouter": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+  "oneInchRouter": "0x1111111254eeb25477b68fb85ed929f73a960582",
   "angleRouter": "0x892bf71463Bd9fa57f3c2266aB74dbe1B96DECEa",
   "dust": "0",
   "vaultsList": ["MAI"]

@@ -24,14 +24,23 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
     console.log(`Successfully deployed Oracle LUSD/EUR at the address ${oracle}`);
     console.log('');
   } else {
-    await deploy('Oracle_MAI_EUR', {
-      contract: `OracleMAIEURChainlink${chainName}`,
+    await deploy('Oracle_AVAX_EUR', {
+      contract: `OracleAVAXEURChainlink${chainName}`,
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle = (await deployments.get('Oracle_MAI_EUR')).address;
-    console.log(`Successfully deployed Oracle MAI/EUR at the address ${oracle}`);
+    const oracle = (await deployments.get('Oracle_AVAX_EUR')).address;
+    console.log(`Successfully deployed Oracle AVAX/EUR at the address ${oracle}`);
+
+    await deploy('Oracle_USDC_EUR', {
+      contract: `OracleUSDCEURChainlink${chainName}`,
+      from: deployer.address,
+      args: [3600 * 48, treasury],
+      log: !argv.ci,
+    });
+    const oracle2 = (await deployments.get('Oracle_USDC_EUR')).address;
+    console.log(`Successfully deployed Oracle USDC/EUR at the address ${oracle2}`);
   }
 };
 
