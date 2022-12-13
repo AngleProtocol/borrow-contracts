@@ -109,7 +109,7 @@ contract('SanTokenERC4626AdapterStakable', () => {
       expect(await angleToken.balanceOf(alice.address)).to.be.equal(0);
       expect(await adapter.integralOf(angle, alice.address)).to.be.equal(integral);
       expect(await adapter.pendingRewardsOf(angle, alice.address)).to.be.equal(
-        amount.mul(integral).div(parseUnits('1', 9)),
+        amount.mul(integral).div(parseUnits('1', 36)),
       );
       // Now if transferring the assets
       await adapter.connect(alice).transfer(bob.address, amount.div(2));

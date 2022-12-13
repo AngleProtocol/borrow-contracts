@@ -6,21 +6,22 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "../../BaseOracleChainlinkMultiTwoFeeds.sol";
 
-/// @title OracleLUSDEURChainlink
+/// @title OracleUSDCEURChainlinkAvalanche
 /// @author Angle Labs, Inc.
-/// @notice Gives the price of LUSD in Euro in base 18
-contract OracleLUSDEURChainlink is BaseOracleChainlinkMultiTwoFeeds {
-    string public constant DESCRIPTION = "LUSD/EUR Oracle";
+/// @notice Gives the price of USDC in Euro in base 18
+/// @dev This contract is built to be deployed on Avalanche
+contract OracleUSDCEURChainlinkAvalanche is BaseOracleChainlinkMultiTwoFeeds {
+    string public constant DESCRIPTION = "USDC/EUR Oracle";
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
     /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
     function circuitChainlink() public pure override returns (AggregatorV3Interface[2] memory) {
         return [
-            // Oracle LUSD/USD
-            AggregatorV3Interface(0x3D7aE7E594f2f2091Ad8798313450130d0Aba3a0),
+            // Oracle USDC/USD
+            AggregatorV3Interface(0xF096872672F44d6EBA71458D74fe67F9a77a23B9),
             // Oracle EUR/USD
-            AggregatorV3Interface(0xb49f677943BC038e9857d61E7d053CaA2C1734C1)
+            AggregatorV3Interface(0x192f2DBA961Bb0277520C082d6bfa87D5961333E)
         ];
     }
 }

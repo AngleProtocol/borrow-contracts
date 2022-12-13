@@ -16,8 +16,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
 
   let proxyAdminAddress: string;
-  const implementation = (await ethers.getContract('VaultManagerNoDust_Implementation')).address;
-  const treasuryAddress = (await ethers.getContract('Treasury')).address;
+
   const json = await import('./networks/' + network.name + '.json');
   const vaultsList = json.vaultsList;
 
@@ -28,8 +27,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdminAddress = (await ethers.getContract('ProxyAdmin')).address;
   }
-
-  const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
   console.log(`Deploying proxies for the following vaultManager: ${vaultsList}`);
 
@@ -58,6 +55,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       console.log(`whitelistingActivated: ${vaultManagerParams.params.whitelistingActivated.toString()}`);
       console.log('');
 
+      const treasuryAddress = (await ethers.getContract('Treasury')).address;
+      const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
+
+      const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),
@@ -87,5 +88,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['vaultManagerProxy'];
-// func.dependencies = ['vaultManagerImplementation'];
+func.dependencies = ['vaultManagerImplementation'];
 export default func;

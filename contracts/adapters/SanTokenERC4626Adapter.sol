@@ -59,6 +59,8 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
 
     uint256 internal constant _BASE_PARAMS = 10**9;
     uint256 internal constant _BASE = 10**18;
+    // `_BASE_27` is the product between `_BASE` and `_BASE_PARAMS`
+    uint256 internal constant _BASE_27 = 10**27;
 
     // =================================== ERROR ===================================
 
@@ -282,16 +284,12 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
     /// @notice Converts an amount of `assets` to a shares amount with potential exit slippage taken into account
     function _convertToSharesWithSlippage(uint256 assets) internal view returns (uint256 shares) {
         (uint256 sanRate, uint256 slippage) = _estimateSanRate();
-        shares = assets.mulDiv(_BASE * _BASE_PARAMS, (_BASE_PARAMS - slippage) * sanRate, MathUpgradeable.Rounding.Up);
+        shares = assets.mulDiv(_BASE_27, (_BASE_PARAMS - slippage) * sanRate, MathUpgradeable.Rounding.Up);
     }
 
     /// @notice Converts an amount of `shares` to an assets amount with potential exit slippage taken into account
     function _convertToAssetsWithSlippage(uint256 shares) internal view returns (uint256 assets) {
         (uint256 sanRate, uint256 slippage) = _estimateSanRate();
-        assets = shares.mulDiv(
-            (_BASE_PARAMS - slippage) * sanRate,
-            _BASE * _BASE_PARAMS,
-            MathUpgradeable.Rounding.Down
-        );
+        assets = shares.mulDiv((_BASE_PARAMS - slippage) * sanRate, _BASE_27, MathUpgradeable.Rounding.Down);
     }
 }
