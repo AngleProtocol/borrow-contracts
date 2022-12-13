@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.12;
 
 import "../BaseTest.test.sol";
 import "../../../contracts/interfaces/ICoreBorrow.sol";
@@ -18,7 +18,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
     MockStableMasterSanWrapper public stableMaster;
     uint256 internal constant _BASE = 10**18;
     uint8 public decimalToken = 18;
-    uint256 public maxTokenAmount = 10**12 * 10**decimalToken;
+    uint256 public maxTokenAmount = 10**9 * 10**decimalToken;
     uint256 public maxLockedInterest = 10**6 * 10**decimalToken;
     uint256 public maxInterestDistributed = 10**4 * 10**decimalToken;
 
