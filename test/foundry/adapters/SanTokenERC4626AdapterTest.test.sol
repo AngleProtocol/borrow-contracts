@@ -230,7 +230,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
                 maxInterestDistributed,
                 uint64(bound(lockedInterestsSlippage[i * 2 + 1], 0, BASE_PARAMS))
             );
-            stableMaster.setSanRate(address(stableMaster), bound(sanRates[i], 10**12, 10**25));
+            stableMaster.setSanRate(address(stableMaster), bound(sanRates[i], 10**12, 10**21));
 
             if (sanTokenAdapter.balanceOf(account) == 0) isDepositWithdraw[i] = true;
             (uint256 newSanRate, uint64 slippage) = stableMaster.estimateSanRate(address(stableMaster));
@@ -317,7 +317,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
                 // to not have an arithmetic overflow in the `_sanTokenValueAfterWithdraw`
                 uint64(bound(lockedInterestsSlippage[i * 2 + 1], 0, BASE_PARAMS - 1))
             );
-            stableMaster.setSanRate(address(stableMaster), bound(sanRates[i], 10**10, 10**22));
+            stableMaster.setSanRate(address(stableMaster), bound(sanRates[i], 10**10, 10**21));
 
             if (sanTokenAdapter.balanceOf(account) == 0) isMintWithdraw[i] = true;
             uint64 slippage;
