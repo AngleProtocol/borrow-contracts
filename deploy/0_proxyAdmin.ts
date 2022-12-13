@@ -22,12 +22,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log(`Now deploying ProxyAdmin on the chain ${network.config.chainId}`);
   console.log('Guardian address is ', guardian);
-  await deploy('ProxyAdmin', {
+  await deploy('ProxyAdminGuardian', {
     contract: 'ProxyAdmin',
     from: deployer.address,
     log: !argv.ci,
   });
-  const proxyAdminAddress = (await ethers.getContract('ProxyAdmin')).address;
+  const proxyAdminAddress = (await ethers.getContract('ProxyAdminGuardian')).address;
 
   proxyAdmin = new ethers.Contract(proxyAdminAddress, ProxyAdmin__factory.createInterface(), deployer) as ProxyAdmin;
 
