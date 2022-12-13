@@ -69,6 +69,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         vaultManagerParams.params,
         vaultManagerParams.symbol,
       ]);
+
       // await deployProxy(name, implementation, proxyAdminAddress, callData);
       await deploy(name, {
         contract: 'TransparentUpgradeableProxy',
@@ -88,5 +89,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['vaultManagerProxy'];
-func.dependencies = ['vaultManagerImplementation'];
+// func.dependencies = ['vaultManagerImplementation'];
 export default func;
