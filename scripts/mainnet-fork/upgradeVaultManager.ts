@@ -58,7 +58,7 @@ async function main() {
   console.log(await vaultManager.name());
   console.log(await vaultManager.symbol());
 
-  await vaultManager.connect(signer).setDusts(10, 10);
+  await vaultManager.connect(signer).setDusts(10, 10, 10);
   console.log((await vaultManager.dust()).toString());
 
   console.log((await vaultManager.vaultData(8)).collateralAmount.toString());

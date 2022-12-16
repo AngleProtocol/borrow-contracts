@@ -128,12 +128,19 @@ contract('VaultManager - Dust Modification interactions', () => {
   });
   describe('setDusts', () => {
     it('reverts - non governor', async () => {
-      await expect(vaultManager.connect(alice).setDusts(0, 0)).to.be.revertedWith('NotGovernor');
-      await expect(vaultManager.connect(guardian).setDusts(0, 0)).to.be.revertedWith('NotGovernor');
+      await expect(vaultManager.connect(alice).setDusts(0, 0, 0)).to.be.revertedWith('NotGovernor');
+      await expect(vaultManager.connect(guardian).setDusts(0, 0, 0)).to.be.revertedWith('NotGovernor');
     });
     it('success - when governor is calling', async () => {
-      await vaultManager.connect(governor).setDusts(1, 1);
+      await vaultManager.connect(governor).setDusts(1, 2, 1);
       expect(await vaultManager.dust()).to.be.equal(1);
+      expect(await vaultManager.dustLiquidation()).to.be.equal(2);
+      await vaultManager.connect(governor).setDusts(parseEther('0.1'), parseEther('10'), 1);
+      expect(await vaultManager.dust()).to.be.equal(parseEther('0.1'));
+      expect(await vaultManager.dustLiquidation()).to.be.equal(parseEther('10'));
+    });
+    it('reverts - invalid parameter value', async () => {
+      await expect(vaultManager.connect(governor).setDusts(2, 1, 1)).to.be.revertedWith('InvalidParameterValue');
     });
   });
   describe('repayDebt - when dust has increased', () => {
@@ -164,18 +171,18 @@ contract('VaultManager - Dust Modification interactions', () => {
       expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expect(await vaultManager.getVaultDebt(2)).to.be.equal(parseEther('0.5'));
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('0.5'));
-      await vaultManager.connect(governor).setDusts(parseEther('1'), parseEther('1'));
+      await vaultManager.connect(governor).setDusts(parseEther('1'), parseEther('1'), parseEther('1'));
       await expect(angle(vaultManager, alice, [repayDebt(2, parseEther('0.3'))])).to.be.revertedWith(
         'DustyLeftoverAmount',
       );
-      await vaultManager.connect(governor).setDusts(parseEther('0.1'), parseEther('0.1'));
+      await vaultManager.connect(governor).setDusts(parseEther('0.1'), parseEther('0.1'), parseEther('0.1'));
       await angle(vaultManager, alice, [repayDebt(2, parseEther('0.3'))]);
       expect((await vaultManager.vaultData(2)).collateralAmount).to.be.equal(collatAmount);
       expect((await vaultManager.vaultData(2)).normalizedDebt).to.be.equal(parseEther('0.2'));
       expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expect(await vaultManager.getVaultDebt(2)).to.be.equal(parseEther('0.2'));
       expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('0.2'));
-      await vaultManager.connect(governor).setDusts(parseEther('1'), parseEther('1'));
+      await vaultManager.connect(governor).setDusts(parseEther('1'), parseEther('1'), parseEther('1'));
       await expect(angle(vaultManager, alice, [repayDebt(2, parseEther('0.1'))])).to.be.revertedWith(
         'DustyLeftoverAmount',
       );
@@ -217,11 +224,11 @@ contract('VaultManager - Dust Modification interactions', () => {
       expect(await vaultManager.lastInterestAccumulatorUpdated()).to.be.equal(await latestTime());
       expect(await vaultManager.getVaultDebt(2)).to.be.equal(parseEther('1'));
       expect(await vaultManager.getVaultDebt(1)).to.be.equal(parseEther('1'));
-      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'));
+      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'), parseEther('0.5'));
       await expect(
         angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('0.6'))]),
       ).to.be.revertedWith('DustyLeftoverAmount');
-      await vaultManager.connect(governor).setDusts(parseEther('1.5'), parseEther('1.5'));
+      await vaultManager.connect(governor).setDusts(parseEther('1.5'), parseEther('1.5'), parseEther('1.5'));
       // You cannot reduce your debt
       await expect(
         angle(vaultManager, alice, [getDebtIn(1, vaultManager.address, 2, parseEther('0.1'))]),
@@ -274,7 +281,7 @@ contract('VaultManager - Dust Modification interactions', () => {
       );
       // Now if dust increases, we may be in a situation where it's too high
       await displayVaultState(vaultManager, 2, log, collatBase);
-      await vaultManager.connect(governor).setDusts(parseEther('10'), parseEther('10'));
+      await vaultManager.connect(governor).setDusts(parseEther('10'), parseEther('10'), parseEther('10'));
       const stableAmountToRepay = (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay;
       const collatGiven = (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven;
       expectApprox(stableAmountToRepay, parseEther(maxStablecoinAmountToRepay.toString()), 0.0001);
@@ -335,7 +342,7 @@ contract('VaultManager - Dust Modification interactions', () => {
       );
       expect((await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount).to.be.equal(0);
 
-      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'));
+      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'), parseEther('0.5'));
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -363,7 +370,7 @@ contract('VaultManager - Dust Modification interactions', () => {
         0.0001,
       );
 
-      await vaultManager.connect(governor).setDusts(parseEther('1.5'), parseEther('1.5'));
+      await vaultManager.connect(governor).setDusts(parseEther('1.5'), parseEther('1.5'), parseEther('1.5'));
 
       await displayVaultState(vaultManager, 2, log, collatBase);
 
@@ -386,6 +393,129 @@ contract('VaultManager - Dust Modification interactions', () => {
           'liquidate(uint256[],uint256[],address,address)'
         ]([2], [0], bob.address, bob.address),
       ).to.be.revertedWith('DustyLeftoverAmount');
+
+      expect(await agToken.balanceOf(bob.address)).to.be.equal(borrowAmount.mul(10));
+      expect(await collateral.balanceOf(bob.address)).to.be.equal(0);
+
+      await vaultManager.connect(bob)[
+        // We still enter a really small amount
+        'liquidate(uint256[],uint256[],address,address)'
+      ]([2], [4], bob.address, bob.address);
+
+      expectApprox(
+        await agToken.balanceOf(bob.address),
+        borrowAmount.mul(10).sub(parseEther(maxStablecoinAmountToRepay2.toString())),
+        0.1,
+      );
+      expectApprox(
+        await collateral.balanceOf(bob.address),
+        parseUnits((maxStablecoinAmountToRepay2 / rate / discount).toFixed(10), collatBase),
+        0.1,
+      );
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expect(await vaultManager.totalNormalizedDebt()).to.be.equal(0);
+    });
+    it('success - dustLiquidation but no dust', async () => {
+      const collatAmount = parseUnits('2', collatBase);
+      const borrowAmount = parseEther('1');
+
+      await collateral.connect(alice).mint(alice.address, collatAmount);
+      await collateral.connect(alice).approve(vaultManager.address, collatAmount);
+
+      await stableMaster.connect(bob).mint(agToken.address, bob.address, borrowAmount.mul(10));
+      await agToken.connect(bob).approve(vaultManager.address, borrowAmount);
+
+      await angle(vaultManager, alice, [
+        createVault(alice.address),
+        createVault(alice.address),
+        addCollateral(2, collatAmount),
+        borrow(2, borrowAmount),
+      ]);
+      const rate = 0.6;
+      await oracle.update(parseEther(rate.toString()));
+
+      // This time discount is maxed
+      const discount = Math.max((2 * rate * 0.8) / 1, 0.9);
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.8) / (0.9 * 1.1 - 0.8 / discount);
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      // This is approx equal to 0.89 over 1
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+      expect((await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount).to.be.equal(0);
+
+      // There is no dust on the debt but there is on
+      await vaultManager.connect(governor).setDusts(parseEther('0'), parseEther('0.5'), parseEther('0'));
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      console.log((await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay.toString());
+
+      const maxStablecoinAmountToRepay2 = 1 / 0.9;
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay2.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay2 / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+      // Threshold repay amount is (debt - dust) / surcharge
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount,
+        // 0.5 is debt - dust and surcharge is 0.9
+        parseEther('0.555555555555555555'),
+        0.0001,
+      );
+
+      await vaultManager.connect(governor).setDusts(parseEther('0'), parseEther('1.5'), parseEther('0'));
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay2.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay2 / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+
+      expect((await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount).to.be.equal(1);
+
+      await vaultManager.connect(bob)[
+        // We still enter a really small amount
+        'liquidate(uint256[],uint256[],address,address)'
+      ]([2], [0], bob.address, bob.address);
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay2.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay2 / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+
+      expect((await vaultManager.checkLiquidation(2, bob.address)).thresholdRepayAmount).to.be.equal(1);
 
       expect(await agToken.balanceOf(bob.address)).to.be.equal(borrowAmount.mul(10));
       expect(await collateral.balanceOf(bob.address)).to.be.equal(0);

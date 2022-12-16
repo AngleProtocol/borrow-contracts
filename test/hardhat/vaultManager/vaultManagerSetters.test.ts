@@ -95,7 +95,7 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
     oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
-    await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
+    await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9, 0.1e9);
   });
 
   describe('setUint64', () => {

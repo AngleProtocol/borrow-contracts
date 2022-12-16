@@ -54,7 +54,11 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// in a vault during a liquidation where the health factor function is decreasing
     uint256 internal _dustCollateral;
 
-    uint256[48] private __gapVaultManager;
+    /// @notice If the amount of debt of a vault that gets liquidated is below this amount, then the liquidator
+    /// can liquidate all the debt of the vault (and not just what's needed to get to the target HealthFactor)
+    uint256 public dustLiquidation;
+
+    uint256[47] private __gapVaultManager;
 
     /// @inheritdoc IVaultManagerFunctions
     function initialize(
@@ -797,7 +801,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // The quantity below tends to be rounded in the above direction, which means that governance or guardians should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dust * BASE_PARAMS) {
+            uint256 dustParameter = dustLiquidation;
+            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dustParameter * BASE_PARAMS) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
                 // We're rounding up the max amount to repay to make sure all the debt ends up being paid
                 // and we're computing again the real value of the debt to avoid propagation of rounding errors
@@ -808,8 +813,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 // In this case the threshold amount is such that it leaves just enough dust: amount is rounded
                 // down such that if a liquidator repays this amount then there would be more than `dust` left in
                 // the liquidated vault
-                if (currentDebt > dust)
-                    thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
+                if (currentDebt > dustParameter)
+                    thresholdRepayAmount = ((currentDebt - dustParameter) * BASE_PARAMS) / surcharge;
                     // If there is from the beginning a dusty debt (because of an implementation upgrade), then
                     // liquidator should repay everything that's left
                 else thresholdRepayAmount = 1;
@@ -933,10 +938,17 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Sets the dust variables
     /// @param _dust New minimum debt allowed
+    /// @param _dustLiquidation New `dustLiquidation` value
     /// @param dustCollateral_ New minimum collateral allowed in a vault after a liquidation
     /// @dev dustCollateral_ is in stable value
-    function setDusts(uint256 _dust, uint256 dustCollateral_) external onlyGovernor {
+    function setDusts(
+        uint256 _dust,
+        uint256 _dustLiquidation,
+        uint256 dustCollateral_
+    ) external onlyGovernor {
+        if (_dust > _dustLiquidation) revert InvalidParameterValue();
         dust = _dust;
+        dustLiquidation = _dustLiquidation;
         _dustCollateral = dustCollateral_;
     }
 

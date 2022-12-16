@@ -130,7 +130,7 @@ contract('VaultManagerLiquidationBoost', () => {
     await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
     await vaultManager.connect(guardian).togglePause();
     await vaultManager.connect(governor).setUint64(params.borrowFee, formatBytes32String('BF'));
-    await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
+    await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9, 0.1e9);
   });
   describe('oracle', () => {
     it('success - read', async () => {
@@ -1178,7 +1178,7 @@ contract('VaultManagerLiquidationBoost', () => {
       await treasury.addMinter(agToken.address, vaultManager.address);
       oracle = await new MockOracle__factory(deployer).deploy(parseUnits('2', 18), treasury.address);
       await vaultManager.initialize(treasury.address, agToken.address, oracle.address, params, 'USDC/agEUR');
-      await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9);
+      await vaultManager.connect(governor).setDusts(0.1e9, 0.1e9, 0.1e9);
       await vaultManager.connect(guardian).togglePause();
     });
     it('success - allowance given', async () => {
@@ -2263,7 +2263,7 @@ contract('VaultManagerLiquidationBoost', () => {
       params.interestRate = parseEther('0');
       params.borrowFee = 0;
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
-      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'));
+      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'), parseEther('0.5'));
       await vaultManager.connect(guardian).togglePause();
       await treasury.setVaultManager2(vaultManager.address);
       await treasury.addMinter(agToken.address, vaultManager.address);
@@ -2289,7 +2289,7 @@ contract('VaultManagerLiquidationBoost', () => {
       params.interestRate = parseEther('0');
       params.borrowFee = 0;
       await vaultManager.initialize(treasury.address, collateral.address, oracle.address, params, 'USDC/agEUR');
-      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'));
+      await vaultManager.connect(governor).setDusts(parseEther('0.5'), parseEther('0.5'), parseEther('0.5'));
       await vaultManager.connect(guardian).togglePause();
       await treasury.setVaultManager2(vaultManager.address);
       await treasury.addMinter(agToken.address, vaultManager.address);
