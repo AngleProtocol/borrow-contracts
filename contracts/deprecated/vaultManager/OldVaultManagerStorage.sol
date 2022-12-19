@@ -50,10 +50,6 @@ contract OldVaultManagerStorage is IVaultManagerStorage, Initializable, Reentran
     // ================================= PARAMETERS ================================
     // Unless specified otherwise, parameters of this contract are expressed in `BASE_PARAMS`
 
-    uint256 public immutable dust;
-    /// @notice Minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
-    ///  in a vault during a liquidation where the health factor function is decreasing
-    uint256 internal immutable _dustCollateral;
     /// @notice Maximum amount of stablecoins that can be issued with this contract (in `BASE_TOKENS`). This parameter should
     /// not be bigger than `type(uint256).max / BASE_INTEREST` otherwise there may be some overflows in the `increaseDebt` function
     uint256 public debtCeiling;
@@ -167,12 +163,6 @@ contract OldVaultManagerStorage is IVaultManagerStorage, Initializable, Reentran
     error TooSmallParameterValue();
     error ZeroAddress();
 
-    /// @param _dust Minimum amount of debt a vault from this implementation can have
-    /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
-    /// where the health factor function is decreasing
-    /// @dev Run only at the implementation level
-    constructor(uint256 _dust, uint256 dustCollateral_) initializer {
-        dust = _dust;
-        _dustCollateral = dustCollateral_;
-    }
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 }

@@ -54,7 +54,11 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// in a vault during a liquidation where the health factor function is decreasing
     uint256 internal _dustCollateral;
 
-    uint256[48] private __gapVaultManager;
+    /// @notice If the amount of debt of a vault that gets liquidated is below this amount, then the liquidator
+    /// can liquidate all the debt of the vault (and not just what's needed to get to the target health factor)
+    uint256 public dustLiquidation;
+
+    uint256[47] private __gapVaultManager;
 
     /// @inheritdoc IVaultManagerFunctions
     function initialize(
@@ -719,6 +723,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // Because we're rounding up in some divisions, `collateralReleased` can be greater than the `collateralAmount` of the vault
             // In this case, `stablecoinAmountToReceive` is still rounded up
             if (vault.collateralAmount <= collateralReleased) {
+                // Liquidators should never get more collateral than what's in the vault
                 collateralReleased = vault.collateralAmount;
                 // Remove all the vault's debt (debt repayed + bad debt) from VaultManager totalDebt
                 totalNormalizedDebt -= vault.normalizedDebt;
@@ -778,12 +783,11 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             : BASE_PARAMS - liquidationDiscount;
         // Same for the surcharge here: it's in fact 1 - the fee taken by the protocol
         uint256 surcharge = liquidationSurcharge;
-        // Checking if we're in a situation where the health factor is an increasing or a decreasing function of the
-        // amount repaid
         uint256 maxAmountToRepay;
         uint256 thresholdRepayAmount;
-        // In the first case, the health factor is an increasing function of the stablecoin amount to repay,
-        // this means that the liquidator can bring the vault to the target health ratio
+        // Checking if we're in a situation where the health factor is an increasing or a decreasing function of the
+        // amount repaid. In the first case, the health factor is an increasing function which means that the liquidator
+        // can bring the vault to the target health ratio
         if (healthFactor * liquidationDiscount * surcharge >= collateralFactor * BASE_PARAMS**2) {
             // This is the max amount to repay that will bring the person to the target health factor
             // Denom is always positive when a vault gets liquidated in this case and when the health factor
@@ -794,32 +798,27 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     BASE_PARAMS *
                     liquidationDiscount) /
                 (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
-            // The quantity below tends to be rounded in the above direction, which means that governance or guardians should
-            // set the `targetHealthFactor` accordingly
-            // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dust * BASE_PARAMS) {
-                // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
-                // We're rounding up the max amount to repay to make sure all the debt ends up being paid
-                // and we're computing again the real value of the debt to avoid propagation of rounding errors
+            // Need to check for the dustas liquidating should not leave a dusty amount in the vault
+            uint256 dustParameter = dustLiquidation;
+            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dustParameter * BASE_PARAMS) {
+                // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all.
+                // We're avoiding here propagation of rounding errors and rounding up the max amount to repay to make
+                // sure all the debt ends up being paid
                 maxAmountToRepay =
                     (vault.normalizedDebt * newInterestAccumulator * BASE_PARAMS) /
                     (surcharge * BASE_INTEREST) +
                     1;
                 // In this case the threshold amount is such that it leaves just enough dust: amount is rounded
-                // down such that if a liquidator repays this amount then there would be more than `dust` left in
+                // down such that if a liquidator repays this amount then there is more than `dustLiquidation` left in
                 // the liquidated vault
-                if (currentDebt > dust)
-                    thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
-                    // If there is from the beginning a dusty debt (because of an implementation upgrade), then
-                    // liquidator should repay everything that's left
+                if (currentDebt > dustParameter)
+                    thresholdRepayAmount = ((currentDebt - dustParameter) * BASE_PARAMS) / surcharge;
+                    // If there is from the beginning a dusty debt, then liquidator should repay everything that's left
                 else thresholdRepayAmount = 1;
             }
         } else {
-            // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
+            // In this case, the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
             // in the liquidated vault
-            // Rounding up to make sure all gets liquidated in this case: the liquidator will never get more than the collateral
-            // amount in the vault however: we're performing the computation of the `collateralAmountInStable` again to avoid
-            // propagation of rounding errors
             maxAmountToRepay =
                 (vault.collateralAmount * liquidationDiscount * oracleValue) /
                 (BASE_PARAMS * _collatBase) +
@@ -864,7 +863,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             borrowFee = param;
         } else if (what == "RF") {
             // As liquidation surcharge is stored as `1-fee` and as we need `repayFee` to be smaller
-            // then the liquidation surcharge, then we need to have:
+            // than the liquidation surcharge, we need to have:
             // `liquidationSurcharge <= BASE_PARAMS - repayFee` and as such `liquidationSurcharge + repayFee <= BASE_PARAMS`
             if (param + liquidationSurcharge > BASE_PARAMS) revert TooHighParameterValue();
             repayFee = param;
@@ -933,10 +932,17 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Sets the dust variables
     /// @param _dust New minimum debt allowed
+    /// @param _dustLiquidation New `dustLiquidation` value
     /// @param dustCollateral_ New minimum collateral allowed in a vault after a liquidation
     /// @dev dustCollateral_ is in stable value
-    function setDusts(uint256 _dust, uint256 dustCollateral_) external onlyGovernor {
+    function setDusts(
+        uint256 _dust,
+        uint256 _dustLiquidation,
+        uint256 dustCollateral_
+    ) external onlyGovernor {
+        if (_dust > _dustLiquidation) revert InvalidParameterValue();
         dust = _dust;
+        dustLiquidation = _dustLiquidation;
         _dustCollateral = dustCollateral_;
     }
 

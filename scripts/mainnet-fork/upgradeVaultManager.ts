@@ -14,7 +14,9 @@ async function main() {
 
   const vaultManagerAddress = '0x73aaf8694BA137a7537E7EF544fcf5E2475f227B';
 
-  const implementation = (await deployments.get('VaultManagerNoDust_Implementation')).address;
+  const implementation = (await deployments.get('VaultManager_V2_0_Implementation')).address;
+
+  console.log(implementation);
 
   const proxyAdminAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
 
@@ -58,8 +60,9 @@ async function main() {
   console.log(await vaultManager.name());
   console.log(await vaultManager.symbol());
 
-  await vaultManager.connect(signer).setDusts(10, 10);
+  await vaultManager.connect(signer).setDusts(10, 10, 10);
   console.log((await vaultManager.dust()).toString());
+  console.log((await vaultManager.dustLiquidation()).toString());
 
   console.log((await vaultManager.vaultData(8)).collateralAmount.toString());
   console.log((await vaultManager.vaultData(8)).normalizedDebt.toString());
