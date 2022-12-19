@@ -7,14 +7,14 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   const { deployer } = await ethers.getNamedSigners();
 
   console.log('Now deploying the implementation for VaultManager');
-  await deploy('VaultManager_Implementation', {
+  await deploy('VaultManager_V2_0_Implementation', {
     contract: 'VaultManagerLiquidationBoost',
     from: deployer.address,
     args: [],
     log: !argv.ci,
   });
 
-  const vaultManagerImplementation = (await ethers.getContract('VaultManager_Implementation')).address;
+  const vaultManagerImplementation = (await ethers.getContract('VaultManager_V2_0_Implementation')).address;
 
   console.log(`Successfully deployed the implementation for VaultManager at ${vaultManagerImplementation}`);
   console.log('');
