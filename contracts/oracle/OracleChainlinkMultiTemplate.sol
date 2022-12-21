@@ -25,7 +25,7 @@ contract OracleChainlinkMultiTemplate is BaseOracleChainlinkMulti {
 
     // ============================= Reading Oracles ===============================
 
-    function circuitChainlink() public pure returns (AggregatorV3Interface[] memory) {
+    function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
         AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
         _circuitChainlink[0] = AggregatorV3Interface(address(0));
         _circuitChainlink[1] = AggregatorV3Interface(address(0));
@@ -40,7 +40,8 @@ contract OracleChainlinkMultiTemplate is BaseOracleChainlinkMulti {
         uint8[2] memory circuitChainIsMultiplied = [0, 0];
         uint8[2] memory chainlinkDecimals = [0, 0];
         // =========================================================================
-        for (uint256 i; i < _circuitChainlink.length; ++i) {
+        uint256 circuitLength = _circuitChainlink.length;
+        for (uint256 i; i < circuitLength; ++i) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
                 _circuitChainlink[i],

@@ -33,4 +33,6 @@ contract MockOracle is IOracle {
     function setTreasury(address _treasury) external override {
         treasury = ITreasury(_treasury);
     }
+
+    function circuitChainlink() external pure override returns (AggregatorV3Interface[] memory) {}
 }

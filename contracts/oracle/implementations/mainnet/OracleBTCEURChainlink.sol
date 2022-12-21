@@ -14,7 +14,7 @@ contract OracleBTCEURChainlink is BaseOracleChainlinkMultiTwoFeeds {
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
+    /// @inheritdoc IOracle
     function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
         AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
         // Oracle BTC/USD

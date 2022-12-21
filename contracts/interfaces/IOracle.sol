@@ -30,5 +30,5 @@ interface IOracle {
     function treasury() external view returns (ITreasury treasury);
 
     /// @notice Array with the list of Chainlink feeds in the order in which they are read
-    function circuitChainlink() external pure returns (AggregatorV3Interface[] memory);
+    function circuitChainlink() external view returns (AggregatorV3Interface[] memory);
 }

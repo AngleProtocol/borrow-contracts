@@ -77,6 +77,9 @@ abstract contract BaseOracleChainlinkMulti is IOracle {
     /// @inheritdoc IOracle
     function read() external view virtual override returns (uint256 quoteAmount);
 
+    /// @inheritdoc IOracle
+    function circuitChainlink() public view virtual returns (AggregatorV3Interface[] memory);
+
     /// @notice Reads a Chainlink feed using a quote amount and converts the quote amount to
     /// the out-currency
     /// @param quoteAmount The amount for which to compute the price expressed with base decimal

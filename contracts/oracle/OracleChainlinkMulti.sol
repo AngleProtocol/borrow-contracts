@@ -16,7 +16,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
 
     /// @notice Chainlink pools, the order of the pools has to be the order in which they are read for the computation
     /// of the price
-    AggregatorV3Interface[] public circuitChainlink;
+    AggregatorV3Interface[] internal _circuitChainlink;
     /// @notice Whether each rate for the pairs in `circuitChainlink` should be multiplied or divided
     uint8[] public circuitChainIsMultiplied;
     /// @notice Decimals for each Chainlink pairs
@@ -31,7 +31,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     error IncompatibleLengths();
 
     /// @notice Constructor for an oracle using Chainlink with multiple pools to read from
-    /// @param _circuitChainlink Chainlink pool addresses (in order)
+    /// @param circuitChainlink_ Chainlink pool addresses (in order)
     /// @param _circuitChainIsMultiplied Whether we should multiply or divide by this rate
     /// @param _outBase Unit of the stablecoin (or the out asset) associated to the oracle
     /// @param _stalePeriod Minimum feed update frequency for the oracle to not revert
@@ -40,7 +40,7 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     /// @dev For instance, if this oracle is supposed to give the price of ETH in EUR, and if the agEUR
     /// stablecoin associated to EUR has 18 decimals, then `outBase` should be 10**18
     constructor(
-        address[] memory _circuitChainlink,
+        address[] memory circuitChainlink_,
         uint8[] memory _circuitChainIsMultiplied,
         uint256 _outBase,
         uint32 _stalePeriod,
@@ -49,11 +49,11 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     ) BaseOracleChainlinkMulti(_stalePeriod, _treasury) {
         outBase = _outBase;
         description = _description;
-        uint256 circuitLength = _circuitChainlink.length;
+        uint256 circuitLength = circuitChainlink_.length;
         if (circuitLength == 0 || circuitLength != _circuitChainIsMultiplied.length) revert IncompatibleLengths();
         for (uint256 i; i < circuitLength; ++i) {
-            AggregatorV3Interface _pool = AggregatorV3Interface(_circuitChainlink[i]);
-            circuitChainlink.push(_pool);
+            AggregatorV3Interface _pool = AggregatorV3Interface(circuitChainlink_[i]);
+            _circuitChainlink.push(_pool);
             chainlinkDecimals.push(_pool.decimals());
         }
         circuitChainIsMultiplied = _circuitChainIsMultiplied;
@@ -62,13 +62,18 @@ contract OracleChainlinkMulti is BaseOracleChainlinkMulti {
     // ============================= Reading Oracles ===============================
 
     /// @inheritdoc IOracle
+    function circuitChainlink() public view override returns (AggregatorV3Interface[] memory) {
+        return _circuitChainlink;
+    }
+
+    /// @inheritdoc IOracle
     function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = outBase;
-        uint256 circuitLength = circuitChainlink.length;
+        uint256 circuitLength = _circuitChainlink.length;
         for (uint256 i; i < circuitLength; ++i) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
-                circuitChainlink[i],
+                _circuitChainlink[i],
                 circuitChainIsMultiplied[i],
                 chainlinkDecimals[i]
             );
