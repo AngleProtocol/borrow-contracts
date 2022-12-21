@@ -13,9 +13,6 @@ import "./BaseOracleChainlinkMulti.sol";
 abstract contract BaseOracleChainlinkMultiTwoFeeds is BaseOracleChainlinkMulti {
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMulti(_stalePeriod, _treasury) {}
 
-    /// @notice Array with the list of Chainlink feeds in the order in which they are read
-    function circuitChainlink() public pure virtual returns (AggregatorV3Interface[2] memory);
-
     /// @notice Returns the quote amount of the oracle contract
     function _getQuoteAmount() internal view virtual returns (uint256) {
         return 10**18;

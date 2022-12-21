@@ -15,13 +15,13 @@ contract OracleUSDCEURChainlinkAvalanche is BaseOracleChainlinkMultiTwoFeeds {
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function circuitChainlink() public pure override returns (AggregatorV3Interface[2] memory) {
-        return [
-            // Oracle USDC/USD
-            AggregatorV3Interface(0xF096872672F44d6EBA71458D74fe67F9a77a23B9),
-            // Oracle EUR/USD
-            AggregatorV3Interface(0x192f2DBA961Bb0277520C082d6bfa87D5961333E)
-        ];
+    /// @inheritdoc IOracle
+    function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
+        AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
+        // Oracle USDC/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0xF096872672F44d6EBA71458D74fe67F9a77a23B9);
+        // Oracle EUR/USD
+        _circuitChainlink[1] = AggregatorV3Interface(0x192f2DBA961Bb0277520C082d6bfa87D5961333E);
+        return _circuitChainlink;
     }
 }

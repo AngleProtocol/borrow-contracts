@@ -16,14 +16,14 @@ contract OracleWSTETHEURChainlink is BaseOracleChainlinkMultiTwoFeeds {
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function circuitChainlink() public pure override returns (AggregatorV3Interface[2] memory) {
-        return [
-            // Chainlink stETH/USD address
-            AggregatorV3Interface(0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8),
-            // Chainlink EUR/USD address
-            AggregatorV3Interface(0xb49f677943BC038e9857d61E7d053CaA2C1734C1)
-        ];
+    /// @inheritdoc IOracle
+    function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
+        AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
+        // Oracle stETH/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8);
+        // Oracle EUR/USD
+        _circuitChainlink[1] = AggregatorV3Interface(0xb49f677943BC038e9857d61E7d053CaA2C1734C1);
+        return _circuitChainlink;
     }
 
     /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds

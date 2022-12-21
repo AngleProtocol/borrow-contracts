@@ -15,13 +15,13 @@ contract OracleMAIEURChainlinkPolygon is BaseOracleChainlinkMultiTwoFeeds {
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function circuitChainlink() public pure override returns (AggregatorV3Interface[2] memory) {
-        return [
-            // Oracle MAI/USD
-            AggregatorV3Interface(0xd8d483d813547CfB624b8Dc33a00F2fcbCd2D428),
-            // Oracle EUR/USD
-            AggregatorV3Interface(0x73366Fe0AA0Ded304479862808e02506FE556a98)
-        ];
+    /// @inheritdoc IOracle
+    function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
+        AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
+        // Oracle MAI/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0xd8d483d813547CfB624b8Dc33a00F2fcbCd2D428);
+        // Oracle EUR/USD
+        _circuitChainlink[1] = AggregatorV3Interface(0x73366Fe0AA0Ded304479862808e02506FE556a98);
+        return _circuitChainlink;
     }
 }
