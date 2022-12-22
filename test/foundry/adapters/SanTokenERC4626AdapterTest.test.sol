@@ -238,7 +238,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
             deal(
                 address(token),
                 address(stableMaster),
-                (token.balanceOf(address(stableMaster)) * newSanRate) / prevSanRate
+                (token.balanceOf(address(stableMaster)) * newSanRate) / prevSanRate + 1
             );
             prevSanRate = newSanRate;
 
@@ -328,7 +328,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
                 deal(
                     address(token),
                     address(stableMaster),
-                    (token.balanceOf(address(stableMaster)) * newSanRate + prevSanRate) / prevSanRate
+                    (token.balanceOf(address(stableMaster)) * newSanRate) / prevSanRate + 1
                 );
 
                 prevSanRate = newSanRate;
