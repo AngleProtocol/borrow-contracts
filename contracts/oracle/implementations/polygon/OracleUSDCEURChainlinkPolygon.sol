@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.12;
 
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-
 import "../../BaseOracleChainlinkMultiTwoFeeds.sol";
 
 /// @title OracleUSDCEURChainlinkPolygon
@@ -15,13 +13,13 @@ contract OracleUSDCEURChainlinkPolygon is BaseOracleChainlinkMultiTwoFeeds {
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function circuitChainlink() public pure override returns (AggregatorV3Interface[2] memory) {
-        return [
-            // Oracle USDC/USD
-            AggregatorV3Interface(0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7),
-            // Oracle EUR/USD
-            AggregatorV3Interface(0x73366Fe0AA0Ded304479862808e02506FE556a98)
-        ];
+    /// @inheritdoc IOracle
+    function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
+        AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
+        // Oracle USDC/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7);
+        // Oracle EUR/USD
+        _circuitChainlink[1] = AggregatorV3Interface(0x73366Fe0AA0Ded304479862808e02506FE556a98);
+        return _circuitChainlink;
     }
 }

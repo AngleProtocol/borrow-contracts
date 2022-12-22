@@ -13,9 +13,6 @@ import "./BaseOracleChainlinkMulti.sol";
 abstract contract BaseOracleChainlinkMultiTwoFeeds is BaseOracleChainlinkMulti {
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMulti(_stalePeriod, _treasury) {}
 
-    /// @notice Array with the list of Chainlink feeds in the order in which they are read
-    function circuitChainlink() public pure virtual returns (AggregatorV3Interface[2] memory);
-
     /// @notice Returns the quote amount of the oracle contract
     function _getQuoteAmount() internal view virtual returns (uint256) {
         return 10**18;
@@ -24,10 +21,11 @@ abstract contract BaseOracleChainlinkMultiTwoFeeds is BaseOracleChainlinkMulti {
     /// @inheritdoc IOracle
     function read() external view override returns (uint256 quoteAmount) {
         quoteAmount = _getQuoteAmount();
-        AggregatorV3Interface[2] memory _circuitChainlink = circuitChainlink();
+        AggregatorV3Interface[] memory _circuitChainlink = circuitChainlink();
         uint8[2] memory circuitChainIsMultiplied = [1, 0];
         uint8[2] memory chainlinkDecimals = [8, 8];
-        for (uint256 i; i < 2; ++i) {
+        uint256 circuitLength = _circuitChainlink.length;
+        for (uint256 i; i < circuitLength; ++i) {
             quoteAmount = _readChainlinkFeed(
                 quoteAmount,
                 _circuitChainlink[i],

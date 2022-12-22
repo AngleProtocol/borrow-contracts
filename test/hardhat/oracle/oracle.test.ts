@@ -50,7 +50,8 @@ contract('OracleChainlinkMulti', () => {
   describe('constructor', () => {
     it('success - variables correctly initialized', async () => {
       expect(await oracle.outBase()).to.be.equal(parseEther('1'));
-      expect(await oracle.circuitChainlink(0)).to.be.equal(chainlink.address);
+      const circuitChainlink = await oracle.circuitChainlink();
+      expect(circuitChainlink[0]).to.be.equal(chainlink.address);
       expect(await oracle.chainlinkDecimals(0)).to.be.equal(18);
       expect(await oracle.circuitChainIsMultiplied(0)).to.be.equal(1);
       expect(await oracle.description()).to.be.equal('desc');

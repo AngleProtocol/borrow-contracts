@@ -15,13 +15,13 @@ contract OracleETHEURChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds {
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function circuitChainlink() public pure override returns (AggregatorV3Interface[2] memory) {
-        return [
-            // Oracle ETH/USD
-            AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612),
-            // Oracle EUR/USD
-            AggregatorV3Interface(0xA14d53bC1F1c0F31B4aA3BD109344E5009051a84)
-        ];
+    /// @inheritdoc IOracle
+    function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
+        AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
+        // Oracle ETH/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);
+        // Oracle EUR/USD
+        _circuitChainlink[1] = AggregatorV3Interface(0xA14d53bC1F1c0F31B4aA3BD109344E5009051a84);
+        return _circuitChainlink;
     }
 }

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.12;
 
 import "./ITreasury.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /// @title IOracle
 /// @author Angle Labs, Inc.
@@ -27,4 +28,7 @@ interface IOracle {
 
     /// @notice Reference to the `treasury` contract handling this `VaultManager`
     function treasury() external view returns (ITreasury treasury);
+
+    /// @notice Array with the list of Chainlink feeds in the order in which they are read
+    function circuitChainlink() external view returns (AggregatorV3Interface[] memory);
 }

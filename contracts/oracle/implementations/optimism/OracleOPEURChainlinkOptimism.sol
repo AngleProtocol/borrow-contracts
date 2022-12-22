@@ -15,13 +15,13 @@ contract OracleOPEURChainlinkOptimism is BaseOracleChainlinkMultiTwoFeeds {
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
-    /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function circuitChainlink() public pure override returns (AggregatorV3Interface[2] memory) {
-        return [
-            // Oracle OP/USD
-            AggregatorV3Interface(0x0D276FC14719f9292D5C1eA2198673d1f4269246),
-            // Oracle EUR/USD
-            AggregatorV3Interface(0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20)
-        ];
+    /// @inheritdoc IOracle
+    function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
+        AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
+        // Oracle OP/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0x0D276FC14719f9292D5C1eA2198673d1f4269246);
+        // Oracle EUR/USD
+        _circuitChainlink[1] = AggregatorV3Interface(0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20);
+        return _circuitChainlink;
     }
 }
