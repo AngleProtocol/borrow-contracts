@@ -1,6 +1,6 @@
 # <img src="logo.svg" alt="Angle Borrowing Module" height="40px"> Angle Borrowing Module
 
-[![CI](https://github.com/AngleProtocol/angle-borrow/workflows/CI/badge.svg)](https://github.com/AngleProtocol/angle-borrow/actions?query=workflow%3ACI)
+[![CI](https://github.com/AngleProtocol/borrow-contracts/workflows/CI/badge.svg)](https://github.com/AngleProtocol/borrow-contracts/actions?query=workflow%3ACI)
 [![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-blue)](https://docs.angle.money/angle-borrowing-module/borrowing-module)
 [![Developers](https://img.shields.io/badge/developers-%F0%9F%93%84-pink)](https://developers.angle.money/borrowing-module-contracts/architecture-overview)
 
@@ -26,6 +26,8 @@ Other Angle-related smart contracts can be found in the following repositories:
 
 - [Angle Core module contracts](https://github.com/AngleProtocol/angle-core)
 - [Angle Strategies](https://github.com/AngleProtocol/angle-strategies)
+- [Angle Router contracts](https://github.com/AngleProtocol/angle-router)
+- [Angle Algorithmic Market Operations](https://github.com/AngleProtocol/angle-amo)
 
 Otherwise, for more info about the protocol, check out [this portal](https://linktr.ee/angleprotocol) of resources.
 
@@ -42,17 +44,60 @@ Some smart contracts of the protocol are used across the different modules of An
 Here are some cross-module contracts and the repos in which you should look for their correct and latest version:
 
 - [`angle-core`](https://github.com/AngleProtocol/angle-core): All DAO-related contracts (`ANGLE`, `veANGLE`, gauges, surplus distribution, ...), `AngleRouter` contract
-- [`angle-borrow`](https://github.com/AngleProtocol/angle-borrow): `agToken` contract
+- [`borrow-contract`](https://github.com/AngleProtocol/borrow-contracts): `agToken` contract
 - [`angle-strategies`](https://github.com/AngleProtocol/angle-strategies): Yield strategies of the protocol
 
 ### Error Messages
 
-Some smart contracts use error messages. These error messages are sometimes encoded in numbers rather than as custom errors like done most of the time. The conversion from numbers to error messages can be found in `errorMessages.json`.
+Some smart contracts use error messages that are encoded as numbers rather. Conversion from numbers to error messages can be found in `errorMessages.json`.
 
 ## Setup
 
-To install all the packages needed to run the tests, run:
-`yarn`
+To install all the packages needed to run the tests and scripts, run:
+
+```shell
+yarn
+forge i
+```
+
+### Setup Foundry
+
+Some scripts and tests run on Foundry:
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+source /root/.zshrc
+# or, if you're under bash: source /root/.bashrc
+foundryup
+```
+
+To install the standard library:
+
+```bash
+forge install foundry-rs/forge-std
+```
+
+To update libraries:
+
+```bash
+forge update
+```
+
+**If you don’t want to install Rust and Foundry on your computer, you can use Docker**
+Image is available here [ghcr.io/foundry-rs/foundry](http://ghcr.io/foundry-rs/foundry).
+
+```bash
+docker pull ghcr.io/foundry-rs/foundry
+docker tag ghcr.io/foundry-rs/foundry:latest foundry:latest
+```
+
+To run the container:
+
+```bash
+docker run -it --rm -v $(pwd):/app -w /app foundry sh
+```
+
+Then you are inside the container and can run Foundry’s commands.
 
 ### Setup environment
 
@@ -64,13 +109,15 @@ If you don't define URI and mnemonics, default mnemonic will be used with a bran
 ### Compilation
 
 ```shell
-yarn compile
+yarn hardhat:compile
 ```
 
 ### Testing
 
+**With Hardhat**:
+
 ```shell
-yarn test
+yarn hardhat:test
 ```
 
 Defaults with `hardhat` network, but another network can be specified with `--network NETWORK_NAME`.
@@ -78,7 +125,24 @@ Defaults with `hardhat` network, but another network can be specified with `--ne
 A single test file or a glob pattern can be appended to launch a reduced set of tests:
 
 ```shell
-yarn test tests/vaultManager/*
+yarn hardhat:test tests/vaultManager/*
+```
+
+**With Foundry:**
+
+You can run tests as follows:
+
+```bash
+forge test -vvvv --watch
+forge test -vvvv --match-path tests/foundry/vaultManager/VaultManager.t.sol
+forge test -vvvv --match-test "testAbc*"
+```
+
+You can also list tests:
+
+```bash
+forge test --list
+forge test --list --json --match-test "testXXX*"
 ```
 
 ### Scripts
@@ -100,6 +164,8 @@ We try to keep our contract's code coverage above 99%. All contract code additio
 
 To run code coverage:
 
+**With Hardhat:**
+
 ```shell
 yarn coverage
 ```
@@ -110,6 +176,14 @@ If coverage runs out of memory, you can export this in your env and retry:
 
 ```shell
 export NODE_OPTIONS=--max_old_space_size=4096
+```
+
+**With Foundry:**
+
+We recommend the use of this [vscode extension](ryanluker.vscode-coverage-gutters).
+
+```bash
+yarn foundry:coverage
 ```
 
 ### Troubleshooting
