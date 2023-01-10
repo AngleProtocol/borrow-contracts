@@ -59,9 +59,14 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @param from Address to claim for
     /// @return rewardAmounts Amounts of each reward token claimed by the user
     //solhint-disable-next-line
-    function claim_rewards(address from) external returns (uint256[] memory) {
+    function claim_rewards(address from) public returns (uint256[] memory) {
         _claimContractRewards();
         return _checkpointRewardsUser(from, true);
+    }
+
+    /// @notice Same as the function above
+    function claimRewards(address from) external returns (uint256[] memory) {
+        return claim_rewards(from);
     }
 
     /// @notice Returns the exact amount that will be received if calling `claim_rewards(from)` for a specific reward token
