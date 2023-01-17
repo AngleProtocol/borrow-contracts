@@ -107,13 +107,17 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
 
     /// @notice Claims all available rewards and increases the associated integral
     function _claimContractRewards() internal virtual {
-        gauge().claim_rewards(address(this), address(0));
         IERC20[] memory rewardTokens = _getRewards();
         uint256 rewardTokensLength = rewardTokens.length;
+        uint256[] memory prevBalances = new uint256[](rewardTokensLength);
         for (uint256 i; i < rewardTokensLength; ++i) {
             IERC20 rewardToken = rewardTokens[i];
-            uint256 prevBalance = rewardToken.balanceOf(address(this));
-            uint256 rewards = rewardToken.balanceOf(address(this)) - prevBalance;
+            prevBalances[i] = rewardToken.balanceOf(address(this));
+        }
+        gauge().claim_rewards(address(this), address(0));
+        for (uint256 i; i < rewardTokensLength; ++i) {
+            IERC20 rewardToken = rewardTokens[i];
+            uint256 rewards = rewardToken.balanceOf(address(this)) - prevBalances[i];
             _updateRewards(rewardToken, rewards);
         }
     }
