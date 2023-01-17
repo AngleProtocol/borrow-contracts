@@ -141,6 +141,24 @@ contract('SanTokenERC4626AdapterStakable', () => {
       await adapter.connect(alice).redeem(parseUnits('1', 6), alice.address, alice.address);
       expect(await adapter.claimableRewards(alice.address, angle)).to.be.equal(0);
     });
+    it('success - with claimRewards', async () => {
+      await adapter.claimRewards(ZERO_ADDRESS);
+      await adapter.claimRewards(bob.address);
+      await adapter.claimRewards(alice.address);
+      // Now when rewards are sent
+      await usdc.connect(impersonatedSigners[usdcHolder]).approve(adapter.address, MAX_UINT256);
+      await adapter.connect(impersonatedSigners[usdcHolder]).mint(parseUnits('1', 6), alice.address);
+      expect(await adapter.claimableRewards(alice.address, angle)).to.be.equal(0);
+      await adapter.claimRewards(alice.address);
+      const integral = await adapter.integral(angle);
+      expect(integral).to.be.gt(0);
+      expect(await angleToken.balanceOf(alice.address)).to.be.gt(0);
+      expect(await adapter.pendingRewardsOf(angle, alice.address)).to.be.equal(0);
+      expect(await adapter.integralOf(angle, alice.address)).to.be.equal(integral);
+      expect(await adapter.claimableRewards(alice.address, angle)).to.be.equal(0);
+      await adapter.connect(alice).redeem(parseUnits('1', 6), alice.address, alice.address);
+      expect(await adapter.claimableRewards(alice.address, angle)).to.be.equal(0);
+    });
   });
   describe('withdraw', () => {
     it('success - rewards are claimed and amount withdrawn from the gauge', async () => {
