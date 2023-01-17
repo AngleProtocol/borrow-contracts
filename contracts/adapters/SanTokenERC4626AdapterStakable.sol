@@ -65,53 +65,57 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     }
 
     /// @notice Returns the exact amount that will be received if calling `claim_rewards(from)` for a specific reward token
-    /// @param from Address to claim for
+    /// @param user Address to claim for
     /// @param _rewardToken Token to get rewards for
-    function claimableRewards(address from, IERC20 _rewardToken) external view returns (uint256) {
+    function claimableRewards(address user, IERC20 _rewardToken) external view returns (uint256) {
         uint256 _totalSupply = totalSupply();
         uint256 newIntegral = _totalSupply != 0
             ? integral[_rewardToken] + (_rewardsToBeClaimed(_rewardToken) * _BASE_36) / _totalSupply
             : integral[_rewardToken];
-        uint256 newClaimable = (balanceOf(from) * (newIntegral - integralOf[_rewardToken][from])) / _BASE_36;
-        return pendingRewardsOf[_rewardToken][from] + newClaimable;
+        uint256 newClaimable = (balanceOf(user) * (newIntegral - integralOf[_rewardToken][user])) / _BASE_36;
+        return pendingRewardsOf[_rewardToken][user] + newClaimable;
     }
 
     // ======================== INTERNAL ACCOUNTING HELPERS ========================
 
     /// @notice Checkpoints rewards earned by a user
-    /// @param from Address to claim rewards from
+    /// @param user Address to claim rewards for
     /// @param _claim Whether to claim or not the rewards
     /// @return rewardAmounts Amounts of the different reward tokens earned by the user
-    function _checkpointRewardsUser(address from, bool _claim) internal returns (uint256[] memory rewardAmounts) {
+    function _checkpointRewardsUser(address user, bool _claim) internal returns (uint256[] memory rewardAmounts) {
         IERC20[] memory rewardTokens = _getRewards();
         uint256 rewardTokensLength = rewardTokens.length;
         rewardAmounts = new uint256[](rewardTokensLength);
-        if (from == address(0)) return rewardAmounts;
-        uint256 userBalance = balanceOf(from);
+        if (user == address(0)) return rewardAmounts;
+        uint256 userBalance = balanceOf(user);
         for (uint256 i; i < rewardTokensLength; ++i) {
-            uint256 totalClaimable = (userBalance * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][from])) /
+            uint256 totalClaimable = (userBalance * (integral[rewardTokens[i]] - integralOf[rewardTokens[i]][user])) /
                 _BASE_36 +
-                pendingRewardsOf[rewardTokens[i]][from];
+                pendingRewardsOf[rewardTokens[i]][user];
             if (totalClaimable != 0) {
                 if (_claim) {
-                    pendingRewardsOf[rewardTokens[i]][from] = 0;
-                    rewardTokens[i].safeTransfer(from, totalClaimable);
+                    pendingRewardsOf[rewardTokens[i]][user] = 0;
+                    rewardTokens[i].safeTransfer(user, totalClaimable);
                 } else {
-                    pendingRewardsOf[rewardTokens[i]][from] = totalClaimable;
+                    pendingRewardsOf[rewardTokens[i]][user] = totalClaimable;
                 }
                 rewardAmounts[i] = totalClaimable;
             }
-            integralOf[rewardTokens[i]][from] = integral[rewardTokens[i]];
+            integralOf[rewardTokens[i]][user] = integral[rewardTokens[i]];
         }
     }
 
     /// @notice Claims all available rewards and increases the associated integral
     function _claimContractRewards() internal virtual {
-        uint256 prevBalanceAngle = _ANGLE.balanceOf(address(this));
         gauge().claim_rewards(address(this), address(0));
-        uint256 angleRewards = _ANGLE.balanceOf(address(this)) - prevBalanceAngle;
-        // Do the same thing for additional rewards
-        _updateRewards(_ANGLE, angleRewards);
+        IERC20[] memory rewardTokens = _getRewards();
+        uint256 rewardTokensLength = rewardTokens.length;
+        for (uint256 i; i < rewardTokensLength; ++i) {
+            IERC20 rewardToken = rewardTokens[i];
+            uint256 prevBalance = rewardToken.balanceOf(address(this));
+            uint256 rewards = rewardToken.balanceOf(address(this)) - prevBalance;
+            _updateRewards(rewardToken, rewards);
+        }
     }
 
     /// @notice Adds the contract claimed rewards to the distributed rewards
