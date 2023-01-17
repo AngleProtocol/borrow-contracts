@@ -111,8 +111,7 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
         uint256 rewardTokensLength = rewardTokens.length;
         uint256[] memory prevBalances = new uint256[](rewardTokensLength);
         for (uint256 i; i < rewardTokensLength; ++i) {
-            IERC20 rewardToken = rewardTokens[i];
-            prevBalances[i] = rewardToken.balanceOf(address(this));
+            prevBalances[i] = rewardTokens[i].balanceOf(address(this));
         }
         gauge().claim_rewards(address(this), address(0));
         for (uint256 i; i < rewardTokensLength; ++i) {
