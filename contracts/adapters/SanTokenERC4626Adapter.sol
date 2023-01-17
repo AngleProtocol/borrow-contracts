@@ -39,6 +39,7 @@ import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/coreModule/ILiquidityGauge.sol";
 import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
+import "../utils/Constants.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -51,19 +52,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title SanTokenERC4626Adapter
 /// @author Angle Labs, Inc.
 /// @notice IERC4626 Adapter for SanTokens of the Angle Protocol
-abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgradeable {
+abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgradeable, Constants {
     using MathUpgradeable for uint256;
     using SafeERC20 for IERC20;
-
-    // ================================= CONSTANTS =================================
-
-    uint256 internal constant _BASE_9 = 10**9;
-    uint256 internal constant _BASE_18 = 10**18;
-    uint256 internal constant _BASE_27 = 10**27;
-
-    // =================================== ERROR ===================================
-
-    error InsufficientAssets();
 
     uint256[50] private __gap;
 

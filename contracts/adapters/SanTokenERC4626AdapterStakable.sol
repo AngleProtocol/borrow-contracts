@@ -17,8 +17,6 @@ abstract contract SanTokenERC4626AdapterStakable is SanTokenERC4626Adapter {
     /// @notice Angle-related constants
     IERC20 private constant _ANGLE = IERC20(0x31429d1856aD1377A8A0079410B297e1a9e214c2);
 
-    uint256 internal constant _BASE_36 = 10**36;
-
     // ================================= REFERENCES ================================
 
     /// @notice Maps each reward token to a track record of cumulated rewards
