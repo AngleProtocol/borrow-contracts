@@ -39,6 +39,7 @@ import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/coreModule/ILiquidityGauge.sol";
 import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
+import "../utils/Constants.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -51,20 +52,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title SanTokenERC4626Adapter
 /// @author Angle Labs, Inc.
 /// @notice IERC4626 Adapter for SanTokens of the Angle Protocol
-abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgradeable {
+abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IERC4626Upgradeable, Constants {
     using MathUpgradeable for uint256;
     using SafeERC20 for IERC20;
-
-    // ================================= CONSTANTS =================================
-
-    uint256 internal constant _BASE_PARAMS = 10**9;
-    uint256 internal constant _BASE = 10**18;
-    // `_BASE_27` is the product between `_BASE` and `_BASE_PARAMS`
-    uint256 internal constant _BASE_27 = 10**27;
-
-    // =================================== ERROR ===================================
-
-    error InsufficientAssets();
 
     uint256[50] private __gap;
 
@@ -223,9 +213,9 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
             uint256 sanMint = sanToken().totalSupply();
             if (sanMint != 0) {
                 if (slpData.lockedInterests > slpData.maxInterestsDistributed) {
-                    sanRate += (slpData.maxInterestsDistributed * _BASE) / sanMint;
+                    sanRate += (slpData.maxInterestsDistributed * _BASE_18) / sanMint;
                 } else {
-                    sanRate += (slpData.lockedInterests * _BASE) / sanMint;
+                    sanRate += (slpData.lockedInterests * _BASE_18) / sanMint;
                 }
             }
         }
@@ -240,6 +230,8 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
         uint256 shares
     ) internal {
         IERC20(asset()).safeTransferFrom(caller, address(this), assets);
+        // It is expected that calling `stableMaster.deposit` will mint exactly `shares`
+        // This assumption may no longer be valid if the `stableMaster` contract is upgraded
         stableMaster().deposit(assets, address(this), poolManager());
         _mint(receiver, shares);
         emit Deposit(caller, receiver, assets, shares);
@@ -257,6 +249,9 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
             _spendAllowance(owner, caller, shares);
         }
         _burn(owner, shares);
+        // Like for the `_deposit` function, this function is built under the assumption that
+        // `stableMaster.withdraw` will return either `assets` or `assets+1`. It may no longer
+        // hold if the `stableMaster` contract is upgraded.
         // Performing two transfers here to be sure that `receiver` exactly receives assets and not
         // `assets+1`
         stableMaster().withdraw(shares, address(this), address(this), poolManager());
@@ -268,7 +263,7 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
     /// @dev We round down by default
     function _convertToShares(uint256 assets) internal view returns (uint256 shares) {
         (uint256 sanRate, ) = _estimateSanRate();
-        return assets.mulDiv(_BASE, sanRate, MathUpgradeable.Rounding.Down);
+        return assets.mulDiv(_BASE_18, sanRate, MathUpgradeable.Rounding.Down);
     }
 
     /// @notice Internal version of the `convertToAssets` function
@@ -278,18 +273,18 @@ abstract contract SanTokenERC4626Adapter is Initializable, ERC20Upgradeable, IER
         returns (uint256 assets)
     {
         (uint256 sanRate, ) = _estimateSanRate();
-        return shares.mulDiv(sanRate, _BASE, rounding);
+        return shares.mulDiv(sanRate, _BASE_18, rounding);
     }
 
     /// @notice Converts an amount of `assets` to a shares amount with potential exit slippage taken into account
     function _convertToSharesWithSlippage(uint256 assets) internal view returns (uint256 shares) {
         (uint256 sanRate, uint256 slippage) = _estimateSanRate();
-        shares = assets.mulDiv(_BASE_27, (_BASE_PARAMS - slippage) * sanRate, MathUpgradeable.Rounding.Up);
+        shares = assets.mulDiv(_BASE_27, (_BASE_9 - slippage) * sanRate, MathUpgradeable.Rounding.Up);
     }
 
     /// @notice Converts an amount of `shares` to an assets amount with potential exit slippage taken into account
     function _convertToAssetsWithSlippage(uint256 shares) internal view returns (uint256 assets) {
         (uint256 sanRate, uint256 slippage) = _estimateSanRate();
-        assets = shares.mulDiv((_BASE_PARAMS - slippage) * sanRate, _BASE_27, MathUpgradeable.Rounding.Down);
+        assets = shares.mulDiv((_BASE_9 - slippage) * sanRate, _BASE_27, MathUpgradeable.Rounding.Down);
     }
 }

@@ -5,7 +5,7 @@ import "../BaseTest.test.sol";
 import "../../../contracts/interfaces/ICoreBorrow.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
 import "../../../contracts/mock/MockVaultManager.sol";
-import { MockSanTokenERC4626Adapter, SanTokenERC4626Adapter, ERC20Upgradeable } from "../../../contracts/mock/MockSanTokenERC4626Adapter.sol";
+import { MockSanTokenERC4626Adapter, SanTokenERC4626Adapter, ERC20Upgradeable, InsufficientAssets } from "../../../contracts/mock/MockSanTokenERC4626Adapter.sol";
 import { MockStableMasterSanWrapper } from "../../../contracts/mock/MockStableMaster.sol";
 
 contract SanTokenERC4626AdapterTest is BaseTest {
@@ -80,7 +80,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
         uint256 maxRedeemable = sanTokenAdapter.maxRedeem(account);
         uint256 assets = sanTokenAdapter.previewRedeem(maxRedeemable + 1);
         if (maxRedeemable > 0) {
-            if (assets == 0) vm.expectRevert(SanTokenERC4626Adapter.InsufficientAssets.selector);
+            if (assets == 0) vm.expectRevert(InsufficientAssets.selector);
             else vm.expectRevert(bytes("ERC20: burn amount exceeds balance"));
             sanTokenAdapter.redeem(maxRedeemable + 1, account, account);
         }
@@ -156,7 +156,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
         if (maxRedeemable > 0) {
             uint256 shares = (maxRedeemable * bound(propRedeem, 0, BASE_PARAMS)) / BASE_PARAMS;
             uint256 assets = sanTokenAdapter.previewRedeem(shares);
-            if (assets == 0) vm.expectRevert(SanTokenERC4626Adapter.InsufficientAssets.selector);
+            if (assets == 0) vm.expectRevert(InsufficientAssets.selector);
             sanTokenAdapter.redeem(shares, account, account);
         }
         vm.stopPrank();
@@ -266,7 +266,7 @@ contract SanTokenERC4626AdapterTest is BaseTest {
                 uint256 amountExpected = _tokenValueAfterRedeem(toWithdraw, newSanRate, slippage);
                 uint256 previewRedeem = sanTokenAdapter.previewRedeem(toWithdraw);
                 if (previewRedeem == 0) {
-                    vm.expectRevert(SanTokenERC4626Adapter.InsufficientAssets.selector);
+                    vm.expectRevert(InsufficientAssets.selector);
                     sanTokenAdapter.redeem(toWithdraw, receiver, account);
                 } else {
                     uint256 balanceReceiverTokenBefore = token.balanceOf(receiver);
