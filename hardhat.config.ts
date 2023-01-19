@@ -145,7 +145,7 @@ const config: HardhatUserConfig = {
         // Mainnet
 
         url: nodeUrl('fork'),
-        blockNumber: 16218353,
+        blockNumber: 16441055,
 
         // Polygon
         /*

@@ -19,7 +19,7 @@ abstract contract BaseOracleChainlinkMultiTwoFeeds is BaseOracleChainlinkMulti {
     }
 
     /// @inheritdoc IOracle
-    function read() external view override returns (uint256 quoteAmount) {
+    function read() external view virtual override returns (uint256 quoteAmount) {
         quoteAmount = _getQuoteAmount();
         AggregatorV3Interface[] memory _circuitChainlink = circuitChainlink();
         uint8[2] memory circuitChainIsMultiplied = [1, 0];

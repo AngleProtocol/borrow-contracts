@@ -10,6 +10,8 @@ import {
   MockTreasury__factory,
   OracleBTCEURChainlink,
   OracleBTCEURChainlink__factory,
+  OracleCBETHEURChainlink,
+  OracleCBETHEURChainlink__factory,
   OracleETHEURChainlink,
   OracleETHEURChainlink__factory,
   OracleLUSDEURChainlink,
@@ -27,6 +29,7 @@ contract('Oracles Chainlink', () => {
   let oracleETH: OracleETHEURChainlink;
   let oracleBTC: OracleBTCEURChainlink;
   let oracleLUSD: OracleLUSDEURChainlink;
+  let oracleCBETH: OracleCBETHEURChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -46,6 +49,7 @@ contract('Oracles Chainlink', () => {
     oracleETH = await new OracleETHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleBTC = await new OracleBTCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleLUSD = await new OracleLUSDEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleCBETH = await new OracleCBETHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -95,6 +99,18 @@ contract('Oracles Chainlink', () => {
     it('initialization', async () => {
       expect(await oracleLUSD.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleLUSD.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle CBETHEUR', () => {
+    it('read', async () => {
+      const receipt = await oracleCBETH.read();
+      const gas = await oracleCBETH.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleCBETH.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleCBETH.treasury()).to.be.equal(treasury.address);
     });
   });
 });
