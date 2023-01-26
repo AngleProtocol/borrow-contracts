@@ -42,7 +42,11 @@ contract VaultManagerLiquidationBoostImmutable is VaultManagerLiquidationBoost {
     }
 
     /// @inheritdoc VaultManagerERC721
+<<<<<<< HEAD
     function _whitelistingActivated() internal pure virtual override returns (bool) {
+=======
+    function _whitelistingActivated() internal pure override returns (bool) {
+>>>>>>> 974c695 (first draft immutable borrow contracts)
         return false;
     }
 
@@ -57,6 +61,7 @@ contract VaultManagerLiquidationBoostImmutable is VaultManagerLiquidationBoost {
     }
 
     /// @inheritdoc VaultManager
+<<<<<<< HEAD
     function initialize(
         ITreasury _treasury,
         IERC20 _collateral,
@@ -66,6 +71,8 @@ contract VaultManagerLiquidationBoostImmutable is VaultManagerLiquidationBoost {
     ) external override {}
 
     /// @inheritdoc VaultManager
+=======
+>>>>>>> 974c695 (first draft immutable borrow contracts)
     function togglePause() external override {}
 
     /// @inheritdoc VaultManager
