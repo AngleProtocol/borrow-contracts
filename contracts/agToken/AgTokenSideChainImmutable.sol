@@ -8,18 +8,10 @@ import "./AgTokenSideChain.sol";
 /// @author Angle Labs, Inc.
 /// @notice Contract for immutable Angle's stablecoins
 contract AgTokenSideChainImmutable is AgTokenSideChain {
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        address _treasury
-    ) AgTokenSideChain() initializer {
+    constructor(string memory name_, string memory symbol_, address _treasury) AgTokenSideChain() initializer {
         _initializeBase(name_, symbol_, _treasury);
     }
 
     /// @inheritdoc BaseAgTokenSideChain
-    function _initialize(
-        string memory name_,
-        string memory symbol_,
-        address _treasury
-    ) internal override {}
+    function _initialize(string memory name_, string memory symbol_, address _treasury) internal override {}
 }
