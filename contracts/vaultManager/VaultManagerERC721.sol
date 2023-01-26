@@ -174,7 +174,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @dev This method is equivalent to the `_safeMint` method used in OpenZeppelin ERC721 contract
     /// @dev Emits a {Transfer} event
     function _mint(address to) internal returns (uint256 vaultID) {
-        if (whitelistingActivated && (isWhitelisted[to] != 1 || isWhitelisted[msg.sender] != 1))
+        if (_whitelistingActivated() && (isWhitelisted[to] != 1 || isWhitelisted[msg.sender] != 1))
             revert NotWhitelisted();
         if (to == address(0)) revert ZeroAddress();
 
@@ -226,7 +226,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     ) internal {
         if (_ownerOf(vaultID) != from) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
-        if (whitelistingActivated && isWhitelisted[to] != 1) revert NotWhitelisted();
+        if (_whitelistingActivated() && isWhitelisted[to] != 1) revert NotWhitelisted();
 
         _beforeTokenTransfer(from, to, vaultID);
 
@@ -307,4 +307,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
         address to,
         uint256 vaultID
     ) internal virtual {}
+
+    /// @notice Get `whitelistingActivated` in storage only if needed
+    function _whitelistingActivated() internal view virtual returns (bool) {
+        return whitelistingActivated;
+    }
 }

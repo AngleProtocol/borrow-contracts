@@ -147,7 +147,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     }
 
     /// @inheritdoc IAgToken
-    function setTreasury(address _treasury) external onlyTreasury {
+    function setTreasury(address _treasury) external virtual onlyTreasury {
         treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }
