@@ -124,7 +124,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Checks whether the contract is paused
     modifier whenNotPaused() {
-        if (paused) revert Paused();
+        if (_paused()) revert Paused();
         _;
     }
 
@@ -201,7 +201,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     (vaultID, stablecoinAmount) = abi.decode(datas[i], (uint256, uint256));
                     if (vaultID == 0) vaultID = vaultIDCount;
                     stablecoinAmount = _repayDebt(vaultID, stablecoinAmount, newInterestAccumulator);
-                    uint256 stablecoinAmountPlusRepayFee = (stablecoinAmount * BASE_PARAMS) / (BASE_PARAMS - repayFee);
+                    uint256 stablecoinAmountPlusRepayFee = (stablecoinAmount * BASE_PARAMS) /
+                        (BASE_PARAMS - _repayFee());
                     surplus += stablecoinAmountPlusRepayFee - stablecoinAmount;
                     paymentData.stablecoinAmountToReceive += stablecoinAmountPlusRepayFee;
                 } else {
@@ -314,9 +315,12 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         // Getting debt out of a vault is equivalent to repaying a portion of your debt, and this could leave exploits:
         // someone could borrow from a vault and transfer its debt to a `VaultManager` contract where debt repayment will
         // be cheaper: in which case we're making people pay the delta
-        uint256 _repayFee;
-        if (repayFee > senderRepayFee) {
-            _repayFee = repayFee - senderRepayFee;
+        uint256 repayFee_;
+        {
+            uint256 _repayFeeReceiver = _repayFee();
+            if (_repayFeeReceiver > senderRepayFee) {
+                repayFee_ = _repayFeeReceiver - senderRepayFee;
+            }
         }
         // Checking the delta of borrow fees to eliminate the risk of exploits here: a similar thing could happen: people
         // could mint from where it is cheap to mint and then transfer their debt to places where it is more expensive
@@ -327,7 +331,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         }
 
         uint256 stablecoinAmountLessFeePaid = (stablecoinAmount *
-            (BASE_PARAMS - _repayFee) *
+            (BASE_PARAMS - repayFee_) *
             (BASE_PARAMS - _borrowFee)) / (BASE_PARAMS**2);
         surplus += stablecoinAmount - stablecoinAmountLessFeePaid;
         _repayDebt(vaultID, stablecoinAmountLessFeePaid, 0);
@@ -430,7 +434,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
         totalNormalizedDebt -= vault.normalizedDebt;
         _burn(vaultID);
-        uint256 currentDebtPlusRepayFee = (currentDebt * BASE_PARAMS) / (BASE_PARAMS - repayFee);
+        uint256 currentDebtPlusRepayFee = (currentDebt * BASE_PARAMS) / (BASE_PARAMS - _repayFee());
         surplus += currentDebtPlusRepayFee - currentDebt;
         return (currentDebtPlusRepayFee, vault.collateralAmount);
     }
@@ -512,7 +516,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // No need to check the integrity of `VaultManager` here because `_getDebtIn` can be entered only through the
             // `angle` function which is non reentrant. Also, `getDebtOut` failing would be at the attacker loss, as they
             // would get their debt increasing in the current vault without decreasing it in the remote vault.
-            vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee, repayFee);
+            vaultManager.getDebtOut(dstVaultID, stablecoinAmount, borrowFee, _repayFee());
         }
     }
 
@@ -851,7 +855,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// and hence when liquidating a vault is going to decrease its health factor, `discount = max discount`.
     /// Otherwise, it may be profitable for the liquidator to liquidate in multiple times: as it will decrease
     /// the HF and therefore increase the discount between each time
-    function setUint64(uint64 param, bytes32 what) external onlyGovernorOrGuardian {
+    function setUint64(uint64 param, bytes32 what) external virtual onlyGovernorOrGuardian {
         if (what == "CF") {
             if (param > liquidationSurcharge) revert TooHighParameterValue();
             collateralFactor = param;
@@ -902,7 +906,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @notice Pauses external permissionless functions of the contract
-    function togglePause() external onlyGovernorOrGuardian {
+    function togglePause() external virtual onlyGovernorOrGuardian {
         paused = !paused;
     }
 
@@ -915,7 +919,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param target Address to toggle
     /// @dev If the `target` address is the zero address then this function toggles whitelisting
     /// for all addresses
-    function toggleWhitelist(address target) external onlyGovernor {
+    function toggleWhitelist(address target) external virtual onlyGovernor {
         if (target != address(0)) {
             isWhitelisted[target] = 1 - isWhitelisted[target];
         } else {
@@ -925,7 +929,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
     /// @notice Changes the reference to the oracle contract used to get the price of the oracle
     /// @param _oracle Reference to the oracle contract
-    function setOracle(address _oracle) external onlyGovernor {
+    function setOracle(address _oracle) external virtual onlyGovernor {
         if (IOracle(_oracle).treasury() != treasury) revert InvalidTreasury();
         oracle = IOracle(_oracle);
     }
@@ -947,7 +951,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @inheritdoc IVaultManagerFunctions
-    function setTreasury(address _treasury) external onlyTreasury {
+    function setTreasury(address _treasury) external virtual onlyTreasury {
         treasury = ITreasury(_treasury);
         // This function makes sure to propagate the change to the associated contract
         // even though a single oracle contract could be used in different places
@@ -972,4 +976,14 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 amount,
         bool add
     ) internal virtual {}
+
+    /// @notice Get `paused` in storage only if needed
+    function _paused() internal view virtual returns (bool) {
+        return paused;
+    }
+
+    /// @notice Get `repayFee` in storage only if needed
+    function _repayFee() internal view virtual returns (uint64) {
+        return repayFee;
+    }
 }
