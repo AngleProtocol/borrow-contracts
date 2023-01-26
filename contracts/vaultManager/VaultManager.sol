@@ -798,7 +798,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     BASE_PARAMS *
                     liquidationDiscount) /
                 (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
-            // Need to check for the dustas liquidating should not leave a dusty amount in the vault
+            // Need to check for the dust as liquidating should not leave a dusty amount in the vault
             uint256 dustParameter = dustLiquidation;
             if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dustParameter * BASE_PARAMS) {
                 // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all.
