@@ -27,13 +27,21 @@ contract TreasuryImmutable is Treasury {
     /// @inheritdoc Treasury
     function addVaultManager(address vaultManager) external override onlyGovernor {
         if (vaultManagerMap[vaultManager] == 1) revert AlreadyVaultManager();
-        if (keccak256(vaultManager.code) != _VAULT_MANAGER_IMPL) revert InvalidVaultManager();
+        if (keccak256(vaultManager.code) != _vaultManagerImpl()) revert InvalidVaultManager();
         if (address(IVaultManager(vaultManager).treasury()) != address(this)) revert InvalidTreasury();
         vaultManagerMap[vaultManager] = 1;
         vaultManagerList.push(vaultManager);
         emit VaultManagerToggled(vaultManager);
         stablecoin.addMinter(vaultManager);
     }
+
+    /// @notice Get the vault manger implementation bytecode hash
+    function _vaultManagerImpl() internal view virtual returns (bytes32) {
+        return _VAULT_MANAGER_IMPL;
+    }
+
+    /// @inheritdoc Treasury
+    function initialize(ICoreBorrow _core, IAgToken _stablecoin) public override {}
 
     /// @inheritdoc Treasury
     function addMinter(address minter) external override {}
