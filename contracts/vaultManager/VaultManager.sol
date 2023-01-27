@@ -84,7 +84,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         if (_oracle.treasury() != _treasury) revert InvalidTreasury();
         treasury = _treasury;
         collateral = _collateral;
-        _collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
+        _collatBase = 10 ** (IERC20Metadata(address(collateral)).decimals());
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
         string memory _name = string.concat("Angle Protocol ", _symbol, " Vault");
@@ -343,7 +343,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
 
         uint256 stablecoinAmountLessFeePaid = (stablecoinAmount *
             (BASE_PARAMS - repayFee_) *
-            (BASE_PARAMS - _borrowFee)) / (BASE_PARAMS**2);
+            (BASE_PARAMS - _borrowFee)) / (BASE_PARAMS ** 2);
         surplus += stablecoinAmount - stablecoinAmountLessFeePaid;
         _repayDebt(vaultID, stablecoinAmountLessFeePaid, 0);
     }
@@ -365,11 +365,10 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param liquidator Address of the liquidator which will be performing the liquidation
     /// @return liqOpp Description of the opportunity of liquidation
     /// @dev This function will revert if it's called on a vault that does not exist
-    function checkLiquidation(uint256 vaultID, address liquidator)
-        external
-        view
-        returns (LiquidationOpportunity memory liqOpp)
-    {
+    function checkLiquidation(
+        uint256 vaultID,
+        address liquidator
+    ) external view returns (LiquidationOpportunity memory liqOpp) {
         liqOpp = _checkLiquidation(
             vaultData[vaultID],
             liquidator,
@@ -392,15 +391,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         Vault memory vault,
         uint256 oracleValue,
         uint256 newInterestAccumulator
-    )
-        internal
-        view
-        returns (
-            uint256 healthFactor,
-            uint256 currentDebt,
-            uint256 collateralAmountInStable
-        )
-    {
+    ) internal view returns (uint256 healthFactor, uint256 currentDebt, uint256 collateralAmountInStable) {
         currentDebt = (vault.normalizedDebt * newInterestAccumulator) / BASE_INTEREST;
         collateralAmountInStable = (vault.collateralAmount * oracleValue) / _collatBase;
         if (currentDebt == 0) healthFactor = type(uint256).max;
@@ -803,7 +794,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         // Checking if we're in a situation where the health factor is an increasing or a decreasing function of the
         // amount repaid. In the first case, the health factor is an increasing function which means that the liquidator
         // can bring the vault to the target health ratio
-        if (healthFactor * liquidationDiscount * surcharge >= collateralFactor * BASE_PARAMS**2) {
+        if (healthFactor * liquidationDiscount * surcharge >= collateralFactor * BASE_PARAMS ** 2) {
             // This is the max amount to repay that will bring the person to the target health factor
             // Denom is always positive when a vault gets liquidated in this case and when the health factor
             // is an increasing function of the amount of stablecoins repaid
@@ -812,7 +803,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 ((targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) *
                     BASE_PARAMS *
                     liquidationDiscount) /
-                (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
+                (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS ** 2) * collateralFactor);
             // Need to check for the dust as liquidating should not leave a dusty amount in the vault
             uint256 dustParameter = dustLiquidation;
             if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dustParameter * BASE_PARAMS) {
@@ -950,11 +941,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param _dustLiquidation New `dustLiquidation` value
     /// @param dustCollateral_ New minimum collateral allowed in a vault after a liquidation
     /// @dev dustCollateral_ is in stable value
-    function setDusts(
-        uint256 _dust,
-        uint256 _dustLiquidation,
-        uint256 dustCollateral_
-    ) external onlyGovernor {
+    function setDusts(uint256 _dust, uint256 _dustLiquidation, uint256 dustCollateral_) external onlyGovernor {
         if (_dust > _dustLiquidation) revert InvalidParameterValue();
         dust = _dust;
         dustLiquidation = _dustLiquidation;
@@ -982,11 +969,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param amount Collateral amount balance of the owner of vaultID increase/decrease
     /// @param add Whether the balance should be increased/decreased
     /// @param vaultID Vault which sees its collateral amount changed
-    function _checkpointCollateral(
-        uint256 vaultID,
-        uint256 amount,
-        bool add
-    ) internal virtual {}
+    function _checkpointCollateral(uint256 vaultID, uint256 amount, bool add) internal virtual {}
 
     /// @notice Get `paused` in storage only if needed
     function _paused() internal view virtual returns (bool) {
