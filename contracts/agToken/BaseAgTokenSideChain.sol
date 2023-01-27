@@ -75,7 +75,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         string memory name_,
         string memory symbol_,
         address _treasury
-    ) internal initializer {
+    ) internal virtual initializer {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();

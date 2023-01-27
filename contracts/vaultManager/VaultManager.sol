@@ -67,7 +67,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         IOracle _oracle,
         VaultParameters calldata params,
         string memory _symbol
-    ) external initializer {
+    ) external virtual initializer {
         if (_oracle.treasury() != _treasury) revert InvalidTreasury();
         treasury = _treasury;
         collateral = _collateral;

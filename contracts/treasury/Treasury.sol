@@ -120,7 +120,7 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Initializes the treasury contract
     /// @param _core Address of the `CoreBorrow` contract of the module
     /// @param _stablecoin Address of the stablecoin
-    function initialize(ICoreBorrow _core, IAgToken _stablecoin) public initializer {
+    function initialize(ICoreBorrow _core, IAgToken _stablecoin) public virtual initializer {
         if (address(_stablecoin) == address(0) || address(_core) == address(0)) revert ZeroAddress();
         core = _core;
         stablecoin = _stablecoin;

@@ -87,6 +87,15 @@ contract VaultManagerLiquidationBoostImmutable is VaultManagerLiquidationBoost {
     }
 
     /// @inheritdoc VaultManager
+    function initialize(
+        ITreasury _treasury,
+        IERC20 _collateral,
+        IOracle _oracle,
+        VaultParameters calldata params,
+        string memory _symbol
+    ) external override {}
+
+    /// @inheritdoc VaultManager
     function togglePause() external override {}
 
     /// @inheritdoc VaultManager

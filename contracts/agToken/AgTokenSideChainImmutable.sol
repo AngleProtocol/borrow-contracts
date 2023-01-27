@@ -26,5 +26,12 @@ contract AgTokenSideChainImmutable is AgTokenSideChain {
     }
 
     /// @inheritdoc BaseAgTokenSideChain
+    function _initialize(
+        string memory name_,
+        string memory symbol_,
+        address _treasury
+    ) internal override {}
+
+    /// @inheritdoc BaseAgTokenSideChain
     function setTreasury(address _treasury) external override {}
 }
