@@ -89,7 +89,11 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         string memory name_,
         string memory symbol_,
         address _treasury
+<<<<<<< HEAD
     ) internal virtual {
+=======
+    ) internal virtual initializer {
+>>>>>>> 61b189b (2nd draft gold stablecoin)
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         treasury = _treasury;
