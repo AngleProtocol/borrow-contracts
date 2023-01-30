@@ -15,9 +15,6 @@ contract TreasuryImmutable is Treasury {
     // ======================= Parameters and Variables ============================
     uint8 private _isSetStablecoin;
 
-    // ======================= Parameters and Variables ============================
-    uint8 private _isSetStablecoin;
-
     // =============================== Errors ======================================
 
     error AlreadySetStablecoin();
