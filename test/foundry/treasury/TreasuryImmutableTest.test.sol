@@ -23,7 +23,7 @@ contract TreasuryImmutableTest is BaseTest {
 
     VaultParameters internal _vmParams =
         VaultParameters({
-            debtCeiling: 10**9 * BASE_18,
+            debtCeiling: 10 ** 9 * BASE_18,
             collateralFactor: uint64(BASE_PARAMS / 2),
             targetHealthFactor: uint64((BASE_PARAMS * 105) / 100),
             interestRate: uint64(BASE_PARAMS / 10),
