@@ -17,6 +17,7 @@ contract MainnetConstants {
 
     // AGEUR Mainnet treasury
     address public constant AGEUR_TREASURY = 0x8667DBEBf68B0BFa6Db54f550f41Be16c4067d60;
+    address public constant AGGOLD_TREASURY = address(0);
 
     uint256 public constant BASE_TOKENS = 10**18;
     uint64 public constant BASE_PARAMS = 10**9;
