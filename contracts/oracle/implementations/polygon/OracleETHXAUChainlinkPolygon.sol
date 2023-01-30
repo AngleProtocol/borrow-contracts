@@ -10,7 +10,7 @@ import "../../BaseOracleChainlinkMultiTwoFeeds.sol";
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of ETH in XAU in base 18
 /// @dev This contract is built to be deployed on Polygon
-contract OracleETHEURChainlinkPolygon is BaseOracleChainlinkMultiTwoFeeds {
+contract OracleETHXAUChainlinkPolygon is BaseOracleChainlinkMultiTwoFeeds {
     string public constant DESCRIPTION = "ETH/GOLD Oracle";
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}

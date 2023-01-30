@@ -6,6 +6,8 @@
   "scripts": {
     "hardhat:compile": "hardhat compile",
     "foundry:compile": "forge build --optimize --optimizer-runs 1000",
+    "foundry:deploy:mainnet": "forge script --rpc-url mainnet --broadcast --verify -vvvv",
+    "foundry:deploy:polygon": "forge script --rpc-url polygon --broadcast --verify -vvvv",
     "check-upgradeability": "hardhat run scripts/upgradeability.ts",
     "coverage": "hardhat coverage",
     "coverage:foundry": "forge coverage --report lcov",
