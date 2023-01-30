@@ -68,6 +68,19 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         VaultParameters calldata params,
         string memory _symbol
     ) external virtual initializer {
+        _initialize(_treasury, _collateral, _oracle, params, _symbol);
+        whitelistingActivated = params.whitelistingActivated;
+        paused = true;
+    }
+
+    /// @notice Internal logic to `initialize`
+    function _initialize(
+        ITreasury _treasury,
+        IERC20 _collateral,
+        IOracle _oracle,
+        VaultParameters memory params,
+        string memory _symbol
+    ) internal virtual {
         if (_oracle.treasury() != _treasury) revert InvalidTreasury();
         treasury = _treasury;
         collateral = _collateral;
@@ -97,9 +110,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         interestRate = params.interestRate;
         liquidationSurcharge = params.liquidationSurcharge;
         maxLiquidationDiscount = params.maxLiquidationDiscount;
-        whitelistingActivated = params.whitelistingActivated;
         yLiquidationBoost = [params.baseBoost];
-        paused = true;
     }
 
     // ================================= MODIFIERS =================================

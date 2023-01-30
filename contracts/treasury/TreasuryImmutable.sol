@@ -12,27 +12,35 @@ contract TreasuryImmutable is Treasury {
     // TODO update with final keccak256(VaultManagerImmutable bytecode)
     bytes32 private constant _VAULT_MANAGER_IMPL = hex"";
 
+    // ======================= Parameters and Variables ============================
+    uint8 private _isSetStablecoin;
+
     // =============================== Errors ======================================
 
+    error AlreadySetStablecoin();
     error InvalidVaultManager();
+    error InvalidStablecoin();
 
     /// @param _core Address of the `CoreBorrow` contract of the module
-    /// @param _stablecoin Address of the stablecoin
-    constructor(ICoreBorrow _core, IAgToken _stablecoin) Treasury() {
-        if (address(_stablecoin) == address(0) || address(_core) == address(0)) revert ZeroAddress();
+    constructor(ICoreBorrow _core) initializer {
+        if (address(_core) == address(0)) revert ZeroAddress();
         core = _core;
+    }
+
+    /// @notice Can only be called once after by governance to link the `agToken` to the `treasury`
+    /// @param _stablecoin Address of the stablecoin
+    function setStablecoin(IAgToken _stablecoin) public onlyGovernor {
+        if (_isSetStablecoin == type(uint8).max) revert AlreadySetStablecoin();
+        if (address(_stablecoin) == address(0) || IAgToken(_stablecoin).treasury() != address(this))
+            revert ZeroAddress();
+        _isSetStablecoin = type(uint8).max;
         stablecoin = _stablecoin;
     }
 
     /// @inheritdoc Treasury
     function addVaultManager(address vaultManager) external override onlyGovernor {
-        if (vaultManagerMap[vaultManager] == 1) revert AlreadyVaultManager();
         if (keccak256(vaultManager.code) != _vaultManagerImpl()) revert InvalidVaultManager();
-        if (address(IVaultManager(vaultManager).treasury()) != address(this)) revert InvalidTreasury();
-        vaultManagerMap[vaultManager] = 1;
-        vaultManagerList.push(vaultManager);
-        emit VaultManagerToggled(vaultManager);
-        stablecoin.addMinter(vaultManager);
+        _addVaultManager(vaultManager);
     }
 
     /// @notice Get the vault manger implementation bytecode hash

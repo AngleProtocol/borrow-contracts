@@ -17,12 +17,8 @@ contract AgTokenSideChainImmutable is AgTokenSideChain {
         string memory name_,
         string memory symbol_,
         address _treasury
-    ) AgTokenSideChain() {
-        __ERC20Permit_init(name_);
-        __ERC20_init(name_, symbol_);
-        if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
-        treasury = _treasury;
-        emit TreasuryUpdated(address(_treasury));
+    ) AgTokenSideChain() initializer {
+        _initializeBase(name_, symbol_, _treasury);
     }
 
     /// @inheritdoc BaseAgTokenSideChain
@@ -31,7 +27,4 @@ contract AgTokenSideChainImmutable is AgTokenSideChain {
         string memory symbol_,
         address _treasury
     ) internal override {}
-
-    /// @inheritdoc BaseAgTokenSideChain
-    function setTreasury(address _treasury) external override {}
 }
