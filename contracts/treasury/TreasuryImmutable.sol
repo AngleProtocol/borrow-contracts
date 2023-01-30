@@ -9,8 +9,8 @@ import "./Treasury.sol";
 /// @notice Immutable Treasury of Angle Borrowing Module
 contract TreasuryImmutable is Treasury {
     // =============================== References ==================================
-    // TODO update with final keccak256(VaultManagerImmutable bytecode)
-    bytes32 private constant _VAULT_MANAGER_IMPL = hex"";
+    bytes32 private constant _VAULT_MANAGER_IMPL =
+        hex"8e3f1274ce9682d0f2b885883068df4322f29d1834b6ab26fc9a8e74a11bac73";
 
     // ======================= Parameters and Variables ============================
     uint8 private _isSetStablecoin;
