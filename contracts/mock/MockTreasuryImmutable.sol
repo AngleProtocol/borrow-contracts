@@ -11,8 +11,7 @@ contract MockTreasuryImmutable is TreasuryImmutable {
     bytes32 private _MOCK_VAULT_MANAGER_IMPLEMENTATION;
 
     /// @param _core Address of the `CoreBorrow` contract of the module
-    /// @param _stablecoin Address of the stablecoin
-    constructor(ICoreBorrow _core, IAgToken _stablecoin) TreasuryImmutable(_core, _stablecoin) {}
+    constructor(ICoreBorrow _core) TreasuryImmutable(_core) {}
 
     /// @notice Get the vault manger implementation bytecode hash
     function _vaultManagerImpl() internal view override returns (bytes32) {

@@ -270,6 +270,19 @@ contract Treasury is ITreasury, Initializable {
         return (surplusBufferValue, badDebtValue);
     }
 
+    /// @notice Adds a new `VaultManager`
+    /// @param vaultManager `VaultManager` contract to add
+    /// @dev This contract should have already been initialized with a correct treasury address
+    /// @dev It's this function that gives the minter right to the `VaultManager`
+    function _addVaultManager(address vaultManager) internal virtual {
+        if (vaultManagerMap[vaultManager] == 1) revert AlreadyVaultManager();
+        if (address(IVaultManager(vaultManager).treasury()) != address(this)) revert InvalidTreasury();
+        vaultManagerMap[vaultManager] = 1;
+        vaultManagerList.push(vaultManager);
+        emit VaultManagerToggled(vaultManager);
+        stablecoin.addMinter(vaultManager);
+    }
+
     // ============================ Governor Functions =============================
 
     /// @notice Adds a new minter for the stablecoin
@@ -279,17 +292,9 @@ contract Treasury is ITreasury, Initializable {
         stablecoin.addMinter(minter);
     }
 
-    /// @notice Adds a new `VaultManager`
-    /// @param vaultManager `VaultManager` contract to add
-    /// @dev This contract should have already been initialized with a correct treasury address
-    /// @dev It's this function that gives the minter right to the `VaultManager`
+    /// @notice External wrapper for `_addVaultManager`
     function addVaultManager(address vaultManager) external virtual onlyGovernor {
-        if (vaultManagerMap[vaultManager] == 1) revert AlreadyVaultManager();
-        if (address(IVaultManager(vaultManager).treasury()) != address(this)) revert InvalidTreasury();
-        vaultManagerMap[vaultManager] = 1;
-        vaultManagerList.push(vaultManager);
-        emit VaultManagerToggled(vaultManager);
-        stablecoin.addMinter(vaultManager);
+        _addVaultManager(vaultManager);
     }
 
     /// @notice Removes a minter from the stablecoin contract

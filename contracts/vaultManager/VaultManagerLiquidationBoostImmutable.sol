@@ -14,38 +14,8 @@ contract VaultManagerLiquidationBoostImmutable is VaultManagerLiquidationBoost {
         IOracle _oracle,
         VaultParameters memory params,
         string memory _symbol
-    ) VaultManagerLiquidationBoost() {
-        if (_oracle.treasury() != _treasury) revert InvalidTreasury();
-        treasury = _treasury;
-        collateral = _collateral;
-        _collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
-        stablecoin = IAgToken(_treasury.stablecoin());
-        oracle = _oracle;
-        string memory _name = string.concat("Angle Protocol ", _symbol, " Vault");
-        name = _name;
-        __ERC721Permit_init(_name);
-        symbol = string.concat(_symbol, "-vault");
-
-        interestAccumulator = BASE_INTEREST;
-        lastInterestAccumulatorUpdated = block.timestamp;
-
-        // Checking if the parameters have been correctly initialized
-        if (
-            params.collateralFactor > params.liquidationSurcharge ||
-            params.liquidationSurcharge > BASE_PARAMS ||
-            BASE_PARAMS > params.targetHealthFactor ||
-            params.maxLiquidationDiscount >= BASE_PARAMS ||
-            params.baseBoost == 0
-        ) revert InvalidSetOfParameters();
-
-        debtCeiling = params.debtCeiling;
-        collateralFactor = params.collateralFactor;
-        targetHealthFactor = params.targetHealthFactor;
-        interestRate = params.interestRate;
-        liquidationSurcharge = params.liquidationSurcharge;
-        maxLiquidationDiscount = params.maxLiquidationDiscount;
-        whitelistingActivated = params.whitelistingActivated;
-        yLiquidationBoost = [params.baseBoost];
+    ) VaultManagerLiquidationBoost() initializer {
+        _initialize(_treasury, _collateral, _oracle, params, _symbol);
     }
 
     /// @inheritdoc VaultManager
@@ -72,7 +42,7 @@ contract VaultManagerLiquidationBoostImmutable is VaultManagerLiquidationBoost {
     }
 
     /// @inheritdoc VaultManagerERC721
-    function _whitelistingActivated() internal pure override returns (bool) {
+    function _whitelistingActivated() internal pure virtual override returns (bool) {
         return false;
     }
 

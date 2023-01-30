@@ -62,4 +62,7 @@ interface IAgToken is IERC20Upgradeable {
     /// @param minter Address for which the minting right should be checked
     /// @return Whether the address has the right to mint agTokens or not
     function isMinter(address minter) external view returns (bool);
+
+    /// @notice Get the associated treasury
+    function treasury() external view returns (address);
 }
