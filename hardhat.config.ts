@@ -26,7 +26,7 @@ import { accounts, etherscanKey, nodeUrl } from './utils/network';
 // Otherwise, ".sol" files from "test" are picked up during compilation and throw an error
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
   const paths = await runSuper();
-  return paths.filter((p: string) => !p.includes('/test/foundry/'));
+  return paths.filter((p: string) => !(p.includes('/test/foundry/') || p.includes('/MockVaultManagerLiquidationBoostImmutable.sol') || p.includes('/VaultManagerLiquidationBoostImmutable.sol')));
 });
 
 const argv = yargs
@@ -77,24 +77,6 @@ const config: HardhatUserConfig = {
       },
       'contracts/vaultManager/VaultManagerLiquidationBoost.sol': {
         version: '0.8.12',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
-        },
-      },
-      'contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol': {
-        version: '0.8.17',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
-        },
-      },
-      'contracts/mock/MockVaultManagerLiquidationBoostImmutable.sol': {
-        version: '0.8.17',
         settings: {
           optimizer: {
             enabled: true,
