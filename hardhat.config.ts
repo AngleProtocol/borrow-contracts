@@ -46,7 +46,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.12',
+        version: '0.8.17',
         settings: {
           optimizer: {
             enabled: true,
@@ -77,6 +77,24 @@ const config: HardhatUserConfig = {
       },
       'contracts/vaultManager/VaultManagerLiquidationBoost.sol': {
         version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+      'contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol': {
+        version: '0.8.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+      'contracts/mock/MockVaultManagerLiquidationBoostImmutable.sol': {
+        version: '0.8.17',
         settings: {
           optimizer: {
             enabled: true,
@@ -145,7 +163,7 @@ const config: HardhatUserConfig = {
         // Mainnet
 
         url: nodeUrl('fork'),
-        blockNumber: 16441055,
+        blockNumber: 16526566,
 
         // Polygon
         /*
@@ -171,9 +189,9 @@ const config: HardhatUserConfig = {
       },
       mining: argv.disableAutoMining
         ? {
-            auto: false,
-            interval: 1000,
-          }
+          auto: false,
+          interval: 1000,
+        }
         : { auto: true },
       chainId: 1337,
     },

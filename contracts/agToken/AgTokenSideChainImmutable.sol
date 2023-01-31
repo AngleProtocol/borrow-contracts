@@ -8,9 +8,6 @@ import "./AgTokenSideChain.sol";
 /// @author Angle Labs, Inc.
 /// @notice Contract for immutable Angle's stablecoins
 contract AgTokenSideChainImmutable is AgTokenSideChain {
-    /// @param name_ Name of the token
-    /// @param symbol_ Symbol of the token
-    /// @param _treasury Reference to the `Treasury` contract associated to this agToken implementation
     /// @dev As `AgTokenSideChain` constructor is called by inheritance it will invalidate the `initialize` function
     /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
     constructor(

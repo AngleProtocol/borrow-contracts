@@ -17,7 +17,6 @@ contract TreasuryImmutable is Treasury {
 
     // =============================== Errors ======================================
 
-    error AlreadySetStablecoin();
     error InvalidVaultManager();
     error InvalidStablecoin();
 
@@ -30,9 +29,8 @@ contract TreasuryImmutable is Treasury {
     /// @notice Can only be called once after by governance to link the `agToken` to the `treasury`
     /// @param _stablecoin Address of the stablecoin
     function setStablecoin(IAgToken _stablecoin) public onlyGovernor {
-        if (_isSetStablecoin == type(uint8).max) revert AlreadySetStablecoin();
-        if (address(_stablecoin) == address(0) || IAgToken(_stablecoin).treasury() != address(this))
-            revert ZeroAddress();
+        if (_isSetStablecoin == type(uint8).max || IAgToken(_stablecoin).treasury() != address(this))
+            revert InvalidStablecoin();
         _isSetStablecoin = type(uint8).max;
         stablecoin = _stablecoin;
     }

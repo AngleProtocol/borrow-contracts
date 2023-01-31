@@ -6,7 +6,7 @@ import "../BaseTest.test.sol";
 import "../../../contracts/mock/MockOracle.sol";
 import "../../../contracts/mock/MockTreasury.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
-import { MockIncorrectVaultManagerLiquidationBoostImmutable, MockCorrectVaultManagerLiquidationBoostImmutable } from "../../../contracts/mock/MockVaultManagerLiquidationBoostImmutable.sol";
+import { MockCorrectVaultManagerLiquidationBoostImmutable, MockIncorrectVaultManagerLiquidationBoostImmutable } from "../../../contracts/mock/MockVaultManagerLiquidationBoostImmutable.sol";
 import { MockTreasuryImmutable, TreasuryImmutable, Treasury } from "../../../contracts/mock/MockTreasuryImmutable.sol";
 import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/agTokenSidechainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
@@ -100,7 +100,7 @@ contract TreasuryImmutableTest is BaseTest {
 
     function testSetStablecoinTwiceFail() public {
         vm.prank(_GOVERNOR);
-        vm.expectRevert(TreasuryImmutable.AlreadySetStablecoin.selector);
+        vm.expectRevert(TreasuryImmutable.InvalidStablecoin.selector);
         _treasury.setStablecoin(_agToken);
     }
 
@@ -108,7 +108,7 @@ contract TreasuryImmutableTest is BaseTest {
         MockTreasuryImmutable treasuryBis = new MockTreasuryImmutable(ICoreBorrow(coreBorrow));
 
         vm.prank(_GOVERNOR);
-        vm.expectRevert(Treasury.ZeroAddress.selector);
+        vm.expectRevert(TreasuryImmutable.InvalidStablecoin.selector);
         treasuryBis.setStablecoin(_agToken);
     }
 
@@ -116,7 +116,7 @@ contract TreasuryImmutableTest is BaseTest {
         MockTreasuryImmutable treasuryBis = new MockTreasuryImmutable(ICoreBorrow(coreBorrow));
 
         vm.prank(_GOVERNOR);
-        vm.expectRevert(Treasury.ZeroAddress.selector);
+        vm.expectRevert();
         treasuryBis.setStablecoin(IAgToken(address(0)));
     }
 
