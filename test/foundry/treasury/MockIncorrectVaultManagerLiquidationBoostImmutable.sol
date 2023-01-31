@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.17;
 
-import "../vaultManager/VaultManagerLiquidationBoostImmutable.sol";
+import "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
 
 /// @title MockIncorrectVaultManagerLiquidationBoostImmutable
 /// @author Angle Labs, Inc.
@@ -20,20 +20,5 @@ contract MockIncorrectVaultManagerLiquidationBoostImmutable is VaultManagerLiqui
     /// @dev this is the function changed
     function _whitelistingActivated() internal pure override returns (bool) {
         return true;
-    }
-}
-
-/// @title MockIncorrectVaultManagerLiquidationBoostImmutable
-/// @author Angle Labs, Inc.
-/// @notice Mock VaultManagerLiquidationBoostImmutable with slightly different constructor
-contract MockCorrectVaultManagerLiquidationBoostImmutable is VaultManagerLiquidationBoostImmutable {
-    constructor(
-        ITreasury _treasury,
-        IERC20 _collateral,
-        IOracle _oracle,
-        VaultParameters memory params,
-        string memory _symbol
-    ) VaultManagerLiquidationBoostImmutable(_treasury, _collateral, _oracle, params, _symbol) initializer {
-        uint256 changed = 1;
     }
 }

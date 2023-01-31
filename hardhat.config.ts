@@ -46,7 +46,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.12',
+        version: '0.8.17',
         settings: {
           optimizer: {
             enabled: true,
@@ -77,6 +77,15 @@ const config: HardhatUserConfig = {
       },
       'contracts/vaultManager/VaultManagerLiquidationBoost.sol': {
         version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+      'contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol': {
+        version: '0.8.17',
         settings: {
           optimizer: {
             enabled: true,
@@ -145,7 +154,7 @@ const config: HardhatUserConfig = {
         // Mainnet
 
         url: nodeUrl('fork'),
-        blockNumber: 16218353,
+        blockNumber: 16526566,
 
         // Polygon
         /*
