@@ -12,6 +12,8 @@ Angle is a decentralized stablecoin protocol, designed to be both over-collatera
 
 The protocol is made of different modules, each with their own set of smart contracts. This repo contains the Borrowing module smart contracts.
 
+Smart contracts used to for yield-bearing tokens as collateral assets in the Borrowing module are in a different repository that you can find [here](https://github.com/AngleProtocol/borrow-lpTokens-contracts).
+
 Documentation to understand Angle Protocol's Borrowing Module is available [here](https://docs.angle.money).
 
 Developers documentation to understand how these smart contracts work together is available [here](https://developers.angle.money/borrowing-module-contracts/architecture-overview).
@@ -27,7 +29,7 @@ Other Angle-related smart contracts can be found in the following repositories:
 - [Angle Core module contracts](https://github.com/AngleProtocol/angle-core)
 - [Angle Strategies](https://github.com/AngleProtocol/angle-strategies)
 - [Angle Router contracts](https://github.com/AngleProtocol/angle-router)
-- [Angle Algorithmic Market Operations](https://github.com/AngleProtocol/angle-amo)
+- [Angle Direct Deposit Modules (or Algorithmic market operations)](https://github.com/AngleProtocol/angle-amo)
 
 Otherwise, for more info about the protocol, check out [this portal](https://linktr.ee/angleprotocol) of resources.
 

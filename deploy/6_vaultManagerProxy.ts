@@ -58,7 +58,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       const treasuryAddress = (await ethers.getContract('Treasury')).address;
       const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
-      const implementation = (await ethers.getContract('VaultManager_Implementation')).address;
+      const implementation = (await ethers.getContract('VaultManager_V2_0_Implementation')).address;
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),
@@ -71,6 +71,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       ]);
 
       // await deployProxy(name, implementation, proxyAdminAddress, callData);
+
       await deploy(name, {
         contract: 'TransparentUpgradeableProxy',
         from: deployer.address,

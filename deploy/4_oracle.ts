@@ -8,20 +8,21 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const treasury = (await deployments.get('Treasury')).address;
+  // const treasury = (await deployments.get('Treasury')).address;
+  const treasury = '0x8667DBEBf68B0BFa6Db54f550f41Be16c4067d60';
 
   const chainName = network.name.charAt(0).toUpperCase() + network.name.substring(1);
 
   if (!network.live || network.config.chainId === ChainId.MAINNET) {
-    console.log('Now deploying the Oracle LUSD/EUR');
-    await deploy('Oracle_LUSD_EUR', {
-      contract: 'OracleLUSDEURChainlink',
+    console.log('Now deploying the Oracle CBETH/EUR');
+    await deploy('Oracle_CBETH_EUR', {
+      contract: 'OracleCBETHEURChainlink',
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle = (await deployments.get('Oracle_LUSD_EUR')).address;
-    console.log(`Successfully deployed Oracle LUSD/EUR at the address ${oracle}`);
+    const oracle = (await deployments.get('Oracle_CBETH_EUR')).address;
+    console.log(`Successfully deployed Oracle CBETH/EUR at the address ${oracle}`);
     console.log('');
   } else {
     await deploy('Oracle_AVAX_EUR', {
