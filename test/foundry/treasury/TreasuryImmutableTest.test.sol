@@ -8,7 +8,7 @@ import "../../../contracts/mock/MockTreasury.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
 import { MockCorrectVaultManagerLiquidationBoostImmutable, MockIncorrectVaultManagerLiquidationBoostImmutable } from "../../../contracts/mock/MockVaultManagerLiquidationBoostImmutable.sol";
 import { MockTreasuryImmutable, TreasuryImmutable, Treasury } from "../../../contracts/mock/MockTreasuryImmutable.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSidechainImmutable.sol";
+import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
 
 contract TreasuryImmutableTest is BaseTest {

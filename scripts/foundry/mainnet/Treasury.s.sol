@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
 import { ICoreBorrow } from "../../../contracts/coreBorrow/CoreBorrow.sol";
 import { TreasuryImmutable } from "../../../contracts/treasury/TreasuryImmutable.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSidechainImmutable.sol";
+import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
 import "./MainnetConstants.s.sol";
 
