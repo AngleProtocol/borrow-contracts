@@ -28,6 +28,7 @@ contract BaseTest is Test {
 
     uint256 public constant BASE_PARAMS = 10**9;
     uint256 public constant BASE_STAKER = 10**36;
+    uint256 public constant BASE_18 = 10**18;
 
     function setUp() public virtual {
         proxyAdmin = new ProxyAdmin();

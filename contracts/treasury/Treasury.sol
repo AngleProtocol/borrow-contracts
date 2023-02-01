@@ -120,7 +120,7 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Initializes the treasury contract
     /// @param _core Address of the `CoreBorrow` contract of the module
     /// @param _stablecoin Address of the stablecoin
-    function initialize(ICoreBorrow _core, IAgToken _stablecoin) public initializer {
+    function initialize(ICoreBorrow _core, IAgToken _stablecoin) public virtual initializer {
         if (address(_stablecoin) == address(0) || address(_core) == address(0)) revert ZeroAddress();
         core = _core;
         stablecoin = _stablecoin;
@@ -270,20 +270,11 @@ contract Treasury is ITreasury, Initializable {
         return (surplusBufferValue, badDebtValue);
     }
 
-    // ============================ Governor Functions =============================
-
-    /// @notice Adds a new minter for the stablecoin
-    /// @param minter Minter address to add
-    function addMinter(address minter) external onlyGovernor {
-        if (minter == address(0)) revert ZeroAddress();
-        stablecoin.addMinter(minter);
-    }
-
     /// @notice Adds a new `VaultManager`
     /// @param vaultManager `VaultManager` contract to add
     /// @dev This contract should have already been initialized with a correct treasury address
     /// @dev It's this function that gives the minter right to the `VaultManager`
-    function addVaultManager(address vaultManager) external onlyGovernor {
+    function _addVaultManager(address vaultManager) internal virtual {
         if (vaultManagerMap[vaultManager] == 1) revert AlreadyVaultManager();
         if (address(IVaultManager(vaultManager).treasury()) != address(this)) revert InvalidTreasury();
         vaultManagerMap[vaultManager] = 1;
@@ -292,9 +283,23 @@ contract Treasury is ITreasury, Initializable {
         stablecoin.addMinter(vaultManager);
     }
 
+    // ============================ Governor Functions =============================
+
+    /// @notice Adds a new minter for the stablecoin
+    /// @param minter Minter address to add
+    function addMinter(address minter) external virtual onlyGovernor {
+        if (minter == address(0)) revert ZeroAddress();
+        stablecoin.addMinter(minter);
+    }
+
+    /// @notice External wrapper for `_addVaultManager`
+    function addVaultManager(address vaultManager) external virtual onlyGovernor {
+        _addVaultManager(vaultManager);
+    }
+
     /// @notice Removes a minter from the stablecoin contract
     /// @param minter Minter address to remove
-    function removeMinter(address minter) external onlyGovernor {
+    function removeMinter(address minter) external virtual onlyGovernor {
         // To remove the minter role to a `VaultManager` you have to go through the `removeVaultManager` function
         if (vaultManagerMap[minter] == 1) revert InvalidAddress();
         stablecoin.removeMinter(minter);
@@ -354,7 +359,7 @@ contract Treasury is ITreasury, Initializable {
     /// @param _treasury New treasury address for this stablecoin
     /// @dev This function is basically a way to remove rights to this contract and grant them to a new one
     /// @dev It could be used to set a new core contract
-    function setTreasury(address _treasury) external onlyGovernor {
+    function setTreasury(address _treasury) external virtual onlyGovernor {
         if (ITreasury(_treasury).stablecoin() != stablecoin) revert InvalidTreasury();
         // Flash loan role should be removed before calling this function
         if (core.isFlashLoanerTreasury(address(this))) revert RightsNotRemoved();

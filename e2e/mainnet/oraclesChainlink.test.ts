@@ -14,8 +14,12 @@ import {
   OracleCBETHEURChainlink__factory,
   OracleETHEURChainlink,
   OracleETHEURChainlink__factory,
+  OracleETHXAUChainlink,
+  OracleETHXAUChainlink__factory,
   OracleLUSDEURChainlink,
   OracleLUSDEURChainlink__factory,
+  OracleLUSDXAUChainlink,
+  OracleLUSDXAUChainlink__factory,
   OracleWSTETHEURChainlink,
   OracleWSTETHEURChainlink__factory,
 } from '../../typechain';
@@ -30,6 +34,8 @@ contract('Oracles Chainlink', () => {
   let oracleBTC: OracleBTCEURChainlink;
   let oracleLUSD: OracleLUSDEURChainlink;
   let oracleCBETH: OracleCBETHEURChainlink;
+  let oracleLUSDXAU: OracleLUSDXAUChainlink;
+  let oracleETHXAU: OracleETHXAUChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -50,6 +56,8 @@ contract('Oracles Chainlink', () => {
     oracleBTC = await new OracleBTCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleLUSD = await new OracleLUSDEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleCBETH = await new OracleCBETHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleLUSDXAU = await new OracleLUSDXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleETHXAU = await new OracleETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -111,6 +119,31 @@ contract('Oracles Chainlink', () => {
     it('initialization', async () => {
       expect(await oracleCBETH.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleCBETH.treasury()).to.be.equal(treasury.address);
+    });
+  });
+
+  describe('Oracle LUSDXAU', () => {
+    it('read', async () => {
+      const receipt = await oracleLUSDXAU.read();
+      const gas = await oracleLUSDXAU.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleLUSDXAU.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleLUSDXAU.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle ETHXAU', () => {
+    it('read', async () => {
+      const receipt = await oracleETHXAU.read();
+      const gas = await oracleETHXAU.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleETHXAU.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleETHXAU.treasury()).to.be.equal(treasury.address);
     });
   });
 });

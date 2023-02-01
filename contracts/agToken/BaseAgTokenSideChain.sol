@@ -66,25 +66,35 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     // ============================= Constructor ===================================
 
+    /// @notice Wraps `_initializeBase` for `BaseAgTokenSideChain` and make a safety check
+    /// on `_treasury`and this contract
+    function _initialize(
+        string memory name_,
+        string memory symbol_,
+        address _treasury
+    ) internal virtual initializer {
+        if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
+        _initializeBase(name_, symbol_, _treasury);
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
+
     /// @notice Initializes the contract
     /// @param name_ Name of the token
     /// @param symbol_ Symbol of the token
     /// @param _treasury Reference to the `Treasury` contract associated to this agToken implementation
     /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
-    function _initialize(
+    function _initializeBase(
         string memory name_,
         string memory symbol_,
         address _treasury
-    ) internal initializer {
+    ) internal virtual {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
-        if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
         treasury = _treasury;
         emit TreasuryUpdated(address(_treasury));
     }
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
 
     // =============================== Modifiers ===================================
 
@@ -147,7 +157,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     }
 
     /// @inheritdoc IAgToken
-    function setTreasury(address _treasury) external onlyTreasury {
+    function setTreasury(address _treasury) external virtual onlyTreasury {
         treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }

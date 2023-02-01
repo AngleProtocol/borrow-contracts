@@ -4,12 +4,12 @@ pragma solidity ^0.8.12;
 import { console } from "forge-std/console.sol";
 import { stdStorage, StdStorage, Test } from "forge-std/Test.sol";
 import { VaultManager, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManager.sol";
-import { ActionType } from "../../../contracts/interfaces/IVaultManager.sol";
-import "../../../contracts/treasury/Treasury.sol";
+import { ActionType, VaultParameters } from "../../../contracts/interfaces/IVaultManager.sol";
+import { Treasury } from "../../../contracts/treasury/Treasury.sol";
 import { MockStableMaster } from "../../../contracts/mock/MockStableMaster.sol";
 import "../../../contracts/mock/MockOracle.sol";
 import "../../../contracts/mock/MockToken.sol";
-import "../../../contracts/coreBorrow/CoreBorrow.sol";
+import { CoreBorrow } from "../../../contracts/coreBorrow/CoreBorrow.sol";
 import { AgToken } from "../../../contracts/agToken/AgToken.sol";
 
 contract VaultManagerTest is Test {
