@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import "../BaseTest.test.sol";
 import "../../../contracts/mock/MockTreasury.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/agTokenSidechainImmutable.sol";
+import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSidechainImmutable.sol";
 
 contract AgTokenGoldTest is BaseTest {
     using stdStorage for StdStorage;

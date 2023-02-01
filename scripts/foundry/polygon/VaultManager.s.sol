@@ -6,7 +6,7 @@ import { console } from "forge-std/console.sol";
 import { IOracle } from "../../../contracts/interfaces/IOracle.sol";
 import { OracleETHXAUChainlinkPolygon } from "../../../contracts/oracle/implementations/polygon/OracleETHXAUChainlinkPolygon.sol";
 import { TreasuryImmutable, ITreasury } from "../../../contracts/treasury/TreasuryImmutable.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/agTokenSidechainImmutable.sol";
+import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSidechainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage, IERC20 } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
 import "./PolygonConstants.s.sol";
 
