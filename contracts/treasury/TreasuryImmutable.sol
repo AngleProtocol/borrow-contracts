@@ -10,7 +10,7 @@ import "./Treasury.sol";
 contract TreasuryImmutable is Treasury {
     // =============================== References ==================================
     bytes32 private constant _VAULT_MANAGER_IMPL =
-        hex"8e3f1274ce9682d0f2b885883068df4322f29d1834b6ab26fc9a8e74a11bac73";
+        hex"fb142eb126393574530347669f9b8d8a8f6a7c6a07d17deccf3b03fe6084e96f";
 
     // ======================= Parameters and Variables ============================
     uint8 private _isSetStablecoin;
