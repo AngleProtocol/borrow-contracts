@@ -26,7 +26,14 @@ import { accounts, etherscanKey, nodeUrl } from './utils/network';
 // Otherwise, ".sol" files from "test" are picked up during compilation and throw an error
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
   const paths = await runSuper();
-  return paths.filter((p: string) => !(p.includes('/test/foundry/') || p.includes('/MockVaultManagerLiquidationBoostImmutable.sol') || p.includes('/VaultManagerLiquidationBoostImmutable.sol')));
+  return paths.filter(
+    (p: string) =>
+      !(
+        p.includes('/test/foundry/') ||
+        p.includes('/MockVaultManagerLiquidationBoostImmutable.sol') ||
+        p.includes('/VaultManagerLiquidationBoostImmutable.sol')
+      ),
+  );
 });
 
 const argv = yargs
@@ -143,7 +150,6 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
-
         url: nodeUrl('fork'),
         blockNumber: 16526566,
 
@@ -171,9 +177,9 @@ const config: HardhatUserConfig = {
       },
       mining: argv.disableAutoMining
         ? {
-          auto: false,
-          interval: 1000,
-        }
+            auto: false,
+            interval: 1000,
+          }
         : { auto: true },
       chainId: 1337,
     },

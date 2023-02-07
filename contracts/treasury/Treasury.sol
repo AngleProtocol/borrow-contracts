@@ -53,9 +53,9 @@ contract Treasury is ITreasury, Initializable {
     using SafeERC20 for IERC20;
 
     /// @notice Base used for parameter computation
-    uint256 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_9 = 1e9;
 
-    // =============================== References ==================================
+    // ================================= REFERENCES ================================
 
     /// @notice Reference to the `CoreBorrow` contract of the module which handles all AccessControl logic
     ICoreBorrow public core;
@@ -70,7 +70,7 @@ contract Treasury is ITreasury, Initializable {
     /// @notice Maps an address to 1 if it was initialized as a `VaultManager` contract
     mapping(address => uint256) public vaultManagerMap;
 
-    // =============================== Variables ===================================
+    // ================================= VARIABLES =================================
 
     /// @notice Amount of bad debt (unbacked stablecoin) accumulated across all `VaultManager` contracts
     /// linked to this stablecoin
@@ -80,12 +80,12 @@ contract Treasury is ITreasury, Initializable {
     /// given to governance, then this surplus is reset
     uint256 public surplusBuffer;
 
-    // =============================== Parameter ===================================
+    // ================================= PARAMETER =================================
 
-    /// @notice Share of the `surplusBuffer` distributed to governance (in `BASE_PARAMS`)
+    /// @notice Share of the `surplusBuffer` distributed to governance (in `BASE_9`)
     uint64 public surplusForGovernance;
 
-    // =============================== Events ======================================
+    // =================================== EVENTS ==================================
 
     event BadDebtUpdated(uint256 badDebtValue);
     event CoreUpdated(address indexed _core);
@@ -96,7 +96,7 @@ contract Treasury is ITreasury, Initializable {
     event SurplusManagerUpdated(address indexed _surplusManager);
     event VaultManagerToggled(address indexed vaultManager);
 
-    // =============================== Errors ======================================
+    // =================================== ERRORS ==================================
 
     error AlreadyVaultManager();
     error InvalidAddress();
@@ -109,7 +109,7 @@ contract Treasury is ITreasury, Initializable {
     error TooHighParameterValue();
     error ZeroAddress();
 
-    // =============================== Modifier ====================================
+    // ================================== MODIFIER =================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
@@ -129,7 +129,7 @@ contract Treasury is ITreasury, Initializable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    // ========================= View Functions ====================================
+    // =============================== VIEW FUNCTIONS ==============================
 
     /// @inheritdoc ITreasury
     function isGovernor(address admin) external view returns (bool) {
@@ -146,7 +146,7 @@ contract Treasury is ITreasury, Initializable {
         return vaultManagerMap[_vaultManager] == 1;
     }
 
-    // ============= External Permissionless Functions =============================
+    // ===================== EXTERNAL PERMISSIONLESS FUNCTIONS =====================
 
     /// @notice Fetches the surplus accrued across all the `VaultManager` contracts controlled by this
     /// `Treasury` contract as well as from the fees of the `FlashLoan` module
@@ -183,7 +183,7 @@ contract Treasury is ITreasury, Initializable {
         (uint256 surplusBufferValue, ) = _fetchSurplusFromAll();
         surplusBuffer = 0;
         emit SurplusBufferUpdated(0);
-        governanceAllocation = (surplusForGovernance * surplusBufferValue) / BASE_PARAMS;
+        governanceAllocation = (surplusForGovernance * surplusBufferValue) / BASE_9;
         stablecoin.transfer(_surplusManager, governanceAllocation);
     }
 
@@ -203,7 +203,7 @@ contract Treasury is ITreasury, Initializable {
         emit BadDebtUpdated(badDebtValue);
     }
 
-    // ==================== Internal Utility Functions =============================
+    // ========================= INTERNAL UTILITY FUNCTIONS ========================
 
     /// @notice Internal version of the `fetchSurplusFromAll` function
     function _fetchSurplusFromAll() internal returns (uint256 surplusBufferValue, uint256 badDebtValue) {
@@ -283,7 +283,7 @@ contract Treasury is ITreasury, Initializable {
         stablecoin.addMinter(vaultManager);
     }
 
-    // ============================ Governor Functions =============================
+    // ============================= GOVERNOR FUNCTIONS ============================
 
     /// @notice Adds a new minter for the stablecoin
     /// @param minter Minter address to add
@@ -377,7 +377,7 @@ contract Treasury is ITreasury, Initializable {
     /// @dev To pause surplus distribution, governance needs to set a zero value for `surplusForGovernance`
     /// which means
     function setSurplusForGovernance(uint64 _surplusForGovernance) external onlyGovernor {
-        if (_surplusForGovernance > BASE_PARAMS) revert TooHighParameterValue();
+        if (_surplusForGovernance > BASE_9) revert TooHighParameterValue();
         surplusForGovernance = _surplusForGovernance;
         emit SurplusForGovernanceUpdated(_surplusForGovernance);
     }

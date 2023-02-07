@@ -19,6 +19,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const json = await import('./networks/' + network.name + '.json');
   const vaultsList = json.vaultsList;
+  const stableName = 'GOLD';
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -30,8 +31,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log(`Deploying proxies for the following vaultManager: ${vaultsList}`);
 
-  if (params.stablesParameters.EUR.vaultManagers) {
-    for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
+  if (params.stablesParameters[stableName]?.vaultManagers) {
+    for (const vaultManagerParams of params.stablesParameters[stableName]?.vaultManagers!) {
       const collat = vaultManagerParams.symbol.split('-')[0];
       const stable = vaultManagerParams.symbol.split('-')[1];
       if (!vaultsList.includes(collat)) continue;
@@ -55,7 +56,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       console.log(`whitelistingActivated: ${vaultManagerParams.params.whitelistingActivated.toString()}`);
       console.log('');
 
-      const treasuryAddress = (await ethers.getContract('Treasury')).address;
+      const treasuryAddress = (await ethers.getContract(`Treasury_${stableName}`)).address;
       const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
       const implementation = (await ethers.getContract('VaultManager_V2_0_Implementation')).address;
@@ -69,8 +70,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         vaultManagerParams.params,
         vaultManagerParams.symbol,
       ]);
-
-      // await deployProxy(name, implementation, proxyAdminAddress, callData);
 
       await deploy(name, {
         contract: 'TransparentUpgradeableProxy',
@@ -90,5 +89,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['vaultManagerProxy'];
-// func.dependencies = ['vaultManagerImplementation'];
+func.dependencies = ['vaultManagerImplementation'];
 export default func;

@@ -7,5 +7,6 @@
   "uniswapV3Router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
   "oneInchRouter": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
   "angleRouter": "0xBB755240596530be0c1DE5DFD77ec6398471561d",
-  "dust": "0"
+  "dust": "0",
+  "vaultsList": ["USDC", "wETH", "wstETH"]
 }
