@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
 import { IOracle } from "../../../contracts/interfaces/IOracle.sol";
-import { OracleETHXAUChainlink } from "../../../contracts/oracle/implementations/mainnet/OracleETHXAUChainlink.sol";
+import { OracleETHXAUChainlink } from "../../../contracts/oracle/implementations/mainnet/XAU/OracleETHXAUChainlink.sol";
 import { TreasuryImmutable, ITreasury } from "../../../contracts/treasury/TreasuryImmutable.sol";
 import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage, IERC20 } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
