@@ -4,24 +4,24 @@ pragma solidity ^0.8.12;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-import "../../BaseOracleChainlinkMultiTwoFeeds.sol";
+import "../../../BaseOracleChainlinkMultiTwoFeeds.sol";
 
-/// @title OracleOPEURChainlinkOptimism
+/// @title OracleBTCEURChainlinkArbitrum
 /// @author Angle Labs, Inc.
-/// @notice Gives the price of OP in Euro in base 18
-/// @dev This contract is built to be deployed on Optimism
-contract OracleOPEURChainlinkOptimism is BaseOracleChainlinkMultiTwoFeeds {
-    string public constant DESCRIPTION = "OP/EUR Oracle";
+/// @notice Gives the price of BTC in Euro in base 18
+/// @dev This contract is built to be deployed on Arbitrum
+contract OracleBTCEURChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds {
+    string public constant DESCRIPTION = "BTC/EUR Oracle";
 
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) {}
 
     /// @inheritdoc IOracle
     function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
         AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
-        // Oracle OP/USD
-        _circuitChainlink[0] = AggregatorV3Interface(0x0D276FC14719f9292D5C1eA2198673d1f4269246);
+        // Oracle BTC/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0x6ce185860a4963106506C203335A2910413708e9);
         // Oracle EUR/USD
-        _circuitChainlink[1] = AggregatorV3Interface(0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20);
+        _circuitChainlink[1] = AggregatorV3Interface(0xA14d53bC1F1c0F31B4aA3BD109344E5009051a84);
         return _circuitChainlink;
     }
 }
