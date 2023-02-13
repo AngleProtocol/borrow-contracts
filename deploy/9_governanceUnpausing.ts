@@ -55,7 +55,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         }
         console.log('Setting dusts');
         // if gold: 2 XAU is like 4k agEUR
-        await (await vaultManager.setDusts(0, parseEther('2'), parseEther('2'))).wait();
+        await (await vaultManager.setDusts(0, parseEther('4'), parseEther('4'))).wait();
         console.log('Success');
         console.log('');
       }
