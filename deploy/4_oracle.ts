@@ -21,7 +21,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   await deploy('Oracle_ETH_XAU', {
     contract: `OracleETHXAUChainlink${chainName}`,
     from: deployer.address,
-    args: [3600 * 48, treasury],
+    args: [3600 * 30, treasury],
     log: !argv.ci,
   });
   const oracle = (await deployments.get('Oracle_ETH_XAU')).address;
@@ -32,7 +32,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   await deploy('Oracle_WSTETH_XAU', {
     contract: `OracleWSTETHXAUChainlink${chainName}`,
     from: deployer.address,
-    args: [3600 * 48, treasury],
+    args: [3600 * 30, treasury],
     log: !argv.ci,
   });
   const oracle2 = (await deployments.get('Oracle_WSTETH_XAU')).address;
@@ -43,7 +43,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   await deploy('Oracle_USDC_XAU', {
     contract: `OracleUSDCXAUChainlink${chainName}`,
     from: deployer.address,
-    args: [3600 * 48, treasury],
+    args: [3600 * 30, treasury],
     log: !argv.ci,
   });
   const oracle3 = (await deployments.get('Oracle_USDC_XAU')).address;
