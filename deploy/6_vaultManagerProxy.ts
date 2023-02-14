@@ -89,5 +89,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['vaultManagerProxy'];
-func.dependencies = ['vaultManagerImplementation'];
+// func.dependencies = ['vaultManagerImplementation'];
 export default func;
