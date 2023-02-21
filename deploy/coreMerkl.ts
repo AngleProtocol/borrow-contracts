@@ -36,6 +36,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     }
   }
 
+  proxyAdmin = '0xE6d9bD6796bDAF9B391Fac2A2D34bAE9c1c3c1C4';
+
   const coreBorrowInterface = CoreBorrow__factory.createInterface();
   const dataCoreBorrow = new ethers.Contract(implementation, coreBorrowInterface).interface.encodeFunctionData(
     'initialize',
