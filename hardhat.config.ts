@@ -227,6 +227,7 @@ const config: HardhatUserConfig = {
       accounts: accounts('mainnet'),
       gas: 'auto',
       gasMultiplier: 1.3,
+      // gasPrice: 50000000000,
       chainId: 1,
       verify: {
         etherscan: {
