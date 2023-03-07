@@ -13,11 +13,11 @@ contract TreasuryImmutable is Treasury {
         hex"fb142eb126393574530347669f9b8d8a8f6a7c6a07d17deccf3b03fe6084e96f";
 
     // ======================= Parameters and Variables ============================
+
     uint8 private _isSetStablecoin;
 
     // =============================== Errors ======================================
 
-    error AlreadySetStablecoin();
     error InvalidVaultManager();
     error InvalidStablecoin();
 
