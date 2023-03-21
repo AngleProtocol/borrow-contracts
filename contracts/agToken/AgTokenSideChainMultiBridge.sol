@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.12;
 
-import "./BaseAgTokenSideChain.sol";
+import "./BaseAgToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -14,13 +14,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @dev References:
 ///      - FRAX implementation: https://polygonscan.com/address/0x45c32fA6DF82ead1e2EF74d17b76547EDdFaFF89#code
 ///      - QiDAO implementation: https://snowtrace.io/address/0x5c49b268c9841AFF1Cc3B0a418ff5c3442eE3F3b#code
-contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
+contract AgTokenSideChainMultiBridge is BaseAgToken {
     using SafeERC20 for IERC20;
 
     /// @notice Base used for fee computation
-    uint256 public constant BASE_PARAMS = 10 ** 9;
+    uint256 public constant BASE_PARAMS = 1e9;
 
-    // =============================== Bridging Data ===============================
+    // =============================== BRIDGING DATA ===============================
 
     /// @notice Struct with some data about a specific bridge token
     struct BridgeDetails {
@@ -52,7 +52,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @notice Usage per hour on that chain. Maps an hourly timestamp to the total volume swapped out on the chain
     mapping(uint256 => uint256) public chainTotalUsage;
 
-    // ================================== Events ===================================
+    // =================================== EVENTS ==================================
 
     event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint256 hourlyLimit, uint64 fee, bool paused);
     event BridgeTokenToggled(address indexed bridgeToken, bool toggleStatus);
@@ -64,7 +64,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     event Recovered(address indexed token, address indexed to, uint256 amount);
     event FeeToggled(address indexed theAddress, uint256 toggleStatus);
 
-    // =============================== Errors ================================
+    // =================================== ERRORS ==================================
 
     error AssetStillControlledInReserves();
     error HourlyLimitExceeded();
@@ -75,7 +75,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     error TooHighParameterValue();
     error ZeroAddress();
 
-    // ============================= Constructor ===================================
+    // ================================ CONSTRUCTOR ================================
 
     /// @notice Initializes the `AgToken` contract
     /// @param name_ Name of the token
@@ -86,7 +86,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         _initialize(name_, symbol_, _treasury);
     }
 
-    // =============================== Modifiers ===================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
@@ -100,7 +100,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         _;
     }
 
-    // ==================== External Permissionless Functions ======================
+    // ===================== EXTERNAL PERMISSIONLESS FUNCTIONS =====================
 
     /// @notice Returns the list of all supported bridge tokens
     /// @dev Helpful for UIs
@@ -186,7 +186,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         return bridgeOut;
     }
 
-    // ======================= Governance Functions ================================
+    // ============================ GOVERNANCE FUNCTIONS ===========================
 
     /// @notice Adds support for a bridge token
     /// @param bridgeToken Bridge token to add: it should be a version of the stablecoin from another bridge

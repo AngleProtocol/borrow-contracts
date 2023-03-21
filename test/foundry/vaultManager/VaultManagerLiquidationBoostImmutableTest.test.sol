@@ -7,7 +7,7 @@ import "../../../contracts/mock/MockOracle.sol";
 import "../../../contracts/mock/MockTreasury.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
 import { MockTreasuryImmutable, TreasuryImmutable, Treasury } from "../../../contracts/mock/MockTreasuryImmutable.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
+import { IAgToken, AgTokenImmutable } from "../../../contracts/agToken/AgTokenImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
 /*
 contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
@@ -32,7 +32,7 @@ contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
             baseBoost: BASE_PARAMS
         });
 
-    AgTokenSideChainImmutable internal _agToken;
+    AgTokenImmutable internal _agToken;
     MockTreasuryImmutable internal _treasury;
     VaultManagerLiquidationBoostImmutable internal _vault;
     IERC20 internal _collateral;
@@ -46,7 +46,7 @@ contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
         super.setUp();
 
         _treasury = new MockTreasuryImmutable(ICoreBorrow(coreBorrow));
-        _agToken = new AgTokenSideChainImmutable(_NAME, _SYMBOL, address(_treasury));
+        _agToken = new AgTokenImmutable(_NAME, _SYMBOL, address(_treasury));
         _collateral = new MockTokenPermit("Mock", "MCK", decimalToken);
         _oracle = new MockOracle(BASE_18, ITreasury(address(_treasury)));
 
@@ -90,7 +90,7 @@ contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
     function testAlreadyInitalizeFail() public {
         MockCoreBorrow coreBorrowBis = new MockCoreBorrow();
         MockTreasuryImmutable treasuryBis = new MockTreasuryImmutable(ICoreBorrow(coreBorrowBis));
-        AgTokenSideChainImmutable agTokenBis = new AgTokenSideChainImmutable(_NAME, _SYMBOL, address(treasuryBis));
+        AgTokenImmutable agTokenBis = new AgTokenImmutable(_NAME, _SYMBOL, address(treasuryBis));
         MockTokenPermit collateralBis = new MockTokenPermit("Mock2", "MCK2", decimalToken + 3);
         MockOracle oracleBis = new MockOracle(BASE_18, ITreasury(address(treasuryBis)));
         VaultParameters memory vmParamsBis = VaultParameters({

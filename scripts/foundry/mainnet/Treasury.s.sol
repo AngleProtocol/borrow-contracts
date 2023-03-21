@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
 import { ICoreBorrow } from "../../../contracts/coreBorrow/CoreBorrow.sol";
 import { TreasuryImmutable } from "../../../contracts/treasury/TreasuryImmutable.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
+import { IAgToken, AgTokenImmutable } from "../../../contracts/agToken/AgTokenImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
 import "./MainnetConstants.s.sol";
 
@@ -22,7 +22,7 @@ contract DeployTreasury is Script, MainnetConstants {
         TreasuryImmutable treasury = new TreasuryImmutable(ICoreBorrow(CORE_BORROW));
         console.log("Successfully deployed agGOLD treasury at the address: ", address(treasury));
 
-        AgTokenSideChainImmutable agGOLD = new AgTokenSideChainImmutable(_NAME, _SYMBOL, address(treasury));
+        AgTokenImmutable agGOLD = new AgTokenImmutable(_NAME, _SYMBOL, address(treasury));
         console.log("Successfully deployed agGOLD  at the address: ", address(agGOLD));
 
         // TODO governance should call

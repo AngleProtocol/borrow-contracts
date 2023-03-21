@@ -4,14 +4,14 @@ pragma solidity ^0.8.17;
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import "../BaseTest.test.sol";
 import "../../../contracts/mock/MockTreasury.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
+import { IAgToken, AgTokenImmutable } from "../../../contracts/agToken/AgTokenImmutable.sol";
 
 contract AgTokenGoldTest is BaseTest {
     using stdStorage for StdStorage;
 
     address internal _hacker = address(uint160(uint256(keccak256(abi.encodePacked("hacker")))));
 
-    AgTokenSideChainImmutable internal _agToken;
+    AgTokenImmutable internal _agToken;
     MockTreasury internal _treasury;
 
     string constant _NAME = "Angle stablecoin gold";
@@ -21,7 +21,7 @@ contract AgTokenGoldTest is BaseTest {
         super.setUp();
 
         _treasury = new MockTreasury(IAgToken(address(0)), _GOVERNOR, _GUARDIAN, address(0), address(0), address(0));
-        _agToken = new AgTokenSideChainImmutable(_NAME, _SYMBOL, address(_treasury));
+        _agToken = new AgTokenImmutable(_NAME, _SYMBOL, address(_treasury));
 
         vm.prank(_GOVERNOR);
         _treasury.setStablecoin(_agToken);

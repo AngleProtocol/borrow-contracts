@@ -8,7 +8,7 @@ import "../../../contracts/mock/MockTreasury.sol";
 import "../../../contracts/mock/MockTokenPermit.sol";
 import { MockCorrectVaultManagerLiquidationBoostImmutable, MockIncorrectVaultManagerLiquidationBoostImmutable } from "../../../contracts/mock/MockVaultManagerLiquidationBoostImmutable.sol";
 import { MockTreasuryImmutable, TreasuryImmutable, Treasury } from "../../../contracts/mock/MockTreasuryImmutable.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
+import { IAgToken, AgTokenImmutable } from "../../../contracts/agToken/AgTokenImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
 /*
 contract TreasuryImmutableTest is BaseTest {
@@ -33,7 +33,7 @@ contract TreasuryImmutableTest is BaseTest {
             baseBoost: BASE_PARAMS
         });
 
-    AgTokenSideChainImmutable internal _agToken;
+    AgTokenImmutable internal _agToken;
     MockTreasuryImmutable internal _treasury;
     VaultManagerLiquidationBoostImmutable internal _vault;
     IERC20 internal _collateral;
@@ -47,7 +47,7 @@ contract TreasuryImmutableTest is BaseTest {
         super.setUp();
 
         _treasury = new MockTreasuryImmutable(ICoreBorrow(coreBorrow));
-        _agToken = new AgTokenSideChainImmutable(_NAME, _SYMBOL, address(_treasury));
+        _agToken = new AgTokenImmutable(_NAME, _SYMBOL, address(_treasury));
         _collateral = new MockTokenPermit("Mock", "MCK", decimalToken);
         _oracle = new MockOracle(BASE_18, ITreasury(address(_treasury)));
         _vault = new VaultManagerLiquidationBoostImmutable(
@@ -83,7 +83,7 @@ contract TreasuryImmutableTest is BaseTest {
 
     function testAlreadyInitalizeFail() public {
         MockCoreBorrow coreBorrowBis = new MockCoreBorrow();
-        AgTokenSideChainImmutable agTokenBis = new AgTokenSideChainImmutable(_NAME, _SYMBOL, address(_treasury));
+        AgTokenImmutable agTokenBis = new AgTokenImmutable(_NAME, _SYMBOL, address(_treasury));
         _treasury.initialize(ICoreBorrow(coreBorrowBis), agTokenBis);
 
         assertEq(address(_treasury.core()), address(coreBorrow));

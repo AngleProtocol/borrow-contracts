@@ -15,11 +15,11 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     /// @dev Immutable
     IAgTokenSideChainMultiBridge public canonicalToken;
 
-    // =============================== Errors ================================
+    // =================================== ERROR ===================================
 
     error InvalidAllowance();
 
-    // ============================= Constructor ===================================
+    // ================================ CONSTRUCTOR ================================
 
     /// @notice Initializes the contract
     /// @param _name Name of the token corresponding to this contract
@@ -46,7 +46,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    // ==================== External Permissionless Functions ======================
+    // ===================== EXTERNAL PERMISSIONLESS FUNCTIONS =====================
 
     /// @inheritdoc OFTCore
     function sendWithPermit(
@@ -76,7 +76,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         }
     }
 
-    // ============================= Internal Functions ===================================
+    // ============================= INTERNAL FUNCTIONS ============================
 
     /// @inheritdoc OFTCore
     function _debitFrom(
@@ -112,7 +112,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         }
     }
 
-    // ======================= View Functions ================================
+    // =============================== VIEW FUNCTIONS ==============================
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
@@ -122,7 +122,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
             super.supportsInterface(interfaceId);
     }
 
-    // ======================= Governance Functions ================================
+    // ============================ GOVERNANCE FUNCTIONS ===========================
 
     /// @notice Mints the intermediate contract to the `canonicalToken`
     /// @dev Used to increase the bridging capacity

@@ -20,8 +20,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Maps an address to the amount of token bridged but not received
     mapping(address => uint256) public balanceOf;
 
-    // ============================= Constructor ===================================
-
+    // ================================ CONSTRUCTOR ================================
     /// @notice Initializes the contract
     /// @param _name Name of the token corresponding to this contract
     /// @param _lzEndpoint Layer zero endpoint to pass messages
@@ -35,7 +34,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    // ==================== External Permissionless Functions ======================
+    // ===================== EXTERNAL PERMISSIONLESS FUNCTIONS =====================
 
     /// @inheritdoc OFTCore
     function sendWithPermit(
@@ -67,7 +66,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _withdraw(amount, recipient, recipient);
     }
 
-    // ========================== Internal Functions ===============================
+    // ============================= INTERNAL FUNCTIONS ============================
 
     /// @notice Withdraws `amount` from the balance of the `from` address and sends these tokens to the `to` address
     /// @dev It's important to make sure that `from` is either the `msg.sender` or that `from` and `to` are the same
@@ -105,14 +104,14 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
         return _amount;
     }
 
-    // ========================= View Functions ====================================
+    // =============================== VIEW FUNCTIONS ==============================
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IOFTCore).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    // ======================= Governance Functions ================================
+    // ============================ GOVERNANCE FUNCTIONS ===========================
 
     /// @notice Pauses bridging through the contract
     /// @param pause Future pause status

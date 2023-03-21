@@ -14,7 +14,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20Pe
 /// @dev This contract is used to create and handle the stablecoins of Angle protocol
 /// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange
 /// @dev This contract is the upgraded version of the AgToken that was first deployed on Ethereum mainnet
-contract OldAgToken is IAgToken, ERC20PermitUpgradeable {
+contract OldAgEUR is IAgToken, ERC20PermitUpgradeable {
     // ========================= References to other contracts =====================
 
     /// @notice Reference to the `StableMaster` contract associated to this `AgToken`

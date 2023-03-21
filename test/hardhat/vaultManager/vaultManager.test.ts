@@ -19,8 +19,8 @@ import {
   MockTreasury__factory,
   MockVeBoostProxy,
   MockVeBoostProxy__factory,
-  OldAgToken,
-  OldAgToken__factory,
+  OldAgEUR,
+  OldAgEUR__factory,
   VaultManagerLiquidationBoost,
   VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
@@ -60,7 +60,7 @@ contract('VaultManagerLiquidationBoost', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: OldAgToken;
+  let agToken: OldAgEUR;
   let vaultManager: VaultManagerLiquidationBoost;
   let mockSwapper: MockSwapper;
   let mockSwapperWithSwap: MockSwapperWithSwap;
@@ -106,7 +106,7 @@ contract('VaultManagerLiquidationBoost', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
+    agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
@@ -1148,7 +1148,7 @@ contract('VaultManagerLiquidationBoost', () => {
     beforeEach(async () => {
       // Need to have agToken as a collateral here
       stableMaster = await new MockStableMaster__factory(deployer).deploy();
-      agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
+      agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
       await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
       vaultManager = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),

@@ -1,17 +1,17 @@
 import { parseEther } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 
-import { OldAgToken, OldAgToken__factory, Treasury, Treasury__factory } from '../../typechain';
+import { OldAgEUR, OldAgEUR__factory, Treasury, Treasury__factory } from '../../typechain';
 
 async function main() {
-  let agToken: OldAgToken;
+  let agToken: OldAgEUR;
   let treasury: Treasury;
   const { deployer } = await ethers.getNamedSigners();
   agToken = new ethers.Contract(
     '0xFE0E499fBb529214ce9744a66FCE8B05413aBB18',
-    OldAgToken__factory.createInterface(),
+    OldAgEUR__factory.createInterface(),
     deployer,
-  ) as OldAgToken;
+  ) as OldAgEUR;
   treasury = new ethers.Contract(
     '0xdE725566Fa2bAfd175066943D8D50ae762058e92',
     Treasury__factory.createInterface(),

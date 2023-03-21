@@ -39,11 +39,15 @@ import "../interfaces/IAgToken.sol";
 import "../interfaces/ITreasury.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
-/// @title BaseAgTokenSideChain
+/// @title BaseAgToken
 /// @author Angle Labs, Inc.
 /// @notice Base contract for Angle agTokens on Ethereum and on other chains
 /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
+<<<<<<< HEAD:contracts/agToken/BaseAgTokenSideChain.sol
 contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
+=======
+contract BaseAgToken is IAgToken, ERC20PermitUpgradeable {
+>>>>>>> bc13911 (fixing agToken names and stuff):contracts/agToken/BaseAgToken.sol
     // =========================== PARAMETERS / VARIABLES ==========================
 
     /// @inheritdoc IAgToken
@@ -66,8 +70,13 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     // ================================ CONSTRUCTOR ================================
 
+<<<<<<< HEAD:contracts/agToken/BaseAgTokenSideChain.sol
     /// @notice Wraps `_initializeBase` for `BaseAgTokenSideChain` and makes a safety check
     /// on `_treasury`
+=======
+    /// @notice Wraps `_initializeBase` for `BaseAgToken` and makes a safety check
+    /// on `_treasury` and this contract
+>>>>>>> bc13911 (fixing agToken names and stuff):contracts/agToken/BaseAgToken.sol
     function _initialize(string memory name_, string memory symbol_, address _treasury) internal virtual initializer {
         if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
         _initializeBase(name_, symbol_, _treasury);
@@ -104,7 +113,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     // ============================= EXTERNAL FUNCTION =============================
 
-    /// @notice Allows anyone to burn agToken without redeeming collateral back
+    /// @notice Allows anyone to burn stablecoins
     /// @param amount Amount of stablecoins to burn
     /// @dev This function can typically be called if there is a settlement mechanism to burn stablecoins
     function burnStablecoin(uint256 amount) external {
@@ -120,7 +129,12 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     /// @inheritdoc IAgToken
     function burnFrom(uint256 amount, address burner, address sender) external onlyMinter {
-        _burnFromNoRedeem(amount, burner, sender);
+        if (burner != sender) {
+            uint256 currentAllowance = allowance(burner, sender);
+            if (currentAllowance < amount) revert BurnAmountExceedsAllowance();
+            _approve(burner, sender, currentAllowance - amount);
+        }
+        _burn(burner, amount);
     }
 
     /// @inheritdoc IAgToken
@@ -148,6 +162,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }
+<<<<<<< HEAD:contracts/agToken/BaseAgTokenSideChain.sol
 
     // ============================= INTERNAL FUNCTION =============================
 
@@ -162,4 +177,6 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         }
         _burn(burner, amount);
     }
+=======
+>>>>>>> bc13911 (fixing agToken names and stuff):contracts/agToken/BaseAgToken.sol
 }

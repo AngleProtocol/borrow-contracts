@@ -12,8 +12,8 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  OldAgToken,
-  OldAgToken__factory,
+  OldAgEUR,
+  OldAgEUR__factory,
   VaultManagerLiquidationBoost,
   VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
@@ -30,7 +30,7 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: OldAgToken;
+  let agToken: OldAgEUR;
   let vaultManager: VaultManagerLiquidationBoost;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
@@ -72,7 +72,7 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
+    agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);

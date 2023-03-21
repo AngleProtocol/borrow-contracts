@@ -14,8 +14,8 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
-  OldAgToken,
-  OldAgToken__factory,
+  OldAgEUR,
+  OldAgEUR__factory,
   VaultManager,
   VaultManager__factory,
 } from '../../../typechain';
@@ -35,7 +35,7 @@ contract('VaultManager - Permit', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: OldAgToken;
+  let agToken: OldAgEUR;
   let contractSigner: MockERC1271;
   let vaultManager: VaultManager;
   let name: string;
@@ -81,7 +81,7 @@ contract('VaultManager - Permit', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
+    agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
