@@ -4,12 +4,12 @@ import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
 import {
-  AgToken,
-  AgToken__factory,
   CoreBorrow,
   CoreBorrow__factory,
   FlashAngle,
   FlashAngle__factory,
+  MockAgToken,
+  MockAgToken__factory,
   MockFlashLoanReceiver,
   MockFlashLoanReceiver__factory,
   MockStableMaster,
@@ -28,7 +28,7 @@ contract('FlashAngle - End-to-end', () => {
 
   let flashAngle: FlashAngle;
   let coreBorrow: CoreBorrow;
-  let agToken: AgToken;
+  let agToken: MockAgToken;
   let treasury: Treasury;
   let flashLoanReceiver: MockFlashLoanReceiver;
   let stableMaster: MockStableMaster;
@@ -63,7 +63,7 @@ contract('FlashAngle - End-to-end', () => {
     stableMaster = (await new MockStableMaster__factory(deployer).deploy()) as MockStableMaster;
 
     // Example of upgradeable deployment - Default signer will be user
-    agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
+    agToken = (await deployUpgradeable(new MockAgToken__factory(deployer))) as MockAgToken;
     await agToken.initialize('agEUR', 'agEUR', stableMaster.address);
     treasury = (await deployUpgradeable(new Treasury__factory(deployer))) as Treasury;
     await treasury.initialize(coreBorrow.address, agToken.address);

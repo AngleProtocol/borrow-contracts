@@ -4,8 +4,8 @@ import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
-  AgToken,
-  AgToken__factory,
+  MockAgToken,
+  MockAgToken__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
@@ -30,7 +30,7 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: AgToken;
+  let agToken: MockAgToken;
   let vaultManager: VaultManagerLiquidationBoost;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
@@ -72,7 +72,7 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
+    agToken = (await deployUpgradeable(new MockAgToken__factory(deployer))) as MockAgToken;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);

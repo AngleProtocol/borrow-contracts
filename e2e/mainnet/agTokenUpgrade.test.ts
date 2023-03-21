@@ -9,18 +9,18 @@ import { expect } from '../../test/hardhat/utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../../test/hardhat/utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
-  AgToken,
-  AgToken__factory,
   CoreBorrow,
   CoreBorrow__factory,
   FlashAngle,
   FlashAngle__factory,
+  MockAgToken,
+  MockAgToken__factory,
   ProxyAdmin,
   Treasury,
   Treasury__factory,
 } from '../../typechain';
 
-contract('AgToken - End-to-end Upgrade', () => {
+contract('MockAgToken - End-to-end Upgrade', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
@@ -28,7 +28,7 @@ contract('AgToken - End-to-end Upgrade', () => {
 
   let flashAngle: FlashAngle;
   let coreBorrow: CoreBorrow;
-  let agToken: AgToken;
+  let agToken: MockAgToken;
   let treasury: Treasury;
   let governor: string;
   let guardian: string;
@@ -63,15 +63,15 @@ contract('AgToken - End-to-end Upgrade', () => {
   before(async () => {
     proxyAdmin = new ethers.Contract(CONTRACTS_ADDRESSES[1].ProxyAdmin!, ProxyAdmin_Interface, deployer) as ProxyAdmin;
 
-    const implementation = await new AgToken__factory(deployer).deploy();
+    const implementation = await new MockAgToken__factory(deployer).deploy();
     // eslint-disable-next-line
-    const agTokenAddress = CONTRACTS_ADDRESSES[1].agEUR?.AgToken!;
+    const agTokenAddress = CONTRACTS_ADDRESSES[1].agEUR?.MockAgToken!;
     // eslint-disable-next-line
     stableMasterAddress = CONTRACTS_ADDRESSES[1].agEUR?.StableMaster!;
     await (
       await proxyAdmin.connect(impersonatedSigners[governor]).upgrade(agTokenAddress, implementation.address)
     ).wait();
-    agToken = new ethers.Contract(agTokenAddress, AgToken__factory.createInterface(), deployer) as AgToken;
+    agToken = new ethers.Contract(agTokenAddress, MockAgToken__factory.createInterface(), deployer) as MockAgToken;
     coreBorrow = (await deployUpgradeable(new CoreBorrow__factory(deployer))) as CoreBorrow;
     await coreBorrow.initialize(governor, guardian);
     flashAngle = (await deployUpgradeable(new FlashAngle__factory(deployer))) as FlashAngle;
