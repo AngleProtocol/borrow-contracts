@@ -43,11 +43,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20Pe
 /// @author Angle Labs, Inc.
 /// @notice Base contract for Angle agTokens on Ethereum and on other chains
 /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
-<<<<<<< HEAD:contracts/agToken/BaseAgTokenSideChain.sol
-contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
-=======
 contract BaseAgToken is IAgToken, ERC20PermitUpgradeable {
->>>>>>> bc13911 (fixing agToken names and stuff):contracts/agToken/BaseAgToken.sol
     // =========================== PARAMETERS / VARIABLES ==========================
 
     /// @inheritdoc IAgToken
@@ -70,20 +66,16 @@ contract BaseAgToken is IAgToken, ERC20PermitUpgradeable {
 
     // ================================ CONSTRUCTOR ================================
 
-<<<<<<< HEAD:contracts/agToken/BaseAgTokenSideChain.sol
     /// @notice Wraps `_initializeBase` for `BaseAgTokenSideChain` and makes a safety check
     /// on `_treasury`
-=======
-    /// @notice Wraps `_initializeBase` for `BaseAgToken` and makes a safety check
-    /// on `_treasury` and this contract
->>>>>>> bc13911 (fixing agToken names and stuff):contracts/agToken/BaseAgToken.sol
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
+
+    /// @notice Wraps `_initializeBase` for `BaseAgToken` and makes a safety check on `_treasury`
     function _initialize(string memory name_, string memory symbol_, address _treasury) internal virtual initializer {
         if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
         _initializeBase(name_, symbol_, _treasury);
     }
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
 
     /// @notice Initializes the contract
     /// @param name_ Name of the token
@@ -99,7 +91,6 @@ contract BaseAgToken is IAgToken, ERC20PermitUpgradeable {
     // ================================= MODIFIERS =================================
 
     /// @notice Checks to see if it is the `Treasury` calling this contract
-    /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
     modifier onlyTreasury() {
         if (msg.sender != address(treasury)) revert NotTreasury();
         _;
