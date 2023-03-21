@@ -5,8 +5,6 @@ import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
 import {
-  MockAgToken,
-  MockAgToken__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
@@ -21,6 +19,8 @@ import {
   MockTreasury__factory,
   MockVeBoostProxy,
   MockVeBoostProxy__factory,
+  OldAgToken,
+  OldAgToken__factory,
   VaultManagerLiquidationBoost,
   VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
@@ -60,7 +60,7 @@ contract('VaultManagerLiquidationBoost', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: MockAgToken;
+  let agToken: OldAgToken;
   let vaultManager: VaultManagerLiquidationBoost;
   let mockSwapper: MockSwapper;
   let mockSwapperWithSwap: MockSwapperWithSwap;
@@ -106,7 +106,7 @@ contract('VaultManagerLiquidationBoost', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new MockAgToken__factory(deployer))) as MockAgToken;
+    agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
@@ -1148,7 +1148,7 @@ contract('VaultManagerLiquidationBoost', () => {
     beforeEach(async () => {
       // Need to have agToken as a collateral here
       stableMaster = await new MockStableMaster__factory(deployer).deploy();
-      agToken = (await deployUpgradeable(new MockAgToken__factory(deployer))) as MockAgToken;
+      agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
       await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
       vaultManager = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),

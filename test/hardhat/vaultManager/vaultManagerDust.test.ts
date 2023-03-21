@@ -4,8 +4,6 @@ import { parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
-  MockAgToken,
-  MockAgToken__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
@@ -14,6 +12,8 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
+  OldAgToken,
+  OldAgToken__factory,
   VaultManager,
   VaultManager__factory,
 } from '../../../typechain';
@@ -47,7 +47,7 @@ contract('VaultManager - Dust Modification interactions', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: MockAgToken;
+  let agToken: OldAgToken;
   let vaultManager: VaultManager;
 
   const impersonatedSigners: { [key: string]: Signer } = {};
@@ -89,7 +89,7 @@ contract('VaultManager - Dust Modification interactions', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new MockAgToken__factory(deployer))) as MockAgToken;
+    agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);

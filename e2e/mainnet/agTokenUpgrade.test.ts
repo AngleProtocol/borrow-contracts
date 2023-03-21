@@ -13,14 +13,14 @@ import {
   CoreBorrow__factory,
   FlashAngle,
   FlashAngle__factory,
-  MockAgToken,
-  MockAgToken__factory,
+  OldAgToken,
+  OldAgToken__factory,
   ProxyAdmin,
   Treasury,
   Treasury__factory,
 } from '../../typechain';
 
-contract('MockAgToken - End-to-end Upgrade', () => {
+contract('OldAgToken - End-to-end Upgrade', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
@@ -28,7 +28,7 @@ contract('MockAgToken - End-to-end Upgrade', () => {
 
   let flashAngle: FlashAngle;
   let coreBorrow: CoreBorrow;
-  let agToken: MockAgToken;
+  let agToken: OldAgToken;
   let treasury: Treasury;
   let governor: string;
   let guardian: string;
@@ -63,15 +63,15 @@ contract('MockAgToken - End-to-end Upgrade', () => {
   before(async () => {
     proxyAdmin = new ethers.Contract(CONTRACTS_ADDRESSES[1].ProxyAdmin!, ProxyAdmin_Interface, deployer) as ProxyAdmin;
 
-    const implementation = await new MockAgToken__factory(deployer).deploy();
+    const implementation = await new OldAgToken__factory(deployer).deploy();
     // eslint-disable-next-line
-    const agTokenAddress = CONTRACTS_ADDRESSES[1].agEUR?.MockAgToken!;
+    const agTokenAddress = CONTRACTS_ADDRESSES[1].agEUR?.OldAgToken!;
     // eslint-disable-next-line
     stableMasterAddress = CONTRACTS_ADDRESSES[1].agEUR?.StableMaster!;
     await (
       await proxyAdmin.connect(impersonatedSigners[governor]).upgrade(agTokenAddress, implementation.address)
     ).wait();
-    agToken = new ethers.Contract(agTokenAddress, MockAgToken__factory.createInterface(), deployer) as MockAgToken;
+    agToken = new ethers.Contract(agTokenAddress, OldAgToken__factory.createInterface(), deployer) as OldAgToken;
     coreBorrow = (await deployUpgradeable(new CoreBorrow__factory(deployer))) as CoreBorrow;
     await coreBorrow.initialize(governor, guardian);
     flashAngle = (await deployUpgradeable(new FlashAngle__factory(deployer))) as FlashAngle;

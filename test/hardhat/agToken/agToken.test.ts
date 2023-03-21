@@ -4,23 +4,23 @@ import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
-  MockAgToken,
-  MockAgToken__factory,
   MockStableMaster,
   MockStableMaster__factory,
   MockTreasury,
   MockTreasury__factory,
+  OldAgToken,
+  OldAgToken__factory,
 } from '../../../typechain';
 import { expect } from '../utils/chai-setup';
 import { inIndirectReceipt, inReceipt } from '../utils/expectEvent';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
-contract('MockAgToken', () => {
+contract('OldAgToken', () => {
   let deployer: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
 
-  let agToken: MockAgToken;
+  let agToken: OldAgToken;
   let stableMaster: MockStableMaster;
   let governor: string;
   let treasury: MockTreasury;
@@ -52,7 +52,7 @@ contract('MockAgToken', () => {
     stableMaster = (await new MockStableMaster__factory(deployer).deploy()) as MockStableMaster;
 
     // Example of upgradeable deployment - Default signer will be alice
-    agToken = (await deployUpgradeable(new MockAgToken__factory(deployer))) as MockAgToken;
+    agToken = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
 
     treasury = (await new MockTreasury__factory(deployer).deploy(
       agToken.address,
@@ -84,7 +84,7 @@ contract('MockAgToken', () => {
       );
     });
     it('reverts - zero stableMaster address', async () => {
-      const agTokenRevert = (await deployUpgradeable(new MockAgToken__factory(deployer))) as MockAgToken;
+      const agTokenRevert = (await deployUpgradeable(new OldAgToken__factory(deployer))) as OldAgToken;
       await expect(agTokenRevert.initialize('agEUR', 'agEUR', ZERO_ADDRESS)).to.be.revertedWith('0');
     });
   });
