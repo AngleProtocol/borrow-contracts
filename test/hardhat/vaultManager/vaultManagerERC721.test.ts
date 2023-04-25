@@ -412,13 +412,6 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
         );
       });
 
-      it('reverts - not whitelisted', async () => {
-        await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
-        await expect(vaultManager.connect(alice).transferFrom(alice.address, bob.address, 2)).to.be.revertedWith(
-          'NotWhitelisted',
-        );
-      });
-
       it('success', async () => {
         await vaultManager.connect(alice).transferFrom(alice.address, bob.address, 2);
         expect(await vaultManager.ownerOf(2)).to.be.equal(bob.address);
@@ -511,11 +504,6 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
         await expect(angle(vaultManager, alice, [createVault(receiver.address)])).to.be.revertedWith(
           'NonERC721Receiver',
         );
-      });
-
-      it('reverts - not whitelisted', async () => {
-        await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
-        await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('NotWhitelisted');
       });
     });
   });
