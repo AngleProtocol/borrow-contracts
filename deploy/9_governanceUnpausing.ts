@@ -1,8 +1,8 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { formatBytes32String, parseEther } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
-import { formatBytes32String } from 'ethers/lib/utils';
 
 import { VaultManager, VaultManager__factory } from '../typechain';
 import params from './networks';
@@ -13,6 +13,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const governor = json.governor;
   let agTokenAddress: string;
   let signer: SignerWithAddress;
+  const stableName = 'GOLD';
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -24,18 +25,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     signer = await ethers.getSigner(governor);
     agTokenAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].agEUR?.AgToken!;
 
-    /*
-    // This is what we should use if we are not in mainnet fork and in a config where a deployer has a governor role
-    const { deployer } = await ethers.getNamedSigners();
-    signer = deployer;
-    const stableName = 'EUR';
-    agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
-    */
-
     console.log('Unpausing vaultManager contracts');
 
-    if (params.stablesParameters.EUR.vaultManagers) {
-      for (const vaultManagerParams of params.stablesParameters.EUR.vaultManagers) {
+    if (params.stablesParameters[stableName].vaultManagers) {
+      for (const vaultManagerParams of params.stablesParameters[stableName]?.vaultManagers!) {
         const collat = vaultManagerParams.symbol.split('-')[0];
         const stable = vaultManagerParams.symbol.split('-')[1];
         if (!vaultsList.includes(collat)) continue;
@@ -60,6 +53,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
           await (await vaultManager.setUint64(vaultManagerParams.params.repayFee, formatBytes32String('RF'))).wait();
           console.log(`RepayFee of ${vaultManagerParams.params.repayFee} set successfully`);
         }
+        console.log('Setting dusts');
+        // if gold: 2 XAU is like 4k agEUR
+        await (await vaultManager.setDusts(0, parseEther('4'), parseEther('4'))).wait();
+        console.log('Success');
         console.log('');
       }
     }

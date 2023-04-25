@@ -6,10 +6,9 @@ import "./BaseAgTokenSideChain.sol";
 
 /// @title AgTokenSideChain
 /// @author Angle Labs, Inc.
-/// @notice Implementation for Angle agTokens to be deployed on other chains than Ethereum mainnet without
-/// supporting bridging and swapping in and out
+/// @notice Implementation for Angle agTokens to be deployed on chains where there is no need to support
+/// bridging and swapping in and out from other bridge tokens
 contract AgTokenSideChain is BaseAgTokenSideChain {
-    /// @notice Initializes the `AgTokenSideChain` contract by calling the child contract
     function initialize(
         string memory name_,
         string memory symbol_,

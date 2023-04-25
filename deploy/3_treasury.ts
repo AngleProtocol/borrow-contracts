@@ -1,10 +1,9 @@
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
+import { ChainId, registry } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { expect } from '../test/hardhat/utils/chai-setup';
 import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../typechain';
-import { deployImplem, deployProxy } from './helpers';
+import { deployProxy } from './helpers';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -12,57 +11,55 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdmin: string;
-  let agTokenAddress: string;
-  const stableName = 'EUR';
+  let coreBorrow: string;
+  const stableName = 'GOLD';
   const agTokenName = `ag${stableName}`;
+
+  const agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
 
   if (!network.live || network.config.chainId == 1) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
-    proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.ProxyAdmin!;
-    agTokenAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.agEUR?.AgToken!;
+    proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
+    coreBorrow = registry(ChainId.MAINNET)?.CoreBorrow!;
   } else {
-    // Otherwise, we're using the proxy admin address from the desired network and the newly deployed agToken
-    proxyAdmin = (await ethers.getContract('ProxyAdmin')).address;
-    if (network.config.chainId !== ChainId.POLYGON) {
-      agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
-    } else {
-      agTokenAddress = CONTRACTS_ADDRESSES[ChainId.POLYGON]?.agEUR?.AgToken!;
-    }
+    proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
+    coreBorrow = registry(network.config.chainId as ChainId)?.CoreBorrow!;
   }
 
-  console.log('Now deploying Treasury implementation');
-
-  await deploy('Treasury_Implementation', {
-    contract: 'Treasury',
-    from: deployer.address,
-    args: [],
-    log: !argv.ci,
-  });
-
-  const treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
+  let treasuryImplementation: string;
+  try {
+    treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
+  } catch {
+    console.log('Now deploying Treasury implementation');
+    await deploy('Treasury_Implementation', {
+      contract: 'Treasury',
+      from: deployer.address,
+      args: [],
+      log: !argv.ci,
+    });
+    treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
+  }
 
   const treasuryInterface = Treasury__factory.createInterface();
-  const coreBorrow = await deployments.get('CoreBorrow');
   const dataTreasury = new ethers.Contract(treasuryImplementation, treasuryInterface).interface.encodeFunctionData(
     'initialize',
-    [coreBorrow.address, agTokenAddress],
+    [coreBorrow, agTokenAddress],
   );
 
-  const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
+  const treasury = await deployProxy(`Treasury_${stableName}`, treasuryImplementation, proxyAdmin, dataTreasury);
 
   console.log('');
-  if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
-    console.log('Initializing the agToken contract now that we have the treasury address');
-    const agToken = new ethers.Contract(
-      agTokenAddress,
-      AgTokenSideChainMultiBridge__factory.createInterface(),
-      deployer,
-    ) as AgTokenSideChainMultiBridge;
-    await (await agToken.connect(deployer).initialize(agTokenName, agTokenName, treasury)).wait();
-    console.log('Success: agToken successfully initialized');
-  }
+
+  console.log('Initializing the agToken contract now that we have the treasury address');
+  const agToken = new ethers.Contract(
+    agTokenAddress,
+    AgTokenSideChainMultiBridge__factory.createInterface(),
+    deployer,
+  ) as AgTokenSideChainMultiBridge;
+  await (await agToken.connect(deployer).initialize(agTokenName, agTokenName, treasury)).wait();
+  console.log('Success: agToken successfully initialized');
 };
 
 func.tags = ['treasury'];
-// func.dependencies = ['agTokenImplementation'];
+func.dependencies = ['agTokenImplementation'];
 export default func;

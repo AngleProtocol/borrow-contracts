@@ -1,10 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, Signer, utils } from 'ethers';
-import { parseEther, parseUnits } from 'ethers/lib/utils';
-import hre, { contract, ethers } from 'hardhat';
+import { BigNumber } from 'ethers';
+import { contract, ethers, network } from 'hardhat';
 
 import { expect } from '../../test/hardhat/utils/chai-setup';
-import { deployUpgradeable, ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
+import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
   MockTreasury,
   MockTreasury__factory,
@@ -20,8 +19,12 @@ import {
   OracleLUSDEURChainlink__factory,
   OracleLUSDXAUChainlink,
   OracleLUSDXAUChainlink__factory,
+  OracleUSDCXAUChainlink,
+  OracleUSDCXAUChainlink__factory,
   OracleWSTETHEURChainlink,
   OracleWSTETHEURChainlink__factory,
+  OracleWSTETHXAUChainlink,
+  OracleWSTETHXAUChainlink__factory,
 } from '../../typechain';
 
 contract('Oracles Chainlink', () => {
@@ -36,12 +39,25 @@ contract('Oracles Chainlink', () => {
   let oracleCBETH: OracleCBETHEURChainlink;
   let oracleLUSDXAU: OracleLUSDXAUChainlink;
   let oracleETHXAU: OracleETHXAUChainlink;
+  let oracleUSDCXAU: OracleUSDCXAUChainlink;
+  let oracleWSTETHXAU: OracleWSTETHXAUChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
   before(async () => {
     [deployer, alice, bob] = await ethers.getSigners();
     stalePeriod = BigNumber.from(86400 * 52);
+    await network.provider.request({
+      method: 'hardhat_reset',
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: process.env.ETH_NODE_URI_FORK,
+            blockNumber: 16526566,
+          },
+        },
+      ],
+    });
     treasury = (await new MockTreasury__factory(deployer).deploy(
       ZERO_ADDRESS,
       ZERO_ADDRESS,
@@ -58,6 +74,8 @@ contract('Oracles Chainlink', () => {
     oracleCBETH = await new OracleCBETHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleLUSDXAU = await new OracleLUSDXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleETHXAU = await new OracleETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleWSTETHXAU = await new OracleWSTETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleUSDCXAU = await new OracleUSDCXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -144,6 +162,30 @@ contract('Oracles Chainlink', () => {
     it('initialization', async () => {
       expect(await oracleETHXAU.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleETHXAU.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle WSTETHXAU', () => {
+    it('read', async () => {
+      const receipt = await oracleWSTETHXAU.read();
+      const gas = await oracleWSTETHXAU.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleWSTETHXAU.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleWSTETHXAU.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle USDCXAU', () => {
+    it('read', async () => {
+      const receipt = await oracleUSDCXAU.read();
+      const gas = await oracleUSDCXAU.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleUSDCXAU.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleUSDCXAU.treasury()).to.be.equal(treasury.address);
     });
   });
 });

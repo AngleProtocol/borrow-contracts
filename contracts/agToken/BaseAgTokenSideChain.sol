@@ -41,22 +41,22 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20Pe
 
 /// @title BaseAgTokenSideChain
 /// @author Angle Labs, Inc.
-/// @notice Base Contract for Angle agTokens on other chains than Ethereum mainnet
-/// @dev This type of contract can be used to create and handle the stablecoins of Angle protocol in different chains than Ethereum
+/// @notice Base contract for Angle agTokens on Ethereum and on other chains
+/// @dev By default, agTokens are ERC-20 tokens with 18 decimals
 contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
-    // ======================= Parameters and Variables ============================
+    // =========================== PARAMETERS / VARIABLES ==========================
 
     /// @inheritdoc IAgToken
     mapping(address => bool) public isMinter;
     /// @notice Reference to the treasury contract which can grant minting rights
     address public treasury;
 
-    // ================================== Events ===================================
+    // =================================== EVENTS ==================================
 
     event TreasuryUpdated(address indexed _treasury);
     event MinterToggled(address indexed minter);
 
-    // =============================== Errors ================================
+    // =================================== ERRORS ==================================
 
     error BurnAmountExceedsAllowance();
     error InvalidSender();
@@ -64,10 +64,10 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     error NotMinter();
     error NotTreasury();
 
-    // ============================= Constructor ===================================
+    // ================================ CONSTRUCTOR ================================
 
-    /// @notice Wraps `_initializeBase` for `BaseAgTokenSideChain` and make a safety check
-    /// on `_treasury`and this contract
+    /// @notice Wraps `_initializeBase` for `BaseAgTokenSideChain` and makes a safety check
+    /// on `_treasury`
     function _initialize(
         string memory name_,
         string memory symbol_,
@@ -84,7 +84,6 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     /// @param name_ Name of the token
     /// @param symbol_ Symbol of the token
     /// @param _treasury Reference to the `Treasury` contract associated to this agToken implementation
-    /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
     function _initializeBase(
         string memory name_,
         string memory symbol_,
@@ -96,7 +95,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         emit TreasuryUpdated(address(_treasury));
     }
 
-    // =============================== Modifiers ===================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
@@ -111,7 +110,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         _;
     }
 
-    // =========================== External Function ===============================
+    // ============================= EXTERNAL FUNCTION =============================
 
     /// @notice Allows anyone to burn agToken without redeeming collateral back
     /// @param amount Amount of stablecoins to burn
@@ -120,7 +119,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         _burn(msg.sender, amount);
     }
 
-    // ======================= Minter Role Only Functions ==========================
+    // ========================= MINTER ROLE ONLY FUNCTIONS ========================
 
     /// @inheritdoc IAgToken
     function burnSelf(uint256 amount, address burner) external onlyMinter {
@@ -141,7 +140,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         _mint(account, amount);
     }
 
-    // ======================= Treasury Only Functions =============================
+    // ========================== TREASURY ONLY FUNCTIONS ==========================
 
     /// @inheritdoc IAgToken
     function addMinter(address minter) external onlyTreasury {
@@ -162,7 +161,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
         emit TreasuryUpdated(_treasury);
     }
 
-    // ============================ Internal Function ==============================
+    // ============================= INTERNAL FUNCTION =============================
 
     /// @notice Internal version of the function `burnFromNoRedeem`
     /// @param amount Amount to burn
