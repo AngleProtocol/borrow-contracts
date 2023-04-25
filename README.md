@@ -14,11 +14,15 @@ The protocol is made of different modules, each with their own set of smart cont
 
 Smart contracts used to for yield-bearing tokens as collateral assets in the Borrowing module are in a different repository that you can find [here](https://github.com/AngleProtocol/borrow-lpTokens-contracts).
 
-Documentation to understand Angle Protocol's Borrowing Module is available [here](https://docs.angle.money).
+### Resources
 
-Developers documentation to understand how these smart contracts work together is available [here](https://developers.angle.money/borrowing-module-contracts/architecture-overview).
+- [Documentation](https://docs.angle.money) to understand Angle Protocol's Borrowing Module
+- [Developers doc](https://developers.angle.money/borrowing-module-contracts/architecture-overview) to understand how these smart contracts work together work together
+- [Whitepaper](https://docs.angle.money/overview/whitepapers) for the module
+- [Portal](https://linktr.ee/angleprotocol) of resources for more info about the protocol
+- [Angle Protocol related audits](https://docs.angle.money/resources/audits)
 
-Whitepaper for the module can be found [here](https://docs.angle.money/overview/whitepapers).
+![Angle Borrowing Module Architecture](AngleBorrowingArchitecture.png)
 
 ### Further Information
 
@@ -31,15 +35,34 @@ Other Angle-related smart contracts can be found in the following repositories:
 - [Angle Router contracts](https://github.com/AngleProtocol/angle-router)
 - [Angle Direct Deposit Modules (or Algorithmic market operations)](https://github.com/AngleProtocol/angle-amo)
 
-Otherwise, for more info about the protocol, check out [this portal](https://linktr.ee/angleprotocol) of resources.
+### Audits
 
-## Module Architecture
+The contracts of this module have been audited by [Chainsecurity](https://chainsecurity.com/security-audit/angle-protocol-borrowing-module/). The audit reports can be found in the `audits/` folder of this repo.
 
-![Module Architecture](AngleBorrowingArchitecture.png)
+### Bug Bounty
+
+At Angle, we consider the security of our systems a top priority. But even putting top priority status and maximum effort, there is still possibility that vulnerabilities exist.
+
+We have therefore setup a bug bounty program with the help of Immunefi. The Angle Protocol bug bounty program is focused around our smart contracts with a primary interest in the prevention of:
+
+- Thefts and freezing of principal of any amount
+- Thefts and freezing of unclaimed yield of any amount
+- Theft of governance funds
+- Governance activity disruption
+
+For more details, please refer to the [official page of the bounty on Immunefi](https://immunefi.com/bounty/angleprotocol/).
+
+| Level    |                     |
+| :------- | :------------------ |
+| Critical | up to USD \$500,000 |
+| High     | USD \$20,000        |
+| Medium   | USD \$2,500         |
+
+All bug reports must include a Proof of Concept demonstrating how the vulnerability can be exploited to be eligible for a reward. This may be a smart contract itself or a transaction.
 
 ### Remarks
 
-### Cross-module Contracts
+#### Cross-module Contracts
 
 Some smart contracts of the protocol are used across the different modules of Angle (like the `agToken` contract) and you'll sometimes see different versions across the different repositories of the protocol.
 
@@ -49,7 +72,13 @@ Here are some cross-module contracts and the repos in which you should look for 
 - [`borrow-contracts`](https://github.com/AngleProtocol/borrow-contracts): `agToken` contract
 - [`angle-strategies`](https://github.com/AngleProtocol/angle-strategies): Yield strategies of the protocol
 
-### Error Messages
+#### Undeployed Contracts
+
+Some smart contracts in this repo have been developed for research purposes, but have not been audited or deployed in production.
+
+This is notably the case of the contracts in the `contracts/reactor/` folder which should be dismissed if you're auditing the protocol.
+
+#### Error Messages
 
 Some smart contracts use error messages that are encoded as numbers rather. Conversion from numbers to error messages can be found in `errorMessages.json`.
 
@@ -197,30 +226,3 @@ yarn generate-types-from-abis
 ```
 
 You can also delete `node_modules`, `cache`, and then re-install dependancies with `yarn install --frozen-lockfile`.
-
-## Audits
-
-The contracts of this module have been audited by [Chainsecurity](https://chainsecurity.com/security-audit/angle-protocol-borrowing-module/). The audit reports can be found in the `audits/` folder of this repo.
-
-All Angle Protocol related audits can be found in [this page](https://docs.angle.money/resources/audits) of our docs.
-
-## Bug Bounty
-
-At Angle, we consider the security of our systems a top priority. But even putting top priority status and maximum effort, there is still possibility that vulnerabilities exist.
-
-We have therefore setup a bug bounty program with the help of Immunefi. The Angle Protocol bug bounty program is focused around our smart contracts with a primary interest in the prevention of:
-
-- Thefts and freezing of principal of any amount
-- Thefts and freezing of unclaimed yield of any amount
-- Theft of governance funds
-- Governance activity disruption
-
-For more details, please refer to the [official page of the bounty on Immunefi](https://immunefi.com/bounty/angleprotocol/).
-
-| Level    |                     |
-| :------- | :------------------ |
-| Critical | up to USD \$500,000 |
-| High     | USD \$20,000        |
-| Medium   | USD \$2,500         |
-
-All bug reports must include a Proof of Concept demonstrating how the vulnerability can be exploited to be eligible for a reward. This may be a smart contract itself or a transaction.
