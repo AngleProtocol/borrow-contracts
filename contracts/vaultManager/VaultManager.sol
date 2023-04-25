@@ -694,7 +694,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         address who,
         bytes memory data
     ) public whenNotPaused nonReentrant returns (LiquidatorData memory liqData) {
-        if (whitelistingActivated && isWhitelisted[msg.sender] != 1 && isWhitelisted[to] != 1) revert NotWhitelisted();
+        if (_whitelistingActivated() && isWhitelisted[msg.sender] != 1 && isWhitelisted[to] != 1)
+            revert NotWhitelisted();
         uint256 vaultIDsLength = vaultIDs.length;
         if (vaultIDsLength != amounts.length || vaultIDsLength == 0) revert IncompatibleLengths();
         // Stores all the data about an ongoing liquidation of multiple vaults

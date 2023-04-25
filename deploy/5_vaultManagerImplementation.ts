@@ -6,7 +6,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
-  const implementationName = 'VaultManager_V2_0_Implementation';
+  const implementationName = 'VaultManager_V2_1_Implementation';
 
   try {
     await deployments.get(implementationName);

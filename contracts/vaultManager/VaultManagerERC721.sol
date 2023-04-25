@@ -279,4 +279,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     ///  - When `to` is zero, `from`'s `vaultID` will be burned.
     ///  - `from` and `to` are never both zero.
     function _beforeTokenTransfer(address from, address to, uint256 vaultID) internal virtual {}
+
+    /// @notice Get `whitelistingActivated` in storage only if needed
+    function _whitelistingActivated() internal view virtual returns (bool) {
+        return whitelistingActivated;
+    }
 }

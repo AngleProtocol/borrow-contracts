@@ -15,6 +15,8 @@ import {
   OracleETHEURChainlink__factory,
   OracleETHXAUChainlink,
   OracleETHXAUChainlink__factory,
+  OracleIB01EURChainlink,
+  OracleIB01EURChainlink__factory,
   OracleLUSDEURChainlink,
   OracleLUSDEURChainlink__factory,
   OracleLUSDXAUChainlink,
@@ -41,6 +43,7 @@ contract('Oracles Chainlink', () => {
   let oracleETHXAU: OracleETHXAUChainlink;
   let oracleUSDCXAU: OracleUSDCXAUChainlink;
   let oracleWSTETHXAU: OracleWSTETHXAUChainlink;
+  let oracleIB01: OracleIB01EURChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -53,7 +56,7 @@ contract('Oracles Chainlink', () => {
         {
           forking: {
             jsonRpcUrl: process.env.ETH_NODE_URI_FORK,
-            blockNumber: 16526566,
+            blockNumber: 17122178,
           },
         },
       ],
@@ -76,6 +79,7 @@ contract('Oracles Chainlink', () => {
     oracleETHXAU = await new OracleETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleWSTETHXAU = await new OracleWSTETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleUSDCXAU = await new OracleUSDCXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleIB01 = await new OracleIB01EURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -186,6 +190,18 @@ contract('Oracles Chainlink', () => {
     it('initialization', async () => {
       expect(await oracleUSDCXAU.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleUSDCXAU.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle IB01', () => {
+    it('read', async () => {
+      const receipt = await oracleIB01.read();
+      const gas = await oracleIB01.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleIB01.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleIB01.treasury()).to.be.equal(treasury.address);
     });
   });
 });

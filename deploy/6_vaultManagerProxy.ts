@@ -1,4 +1,4 @@
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk/dist';
+import { ChainId, CONTRACTS_ADDRESSES, registry } from '@angleprotocol/sdk/dist';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Contract } from 'ethers';
 import hre from 'hardhat';
@@ -19,14 +19,17 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const json = await import('./networks/' + network.name + '.json');
   const vaultsList = json.vaultsList;
-  const stableName = 'GOLD';
+  const stableName = 'EUR';
+  let treasuryAddress;
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
     proxyAdminAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
+    treasuryAddress = registry(ChainId.MAINNET)?.agEUR?.Treasury!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdminAddress = (await ethers.getContract('ProxyAdmin')).address;
+    treasuryAddress = registry(network.config.chainId as ChainId)?.agEUR?.Treasury!;
   }
 
   console.log(`Deploying proxies for the following vaultManager: ${vaultsList}`);
@@ -56,7 +59,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       console.log(`whitelistingActivated: ${vaultManagerParams.params.whitelistingActivated.toString()}`);
       console.log('');
 
-      const treasuryAddress = (await ethers.getContract(`Treasury_${stableName}`)).address;
       const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
       const implementation = (await ethers.getContract('VaultManager_V2_0_Implementation')).address;
