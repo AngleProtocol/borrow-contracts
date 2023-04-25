@@ -13,7 +13,6 @@ module.exports = {
     'oracle/implementations/',
     // Router here is a copy pasta of the router in another repo
     'router',
-    'reactor/BaseReactorStorage.sol',
     'vaultManager/VaultManagerStorage.sol',
     'keeperMulticall/KeeperMulticall.sol',
   ],
