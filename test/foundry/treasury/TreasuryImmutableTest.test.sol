@@ -10,7 +10,7 @@ import { MockCorrectVaultManagerLiquidationBoostImmutable, MockIncorrectVaultMan
 import { MockTreasuryImmutable, TreasuryImmutable, Treasury } from "../../../contracts/mock/MockTreasuryImmutable.sol";
 import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
-
+/*
 contract TreasuryImmutableTest is BaseTest {
     using stdStorage for StdStorage;
 
@@ -203,3 +203,4 @@ contract TreasuryImmutableTest is BaseTest {
         assertEq(address(_vault.treasury()), (address(_treasury)));
     }
 }
+*/

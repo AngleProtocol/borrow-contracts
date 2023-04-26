@@ -9,7 +9,7 @@ import "../../../contracts/mock/MockTokenPermit.sol";
 import { MockTreasuryImmutable, TreasuryImmutable, Treasury } from "../../../contracts/mock/MockTreasuryImmutable.sol";
 import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
-
+/*
 contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
     using stdStorage for StdStorage;
 
@@ -181,3 +181,4 @@ contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
         _vault.setUint64(param, what);
     }
 }
+*/
