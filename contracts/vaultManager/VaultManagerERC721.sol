@@ -203,10 +203,6 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// this imposes no restrictions on msg.sender
     /// @dev `to` cannot be the zero address and `perpetualID` must be owned by `from`
     /// @dev Emits a {Transfer} event
-<<<<<<< HEAD
-=======
-    /// @dev A whitelist check is performed if necessary on the `to` address
->>>>>>> 836de8d (changing whitelist)
     function _transfer(address from, address to, uint256 vaultID) internal {
         if (_ownerOf(vaultID) != from) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
