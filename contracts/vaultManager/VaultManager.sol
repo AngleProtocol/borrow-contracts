@@ -686,6 +686,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @return liqData Data about the liquidation process for the liquidator to track everything that has been going on (like how much
     /// stablecoins have been repaid, how much collateral has been received)
     /// @dev This function will revert if it's called on a vault that cannot be liquidated or that does not exist
+    /// @dev A whitelist check may be performed on the address liquidating the vault or on the address receiving
+    /// the funds from the liquidiation
     function liquidate(
         uint256[] memory vaultIDs,
         uint256[] memory amounts,
