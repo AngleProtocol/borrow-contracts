@@ -220,10 +220,9 @@ contract Treasury is ITreasury, Initializable {
     /// @return badDebtValue Value the `badDebt` should have after the call if it was updated
     /// @dev This internal function is never to be called alone, and should always be called in conjunction
     /// with the `_updateSurplusAndBadDebt` function
-    function _fetchSurplusFromList(address[] memory vaultManagers)
-        internal
-        returns (uint256 surplusBufferValue, uint256 badDebtValue)
-    {
+    function _fetchSurplusFromList(
+        address[] memory vaultManagers
+    ) internal returns (uint256 surplusBufferValue, uint256 badDebtValue) {
         badDebtValue = badDebt;
         surplusBufferValue = surplusBuffer;
         uint256 newSurplus;
@@ -246,10 +245,10 @@ contract Treasury is ITreasury, Initializable {
     /// @dev When calling this function, it is possible that there is a positive `surplusBufferValue` and `badDebtValue`,
     /// this function tries to reconcile both values and makes sure that we either have surplus or bad debt but not both
     /// at the same time
-    function _updateSurplusAndBadDebt(uint256 surplusBufferValue, uint256 badDebtValue)
-        internal
-        returns (uint256, uint256)
-    {
+    function _updateSurplusAndBadDebt(
+        uint256 surplusBufferValue,
+        uint256 badDebtValue
+    ) internal returns (uint256, uint256) {
         if (badDebtValue != 0) {
             // If we have bad debt we need to burn stablecoins that accrued to the protocol
             // We still need to make sure that we're not burning too much or as much as we can if the debt is big
@@ -336,11 +335,7 @@ contract Treasury is ITreasury, Initializable {
     /// and from the flash loan module
     /// @dev If the token to recover is the stablecoin, tokens recovered are fetched
     /// from the surplus and not from the `surplusBuffer`
-    function recoverERC20(
-        address tokenAddress,
-        address to,
-        uint256 amountToRecover
-    ) external onlyGovernor {
+    function recoverERC20(address tokenAddress, address to, uint256 amountToRecover) external onlyGovernor {
         // Cannot recover stablecoin if badDebt or tap into the surplus buffer
         if (tokenAddress == address(stablecoin)) {
             _fetchSurplusFromAll();

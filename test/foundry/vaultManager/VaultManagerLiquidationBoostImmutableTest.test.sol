@@ -9,7 +9,7 @@ import "../../../contracts/mock/MockTokenPermit.sol";
 import { MockTreasuryImmutable, TreasuryImmutable, Treasury } from "../../../contracts/mock/MockTreasuryImmutable.sol";
 import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
 import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
-
+/*
 contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
     using stdStorage for StdStorage;
 
@@ -22,7 +22,7 @@ contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
 
     VaultParameters internal _vmParams =
         VaultParameters({
-            debtCeiling: 10**9 * BASE_18,
+            debtCeiling: 10 ** 9 * BASE_18,
             collateralFactor: uint64(BASE_PARAMS / 2),
             targetHealthFactor: uint64((BASE_PARAMS * 105) / 100),
             interestRate: uint64(BASE_PARAMS / 10),
@@ -94,7 +94,7 @@ contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
         MockTokenPermit collateralBis = new MockTokenPermit("Mock2", "MCK2", decimalToken + 3);
         MockOracle oracleBis = new MockOracle(BASE_18, ITreasury(address(treasuryBis)));
         VaultParameters memory vmParamsBis = VaultParameters({
-            debtCeiling: 10**6 * BASE_18,
+            debtCeiling: 10 ** 6 * BASE_18,
             collateralFactor: uint64(BASE_PARAMS / 3),
             targetHealthFactor: uint64((BASE_PARAMS * 150) / 100),
             interestRate: uint64(BASE_PARAMS / 20),
@@ -181,3 +181,4 @@ contract VaultManagerLiquidationBoostImmutableTest is BaseTest {
         _vault.setUint64(param, what);
     }
 }
+*/

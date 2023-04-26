@@ -17,6 +17,7 @@ contract TreasuryImmutable is Treasury {
 
     // =============================== Errors ======================================
 
+    error AlreadySetStablecoin();
     error InvalidVaultManager();
     error InvalidStablecoin();
 

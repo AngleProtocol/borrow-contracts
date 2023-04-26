@@ -68,11 +68,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
 
     /// @notice Wraps `_initializeBase` for `BaseAgTokenSideChain` and makes a safety check
     /// on `_treasury`
-    function _initialize(
-        string memory name_,
-        string memory symbol_,
-        address _treasury
-    ) internal virtual initializer {
+    function _initialize(string memory name_, string memory symbol_, address _treasury) internal virtual initializer {
         if (address(ITreasury(_treasury).stablecoin()) != address(this)) revert InvalidTreasury();
         _initializeBase(name_, symbol_, _treasury);
     }
@@ -84,11 +80,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     /// @param name_ Name of the token
     /// @param symbol_ Symbol of the token
     /// @param _treasury Reference to the `Treasury` contract associated to this agToken implementation
-    function _initializeBase(
-        string memory name_,
-        string memory symbol_,
-        address _treasury
-    ) internal virtual {
+    function _initializeBase(string memory name_, string memory symbol_, address _treasury) internal virtual {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         treasury = _treasury;
@@ -127,11 +119,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     }
 
     /// @inheritdoc IAgToken
-    function burnFrom(
-        uint256 amount,
-        address burner,
-        address sender
-    ) external onlyMinter {
+    function burnFrom(uint256 amount, address burner, address sender) external onlyMinter {
         _burnFromNoRedeem(amount, burner, sender);
     }
 
@@ -166,11 +154,7 @@ contract BaseAgTokenSideChain is IAgToken, ERC20PermitUpgradeable {
     /// @notice Internal version of the function `burnFromNoRedeem`
     /// @param amount Amount to burn
     /// @dev It is at the level of this function that allowance checks are performed
-    function _burnFromNoRedeem(
-        uint256 amount,
-        address burner,
-        address sender
-    ) internal {
+    function _burnFromNoRedeem(uint256 amount, address burner, address sender) internal {
         if (burner != sender) {
             uint256 currentAllowance = allowance(burner, sender);
             if (currentAllowance < amount) revert BurnAmountExceedsAllowance();

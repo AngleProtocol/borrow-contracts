@@ -7,7 +7,7 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const stableName = 'GOLD';
+  const stableName = 'EUR';
 
   let implementationName: string;
   let proxyAdmin: string;
@@ -18,6 +18,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     implementationName = 'AgTokenSideChainMultiBridge';
     proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
+    proxyAdmin = '0x9a5b060Bd7b8f86c4C0D720a17367729670AfB19';
   }
 
   console.log(`Now deploying the implementation for AgToken on ${network.name}`);

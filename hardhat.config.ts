@@ -302,6 +302,19 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    gnosis: {
+      live: true,
+      url: nodeUrl('gnosis'),
+      accounts: accounts('gnosis'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 100,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('gnosis'),
+        },
+      },
+    },
   },
   paths: {
     sources: './contracts',

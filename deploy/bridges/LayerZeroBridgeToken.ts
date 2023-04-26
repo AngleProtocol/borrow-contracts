@@ -8,7 +8,7 @@ import { deployImplem, deployProxy } from '../helpers';
 const stable = 'EUR';
 
 const func: DeployFunction = async ({ ethers, network }) => {
-  const treasury = await ethers.getContract('Treasury');
+  const treasury = await ethers.getContract('Treasury_EUR');
   const proxyAdmin = await ethers.getContract('ProxyAdmin');
 
   const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
@@ -24,7 +24,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
       `LZ-ag${stable}`,
       endpointAddr,
       treasury.address,
-      parseEther('100000'),
+      parseEther('0'),
     ]),
   );
 
