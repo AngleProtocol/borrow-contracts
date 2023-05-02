@@ -21,6 +21,8 @@ import {
   OracleLUSDEURChainlink__factory,
   OracleLUSDXAUChainlink,
   OracleLUSDXAUChainlink__factory,
+  OracleUSDCEURChainlink,
+  OracleUSDCEURChainlink__factory,
   OracleUSDCXAUChainlink,
   OracleUSDCXAUChainlink__factory,
   OracleWSTETHEURChainlink,
@@ -44,6 +46,7 @@ contract('Oracles Chainlink', () => {
   let oracleUSDCXAU: OracleUSDCXAUChainlink;
   let oracleWSTETHXAU: OracleWSTETHXAUChainlink;
   let oracleIB01: OracleIB01EURChainlink;
+  let oracleUSDC: OracleUSDCEURChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -80,6 +83,7 @@ contract('Oracles Chainlink', () => {
     oracleWSTETHXAU = await new OracleWSTETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleUSDCXAU = await new OracleUSDCXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleIB01 = await new OracleIB01EURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleUSDC = await new OracleUSDCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -202,6 +206,18 @@ contract('Oracles Chainlink', () => {
     it('initialization', async () => {
       expect(await oracleIB01.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleIB01.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle USDC', () => {
+    it('read', async () => {
+      const receipt = await oracleUSDC.read();
+      const gas = await oracleUSDC.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleUSDC.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleUSDC.treasury()).to.be.equal(treasury.address);
     });
   });
 });
