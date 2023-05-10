@@ -2,16 +2,17 @@
 # yarn lockfile v1
 
 
-"@angleprotocol/sdk@3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@angleprotocol/sdk/-/sdk-3.0.1.tgz#0efb35dd2eef51fa2702240a7600dc4849ffec5e"
-  integrity sha512-CKSxuy+1Zv4xsv3k4owLxQuDR/4j12NwJmh+pWdUtpyDsf199WThvSTiZGYbUKbmX1E8Zoold0ZFilpjB4YX9Q==
+"@angleprotocol/sdk@3.0.40":
+  version "3.0.40"
+  resolved "https://registry.yarnpkg.com/@angleprotocol/sdk/-/sdk-3.0.40.tgz#2c04c5c985c19729b407e1e48cfb2e5ed28a9e70"
+  integrity sha512-kFK1DdSsHUd8HB3aV01uIRn0JegFTom+67NaWFgn0T+Fr6NU5uUrcLUvzRMxMI4CyM+dWh4jzOXPioiF7G2dmA==
   dependencies:
     "@typechain/ethers-v5" "^10.0.0"
     "@types/lodash" "^4.14.180"
     ethers "^5.6.4"
     graphql "^15.7.1"
     graphql-request "^3.6.1"
+    jsbi "^4.3.0"
     keccak256 "^1.0.6"
     lodash "^4.17.21"
     merkletreejs "^0.3.9"
@@ -8334,6 +8335,11 @@ jsbi@^3.1.4:
   version "3.2.5"
   resolved "https://registry.yarnpkg.com/jsbi/-/jsbi-3.2.5.tgz#b37bb90e0e5c2814c1c2a1bcd8c729888a2e37d6"
   integrity sha512-aBE4n43IPvjaddScbvWRA2YlTzKEynHzu7MqOyTipdHucf/VxS63ViCjxYRg86M8Rxwbt/GfzHl1kKERkt45fQ==
+
+jsbi@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/jsbi/-/jsbi-4.3.0.tgz#b54ee074fb6fcbc00619559305c8f7e912b04741"
+  integrity sha512-SnZNcinB4RIcnEyZqFPdGPVgrg2AcnykiBy0sHVJQKHYeaLUvi3Exj+iaPpLnFVkDPZIV4U0yvgC9/R4uEAZ9g==
 
 jsbn@~0.1.0:
   version "0.1.1"

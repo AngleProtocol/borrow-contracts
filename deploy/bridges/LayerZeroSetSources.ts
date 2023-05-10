@@ -26,10 +26,11 @@ const func: DeployFunction = async ({ ethers, network }) => {
       console.log(chain);
       const trustedRemote = ethers.utils.solidityPack(['address', 'address'], [OFTs[chain], local]);
       console.log(`Trusted remote ${trustedRemote}`);
-
+      console.log(local);
       console.log(
         contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [(LZ_CHAINIDS as any)[chain], trustedRemote]),
       );
+
       console.log((LZ_CHAINIDS as any)[chain], trustedRemote);
       console.log('');
     }

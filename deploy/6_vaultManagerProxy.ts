@@ -12,6 +12,9 @@ import params from './networks';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
+  /**
+   * TODO: change implementation depending on what is being deployed
+   */
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
@@ -61,7 +64,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
       const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
-      const implementation = (await ethers.getContract('VaultManager_V2_0_Implementation')).address;
+      const implementation = (await ethers.getContract('VaultManager_PermissionedLiquidations_Implementation')).address;
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),
@@ -72,7 +75,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         vaultManagerParams.params,
         vaultManagerParams.symbol,
       ]);
-
       await deploy(name, {
         contract: 'TransparentUpgradeableProxy',
         from: deployer.address,
