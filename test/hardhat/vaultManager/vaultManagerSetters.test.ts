@@ -257,8 +257,12 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
         'NotGovernorOrGuardian',
       );
     });
-    it('reverts - guardian', async () => {
-      await expect(vaultManager.connect(guardian).toggleWhitelist(alice.address)).to.be.revertedWith('NotGovernor');
+    it('success - guardian', async () => {
+      await vaultManager.connect(guardian).toggleWhitelist(alice.address);
+      expect(await vaultManager.isWhitelisted(alice.address)).to.be.equal(1);
+
+      await vaultManager.connect(guardian).toggleWhitelist(alice.address);
+      expect(await vaultManager.isWhitelisted(alice.address)).to.be.equal(0);
     });
     it('success - governor', async () => {
       await vaultManager.connect(governor).toggleWhitelist(alice.address);

@@ -134,7 +134,6 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
       expect(await vaultManager.paused()).to.be.false;
 
       await expect(vaultManager.connect(deployer).toggleWhitelist(ZERO_ADDRESS)).to.be.reverted;
-      await expect(vaultManager.connect(guardian).toggleWhitelist(ZERO_ADDRESS)).to.be.reverted;
       await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
       expect(await vaultManager.whitelistingActivated()).to.be.true;
     });
