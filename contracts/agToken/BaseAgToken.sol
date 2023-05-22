@@ -153,21 +153,4 @@ contract BaseAgToken is IAgToken, ERC20PermitUpgradeable {
         treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }
-<<<<<<< HEAD:contracts/agToken/BaseAgTokenSideChain.sol
-
-    // ============================= INTERNAL FUNCTION =============================
-
-    /// @notice Internal version of the function `burnFromNoRedeem`
-    /// @param amount Amount to burn
-    /// @dev It is at the level of this function that allowance checks are performed
-    function _burnFromNoRedeem(uint256 amount, address burner, address sender) internal {
-        if (burner != sender) {
-            uint256 currentAllowance = allowance(burner, sender);
-            if (currentAllowance < amount) revert BurnAmountExceedsAllowance();
-            _approve(burner, sender, currentAllowance - amount);
-        }
-        _burn(burner, amount);
-    }
-=======
->>>>>>> bc13911 (fixing agToken names and stuff):contracts/agToken/BaseAgToken.sol
 }
