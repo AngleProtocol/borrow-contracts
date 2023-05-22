@@ -115,7 +115,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     // ================================ ERC165 LOGIC ===============================
 
     /// @inheritdoc IERC165Upgradeable
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure virtual returns (bool) {
         return
             interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
             interfaceId == type(IERC721Upgradeable).interfaceId ||

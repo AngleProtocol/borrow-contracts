@@ -253,7 +253,9 @@ contract('VaultManagerLiquidationBoost - Setters', () => {
 
   describe('toggleWhitelist', () => {
     it('reverts - access control', async () => {
-      await expect(vaultManager.connect(alice).toggleWhitelist(alice.address)).to.be.revertedWith('NotGovernor');
+      await expect(vaultManager.connect(alice).toggleWhitelist(alice.address)).to.be.revertedWith(
+        'NotGovernorOrGuardian',
+      );
     });
     it('reverts - guardian', async () => {
       await expect(vaultManager.connect(guardian).toggleWhitelist(alice.address)).to.be.revertedWith('NotGovernor');
