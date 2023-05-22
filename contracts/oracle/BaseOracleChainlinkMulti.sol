@@ -99,8 +99,8 @@ abstract contract BaseOracleChainlinkMulti is IOracle {
             revert InvalidChainlinkRate();
         uint256 castedRatio = uint256(ratio);
         // Checking whether we should multiply or divide by the ratio computed
-        if (multiplied == 1) return (quoteAmount * castedRatio) / (10**decimals);
-        else return (quoteAmount * (10**decimals)) / castedRatio;
+        if (multiplied == 1) return (quoteAmount * castedRatio) / (10 ** decimals);
+        else return (quoteAmount * (10 ** decimals)) / castedRatio;
     }
 
     // ======================= Governance Related Functions ========================

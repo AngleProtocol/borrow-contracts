@@ -6,7 +6,6 @@ import hre, { ethers } from 'hardhat';
 import {
   IERC20Metadata,
   IOracle,
-  Reactor,
   TransparentUpgradeableProxy__factory,
   VaultManager,
   VaultManagerLiquidationBoost,
@@ -221,14 +220,6 @@ function permit(permitData: TypePermit): Call {
   };
 }
 
-async function displayReactorState(reactor: Reactor, log: boolean): Promise<void> {
-  if (log) {
-    const vaultManager = (await ethers.getContractAt('VaultManager', await reactor.vaultManager())) as VaultManager;
-    const asset = (await ethers.getContractAt('IERC20Metadata', await reactor.asset())) as IERC20Metadata;
-    return await displayVaultState(vaultManager, await reactor.vaultID(), log, await asset.decimals());
-  }
-}
-
 async function displayVaultState(
   vaultManager: VaultManager | VaultManagerLiquidationBoost,
   vaultID: BigNumberish,
@@ -331,7 +322,6 @@ export {
   closeVault,
   createVault,
   deployUpgradeable,
-  displayReactorState,
   displayVaultState,
   expectApprox,
   expectApproxDelta,

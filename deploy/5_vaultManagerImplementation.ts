@@ -6,7 +6,7 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
-  const implementationName = 'VaultManager_V2_0_Implementation';
+  const implementationName = 'VaultManager_PermissionedLiquidations_Implementation';
 
   try {
     await deployments.get(implementationName);
@@ -25,5 +25,5 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
 };
 
 func.tags = ['vaultManagerImplementation'];
-func.dependencies = ['oracle'];
+// func.dependencies = ['oracle'];
 export default func;

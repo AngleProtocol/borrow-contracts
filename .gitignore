@@ -48,7 +48,6 @@ bin
 
 # temporary delete
 typechain/cacheIndex.ts
-contracts/mock/MockEulerReactor.sol
 
 # foundry
 /out

@@ -109,15 +109,6 @@ const config: HardhatUserConfig = {
           },
         },
       },
-      'contracts/reactor/EulerReactor.sol': {
-        version: '0.8.12',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1000,
-          },
-        },
-      },
       'contracts/router/AngleRouter01.sol': {
         version: '0.8.12',
         settings: {
@@ -150,8 +141,8 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
-        url: nodeUrl('fork'),
-        blockNumber: 16526566,
+        url: nodeUrl('mainnet'),
+        blockNumber: 17122178,
 
         // Polygon
         /*

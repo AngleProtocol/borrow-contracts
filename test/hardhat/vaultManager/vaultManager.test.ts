@@ -171,10 +171,6 @@ contract('VaultManagerLiquidationBoost', () => {
       expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
     });
 
-    it('reverts - not whitelisted', async () => {
-      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
-      await expect(angle(vaultManager, alice, [createVault(alice.address)])).to.be.revertedWith('NotWhitelisted');
-    });
     it('reverts - unknown action', async () => {
       await expect(
         vaultManager
@@ -191,15 +187,6 @@ contract('VaultManagerLiquidationBoost', () => {
       await expect(
         vaultManager.connect(governor)['angle(uint8[],bytes[],address,address)']([1], [], ZERO_ADDRESS, ZERO_ADDRESS),
       ).to.be.revertedWith('IncompatibleLengths');
-    });
-
-    it('success - whitelisted', async () => {
-      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
-      await vaultManager.connect(governor).toggleWhitelist(alice.address);
-      await angle(vaultManager, alice, [createVault(alice.address), createVault(alice.address)]);
-      expect(await vaultManager.balanceOf(alice.address)).to.be.equal(2);
-      expect(await vaultManager.ownerOf(1)).to.be.equal(alice.address);
-      expect(await vaultManager.ownerOf(2)).to.be.equal(alice.address);
     });
   });
 
@@ -1827,7 +1814,98 @@ contract('VaultManagerLiquidationBoost', () => {
           ),
       ).to.be.revertedWith('Paused');
     });
+    it('reverts - not whitelisted', async () => {
+      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
+      await expect(
+        vaultManager.connect(bob)['liquidate(uint256[],uint256[],address,address)']([1], [1], bob.address, bob.address),
+      ).to.be.revertedWith('NotWhitelisted');
+      await expect(
+        vaultManager
+          .connect(bob)
+          ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
+            [1],
+            [1],
+            bob.address,
+            bob.address,
+            ZERO_ADDRESS,
+            '0x',
+          ),
+      ).to.be.revertedWith('NotWhitelisted');
+    });
+    it('success - no liquidation boost and whitelist', async () => {
+      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
+      await vaultManager.connect(governor).toggleWhitelist(bob.address);
+      expect(await vaultManager.isWhitelisted(bob.address)).to.be.equal(1);
+      const rate = 0.99;
+      await oracle.update(parseEther(rate.toString()));
+
+      // Target health factor is 1.1
+      // discount: `collateralAmountInStable * collateralFactor) / currentDebt`
+      const discount = (2 * rate * 0.5) / 1;
+      const maxStablecoinAmountToRepay = (1.1 - rate * 2 * 0.5) / (0.9 * 1.1 - 0.5 / discount);
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxStablecoinAmountToRepay,
+        parseEther(maxStablecoinAmountToRepay.toString()),
+        0.0001,
+      );
+      expectApprox(
+        (await vaultManager.checkLiquidation(2, bob.address)).maxCollateralAmountGiven,
+        parseUnits((maxStablecoinAmountToRepay / rate / discount).toFixed(10), collatBase),
+        0.0001,
+      );
+
+      await expect(
+        vaultManager
+          .connect(alice)
+          ['liquidate(uint256[],uint256[],address,address)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            alice.address,
+            alice.address,
+          ),
+      ).to.be.revertedWith('NotWhitelisted');
+
+      await expect(
+        vaultManager
+          .connect(governor)
+          ['liquidate(uint256[],uint256[],address,address)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            governor.address,
+            governor.address,
+          ),
+      ).to.be.revertedWith('NotWhitelisted');
+
+      const receipt = await (
+        await vaultManager
+          .connect(bob)
+          ['liquidate(uint256[],uint256[],address,address)'](
+            [2],
+            [parseEther(maxStablecoinAmountToRepay.toString())],
+            bob.address,
+            bob.address,
+          )
+      ).wait();
+
+      inReceipt(receipt, 'LiquidatedVaults', {
+        vaultIDs: [BigNumber.from(2)],
+      });
+
+      await displayVaultState(vaultManager, 2, log, collatBase);
+
+      await expect(vaultManager.checkLiquidation(2, bob.address)).to.be.reverted;
+      expectApprox(
+        await vaultManager.totalNormalizedDebt(),
+        borrowAmount.sub(parseEther(maxStablecoinAmountToRepay.toString()).mul(params.liquidationSurcharge).div(1e9)),
+        0.001,
+      );
+    });
     it('success - no liquidation boost', async () => {
+      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
+      await vaultManager.connect(governor).toggleWhitelist(bob.address);
       const rate = 0.99;
       await oracle.update(parseEther(rate.toString()));
 
@@ -1856,7 +1934,7 @@ contract('VaultManagerLiquidationBoost', () => {
             [2],
             [parseEther(maxStablecoinAmountToRepay.toString())],
             bob.address,
-            bob.address,
+            alice.address,
           )
       ).wait();
 
@@ -1874,6 +1952,8 @@ contract('VaultManagerLiquidationBoost', () => {
       );
     });
     it('success - no liquidation boost and base swapper contract', async () => {
+      await vaultManager.connect(governor).toggleWhitelist(ZERO_ADDRESS);
+      await vaultManager.connect(governor).toggleWhitelist(bob.address);
       const rate = 0.99;
       await oracle.update(parseEther(rate.toString()));
 
@@ -1897,11 +1977,11 @@ contract('VaultManagerLiquidationBoost', () => {
 
       const receipt = await (
         await vaultManager
-          .connect(bob)
+          .connect(alice)
           ['liquidate(uint256[],uint256[],address,address,address,bytes)'](
             [2],
             [parseEther(maxStablecoinAmountToRepay.toString())],
-            bob.address,
+            alice.address,
             bob.address,
             mockSwapper.address,
             web3.utils.keccak256('test'),

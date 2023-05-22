@@ -93,20 +93,12 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function transferFrom(
-        address from,
-        address to,
-        uint256 vaultID
-    ) external onlyApprovedOrOwner(msg.sender, vaultID) {
+    function transferFrom(address from, address to, uint256 vaultID) external onlyApprovedOrOwner(msg.sender, vaultID) {
         _transfer(from, to, vaultID);
     }
 
     /// @inheritdoc IERC721Upgradeable
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 vaultID
-    ) external {
+    function safeTransferFrom(address from, address to, uint256 vaultID) external {
         safeTransferFrom(from, to, vaultID, "");
     }
 
@@ -145,12 +137,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     }
 
     /// @notice Internal version of the `safeTransferFrom` function (with the data parameter)
-    function _safeTransfer(
-        address from,
-        address to,
-        uint256 vaultID,
-        bytes memory _data
-    ) internal {
+    function _safeTransfer(address from, address to, uint256 vaultID, bytes memory _data) internal {
         _transfer(from, to, vaultID);
         if (!_checkOnERC721Received(from, to, vaultID, _data)) revert NonERC721Receiver();
     }
@@ -174,8 +161,6 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @dev This method is equivalent to the `_safeMint` method used in OpenZeppelin ERC721 contract
     /// @dev Emits a {Transfer} event
     function _mint(address to) internal returns (uint256 vaultID) {
-        if (_whitelistingActivated() && (isWhitelisted[to] != 1 || isWhitelisted[msg.sender] != 1))
-            revert NotWhitelisted();
         if (to == address(0)) revert ZeroAddress();
 
         unchecked {
@@ -218,15 +203,9 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// this imposes no restrictions on msg.sender
     /// @dev `to` cannot be the zero address and `perpetualID` must be owned by `from`
     /// @dev Emits a {Transfer} event
-    /// @dev A whitelist check is performed if necessary on the `to` address
-    function _transfer(
-        address from,
-        address to,
-        uint256 vaultID
-    ) internal {
+    function _transfer(address from, address to, uint256 vaultID) internal {
         if (_ownerOf(vaultID) != from) revert NotApproved();
         if (to == address(0)) revert ZeroAddress();
-        if (_whitelistingActivated() && isWhitelisted[to] != 1) revert NotWhitelisted();
 
         _beforeTokenTransfer(from, to, vaultID);
 
@@ -250,11 +229,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     /// @notice Internal version of the `setApprovalForAll` function
     /// @dev It contains an `approver` field to be used in case someone signs a permit for a particular
     /// address, and this signature is given to the contract by another address (like a router)
-    function _setApprovalForAll(
-        address approver,
-        address operator,
-        bool approved
-    ) internal {
+    function _setApprovalForAll(address approver, address operator, bool approved) internal {
         if (operator == approver) revert ApprovalToCaller();
         uint256 approval = approved ? 1 : 0;
         _operatorApprovals[approver][operator] = approval;
@@ -302,11 +277,7 @@ abstract contract VaultManagerERC721 is IERC721MetadataUpgradeable, VaultManager
     ///  - When `from` is zero, `vaultID` will be minted for `to`.
     ///  - When `to` is zero, `from`'s `vaultID` will be burned.
     ///  - `from` and `to` are never both zero.
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 vaultID
-    ) internal virtual {}
+    function _beforeTokenTransfer(address from, address to, uint256 vaultID) internal virtual {}
 
     /// @notice Get `whitelistingActivated` in storage only if needed
     function _whitelistingActivated() internal view virtual returns (bool) {
