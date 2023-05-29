@@ -13,8 +13,9 @@ const func: DeployFunction = async ({ ethers, network }) => {
 
   const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
   console.log(`[${network.name}] LayerZero Endpoint address: ${endpointAddr}`);
-  const layerZeroBridgeImplem = await deployImplem('LayerZeroBridgeToken');
+  const layerZeroBridgeImplem = await deployImplem('LayerZeroBridgeToken_V1');
 
+  /*
   await deployProxy(
     `LayerZeroBridge_${stable}`,
     layerZeroBridgeImplem,
@@ -27,11 +28,14 @@ const func: DeployFunction = async ({ ethers, network }) => {
       parseEther('0'),
     ]),
   );
+  */
 
   /* The following things need to be done after this deployment:
   - setSources on the LayerZeroBridgeToken
   - addBridgeToken in the canonical agEUR -> limit should be higher than the limit which has already been minted in the contract
   - setChainTotalHourlyLimit in the canonical agEUR
+  - setUseCustomAdapterParams
+  - And depending on the value of the EXTRA_GAS constant: setMinDstGasLookup to all the chains
   */
 };
 
