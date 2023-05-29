@@ -2,23 +2,15 @@
 
 pragma solidity ^0.8.12;
 
-import "./NonblockingLzApp.sol";
-import "./IOFTCore.sol";
+import "./OldNonblockingLzApp.sol";
+import "../../agToken/layerZero/utils/IOFTCore.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
 /// @title OFTCore
 /// @author Forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFTCore.sol
 /// but with slight modifications from the Angle Labs, Inc. which added return values to the `_creditTo` and `_debitFrom` functions
 /// @notice Base contract for bridging using LayerZero
-abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
-    /// @notice Amount of additional gas specified
-    uint256 public constant EXTRA_GAS = 150000;
-    /// @notice Packet type for token transfer
-    uint16 public constant PT_SEND = 0;
-
-    /// @notice Whether to use custom parameters in transactions
-    uint8 public useCustomAdapterParams;
-
+abstract contract OldOFTCore is OldNonblockingLzApp, ERC165Upgradeable, IOFTCore {
     // ==================== External Permissionless Functions ======================
 
     /// @inheritdoc IOFTCore
@@ -44,7 +36,6 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) public payable virtual {
-        _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, EXTRA_GAS);
         _amount = _debitFrom(_dstChainId, _toAddress, _amount);
 
         bytes memory payload = abi.encode(_toAddress, _amount);
@@ -63,7 +54,6 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) public payable virtual {
-        _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, EXTRA_GAS);
         _amount = _debitCreditFrom(_dstChainId, _toAddress, _amount);
 
         _send(_dstChainId, _toAddress, _amount, _refundAddress, _zroPaymentAddress, _adapterParams);
@@ -71,11 +61,6 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
 
     /// @inheritdoc IOFTCore
     function withdraw(uint256 amount, address recipient) external virtual returns (uint256);
-
-    /// @notice Sets whether custom adapter parameters can be used or not
-    function setUseCustomAdapterParams(uint8 _useCustomAdapterParams) public virtual onlyGovernorOrGuardian {
-        useCustomAdapterParams = _useCustomAdapterParams;
-    }
 
     // =========================== Internal Functions ==============================
 
@@ -102,7 +87,6 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         emit SendToChain(msg.sender, _dstChainId, _toAddress, _amount, nonce);
     }
 
-    /// @inheritdoc NonblockingLzApp
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -119,17 +103,6 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         amount = _creditTo(_srcChainId, toAddress, amount);
 
         emit ReceiveFromChain(_srcChainId, _srcAddress, toAddress, amount, _nonce);
-    }
-
-    /// @notice Checks the adapter parameters given during the smart contract call
-    function _checkAdapterParams(
-        uint16 _dstChainId,
-        uint16 _pkType,
-        bytes memory _adapterParams,
-        uint256 _extraGas
-    ) internal virtual {
-        if (useCustomAdapterParams > 0) _checkGasLimit(_dstChainId, _pkType, _adapterParams, _extraGas);
-        else if (_adapterParams.length != 0) revert InvalidParams();
     }
 
     /// @notice Makes accountability when bridging from this contract using canonical token
@@ -180,5 +153,5 @@ abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
         return lzEndpoint.estimateFees(_dstChainId, address(this), payload, _useZro, _adapterParams);
     }
 
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 }

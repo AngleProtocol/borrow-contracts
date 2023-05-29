@@ -3,15 +3,15 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "../../../interfaces/external/layerZero/ILayerZeroReceiver.sol";
-import "../../../interfaces/external/layerZero/ILayerZeroUserApplicationConfig.sol";
-import "../../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
-import "../../../interfaces/ITreasury.sol";
+import "../../interfaces/external/layerZero/ILayerZeroReceiver.sol";
+import "../../interfaces/external/layerZero/ILayerZeroUserApplicationConfig.sol";
+import "../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
+import "../../interfaces/ITreasury.sol";
 
-/// @title NonblockingLzApp
+/// @title OldNonblockingLzApp
 /// @author Angle Labs, Inc., forked from https://github.com/LayerZero-Labs/solidity-examples/
 /// @notice Base contract for bridging using LayerZero
-abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
+abstract contract OldNonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     /// @notice Layer Zero endpoint
     ILayerZeroEndpoint public lzEndpoint;
 
@@ -23,12 +23,6 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
 
     /// @notice Reference to the treasury contract to fetch access control
     address public treasury;
-
-    /// @notice Maps pairs of (`to` chain, `packetType`) to the minimum amount of gas needed on the destination chain
-    mapping(uint16 => mapping(uint16 => uint256)) public minDstGasLookup;
-
-    /// @notice For future LayerZero compatibility
-    address public precrime;
 
     // ================================== Events ===================================
 
@@ -186,26 +180,6 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         );
     }
 
-    /// @notice Checks the gas limit of a given transaction
-    function _checkGasLimit(
-        uint16 _dstChainId,
-        uint16 _type,
-        bytes memory _adapterParams,
-        uint256 _extraGas
-    ) internal view virtual {
-        uint256 minGasLimit = minDstGasLookup[_dstChainId][_type] + _extraGas;
-        if (minGasLimit == 0 || minGasLimit > _getGasLimit(_adapterParams)) revert InsufficientGas();
-    }
-
-    /// @notice Gets the gas limit from the `_adapterParams` parameter
-    function _getGasLimit(bytes memory _adapterParams) internal pure virtual returns (uint256 gasLimit) {
-        if (_adapterParams.length < 34) revert InvalidParams();
-        // solhint-disable-next-line
-        assembly {
-            gasLimit := mload(add(_adapterParams, 34))
-        }
-    }
-
     // ======================= Governance Functions ================================
 
     /// @notice Sets the corresponding address on an other chain.
@@ -257,17 +231,6 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         lzEndpoint.forceResumeReceive(_srcChainId, _srcAddress);
     }
 
-    /// @notice Sets the minimum gas parameter for a packet type on a given chain
-    function setMinDstGas(uint16 _dstChainId, uint16 _packetType, uint256 _minGas) external onlyGovernorOrGuardian {
-        if (_minGas == 0) revert InvalidParams();
-        minDstGasLookup[_dstChainId][_packetType] = _minGas;
-    }
-
-    /// @notice Sets the precrime variable
-    function setPrecrime(address _precrime) external onlyGovernorOrGuardian {
-        precrime = _precrime;
-    }
-
     // ======================= View Functions ================================
 
     /// @notice Checks if the `_srcAddress` corresponds to the trusted source
@@ -276,5 +239,5 @@ abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZ
         return keccak256(trustedSource) == keccak256(_srcAddress);
     }
 
-    uint256[44] private __gap;
+    uint256[46] private __gap;
 }
