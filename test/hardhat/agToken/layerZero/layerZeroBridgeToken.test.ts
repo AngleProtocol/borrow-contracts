@@ -101,6 +101,9 @@ contract('LayerZeroBridgeToken', () => {
     it('reverts - non governor or guardian', async () => {
       await expect(lzBridge.pauseSendTokens(true)).to.be.revertedWith('NotGovernorOrGuardian');
       await expect(lzBridge.mint(1)).to.be.revertedWith('NotGovernorOrGuardian');
+      await expect(lzBridge.setUseCustomAdapterParams(1)).to.be.revertedWith('NotGovernorOrGuardian');
+      await expect(lzBridge.setPrecrime(ZERO_ADDRESS)).to.be.revertedWith('NotGovernorOrGuardian');
+      await expect(lzBridge.setMinDstGas(1, 1, 1)).to.be.revertedWith('NotGovernorOrGuardian');
       await expect(lzBridge.burn(1)).to.be.revertedWith('NotGovernorOrGuardian');
       await expect(lzBridge.setupAllowance()).to.be.revertedWith('NotGovernorOrGuardian');
       await expect(lzBridge.setTrustedRemote(1, '0x')).to.be.revertedWith('NotGovernorOrGuardian');
@@ -144,8 +147,36 @@ contract('LayerZeroBridgeToken', () => {
       expect(await lzBridge.isTrustedRemote(1, remote.address)).to.be.equal(true);
     });
   });
+  describe('setUseCustomAdapterParams', () => {
+    it('success - parameters set', async () => {
+      await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(1);
+      expect(await lzBridge.useCustomAdapterParams()).to.be.equal(1);
+      await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(7);
+      expect(await lzBridge.useCustomAdapterParams()).to.be.equal(7);
+    });
+  });
+  describe('setPrecrime', () => {
+    it('success - precrime parameter set', async () => {
+      expect(await lzBridge.precrime()).to.be.equal(ZERO_ADDRESS);
+      await lzBridge.connect(impersonatedSigners[governor]).setPrecrime(alice.address);
+      expect(await lzBridge.precrime()).to.be.equal(alice.address);
+      await lzBridge.connect(impersonatedSigners[governor]).setPrecrime(remote.address);
+      expect(await lzBridge.precrime()).to.be.equal(remote.address);
+    });
+  });
+  describe('setMinDstGas', () => {
+    it('success - dst gas set', async () => {
+      await expect(lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(0, 0, 0)).to.be.revertedWith(
+        'InvalidParams',
+      );
+      await lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(0, 1, 2);
+      expect(await lzBridge.minDstGasLookup(0, 1)).to.be.equal(2);
+      await lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(0, 1, 82222);
+      expect(await lzBridge.minDstGasLookup(0, 1)).to.be.equal(82222);
+    });
+  });
   describe('estimateSendFee', () => {
-    it('success - mock contract is called', async () => {
+    it('success - contract called', async () => {
       const receipt = await lzBridge.estimateSendFee(1, alice.address, 1, false, '0x');
       expect(receipt[0]).to.be.equal(123);
       expect(receipt[1]).to.be.equal(456);
@@ -248,6 +279,66 @@ contract('LayerZeroBridgeToken', () => {
       expect(await agToken.allowance(alice.address, lzBridge.address)).to.be.equal(parseEther('9'));
       expect(await lzEndpoint.counters(1)).to.be.equal(1);
     });
+    it('reverts - with custom adapter params but invalid length', async () => {
+      await agToken.mint(alice.address, parseEther('10'));
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.connect(alice).approve(lzBridge.address, parseEther('10'));
+      await lzEndpoint.setOutBoundNonce(1, 10);
+      expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
+      await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(1);
+      await expect(
+        lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, '0xA1'),
+      ).to.be.revertedWith('InvalidParams');
+    });
+    it('reverts - with insufficient gas', async () => {
+      await agToken.mint(alice.address, parseEther('10'));
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.connect(alice).approve(lzBridge.address, parseEther('10'));
+      await lzEndpoint.setOutBoundNonce(1, 10);
+      expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
+      await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(1);
+      const adapterParams = ethers.utils.solidityPack(['uint16', 'uint256'], [1, 10]);
+      await expect(
+        lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, adapterParams),
+      ).to.be.revertedWith('InsufficientGas');
+      const adapterParams2 = ethers.utils.solidityPack(['uint16', 'uint256'], [1, 149999]);
+      await expect(
+        lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, adapterParams2),
+      ).to.be.revertedWith('InsufficientGas');
+    });
+    it('success - trusted remote set and message sent with no fees and custom params', async () => {
+      await agToken.mint(alice.address, parseEther('10'));
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.connect(alice).approve(lzBridge.address, parseEther('10'));
+      await lzEndpoint.setOutBoundNonce(1, 10);
+      expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
+      const agTokenTotalSupply = await agToken.totalSupply();
+      await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(1);
+      const adapterParams = ethers.utils.solidityPack(['uint16', 'uint256'], [1, 150001]);
+      // Tests with odd values
+      await lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(1, 1, 2);
+      await lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(2, 0, 10);
+      await lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, adapterParams);
+      expect(await agToken.totalSupply()).to.be.equal(agTokenTotalSupply.sub(parseEther('1')));
+      expect(await agToken.balanceOf(alice.address)).to.be.equal(parseEther('9'));
+      expect(await lzBridge.balanceOf(agToken.address)).to.be.equal(parseEther('99'));
+      expect(await agToken.allowance(alice.address, lzBridge.address)).to.be.equal(parseEther('9'));
+      expect(await lzEndpoint.counters(1)).to.be.equal(1);
+    });
+    it('success - reverts trusted remote set and message sent with no fees and small custom params', async () => {
+      await agToken.mint(alice.address, parseEther('10'));
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.connect(alice).approve(lzBridge.address, parseEther('10'));
+      await lzEndpoint.setOutBoundNonce(1, 10);
+      expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
+      await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(1);
+      await lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(1, 0, 2);
+      expect(await lzBridge.minDstGasLookup(1, 0)).to.be.equal(2);
+      const adapterParams = ethers.utils.solidityPack(['uint16', 'uint256'], [1, 150001]);
+      await expect(
+        lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, adapterParams),
+      ).to.be.revertedWith('InsufficientGas');
+    });
     it('reverts - paused', async () => {
       await agToken.mint(alice.address, parseEther('10'));
       await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
@@ -258,6 +349,16 @@ contract('LayerZeroBridgeToken', () => {
       await expect(
         lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, '0x'),
       ).to.be.revertedWith('Pausable: paused');
+    });
+    it('reverts - adapter params has a non null length but not using custom adapter params', async () => {
+      await agToken.mint(alice.address, parseEther('10'));
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await agToken.connect(alice).approve(lzBridge.address, parseEther('10'));
+      await lzEndpoint.setOutBoundNonce(1, 10);
+      expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
+      await expect(
+        lzBridge.connect(alice).send(1, bob.address, parseEther('1'), bob.address, ZERO_ADDRESS, '0xA1'),
+      ).to.be.revertedWith('InvalidParams');
     });
     it('success - trusted remote set and message sent with fees in the contract', async () => {
       await agToken.mint(alice.address, parseEther('10'));
@@ -382,6 +483,36 @@ contract('LayerZeroBridgeToken', () => {
             permitData.s,
           ),
       ).to.be.revertedWith('Pausable: paused');
+    });
+    it('reverts - non null adapter params', async () => {
+      await agToken.mint(alice.address, parseEther('10'));
+      const permitData = await signPermit(
+        alice,
+        0,
+        agToken.address,
+        (await latestTime()) + 1000,
+        lzBridge.address,
+        parseEther('1'),
+        'agEUR',
+      );
+      await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
+      await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(1);
+      await expect(
+        lzBridge
+          .connect(alice)
+          .sendWithPermit(
+            1,
+            bob.address,
+            parseEther('1'),
+            bob.address,
+            ZERO_ADDRESS,
+            '0xA1',
+            permitData.deadline,
+            permitData.v,
+            permitData.r,
+            permitData.s,
+          ),
+      ).to.be.revertedWith('InvalidParams');
     });
   });
 
