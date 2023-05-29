@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeabl
 /// @notice Base contract for bridging using LayerZero
 abstract contract OFTCore is NonblockingLzApp, ERC165Upgradeable, IOFTCore {
     /// @notice Amount of additional gas specified
-    uint256 public constant EXTRA_GAS = 150000;
+    uint256 public constant EXTRA_GAS = 200000;
     /// @notice Packet type for token transfer
     uint16 public constant PT_SEND = 0;
 
