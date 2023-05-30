@@ -1,21 +1,35 @@
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
+import yargs from 'yargs';
 
 import { LayerZeroBridgeToken__factory } from '../../typechain';
 import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deployImplem, deployProxy } from '../helpers';
+const argv = yargs.env('').boolean('ci').parseSync();
 
 const stable = 'EUR';
 
-const func: DeployFunction = async ({ ethers, network }) => {
-  const treasury = await ethers.getContract('Treasury_EUR');
-  const proxyAdmin = await ethers.getContract('ProxyAdmin');
+const func: DeployFunction = async ({ ethers, network, deployments }) => {
+  const { deployer } = await ethers.getNamedSigners();
 
   const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
   console.log(`[${network.name}] LayerZero Endpoint address: ${endpointAddr}`);
-  const layerZeroBridgeImplem = await deployImplem('LayerZeroBridgeToken_V1');
+  const deploymentName = 'LayerZeroBridgeToken_V1_0_Implementation';
+  const name = 'LayerZeroBridgeToken';
+  const { deploy } = deployments;
+
+  await deploy(deploymentName, {
+    contract: name,
+    from: deployer.address,
+    log: !argv.ci,
+  });
+  const implementationAddress = (await ethers.getContract(deploymentName)).address;
+
+  console.log(`Successfully deployed ${deploymentName} at ${implementationAddress}`);
 
   /*
+  const treasury = await ethers.getContract('Treasury_EUR');
+  const proxyAdmin = await ethers.getContract('ProxyAdmin');
   await deployProxy(
     `LayerZeroBridge_${stable}`,
     layerZeroBridgeImplem,
