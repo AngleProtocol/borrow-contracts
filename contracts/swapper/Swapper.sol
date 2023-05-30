@@ -175,13 +175,11 @@ contract Swapper is ISwapper {
     // ========================= INTERNAL UTILITY FUNCTIONS ========================
 
     /// @notice Internal version of the `_changeAllowance` function
-    function _changeAllowance(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
+    function _changeAllowance(IERC20 token, address spender, uint256 amount) internal {
         uint256 currentAllowance = token.allowance(address(this), spender);
-        if (currentAllowance < amount) {
+        // In case `currentAllowance < type(uint256).max / 2` and we want to increase it:
+        // Do nothing (to handle tokens that need reapprovals to 0 and save gas)
+        if (currentAllowance < amount && currentAllowance < type(uint256).max / 2) {
             token.safeIncreaseAllowance(spender, amount - currentAllowance);
         } else if (currentAllowance > amount) {
             token.safeDecreaseAllowance(spender, currentAllowance - amount);
@@ -192,11 +190,7 @@ contract Swapper is ISwapper {
     /// @param token Token for which allowance should be checked
     /// @param spender Address to grant allowance to
     /// @param amount Minimum amount of tokens needed for the allowance
-    function _checkAllowance(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
+    function _checkAllowance(IERC20 token, address spender, uint256 amount) internal {
         uint256 currentAllowance = token.allowance(address(this), spender);
         if (currentAllowance < amount) token.safeIncreaseAllowance(spender, type(uint256).max - currentAllowance);
     }
@@ -210,12 +204,7 @@ contract Swapper is ISwapper {
     /// @dev This function does nothing if `swapType` is None and it simply passes on the `amount` it received
     /// @dev No slippage is specified in the actions given here as a final slippage check is performed
     /// after the call to this function
-    function _swap(
-        IERC20 inToken,
-        uint256 amount,
-        SwapType swapType,
-        bytes memory args
-    ) internal {
+    function _swap(IERC20 inToken, uint256 amount, SwapType swapType, bytes memory args) internal {
         if (swapType == SwapType.UniswapV3) _swapOnUniswapV3(inToken, amount, args);
         else if (swapType == SwapType.oneInch) _swapOn1inch(inToken, args);
         else if (swapType == SwapType.AngleRouter) _angleRouterActions(inToken, args);
@@ -228,11 +217,7 @@ contract Swapper is ISwapper {
     /// @param path Path for the UniswapV3 swap: this encodes the out token that is going to be obtained
     /// @dev This function does not check the out token obtained here: if it is wrongly specified, either
     /// the `swap` function could fail or these tokens could stay on the contract
-    function _swapOnUniswapV3(
-        IERC20 inToken,
-        uint256 amount,
-        bytes memory path
-    ) internal returns (uint256 amountOut) {
+    function _swapOnUniswapV3(IERC20 inToken, uint256 amount, bytes memory path) internal returns (uint256 amountOut) {
         // We need more than `amount` of allowance to the contract
         _checkAllowance(inToken, address(uniV3Router), amount);
         amountOut = uniV3Router.exactInput(ExactInputParams(path, address(this), block.timestamp, amount, 0));
