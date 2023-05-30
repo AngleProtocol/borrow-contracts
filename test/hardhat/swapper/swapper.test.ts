@@ -97,6 +97,13 @@ contract('Swapper', () => {
       await swapper.connect(alice).changeAllowance([collateral.address], [bob.address], [parseEther('3.33')]);
       expect(await collateral.allowance(swapper.address, bob.address)).to.be.equal(parseEther('3.33'));
     });
+    it('success - allowance increased and then increased again but still above threshold', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await swapper.connect(alice).changeAllowance([collateral.address], [bob.address], [MAX_UINT256.div(2).add(10)]);
+      expect(await collateral.allowance(swapper.address, bob.address)).to.be.equal(MAX_UINT256.div(2).add(10));
+      await swapper.connect(alice).changeAllowance([collateral.address], [bob.address], [MAX_UINT256]);
+      expect(await collateral.allowance(swapper.address, bob.address)).to.be.equal(MAX_UINT256.div(2).add(10));
+    });
     it('success - allowance decreased on random token', async () => {
       await core.connect(alice).toggleGuardian(alice.address);
       await swapper.connect(alice).changeAllowance([collateral.address], [bob.address], [parseEther('3.33')]);
