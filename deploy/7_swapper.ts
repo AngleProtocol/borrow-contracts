@@ -1,4 +1,4 @@
-import { ChainId, registry } from '@angleprotocol/sdk';
+import { AngleRegistry__factory, ChainId, registry } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
@@ -9,13 +9,20 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const json = await import('./networks/' + network.name + '.json');
 
-  const core = (await deployments.get('CoreBorrow')).address;
+  let core;
+  let angleRouter;
+
+  if (!network.live) {
+    core = registry(ChainId.MAINNET)?.CoreBorrow;
+    angleRouter = registry(ChainId.MAINNET)?.AngleRouterV2;
+  } else {
+    core = registry(network.config.chainId as ChainId)?.CoreBorrow;
+    angleRouter = registry(network.config.chainId as ChainId)?.AngleRouterV2;
+  }
 
   console.log('Now deploying the swapper contract');
-  // const angleRouter = registry(network.config.chainId as ChainId)?.AngleRouterV2;
-  // const oneInchRouter = json.oneInchRouter;
-  const oneInchRouter = '0x1111111254fb6c44bAC0beD2854e76F90643097d';
-  const angleRouter = '0xf530b844fb797D2C6863D56a94777C3e411CEc86';
+
+  const oneInchRouter = json.oneInchRouter;
   console.log('Checking contract addresses');
   console.log(`${core} ${json.uniswapV3Router} ${oneInchRouter} ${angleRouter}`);
 
