@@ -28,14 +28,14 @@ async function main() {
   // Uncomment to check all valid build names
   // console.log((await artifacts.getAllFullyQualifiedNames()));
 
-  testUpgradeability('VaultManagerLiquidationBoost', 'contracts/vaultManager/VaultManagerLiquidationBoost.sol');
-  testUpgradeability('OldVaultManager', 'contracts/deprecated/vaultManager/OldVaultManager.sol');
+  testUpgradeability('LayerZeroBridgeToken', 'contracts/agToken/layerZero/LayerZeroBridgeToken.sol');
+  testUpgradeability('LayerZeroBridge', 'contracts/agToken/layerZero/LayerZeroBridge.sol');
 
   testStorage(
-    'OldVaultManager',
-    'contracts/deprecated/vaultManager/OldVaultManager.sol',
-    'VaultManagerLiquidationBoost',
-    'contracts/vaultManager/VaultManagerLiquidationBoost.sol',
+    'OldLayerZeroBridgeToken',
+    'contracts/deprecated/layerZero/OldLayerZeroBridgeToken.sol',
+    'LayerZeroBridgeToken',
+    'contracts/agToken/layerZero/LayerZeroBridgeToken.sol',
   );
 }
 
