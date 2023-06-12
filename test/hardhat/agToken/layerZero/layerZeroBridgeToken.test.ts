@@ -65,7 +65,6 @@ contract('LayerZeroBridgeToken', () => {
 
     await lzBridge.initialize('lz-agEUR', 'lz-agEUR', lzEndpoint.address, treasury.address, parseEther('100'));
   });
-
   describe('initializer', () => {
     it('success - lzEndpoint, treasury, token', async () => {
       expect(await lzBridge.treasury()).to.be.equal(treasury.address);
@@ -314,7 +313,7 @@ contract('LayerZeroBridgeToken', () => {
       expect(await lzEndpoint.getOutboundNonce(1, lzBridge.address)).to.be.equal(10);
       const agTokenTotalSupply = await agToken.totalSupply();
       await lzBridge.connect(impersonatedSigners[governor]).setUseCustomAdapterParams(1);
-      const adapterParams = ethers.utils.solidityPack(['uint16', 'uint256'], [1, 150001]);
+      const adapterParams = ethers.utils.solidityPack(['uint16', 'uint256'], [1, 200001]);
       // Tests with odd values
       await lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(1, 1, 2);
       await lzBridge.connect(impersonatedSigners[governor]).setMinDstGas(2, 0, 10);
@@ -377,7 +376,6 @@ contract('LayerZeroBridgeToken', () => {
       await lzBridge.connect(impersonatedSigners[governor]).setupAllowance();
     });
   });
-
   describe('sendCredit', () => {
     it('reverts - trusted remote not set', async () => {
       await lzBridge.connect(impersonatedSigners[governor]).setTrustedRemote(1, remote.address);
