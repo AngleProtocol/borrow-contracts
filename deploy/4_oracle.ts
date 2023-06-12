@@ -31,14 +31,34 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log(`Successfully deployed Oracle HIGH/EUR at the address ${oracle}`);
   console.log('');
 
+  console.log('Now deploying the Oracle IB01/EUR');
+  await deploy('Oracle_IB01_EUR', {
+    contract: `OracleIB01EURChainlink`,
+    from: deployer.address,
+    // Higher stalePeriod for IB01
+    args: [3600 * 24 * 3, treasury],
+    log: !argv.ci,
+  });
+  const oracle2 = (await deployments.get('Oracle_IB01_EUR')).address;
+  console.log(`Successfully deployed Oracle IB01/EUR at the address ${oracle2}`);
+  console.log('');
   const oracleContract = new ethers.Contract(
     oracle,
     OracleIB01EURChainlink__factory.createInterface(),
     deployer,
   ) as OracleIB01EURChainlink;
 
+  const oracleContract2 = new ethers.Contract(
+    oracle2,
+    OracleIB01EURChainlink__factory.createInterface(),
+    deployer,
+  ) as OracleIB01EURChainlink;
+
   const oracleValue = await oracleContract.read();
   console.log(oracleValue.toString());
+
+  const oracleValue2 = await oracleContract2.read();
+  console.log(oracleValue2.toString());
 };
 
 func.tags = ['oracle'];
