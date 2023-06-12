@@ -18,7 +18,7 @@ contract OracleIB01EURChainlink is BaseOracleChainlinkMultiTwoFeeds {
     function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
         AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
         // Oracle IB01/USD
-        _circuitChainlink[0] = AggregatorV3Interface(0x788D911ae7c95121A89A0f0306db65D87422E1de);
+        _circuitChainlink[0] = AggregatorV3Interface(0x32d1463EB53b73C095625719Afa544D5426354cB);
         // Oracle EUR/USD
         _circuitChainlink[1] = AggregatorV3Interface(0xb49f677943BC038e9857d61E7d053CaA2C1734C1);
         return _circuitChainlink;

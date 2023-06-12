@@ -15,6 +15,8 @@ import {
   OracleETHEURChainlink__factory,
   OracleETHXAUChainlink,
   OracleETHXAUChainlink__factory,
+  OracleHIGHEURChainlink,
+  OracleHIGHEURChainlink__factory,
   OracleIB01EURChainlink,
   OracleIB01EURChainlink__factory,
   OracleLUSDEURChainlink,
@@ -46,6 +48,7 @@ contract('Oracles Chainlink', () => {
   let oracleUSDCXAU: OracleUSDCXAUChainlink;
   let oracleWSTETHXAU: OracleWSTETHXAUChainlink;
   let oracleIB01: OracleIB01EURChainlink;
+  let oracleHIGH: OracleHIGHEURChainlink;
   let oracleUSDC: OracleUSDCEURChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
@@ -59,7 +62,7 @@ contract('Oracles Chainlink', () => {
         {
           forking: {
             jsonRpcUrl: process.env.ETH_NODE_URI_FORK,
-            blockNumber: 17122178,
+            blockNumber: 17465158,
           },
         },
       ],
@@ -83,6 +86,7 @@ contract('Oracles Chainlink', () => {
     oracleWSTETHXAU = await new OracleWSTETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleUSDCXAU = await new OracleUSDCXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleIB01 = await new OracleIB01EURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleHIGH = await new OracleHIGHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleUSDC = await new OracleUSDCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
@@ -218,6 +222,18 @@ contract('Oracles Chainlink', () => {
     it('initialization', async () => {
       expect(await oracleUSDC.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleUSDC.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle HIGH', () => {
+    it('read', async () => {
+      const receipt = await oracleHIGH.read();
+      const gas = await oracleHIGH.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleHIGH.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleHIGH.treasury()).to.be.equal(treasury.address);
     });
   });
 });
