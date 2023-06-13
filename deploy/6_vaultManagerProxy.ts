@@ -15,6 +15,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   /**
    * TODO: change implementation depending on what is being deployed
    */
+  const implementationName = 'VaultManager_PermissionedLiquidations_Implementation';
+  // const implementation = (await ethers.getContract(implementationName)).address;
+  const implementation = '0x88fE06D438F5264dA8e2CDCAc3DAED1eA70F995a';
+
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
@@ -64,7 +68,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
       const treasury = new Contract(treasuryAddress, Treasury__factory.abi, deployer);
 
-      const implementation = (await ethers.getContract('VaultManager_PermissionedLiquidations_Implementation')).address;
       const callData = new ethers.Contract(
         implementation,
         VaultManager__factory.createInterface(),
@@ -93,5 +96,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['vaultManagerProxy'];
-// func.dependencies = ['vaultManagerImplementation'];
+func.dependencies = ['oracle'];
 export default func;
