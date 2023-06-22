@@ -17,22 +17,24 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
   const deploymentName = 'LayerZeroBridgeToken_V1_0_Implementation';
   const name = 'LayerZeroBridgeToken';
   const { deploy } = deployments;
-
+  /*
   await deploy(deploymentName, {
     contract: name,
     from: deployer.address,
     log: !argv.ci,
   });
+  */
   const implementationAddress = (await ethers.getContract(deploymentName)).address;
 
   console.log(`Successfully deployed ${deploymentName} at ${implementationAddress}`);
 
-  /*
   const treasury = await ethers.getContract('Treasury_EUR');
   const proxyAdmin = await ethers.getContract('ProxyAdmin');
+  console.log(`LayerZero Bridge ag${stable}`, `LZ-ag${stable}`, endpointAddr, treasury.address, parseEther('0'));
+
   await deployProxy(
     `LayerZeroBridge_${stable}`,
-    layerZeroBridgeImplem,
+    implementationAddress,
     proxyAdmin.address,
     LayerZeroBridgeToken__factory.createInterface().encodeFunctionData('initialize', [
       `LayerZero Bridge ag${stable}`,
@@ -42,14 +44,12 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
       parseEther('0'),
     ]),
   );
-  */
 
   /* The following things need to be done after this deployment:
-  - setSources on the LayerZeroBridgeToken
+  - setTrustedRemote on the LayerZeroBridgeToken -> for all the supported bridge tokens
   - addBridgeToken in the canonical agEUR -> limit should be higher than the limit which has already been minted in the contract
   - setChainTotalHourlyLimit in the canonical agEUR
-  - setUseCustomAdapterParams
-  - And depending on the value of the EXTRA_GAS constant: setMinDstGasLookup to all the chains
+  - setUseCustomAdapterParams in the lz-agEUR contract
   */
 };
 

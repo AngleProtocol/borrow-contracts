@@ -10,6 +10,7 @@
   "fantom": 112,
   "celo": 125,
   "gnosis": 145,
+  "polygonzkevm": 158,
   "zksync": 165,
   "rinkeby": 10001,
   "bsc-testnet": 10002,

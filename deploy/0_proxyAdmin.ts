@@ -20,19 +20,20 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
     guardian = CONTRACTS_ADDRESSES[network.config.chainId as ChainId]?.Guardian!;
-    guardian = '0xf0A31faec2B4fC6396c65B1aF1F6A71E653f11F0';
-    governor = '0x0F70EeD1Bb51d5eDB1a2E46142638df959bAFD69';
+    guardian = '0x10DeF8a92c51C8082087356186a1485301078DCd';
+    governor = '0x2a42Aeec7519883713272ec10FE44461a2Dfe354';
   }
-  /*
   console.log(`Now deploying ProxyAdmin on the chain ${network.config.chainId}`);
+  governor = guardian;
   console.log('Governor address is ', governor);
-  await deploy('ProxyAdmin', {
+
+  await deploy('ProxyAdminGuardian', {
     contract: 'ProxyAdmin',
     from: deployer.address,
     log: !argv.ci,
   });
-  */
-  const proxyAdminAddress = (await ethers.getContract('ProxyAdmin')).address;
+
+  const proxyAdminAddress = (await ethers.getContract('ProxyAdminGuardian')).address;
 
   proxyAdmin = new ethers.Contract(proxyAdminAddress, ProxyAdmin__factory.createInterface(), deployer) as ProxyAdmin;
 

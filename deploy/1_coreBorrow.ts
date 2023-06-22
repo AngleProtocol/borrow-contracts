@@ -12,6 +12,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const json = await import('./networks/' + network.name + '.json');
   const governor = json.governor;
   const guardian = json.guardian;
+  const angleLabs = json.angleLabs;
   let proxyAdmin: string;
 
   if (!network.live) {
@@ -40,6 +41,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const coreBorrowInterface = CoreBorrow__factory.createInterface();
 
+  // governor = angleLabs;
+
   const dataCoreBorrow = new ethers.Contract(
     coreBorrowImplementation,
     coreBorrowInterface,
@@ -49,7 +52,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('The contract will be initialized with the following governor and guardian addresses');
   console.log(governor, guardian);
 
-  await deploy('CoreBorrow', {
+  await deploy('CoreMerkl', {
     contract: 'TransparentUpgradeableProxy',
     from: deployer.address,
     args: [coreBorrowImplementation, proxyAdmin, dataCoreBorrow],
