@@ -196,6 +196,9 @@ interface IVaultManagerFunctions {
 
     /// @notice Minimum amount of debt a vault can have, expressed in `BASE_TOKENS` that is to say the base of the agTokens
     function dust() external view returns (uint256);
+
+    /// @notice Pauses external permissionless functions of the contract
+    function togglePause() external;
 }
 
 /// @title IVaultManagerStorage

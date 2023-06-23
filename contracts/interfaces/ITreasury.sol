@@ -39,4 +39,7 @@ interface ITreasury {
     /// @dev This function removes the minting right to the old flash loan module and grants
     /// it to the new module
     function setFlashLoanModule(address _flashLoanModule) external;
+
+    /// @notice Gets the vault manager list
+    function vaultManagerList(uint256 i) external returns (address);
 }
