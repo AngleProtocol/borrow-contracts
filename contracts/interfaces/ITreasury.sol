@@ -41,5 +41,5 @@ interface ITreasury {
     function setFlashLoanModule(address _flashLoanModule) external;
 
     /// @notice Gets the vault manager list
-    function vaultManagerList() external returns (address[] memory);
+    function vaultManagerList(uint256 i) external returns (address);
 }

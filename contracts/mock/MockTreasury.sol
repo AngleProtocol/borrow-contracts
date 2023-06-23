@@ -13,6 +13,7 @@ contract MockTreasury is ITreasury {
     address public vaultManager1;
     address public vaultManager2;
     address public flashLoanModule;
+    address[] public vaultManagerList;
 
     constructor(
         IAgToken _stablecoin,
