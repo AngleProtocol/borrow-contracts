@@ -24,8 +24,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
     coreBorrow = registry(network.config.chainId as ChainId)?.CoreBorrow!;
-    proxyAdmin = '0x9a5b060Bd7b8f86c4C0D720a17367729670AfB19';
-    coreBorrow = '0x3E399AE5B4D8bc0021e53b51c8BCdD66DD62c03b';
+    proxyAdmin = '0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b';
+    coreBorrow = '0x4b1E2c2762667331Bc91648052F646d1b0d35984';
   }
 
   let treasuryImplementation: string;

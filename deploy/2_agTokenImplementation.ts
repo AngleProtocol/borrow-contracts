@@ -18,7 +18,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     implementationName = 'AgTokenSideChainMultiBridge';
     proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
-    proxyAdmin = '0x9a5b060Bd7b8f86c4C0D720a17367729670AfB19';
+    proxyAdmin = '0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b';
   }
 
   console.log(`Now deploying the implementation for AgToken on ${network.name}`);
