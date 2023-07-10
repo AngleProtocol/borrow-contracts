@@ -39,7 +39,24 @@ const func: DeployFunction = async ({ ethers, network }) => {
         contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [(LZ_CHAINIDS as any)[chain], trustedRemote]),
       );
 
-      console.log((LZ_CHAINIDS as any)[chain], trustedRemote);
+      console.log('');
+    }
+  }
+
+  // To be done on all the other chains to it is possible to bridge back again
+  for (const chain of Object.keys(OFTs)) {
+    if (chain !== network.name) {
+      console.log(chain);
+      const trustedRemote = ethers.utils.solidityPack(['address', 'address'], [local, OFTs[chain]]);
+      console.log(`Address to call ${OFTs[chain]}`);
+      console.log(`Trusted remote ${trustedRemote}`);
+      console.log(
+        contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [
+          (LZ_CHAINIDS as any)[network.name],
+          trustedRemote,
+        ]),
+      );
+
       console.log('');
     }
   }
