@@ -127,6 +127,9 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/mock/MockUpdater.sol': {
+        version: '0.4.26',
+      },
     },
   },
   defaultNetwork: 'hardhat',
@@ -141,10 +144,9 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
-        /*
+
         url: nodeUrl('mainnet'),
         blockNumber: 17411982,
-        */
         // Polygon
         /*
         url: nodeUrl('forkpolygon'),
@@ -166,9 +168,12 @@ const config: HardhatUserConfig = {
         url: nodeUrl('avalanche'),
         blockNumber: 23545788,
         */
+
         // Polygon zkEVM
+        /*
         url: nodeUrl('polygonzkevm'),
         blockNumber: 130090,
+        */
       },
       mining: argv.disableAutoMining
         ? {
