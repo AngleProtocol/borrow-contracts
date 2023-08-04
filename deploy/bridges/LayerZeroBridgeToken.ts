@@ -17,13 +17,12 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
   const deploymentName = 'LayerZeroBridgeToken_V1_0_Implementation';
   const name = 'LayerZeroBridgeToken';
   const { deploy } = deployments;
-  /*
+
   await deploy(deploymentName, {
     contract: name,
     from: deployer.address,
     log: !argv.ci,
   });
-  */
   const implementationAddress = (await ethers.getContract(deploymentName)).address;
 
   console.log(`Successfully deployed ${deploymentName} at ${implementationAddress}`);

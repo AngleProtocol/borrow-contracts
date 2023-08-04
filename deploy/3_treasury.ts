@@ -24,7 +24,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   } else {
     proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
     coreBorrow = registry(network.config.chainId as ChainId)?.CoreBorrow!;
-    proxyAdmin = '0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b';
+    proxyAdmin = '0x31429d1856aD1377A8A0079410B297e1a9e214c2';
     coreBorrow = '0x4b1E2c2762667331Bc91648052F646d1b0d35984';
   }
 
@@ -63,5 +63,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['treasury'];
-// func.dependencies = ['agTokenImplementation'];
+func.dependencies = ['agTokenImplementation'];
 export default func;
