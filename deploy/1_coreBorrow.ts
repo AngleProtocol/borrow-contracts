@@ -10,7 +10,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const json = await import('./networks/' + network.name + '.json');
-  const governor = json.governor;
+  let governor = json.governor;
   const guardian = json.guardian;
   const angleLabs = json.angleLabs;
   let proxyAdmin: string;
@@ -20,11 +20,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    proxyAdmin = (await deployments.get('ProxyAdmin')).address;
+    proxyAdmin = (await deployments.get('ProxyAdminGuardian')).address;
   }
 
   console.log('Let us get started with deployment');
 
+  /*
   console.log('Now deploying CoreBorrow');
   console.log('Starting with the implementation');
 
@@ -33,6 +34,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     from: deployer.address,
     log: !argv.ci,
   });
+  */
 
   const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
 
@@ -41,7 +43,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const coreBorrowInterface = CoreBorrow__factory.createInterface();
 
-  // governor = angleLabs;
+  governor = angleLabs;
 
   const dataCoreBorrow = new ethers.Contract(
     coreBorrowImplementation,
@@ -59,7 +61,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     log: !argv.ci,
   });
 
-  const coreBorrow = (await deployments.get('CoreBorrow')).address;
+  const coreBorrow = (await deployments.get('CoreMerkl')).address;
   console.log(`Successfully deployed CoreBorrow at the address ${coreBorrow}`);
 
   console.log(`${coreBorrow} ${coreBorrowImplementation} ${proxyAdmin} ${dataCoreBorrow} `);

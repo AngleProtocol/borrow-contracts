@@ -17,6 +17,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
     celo: '0xf1dDcACA7D17f8030Ab2eb54f2D9811365EFe123',
     gnosis: '0xFA5Ed56A203466CbBC2430a43c66b9D8723528E7',
     polygonzkevm: '0x2859a4eBcB58c8Dd5cAC1419C4F63A071b642B20',
+    base: '0x2859a4eBcB58c8Dd5cAC1419C4F63A071b642B20',
   };
 
   const local = OFTs[network.name];
