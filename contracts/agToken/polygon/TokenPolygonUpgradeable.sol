@@ -161,13 +161,13 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
-        checkGovernor();
+        _checkGovernor();
         _;
     }
 
     /// @notice Checks whether the `msg.sender` has the governor role or the guardian role
     modifier onlyGovernorOrGuardian() {
-        checkGovernorOrGuardian();
+        _checkGovernorOrGuardian();
         _;
     }
 
@@ -184,12 +184,12 @@ contract TokenPolygonUpgradeable is
     }
 
     /// @dev Internal function for 'onlyGovernor' modifier
-    function checkGovernor() internal view {
+    function _checkGovernor() internal view {
         if (!ITreasury(treasury).isGovernor(msg.sender)) revert NotGovernor();
     }
 
     /// @dev Internal function for 'onlyGovernorOrGuardian' modifier
-    function checkGovernorOrGuardian() internal view{
+    function _checkGovernorOrGuardian() internal view{
         if (!ITreasury(treasury).isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
     }
 
