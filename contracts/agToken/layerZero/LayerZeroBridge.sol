@@ -27,7 +27,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @param _lzEndpoint Layer zero endpoint to pass messages
     /// @param _treasury Address of the treasury contract used for access control
     function initialize(
-        string memory _name,
+        string calldata _name,
         address _lzEndpoint,
         address _treasury
     ) external initializer {
@@ -44,11 +44,11 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @inheritdoc OFTCore
     function sendWithPermit(
         uint16 _dstChainId,
-        bytes memory _toAddress,
+        bytes calldata _toAddress,
         uint256 _amount,
         address payable _refundAddress,
         address _zroPaymentAddress,
-        bytes memory _adapterParams,
+        bytes calldata _adapterParams,
         uint256 deadline,
         uint8 v,
         bytes32 r,
