@@ -20,15 +20,16 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    proxyAdmin = (await deployments.get('ProxyAdminGuardian')).address;
+    proxyAdmin = (await deployments.get('ProxyAdmin')).address;
   }
 
   console.log('Let us get started with deployment');
 
-  /*
   console.log('Now deploying CoreBorrow');
   console.log('Starting with the implementation');
 
+  /*
+  // TODO: comment if implementation has already been deployed
   await deploy('CoreBorrow_Implementation', {
     contract: 'CoreBorrow',
     from: deployer.address,
@@ -43,26 +44,31 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   const coreBorrowInterface = CoreBorrow__factory.createInterface();
 
+  let name = 'CoreBorrow';
+
+  // TODO: change if CoreMerkl
   governor = angleLabs;
+  name = 'CoreMerkl';
+  proxyAdmin = (await deployments.get('ProxyAdminGuardian')).address;
 
   const dataCoreBorrow = new ethers.Contract(
     coreBorrowImplementation,
     coreBorrowInterface,
   ).interface.encodeFunctionData('initialize', [governor, guardian]);
 
-  console.log('Now deploying the Proxy');
+  console.log(`Now deploying the Proxy for ${name}`);
   console.log('The contract will be initialized with the following governor and guardian addresses');
   console.log(governor, guardian);
 
-  await deploy('CoreMerkl', {
+  await deploy(name, {
     contract: 'TransparentUpgradeableProxy',
     from: deployer.address,
     args: [coreBorrowImplementation, proxyAdmin, dataCoreBorrow],
     log: !argv.ci,
   });
 
-  const coreBorrow = (await deployments.get('CoreMerkl')).address;
-  console.log(`Successfully deployed CoreBorrow at the address ${coreBorrow}`);
+  const coreBorrow = (await deployments.get(name)).address;
+  console.log(`Successfully deployed ${name} at the address ${coreBorrow}`);
 
   console.log(`${coreBorrow} ${coreBorrowImplementation} ${proxyAdmin} ${dataCoreBorrow} `);
   console.log('');

@@ -341,6 +341,32 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    linea: {
+      live: true,
+      url: nodeUrl('linea'),
+      accounts: accounts('linea'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 59144,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('linea'),
+        },
+      },
+    },
+    zksync: {
+      live: true,
+      url: nodeUrl('zksync'),
+      accounts: accounts('zksync'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 324,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('zksync'),
+        },
+      },
+    },
   },
   paths: {
     sources: './contracts',
