@@ -1,6 +1,7 @@
 // To be used in other chains than mainnet to deploy proxy admin for our upgradeable contracts
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
+// import { DeployFunction } from '@matterlabs/hardhat-zksync-deploy';
 import yargs from 'yargs';
 
 import { ProxyAdmin, ProxyAdmin__factory } from '../typechain';
@@ -11,15 +12,19 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdmin: ProxyAdmin;
   const json = await import('./networks/' + network.name + '.json');
-  let governor = json.governor;
+  let governor;
+  let name;
   const guardian = json.guardian;
-  let name = 'ProxyAdmin';
 
-  console.log(governor, guardian);
+  name = 'ProxyAdmin';
+  governor = json.governor;
 
-  // TODO update if ProxyAdminGuardian
+  // TODO uncomment if deploying ProxyAdminGuardian
+
   governor = guardian;
   name = 'ProxyAdminGuardian';
+
+  console.log(governor, guardian);
 
   console.log(`Now deploying ${name} on the chain ${network.config.chainId}`);
   console.log('Governor address is ', governor);

@@ -367,6 +367,19 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    mantle: {
+      live: true,
+      url: nodeUrl('mantle'),
+      accounts: accounts('mantle'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 5000,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('mantle'),
+        },
+      },
+    },
   },
   paths: {
     sources: './contracts',

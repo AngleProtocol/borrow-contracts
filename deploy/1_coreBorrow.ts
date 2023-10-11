@@ -10,8 +10,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const json = await import('./networks/' + network.name + '.json');
-  let governor = json.governor;
-  const guardian = json.guardian;
+  let governor;
+  let guardian;
+  let name;
+  name = 'CoreBorrow';
+  governor = json.governor;
+  guardian = json.guardian;
   const angleLabs = json.angleLabs;
   let proxyAdmin: string;
 
@@ -23,13 +27,19 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
   }
 
+  // TODO: uncomment if deploying CoreMerkl
+
+  governor = angleLabs;
+  name = 'CoreMerkl';
+  proxyAdmin = (await deployments.get('ProxyAdminGuardian')).address;
+
   console.log('Let us get started with deployment');
 
   console.log('Now deploying CoreBorrow');
   console.log('Starting with the implementation');
 
-  /*
   // TODO: comment if implementation has already been deployed
+  /*
   await deploy('CoreBorrow_Implementation', {
     contract: 'CoreBorrow',
     from: deployer.address,
@@ -43,13 +53,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('');
 
   const coreBorrowInterface = CoreBorrow__factory.createInterface();
-
-  let name = 'CoreBorrow';
-
-  // TODO: change if CoreMerkl
-  governor = angleLabs;
-  name = 'CoreMerkl';
-  proxyAdmin = (await deployments.get('ProxyAdminGuardian')).address;
 
   const dataCoreBorrow = new ethers.Contract(
     coreBorrowImplementation,

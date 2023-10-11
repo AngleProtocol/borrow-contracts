@@ -11,7 +11,7 @@
     "check-upgradeability": "hardhat run scripts/upgradeability.ts",
     "coverage": "hardhat coverage",
     "coverage:foundry": "forge coverage --report lcov",
-    "deploy": "hardhat deploy --network linea --tags",
+    "deploy": "hardhat deploy --network mantle --tags",
     "etherscan": "hardhat etherscan-verify --network",
     "foundry:deploy": "forge script --broadcast --verify -vvvv --rpc-url",
     "generate-types-from-abis": "typechain --target ethers-v5 --out-dir typechain './export/abi/*.json'",
@@ -117,6 +117,7 @@
     "yargs": "^17.2.1"
   },
   "dependencies": {
+    "@matterlabs/hardhat-zksync-deploy": "^0.6.5",
     "dayjs": "^1.10.7",
     "eslint-plugin-mocha": "^10.0.3",
     "eslint-plugin-simple-import-sort": "^7.0.0",

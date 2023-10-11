@@ -22,8 +22,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
     coreBorrow = registry(ChainId.MAINNET)?.CoreBorrow!;
   } else {
-    proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
-    coreBorrow = registry(network.config.chainId as ChainId)?.CoreBorrow!;
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;
     coreBorrow = (await deployments.get('CoreBorrow')).address;
   }
