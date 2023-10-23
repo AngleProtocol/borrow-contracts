@@ -1,6 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { TypedDataUtils } from 'eth-sig-util';
 import { fromRpcSig } from 'ethereumjs-util';
+import { config } from 'hardhat';
 
 export type TypePermitNFT = {
   contract: string;
@@ -67,9 +68,13 @@ export async function signPermitNFT(
   spender: string,
   approved: boolean,
   name: string,
-  chainId = 1337,
+  chainId?: number,
   version = '1',
 ): Promise<TypePermitNFT> {
+  if (!chainId) {
+    chainId = config.networks.hardhat.chainId;
+  }
+
   const data = buildDataNFT(
     owner.address,
     chainId,
