@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { TypedDataUtils } from 'eth-sig-util';
 import { fromRpcSig } from 'ethereumjs-util';
 import { BigNumber } from 'ethers';
+import { config } from 'hardhat';
 
 export type TypePermit = {
   token: string;
@@ -32,8 +33,12 @@ export async function domainSeparator(
   name: string,
   verifyingContract: string,
   version = '1',
-  chainId = 1337,
+  chainId?: number,
 ): Promise<string> {
+  if (!chainId) {
+    chainId = config.networks.hardhat.chainId;
+  }
+
   return (
     '0x' +
     TypedDataUtils.hashStruct('EIP712Domain', { name, version, chainId, verifyingContract }, { EIP712Domain }).toString(
@@ -67,9 +72,13 @@ export async function signPermit(
   spender: string,
   value: BigNumber,
   name: string,
-  chainId = 1337,
+  chainId?: number,
   version = '1',
 ): Promise<TypePermit> {
+  if (!chainId) {
+    chainId = config.networks.hardhat.chainId;
+  }
+
   const data = buildData(owner.address, chainId, verifyingContract, deadline, spender, nonce, value, name, version);
   const signature = await owner._signTypedData(data.domain, data.types, data.message);
   const { v, r, s } = fromRpcSig(signature);

@@ -33,8 +33,12 @@ export async function domainSeparator(
   name: string,
   verifyingContract: string,
   version = '1',
-  chainId = 1337,
+  chainId?: number,
 ): Promise<string> {
+  if (!chainId) {
+    chainId = config.networks.hardhat.chainId;
+  }
+
   return (
     '0x' +
     TypedDataUtils.hashStruct('EIP712Domain', { name, version, chainId, verifyingContract }, { EIP712Domain }).toString(
