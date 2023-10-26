@@ -1,11 +1,14 @@
 name: CI
 
 on:
+  schedule:
+    - cron: "0 3 * * 0" # at 3:00am UTC every Sunday
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - "main"
+    inputs:
+      fuzzRuns:
+        default: "100000"
+        description: "Unit: number of fuzz runs."
+        required: false
 
 jobs:
   lint:
@@ -145,7 +148,7 @@ jobs:
           ETH_NODE_URI_POLYGON: ${{ secrets.ETH_NODE_URI_POLYGON }}
           ETH_NODE_URI_GOERLI: ${{ secrets.ETH_NODE_URI_GOERLI }}
           ETH_NODE_URI_FANTOM: ${{ secrets.ETH_NODE_URI_FANTOM }}
-          FOUNDRY_FUZZ_RUNS: "5000"
+          FOUNDRY_FUZZ_RUNS: ${{ github.event.inputs.fuzzRuns }}
 
       - name: "Add test summary"
         run: |
