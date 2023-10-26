@@ -58,6 +58,7 @@ jobs:
       - name: "Cache the build so that it can be re-used by the other jobs"
         uses: "actions/cache/save@v3"
         with:
+          key: "build-${{ github.sha }}"
           path: |
             cache-forge
             out
@@ -65,7 +66,6 @@ jobs:
             artifacts
             typechain
             node_modules
-          key: build-${{ github.sha }}
 
       - name: "Add build summary"
         run: |
