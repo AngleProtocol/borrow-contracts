@@ -44,6 +44,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Compile hardhat
+        run: yarn hardhat:compile
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -51,9 +54,6 @@ jobs:
 
       - name: Compile foundry
         run: yarn foundry:compile --sizes
-
-      - name: Compile hardhat
-        run: yarn hardhat:compile
 
       - name: "Cache the build so that it can be re-used by the other jobs"
         uses: "actions/cache/save@v3"
