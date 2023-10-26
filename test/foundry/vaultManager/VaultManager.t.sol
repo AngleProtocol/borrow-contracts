@@ -75,11 +75,10 @@ contract VaultManagerTest is Test {
         assertEq(_oracle.read(), 5 ether);
     }
 
-    function testFuzzCreateVault() public {
+    function testFuzzCreateVault(uint256 collateralAmount, uint256 borrowAmount) public {
         uint256 collateralBalance = 1 ether;
 
-        uint256 collateralAmount = 2;
-        uint256 borrowAmount = 5;
+        vm.assume(collateralAmount <= collateralBalance);
         // vm.assume(borrowAmount > _contractVaultManager.dust());
         // vm.assume(borrowAmount < _contractVaultManager.debtCeiling());
         borrowAmount = bound(borrowAmount, _contractVaultManager.dust() + 1, _contractVaultManager.debtCeiling() - 1);
