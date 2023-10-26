@@ -88,11 +88,6 @@ jobs:
         with:
           fail-on-cache-miss: true
           key: "build-${{ github.sha }}"
-          path: |
-            cache-hh
-            artifacts
-            typechain
-            node_modules
 
       - run: export NODE_OPTIONS=--max_old_space_size=11264
 
@@ -128,10 +123,6 @@ jobs:
         with:
           fail-on-cache-miss: true
           key: "build-${{ github.sha }}"
-          path: |
-            cache-forge
-            node_modules
-            out
 
       - name: Run Foundry tests
         run: yarn foundry:test
@@ -147,7 +138,7 @@ jobs:
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   coverage:
-    needs: ["lint", "build"]
+    needs: ["build", "lint"]
     runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
