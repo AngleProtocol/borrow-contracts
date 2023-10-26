@@ -1,74 +1,96 @@
 name: CI
 
 on:
+  workflow_dispatch:
+  pull_request:
   push:
     branches:
-      - main
-  workflow_dispatch:
-    inputs:
-      workflow_to_run:
-        type: choice
-        description: Which workflow to run?
-        required: true
-        options:
-          - all
-          - hardhat-tests
-          - foundry-tests
-  pull_request:
-    types:
-      - ready_for_review
-      - review_requested
-  pull_request_review:
-    types: [submitted]
-
-defaults:
-  run:
-    shell: bash
+      - "main"
 
 jobs:
-  run-linters:
-    if: github.ref == 'refs/heads/main' || github.event.review.state == 'approved' || github.event.action == 'ready_for_review' || github.event.action == 'review_requested'
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
         with:
-          node-version: 14
-      - uses: actions/cache@v2
-        with:
-          path: node_modules
-          key: yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: yarn-
+          node-version: 18
+          cache: "yarn"
+
       - name: Install dependencies
-        run: |
-          npm config set //registry.npmjs.org/
-          yarn install --frozen-lockfile
+        run: yarn install
+
       - name: Run solhint
-        run: yarn lint:sol
-      - name: Run eslint
-        run: yarn lint:js:fix
+        run: yarn lint:check
+
+      - name: "Add lint summary"
+        run: |
+          echo "## Lint result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Compile foundry
+        run: yarn foundry:compile --sizes
+
+      - name: Compile hardhat
+        run: yarn hardhat:compile
+
+      - name: "Cache the build so that it can be re-used by the other jobs"
+        uses: "actions/cache/save@v3"
+        with:
+          path: |
+            cache-forge
+            out
+            cache-hh
+            artifacts
+            typechain
+            node_modules
+          key: build-${{ github.sha }}
+
+      - name: "Add build summary"
+        run: |
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   hardhat-tests:
-    if: github.ref == 'refs/heads/main' || github.event.inputs.workflow_to_run == 'all' || github.event.inputs.workflow_to_run == 'hardhat-tests' || github.event.review.state == 'approved' || github.event.action == 'ready_for_review' || github.event.action == 'review_requested'
+    needs: ["build", "lint"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
         with:
-          node-version: 14
-      - uses: actions/cache@v2
+          node-version: 18
+          cache: "yarn"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
         with:
-          path: node_modules
-          key: yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: yarn-
-      - name: Install dependencies
-        run: |
-          npm config set //registry.npmjs.org/
-          yarn install --frozen-lockfile
-      # This is required separately from yarn test because it generates the typechain definitions
-      - name: Compile
-        run: yarn hardhat:compile
+          fail-on-cache-miss: true
+          key: "build-${{ github.sha }}"
+          path: |
+            cache-hh
+            artifacts
+            typechain
+            node_modules
+
       - run: export NODE_OPTIONS=--max_old_space_size=11264
+
       - name: Run unit tests
         run: yarn hardhat:test
         env:
@@ -78,26 +100,34 @@ jobs:
           ETH_NODE_URI_FORK: ${{ secrets.ETH_NODE_URI_FORK }}
           ETH_NODE_URI_MAINNET: ${{ secrets.ETH_NODE_URI_MAINNET }}
 
+      - name: "Add test summary"
+        run: |
+          echo "## Hardhat Unit tests result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
   foundry-tests:
-    if: github.ref == 'refs/heads/main' || github.event.inputs.workflow_to_run == 'all' || github.event.inputs.workflow_to_run == 'foundry-tests' || github.event.review.state == 'approved' || github.event.action == 'ready_for_review' || github.event.action == 'review_requested'
+    needs: ["build", "lint"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      - uses: actions/setup-node@v2
         with:
-          node-version: 14
-      - uses: actions/cache@v2
-        with:
-          path: node_modules
-          key: yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: yarn-
-      - run: yarn install --frozen-lockfile
+          submodules: "recursive"
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
+        with:
+          fail-on-cache-miss: true
+          key: "build-${{ github.sha }}"
+          path: |
+            cache-forge
+            node_modules
+            out
+
       - name: Run Foundry tests
         run: yarn foundry:test
         env:
@@ -105,3 +135,33 @@ jobs:
           ETH_NODE_URI_POLYGON: ${{ secrets.ETH_NODE_URI_POLYGON }}
           ETH_NODE_URI_GOERLI: ${{ secrets.ETH_NODE_URI_GOERLI }}
           ETH_NODE_URI_FANTOM: ${{ secrets.ETH_NODE_URI_FANTOM }}
+
+      - name: "Add test summary"
+        run: |
+          echo "## Foundry Unit tests result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+  coverage:
+    needs: ["lint", "build"]
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Generate the coverage report using the unit and the integration tests"
+        run: "yarn coverage:foundry"
+
+      - name: "Upload coverage report to Codecov"
+        uses: "codecov/codecov-action@v3"
+        with:
+          files: "./lcov.info"
+
+      - name: "Add coverage summary"
+        run: |
+          echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
