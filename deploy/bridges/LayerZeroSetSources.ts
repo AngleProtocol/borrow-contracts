@@ -4,6 +4,8 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { LayerZeroBridge, LayerZeroBridge__factory } from '../../typechain';
 import LZ_CHAINIDS from '../constants/layerzeroChainIds.json';
 
+// For more details on trustedRemote, check: https://layerzero.gitbook.io/docs/evm-guides/master/set-trusted-remotes
+// LayerZero chains: https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
 const func: DeployFunction = async ({ ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
 
@@ -18,11 +20,15 @@ const func: DeployFunction = async ({ ethers, network }) => {
     gnosis: '0xFA5Ed56A203466CbBC2430a43c66b9D8723528E7',
     polygonzkevm: '0x2859a4eBcB58c8Dd5cAC1419C4F63A071b642B20',
     base: '0x2859a4eBcB58c8Dd5cAC1419C4F63A071b642B20',
+    linea: '0x12f31B73D812C6Bb0d735a218c086d44D5fe5f89',
+    mantle: '0x2859a4eBcB58c8Dd5cAC1419C4F63A071b642B20',
   };
 
   const local = OFTs[network.name];
   const contractAngleOFT = new Contract(local, LayerZeroBridge__factory.abi, deployer) as LayerZeroBridge;
 
+  console.log('Getting payloads to execute on the new chain');
+  console.log('--------------------------------------------');
   for (const chain of Object.keys(OFTs)) {
     if (chain !== network.name) {
       console.log(chain);
@@ -37,6 +43,31 @@ const func: DeployFunction = async ({ ethers, network }) => {
       console.log('');
     }
   }
+  console.log('--------------------------------------------');
+  console.log('');
+  /*
+  console.log('Getting payloads to execute on all the other chains');
+  console.log('--------------------------------------------');
+  for (const chain of Object.keys(OFTs)) {
+    if (chain !== network.name) {
+      console.log(chain);
+      const trustedRemote = ethers.utils.solidityPack(['address', 'address'], [local, OFTs[chain]]);
+      console.log(`Trusted remote ${trustedRemote}`);
+      console.log(OFTs[chain]);
+      console.log(
+        contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [
+          (LZ_CHAINIDS as any)[network.name],
+          trustedRemote,
+        ]),
+      );
+
+      console.log((LZ_CHAINIDS as any)[network.name], trustedRemote);
+      console.log('');
+    }
+  }
+  console.log('--------------------------------------------');
+  console.log('');
+  */
 };
 
 func.tags = ['LayerZeroSources'];
