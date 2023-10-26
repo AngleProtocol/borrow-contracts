@@ -107,13 +107,13 @@ contract VaultManagerTest is Test {
         uint256 maxBorrow = (((oracleValue * collateralAmount) / 1e18) * collateralFactor) / 1e9;
 
         console.log(oracleValue, collateralFactor, borrowAmount, maxBorrow);
-        if (borrowAmount > maxBorrow) {
+        if (borrowAmount >= maxBorrow) {
             vm.expectRevert(VaultManagerStorage.InsolventVault.selector);
         }
         _contractVaultManager.angle(actions, datas, _user, _user);
         vm.stopPrank();
 
-        if (borrowAmount <= maxBorrow) {
+        if (borrowAmount < maxBorrow) {
             assertEq(_contractVaultManager.vaultIDCount(), 1);
 
             (uint256 collateralValue, uint256 normalizedDebt) = _contractVaultManager.vaultData(1);
