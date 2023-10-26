@@ -13,13 +13,6 @@ jobs:
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
-        with:
-          submodules: "recursive"
-
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: "yarn"
 
       - name: "Run Slither analysis"
         uses: "crytic/slither-action@v0.3.0"
@@ -27,6 +20,7 @@ jobs:
         with:
           fail-on: "none"
           sarif: "results.sarif"
+          node-version: 18
 
       - name: "Upload SARIF file to GitHub code scanning"
         uses: "github/codeql-action/upload-sarif@v2"
