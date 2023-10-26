@@ -88,6 +88,13 @@ jobs:
         with:
           fail-on-cache-miss: true
           key: "build-${{ github.sha }}"
+          path: |
+            cache-forge
+            out
+            cache-hh
+            artifacts
+            typechain
+            node_modules
 
       - run: export NODE_OPTIONS=--max_old_space_size=11264
 
@@ -123,6 +130,13 @@ jobs:
         with:
           fail-on-cache-miss: true
           key: "build-${{ github.sha }}"
+          path: |
+            cache-forge
+            out
+            cache-hh
+            artifacts
+            typechain
+            node_modules
 
       - name: Run Foundry tests
         run: yarn foundry:test
@@ -148,6 +162,19 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
+        with:
+          fail-on-cache-miss: true
+          key: "build-${{ github.sha }}"
+          path: |
+            cache-forge
+            out
+            cache-hh
+            artifacts
+            typechain
+            node_modules
 
       - name: "Generate the coverage report using the unit and the integration tests"
         run: "yarn coverage:foundry"
