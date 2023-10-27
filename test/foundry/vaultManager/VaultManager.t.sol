@@ -105,9 +105,7 @@ contract VaultManagerTest is Test {
         uint256 oracleValue = _oracle.read();
         uint256 collateralFactor = _contractVaultManager.collateralFactor();
         uint256 maxBorrow = (((oracleValue * collateralAmount) / 1e18) * collateralFactor) / 1e9;
-        if (maxBorrow > 0) {
-            maxBorrow -= 1;
-        }
+        if (maxBorrow > 0) maxBorrow -= 1;
 
         console.log(oracleValue, collateralFactor, borrowAmount, maxBorrow);
         if (borrowAmount > maxBorrow) {
