@@ -67,11 +67,7 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @param _srcChainId - the source chain identifier
     // @param _srcAddress - the source chain contract address
     // @param _payload - the payload to be retried
-    function retryPayload(
-        uint16 _srcChainId,
-        bytes calldata _srcAddress,
-        bytes calldata _payload
-    ) external;
+    function retryPayload(uint16 _srcChainId, bytes calldata _srcAddress, bytes calldata _payload) external;
 
     // @notice query if any STORED payload (message blocking) at the endpoint.
     // @param _srcChainId - the source chain identifier

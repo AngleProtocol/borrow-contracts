@@ -19,8 +19,8 @@ contract PolygonConstants {
     address public constant AGEUR_TREASURY = 0x2F2e0ba9746aae15888cf234c4EB5B301710927e;
     address public constant AGGOLD_TREASURY = address(0);
 
-    uint256 public constant BASE_TOKENS = 10**18;
-    uint64 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_TOKENS = 10 ** 18;
+    uint64 public constant BASE_PARAMS = 10 ** 9;
 
     function deployUpgradeable(address implementation, bytes memory data) public returns (address) {
         return address(new TransparentUpgradeableProxy(implementation, PROXY_ADMIN_GUARDIAN, data));

@@ -61,11 +61,7 @@ contract MockVaultManager {
         ownerOf[vaultID] = owner;
     }
 
-    function setVaultData(
-        uint256 normalizedDebt,
-        uint256 collateralAmount,
-        uint256 vaultID
-    ) external {
+    function setVaultData(uint256 normalizedDebt, uint256 collateralAmount, uint256 vaultID) external {
         vaultData[vaultID].normalizedDebt = normalizedDebt;
         vaultData[vaultID].collateralAmount = collateralAmount;
     }
@@ -74,21 +70,13 @@ contract MockVaultManager {
         return admin == governor;
     }
 
-    function setSurplusBadDebt(
-        uint256 _surplus,
-        uint256 _badDebt,
-        IAgToken _token
-    ) external {
+    function setSurplusBadDebt(uint256 _surplus, uint256 _badDebt, IAgToken _token) external {
         surplus = _surplus;
         badDebt = _badDebt;
         token = _token;
     }
 
-    function getDebtOut(
-        uint256 vaultID,
-        uint256 amountStablecoins,
-        uint256 senderBorrowFee
-    ) external {}
+    function getDebtOut(uint256 vaultID, uint256 amountStablecoins, uint256 senderBorrowFee) external {}
 
     function setTreasury(address _treasury) external {
         treasury = ITreasury(_treasury);

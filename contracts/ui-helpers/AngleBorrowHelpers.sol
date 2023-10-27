@@ -50,11 +50,10 @@ contract AngleBorrowHelpers is Initializable {
     /// @return Count of vaults owned by the address
     /// @dev This function is never to be called on-chain since it iterates over all vaultIDs. It is here
     /// to reduce dependency on an external graph to link an ID to its owner
-    function getControlledVaults(IVaultManager vaultManager, address spender)
-        external
-        view
-        returns (uint256[] memory, uint256)
-    {
+    function getControlledVaults(
+        IVaultManager vaultManager,
+        address spender
+    ) external view returns (uint256[] memory, uint256) {
         uint256 arraySize = vaultManager.vaultIDCount();
         uint256[] memory vaultsControlled = new uint256[](arraySize);
         uint256 count;

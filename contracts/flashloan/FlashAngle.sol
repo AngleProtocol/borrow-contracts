@@ -20,7 +20,7 @@ import "../interfaces/ITreasury.sol";
 contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     /// @notice Base used for parameter computation
-    uint256 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_PARAMS = 10 ** 9;
     /// @notice Success message received when calling a `FlashBorrower` contract
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
@@ -123,12 +123,10 @@ contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, Reentran
     /// @param token The loan currency
     /// @param amount The amount of tokens lent
     /// @dev This function will revert if the `token` requested is not whitelisted here
-    function _flashFee(address token, uint256 amount)
-        internal
-        view
-        onlyExistingStablecoin(IAgToken(token))
-        returns (uint256)
-    {
+    function _flashFee(
+        address token,
+        uint256 amount
+    ) internal view onlyExistingStablecoin(IAgToken(token)) returns (uint256) {
         return (amount * stablecoinMap[IAgToken(token)].flashLoanFee) / BASE_PARAMS;
     }
 

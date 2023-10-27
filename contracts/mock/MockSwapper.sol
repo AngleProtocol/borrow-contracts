@@ -14,14 +14,7 @@ contract MockSwapper is ISwapper {
 
     constructor() {}
 
-    function swap(
-        IERC20,
-        IERC20,
-        address,
-        uint256,
-        uint256,
-        bytes calldata data
-    ) external {
+    function swap(IERC20, IERC20, address, uint256, uint256, bytes calldata data) external {
         counter += 1;
         data;
     }

@@ -9,27 +9,17 @@ interface MockAggregatorV3Interface {
 
     function version() external view returns (uint256);
 
-    function getRoundData(uint80 _roundId)
+    function getRoundData(
+        uint80 _roundId
+    )
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
 
     function latestRoundData()
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
 }
 
 contract MockChainlinkOracle is MockAggregatorV3Interface {
@@ -64,11 +54,7 @@ contract MockChainlinkOracle is MockAggregatorV3Interface {
         });
     }
 
-    function setLatestAnswerWithRound(
-        int256 answer,
-        uint256 timestamp,
-        uint80 _roundId
-    ) external {
+    function setLatestAnswerWithRound(int256 answer, uint256 timestamp, uint80 _roundId) external {
         roundId = _roundId;
         entries[roundId] = Entry({
             roundId: roundId,
@@ -111,18 +97,7 @@ contract MockChainlinkOracle is MockAggregatorV3Interface {
         return 0;
     }
 
-    function latestRoundData()
-        external
-        view
-        override
-        returns (
-            uint80,
-            int256,
-            uint256,
-            uint256,
-            uint80
-        )
-    {
+    function latestRoundData() external view override returns (uint80, int256, uint256, uint256, uint80) {
         if (latestRoundDataShouldRevert) {
             revert("latestRoundData reverted");
         }
@@ -133,18 +108,7 @@ contract MockChainlinkOracle is MockAggregatorV3Interface {
         return keyDecimals;
     }
 
-    function getRoundData(uint80 _roundId)
-        public
-        view
-        override
-        returns (
-            uint80,
-            int256,
-            uint256,
-            uint256,
-            uint80
-        )
-    {
+    function getRoundData(uint80 _roundId) public view override returns (uint80, int256, uint256, uint256, uint80) {
         Entry memory entry = entries[_roundId];
         // Emulate a Chainlink aggregator
         require(entry.updatedAt > 0, "No data present");

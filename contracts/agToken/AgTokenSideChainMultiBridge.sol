@@ -18,7 +18,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     using SafeERC20 for IERC20;
 
     /// @notice Base used for fee computation
-    uint256 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_PARAMS = 10 ** 9;
 
     // =============================== Bridging Data ===============================
 
@@ -82,11 +82,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @param symbol_ Symbol of the token
     /// @param _treasury Reference to the `Treasury` contract associated to this agToken
     /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        address _treasury
-    ) external {
+    function initialize(string memory name_, string memory symbol_, address _treasury) external {
         _initialize(name_, symbol_, _treasury);
     }
 
@@ -131,11 +127,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @param to Address to which the stablecoin should be sent
     /// @return Amount of the canonical stablecoin actually minted
     /// @dev Some fees may be taken by the protocol depending on the token used and on the address calling
-    function swapIn(
-        address bridgeToken,
-        uint256 amount,
-        address to
-    ) external returns (uint256) {
+    function swapIn(address bridgeToken, uint256 amount, address to) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         uint256 balance = IERC20(bridgeToken).balanceOf(address(this));
@@ -173,11 +165,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
     /// @param to Address to which the bridge token should be sent
     /// @return Amount of bridge tokens actually sent back
     /// @dev Some fees may be taken by the protocol depending on the token used and on the address calling
-    function swapOut(
-        address bridgeToken,
-        uint256 amount,
-        address to
-    ) external returns (uint256) {
+    function swapOut(address bridgeToken, uint256 amount, address to) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
 
@@ -247,11 +235,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
 
     /// @notice Recovers any ERC20 token
     /// @dev Can be used to withdraw bridge tokens for them to be de-bridged on mainnet
-    function recoverERC20(
-        address tokenAddress,
-        address to,
-        uint256 amountToRecover
-    ) external onlyGovernor {
+    function recoverERC20(address tokenAddress, address to, uint256 amountToRecover) external onlyGovernor {
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }

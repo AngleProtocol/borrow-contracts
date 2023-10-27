@@ -35,9 +35,5 @@ struct PermitType {
 /// @author Angle Labs, Inc.
 /// @notice Interface for the `AngleRouter` contract on other chains
 interface IAngleRouterSidechain {
-    function mixer(
-        PermitType[] memory paramsPermit,
-        ActionType[] memory actions,
-        bytes[] calldata data
-    ) external;
+    function mixer(PermitType[] memory paramsPermit, ActionType[] memory actions, bytes[] calldata data) external;
 }

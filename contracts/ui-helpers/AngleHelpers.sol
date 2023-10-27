@@ -85,11 +85,10 @@ contract AngleHelpers is AngleBorrowHelpers {
 
     /// @notice Returns all the addresses associated to the (`agToken`,`collateral`) pair given
     /// @return addresses A struct with all the addresses associated in the Core module
-    function getCollateralAddresses(address agToken, address collateral)
-        external
-        view
-        returns (CollateralAddresses memory addresses)
-    {
+    function getCollateralAddresses(
+        address agToken,
+        address collateral
+    ) external view returns (CollateralAddresses memory addresses) {
         address stableMaster = IAgTokenMainnet(agToken).stableMaster();
         (address poolManager, address perpetualManager, address sanToken, address gauge) = ROUTER.mapPoolManagers(
             stableMaster,
@@ -135,11 +134,10 @@ contract AngleHelpers is AngleBorrowHelpers {
     /// @notice Returns most of the governance parameters associated to the (`agToken`,`collateral`) pair given
     /// @return params Struct with most of the parameters in the `StableMaster` and `PerpetualManager` contracts
     /// @dev Check out the struct `Parameters` for the meaning of the return values
-    function getCollateralParameters(address agToken, address collateral)
-        external
-        view
-        returns (Parameters memory params)
-    {
+    function getCollateralParameters(
+        address agToken,
+        address collateral
+    ) external view returns (Parameters memory params) {
         (address stableMaster, address poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
         (
             ,
@@ -286,11 +284,7 @@ contract AngleHelpers is AngleBorrowHelpers {
         else ratio = uint64(BASE_PARAMS);
     }
 
-    function _piecewiseLinear(
-        uint64 x,
-        uint64[] memory xArray,
-        uint64[] memory yArray
-    ) internal pure returns (uint64) {
+    function _piecewiseLinear(uint64 x, uint64[] memory xArray, uint64[] memory yArray) internal pure returns (uint64) {
         if (x >= xArray[xArray.length - 1]) {
             return yArray[xArray.length - 1];
         } else if (x <= xArray[0]) {
@@ -321,11 +315,10 @@ contract AngleHelpers is AngleBorrowHelpers {
         }
     }
 
-    function _getStableMasterAndPoolManager(address agToken, address collateral)
-        internal
-        view
-        returns (address stableMaster, address poolManager)
-    {
+    function _getStableMasterAndPoolManager(
+        address agToken,
+        address collateral
+    ) internal view returns (address stableMaster, address poolManager) {
         stableMaster = IAgTokenMainnet(agToken).stableMaster();
         (poolManager, , , ) = ROUTER.mapPoolManagers(stableMaster, collateral);
     }
@@ -336,7 +329,7 @@ contract AngleHelpers is AngleBorrowHelpers {
     ICore public constant CORE = ICore(0x61ed74de9Ca5796cF2F8fD60D54160D47E30B7c3);
 
     bytes32 public constant STABLE = keccak256("STABLE");
-    uint256 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_PARAMS = 10 ** 9;
 
     error NotInitialized();
     error InvalidAmount();

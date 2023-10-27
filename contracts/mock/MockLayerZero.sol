@@ -3,12 +3,7 @@
 pragma solidity ^0.8.12;
 
 interface ILzApp {
-    function lzReceive(
-        uint16 _srcChainId,
-        bytes memory _srcAddress,
-        uint64 _nonce,
-        bytes memory _payload
-    ) external;
+    function lzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) external;
 }
 
 contract MockLayerZero {
@@ -61,21 +56,11 @@ contract MockLayerZero {
         return (123, 456);
     }
 
-    function setConfig(
-        uint16,
-        uint16,
-        uint256 _configType,
-        bytes calldata
-    ) external {
+    function setConfig(uint16, uint16, uint256 _configType, bytes calldata) external {
         config = _configType;
     }
 
-    function getConfig(
-        uint16,
-        uint16,
-        address,
-        uint256
-    ) external view returns (bytes memory) {
+    function getConfig(uint16, uint16, address, uint256) external view returns (bytes memory) {
         return abi.encodePacked(config);
     }
 

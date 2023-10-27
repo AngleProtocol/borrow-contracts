@@ -12,11 +12,7 @@ contract MockLiquidityGauge is ILiquidityGauge, ERC20 {
     IERC20 internal _token;
     mapping(address => uint256) public rewards;
 
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        address token_
-    ) ERC20(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_, address token_) ERC20(name_, symbol_) {
         _token = IERC20(token_);
     }
 

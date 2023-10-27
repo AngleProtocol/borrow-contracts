@@ -45,11 +45,7 @@ contract MockInterestRateComputer {
         return _interestAccumulator * (baseInterest + interestRate * exp);
     }
 
-    function _rpow(
-        uint256 x,
-        uint256 n,
-        uint256 base
-    ) internal pure returns (uint256 z) {
+    function _rpow(uint256 x, uint256 n, uint256 base) internal pure returns (uint256 z) {
         //solhint-disable-next-line
         assembly {
             switch x

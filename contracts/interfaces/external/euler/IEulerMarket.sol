@@ -66,10 +66,9 @@ interface IEulerMarkets {
     /// @notice Looks up the Euler-related configuration for a token, and returns it unresolved (with default-value placeholders)
     /// @param underlying Token address
     /// @return config Configuration struct
-    function underlyingToAssetConfigUnresolved(address underlying)
-        external
-        view
-        returns (IEuler.AssetConfig memory config);
+    function underlyingToAssetConfigUnresolved(
+        address underlying
+    ) external view returns (IEuler.AssetConfig memory config);
 
     /// @notice Given an EToken address, looks up the associated underlying
     /// @param eToken EToken address
@@ -106,14 +105,9 @@ interface IEulerMarkets {
     /// @return pricingType (1=pegged, 2=uniswap3, 3=forwarded)
     /// @return pricingParameters If uniswap3 pricingType then this represents the uniswap pool fee used, otherwise unused
     /// @return pricingForwarded If forwarded pricingType then this is the address prices are forwarded to, otherwise address(0)
-    function getPricingConfig(address underlying)
-        external
-        view
-        returns (
-            uint16 pricingType,
-            uint32 pricingParameters,
-            address pricingForwarded
-        );
+    function getPricingConfig(
+        address underlying
+    ) external view returns (uint16 pricingType, uint32 pricingParameters, address pricingForwarded);
 
     /// @notice Retrieves the list of entered markets for an account (assets enabled for collateral or borrowing)
     /// @param account User account
@@ -186,13 +180,7 @@ interface IEulerExec {
     /// @return twap Time-weighted average price
     /// @return twapPeriod TWAP duration, either the twapWindow value in AssetConfig, or less if that duration not available
     /// @return currPrice The current marginal price on uniswap3 (informational: not used anywhere in the Euler protocol)
-    function getPriceFull(address underlying)
-        external
-        returns (
-            uint256 twap,
-            uint256 twapPeriod,
-            uint256 currPrice
-        );
+    function getPriceFull(address underlying) external returns (uint256 twap, uint256 twapPeriod, uint256 currPrice);
 
     /// @notice Defer liquidity checking for an account, to perform rebalancing, flash loans, etc. msg.sender must implement IDeferredLiquidityCheck
     /// @param account The account to defer liquidity for. Usually address(this), although not always
@@ -203,9 +191,10 @@ interface IEulerExec {
     /// @param items List of operations to execute
     /// @param deferLiquidityChecks List of user accounts to defer liquidity checks for
     /// @return List of operation results
-    function batchDispatch(EulerBatchItem[] calldata items, address[] calldata deferLiquidityChecks)
-        external
-        returns (EulerBatchItemResponse[] memory);
+    function batchDispatch(
+        EulerBatchItem[] calldata items,
+        address[] calldata deferLiquidityChecks
+    ) external returns (EulerBatchItemResponse[] memory);
 
     /// @notice Results of a batchDispatch, but with extra information
     struct EulerBatchExtra {
@@ -229,11 +218,7 @@ interface IEulerExec {
     /// @param subAccountId subAccountId 0 for primary, 1-255 for a sub-account.
     /// @param delegate An address of another account that you would allow to use the benefits of your account's average liquidity (use the null address if you don't care about this). The other address must also reciprocally delegate to your account.
     /// @param onlyDelegate Set this flag to skip tracking average liquidity and only set the delegate.
-    function trackAverageLiquidity(
-        uint256 subAccountId,
-        address delegate,
-        bool onlyDelegate
-    ) external;
+    function trackAverageLiquidity(uint256 subAccountId, address delegate, bool onlyDelegate) external;
 
     /// @notice Disable average liquidity tracking for your account and remove delegate
     /// @param subAccountId subAccountId 0 for primary, 1-255 for a sub-account

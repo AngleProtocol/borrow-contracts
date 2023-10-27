@@ -78,7 +78,7 @@ contract TokenPolygonUpgradeable is
     using SafeERC20 for IERC20;
 
     /// @notice Base used for fee computation
-    uint256 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_PARAMS = 10 ** 9;
 
     // =============================== Bridging Data ===============================
 
@@ -198,11 +198,7 @@ contract TokenPolygonUpgradeable is
         _burnCustom(burner, amount);
     }
 
-    function burnFrom(
-        uint256 amount,
-        address burner,
-        address sender
-    ) external onlyMinter {
+    function burnFrom(uint256 amount, address burner, address sender) external onlyMinter {
         _burnFromNoRedeem(amount, burner, sender);
     }
 
@@ -233,11 +229,7 @@ contract TokenPolygonUpgradeable is
     /// @notice Internal version of the function `burnFromNoRedeem`
     /// @param amount Amount to burn
     /// @dev It is at the level of this function that allowance checks are performed
-    function _burnFromNoRedeem(
-        uint256 amount,
-        address burner,
-        address sender
-    ) internal {
+    function _burnFromNoRedeem(uint256 amount, address burner, address sender) internal {
         if (burner != sender) {
             uint256 currentAllowance = allowance(burner, sender);
             if (currentAllowance < amount) revert BurnAmountExceedsAllowance();
@@ -271,11 +263,7 @@ contract TokenPolygonUpgradeable is
     /// @param amount Amount of bridge tokens to send
     /// @param to Address to which the stablecoin should be sent
     /// @dev Some fees may be taken by the protocol depending on the token used and on the address calling
-    function swapIn(
-        address bridgeToken,
-        uint256 amount,
-        address to
-    ) external returns (uint256) {
+    function swapIn(address bridgeToken, uint256 amount, address to) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
         uint256 balance = IERC20(bridgeToken).balanceOf(address(this));
@@ -316,11 +304,7 @@ contract TokenPolygonUpgradeable is
     /// @param amount Amount of canonical tokens to burn
     /// @param to Address to which the bridge token should be sent
     /// @dev Some fees may be taken by the protocol depending on the token used and on the address calling
-    function swapOut(
-        address bridgeToken,
-        uint256 amount,
-        address to
-    ) external returns (uint256) {
+    function swapOut(address bridgeToken, uint256 amount, address to) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
 
@@ -390,11 +374,7 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Recovers any ERC20 token
     /// @dev Can be used to withdraw bridge tokens for them to be de-bridged on mainnet
-    function recoverERC20(
-        address tokenAddress,
-        address to,
-        uint256 amountToRecover
-    ) external onlyGovernor {
+    function recoverERC20(address tokenAddress, address to, uint256 amountToRecover) external onlyGovernor {
         IERC20(tokenAddress).safeTransfer(to, amountToRecover);
         emit Recovered(tokenAddress, to, amountToRecover);
     }
