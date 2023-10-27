@@ -78,7 +78,7 @@ contract VaultManagerTest is Test {
     function testFuzzCreateVault(uint256 collateralAmount, uint256 borrowAmount) public {
         uint256 collateralBalance = 1 ether;
 
-        vm.assume(collateralAmount <= collateralBalance);
+        collateralAmount = bound(collateralAmount, 0, collateralBalance);
         // vm.assume(borrowAmount > _contractVaultManager.dust());
         // vm.assume(borrowAmount < _contractVaultManager.debtCeiling());
         borrowAmount = bound(borrowAmount, _contractVaultManager.dust() + 1, _contractVaultManager.debtCeiling() - 1);
@@ -104,17 +104,17 @@ contract VaultManagerTest is Test {
 
         uint256 oracleValue = _oracle.read();
         uint256 collateralFactor = _contractVaultManager.collateralFactor();
-        uint256 maxBorrow = (((oracleValue * collateralAmount) / 1e18) * collateralFactor) / 1e9;
+        uint256 maxBorrow = (((oracleValue * collateralAmount) / 1e18) * collateralFactor);
         if (maxBorrow > 0) maxBorrow -= 1;
 
         console.log(oracleValue, collateralFactor, borrowAmount, maxBorrow);
-        if (borrowAmount > maxBorrow) {
+        if (borrowAmount * 1e9 > maxBorrow) {
             vm.expectRevert(VaultManagerStorage.InsolventVault.selector);
         }
         _contractVaultManager.angle(actions, datas, _user, _user);
         vm.stopPrank();
 
-        if (borrowAmount <= maxBorrow) {
+        if (borrowAmount * 1e9 <= maxBorrow) {
             assertEq(_contractVaultManager.vaultIDCount(), 1);
 
             (uint256 collateralValue, uint256 normalizedDebt) = _contractVaultManager.vaultData(1);
