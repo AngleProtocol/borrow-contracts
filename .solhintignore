@@ -1,11 +1,11 @@
-// Doesn't need to lint dev files
+# Doesn't need to lint dev files
 lib
 scripts
 test
 mock
 deprecated
 
-// Doesn't need to lint build files
+# Doesn't need to lint build files
 artifacts
 node_modules
 cache-forge
@@ -13,3 +13,6 @@ cache-hh
 export
 out
 typechain
+
+# Doesn't need to lint utils files
+external
