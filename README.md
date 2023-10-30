@@ -1,6 +1,6 @@
 # <img src="logo.svg" alt="Angle Borrowing Module" height="40px"> Angle Borrowing Module
 
-[![CI](https://github.com/AngleProtocol/borrow-contracts/workflows/CI/badge.svg)](https://github.com/AngleProtocol/borrow-contracts/actions?query=workflow%3ACI)
+[![CI](https://github.com/AngleProtocol/borrow-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/AngleProtocol/borrow-contracts/actions)
 [![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-blue)](https://docs.angle.money/angle-borrowing-module/borrowing-module)
 [![Developers](https://img.shields.io/badge/developers-%F0%9F%93%84-pink)](https://developers.angle.money/borrowing-module-contracts/architecture-overview)
 
