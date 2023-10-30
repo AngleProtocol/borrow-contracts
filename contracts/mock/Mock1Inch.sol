@@ -8,13 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract Mock1Inch {
     using SafeERC20 for IERC20;
 
-    function swap(
-        address tokenIn,
-        uint256 amountIn,
-        address to,
-        address tokenOut,
-        uint256 amountOut
-    ) external {
+    function swap(address tokenIn, uint256 amountIn, address to, address tokenOut, uint256 amountOut) external {
         IERC20(tokenIn).safeTransferFrom(msg.sender, to, amountIn);
         if (tokenOut == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             //solhint-disable-next-line

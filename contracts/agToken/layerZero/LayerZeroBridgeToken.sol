@@ -93,11 +93,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
     }
 
     /// @inheritdoc OFTCore
-    function _debitCreditFrom(
-        uint16,
-        bytes memory,
-        uint256 _amount
-    ) internal override whenNotPaused returns (uint256) {
+    function _debitCreditFrom(uint16, bytes memory, uint256 _amount) internal override whenNotPaused returns (uint256) {
         _burn(msg.sender, _amount);
         return _amount;
     }

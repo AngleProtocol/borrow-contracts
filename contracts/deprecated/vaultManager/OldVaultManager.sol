@@ -65,7 +65,7 @@ contract OldVaultManager is OldVaultManagerPermit {
         if (_oracle.treasury() != _treasury) revert InvalidTreasury();
         treasury = _treasury;
         collateral = _collateral;
-        _collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
+        _collatBase = 10 ** (IERC20Metadata(address(collateral)).decimals());
         stablecoin = IAgToken(_treasury.stablecoin());
         oracle = _oracle;
         string memory _name = string.concat("Angle Protocol ", _symbol, " Vault");
@@ -318,7 +318,7 @@ contract OldVaultManager is OldVaultManagerPermit {
 
         uint256 stablecoinAmountLessFeePaid = (stablecoinAmount *
             (BASE_PARAMS - _repayFee) *
-            (BASE_PARAMS - _borrowFee)) / (BASE_PARAMS**2);
+            (BASE_PARAMS - _borrowFee)) / (BASE_PARAMS ** 2);
         surplus += stablecoinAmount - stablecoinAmountLessFeePaid;
         _repayDebt(vaultID, stablecoinAmountLessFeePaid, 0);
     }
@@ -338,11 +338,10 @@ contract OldVaultManager is OldVaultManagerPermit {
     /// @param liquidator Address of the liquidator which will be performing the liquidation
     /// @return liqOpp Description of the opportunity of liquidation
     /// @dev This function will revert if it's called on a vault that does not exist
-    function checkLiquidation(uint256 vaultID, address liquidator)
-        external
-        view
-        returns (LiquidationOpportunity memory liqOpp)
-    {
+    function checkLiquidation(
+        uint256 vaultID,
+        address liquidator
+    ) external view returns (LiquidationOpportunity memory liqOpp) {
         liqOpp = _checkLiquidation(
             vaultData[vaultID],
             liquidator,
@@ -365,15 +364,7 @@ contract OldVaultManager is OldVaultManagerPermit {
         Vault memory vault,
         uint256 oracleValue,
         uint256 newInterestAccumulator
-    )
-        internal
-        view
-        returns (
-            uint256 healthFactor,
-            uint256 currentDebt,
-            uint256 collateralAmountInStable
-        )
-    {
+    ) internal view returns (uint256 healthFactor, uint256 currentDebt, uint256 collateralAmountInStable) {
         currentDebt = (vault.normalizedDebt * newInterestAccumulator) / BASE_INTEREST;
         collateralAmountInStable = (vault.collateralAmount * oracleValue) / _collatBase;
         if (currentDebt == 0) healthFactor = type(uint256).max;
@@ -775,7 +766,7 @@ contract OldVaultManager is OldVaultManagerPermit {
         uint256 thresholdRepayAmount;
         // In the first case, the health factor is an increasing function of the stablecoin amount to repay,
         // this means that the liquidator can bring the vault to the target health ratio
-        if (healthFactor * liquidationDiscount * surcharge >= collateralFactor * BASE_PARAMS**2) {
+        if (healthFactor * liquidationDiscount * surcharge >= collateralFactor * BASE_PARAMS ** 2) {
             // This is the max amount to repay that will bring the person to the target health factor
             // Denom is always positive when a vault gets liquidated in this case and when the health factor
             // is an increasing function of the amount of stablecoins repaid
@@ -784,7 +775,7 @@ contract OldVaultManager is OldVaultManagerPermit {
                 ((targetHealthFactor * currentDebt - collateralAmountInStable * collateralFactor) *
                     BASE_PARAMS *
                     liquidationDiscount) /
-                (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
+                (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS ** 2) * collateralFactor);
             // The quantity below tends to be rounded in the above direction, which means that governance or guardians should
             // set the `targetHealthFactor` accordingly
             // Need to check for the dust: liquidating should not leave a dusty amount in the vault
@@ -951,9 +942,5 @@ contract OldVaultManager is OldVaultManagerPermit {
     /// @param amount Collateral amount balance of the owner of vaultID increase/decrease
     /// @param add Whether the balance should be increased/decreased
     /// @param vaultID Vault which sees its collateral amount changed
-    function _checkpointCollateral(
-        uint256 vaultID,
-        uint256 amount,
-        bool add
-    ) internal virtual {}
+    function _checkpointCollateral(uint256 vaultID, uint256 amount, bool add) internal virtual {}
 }

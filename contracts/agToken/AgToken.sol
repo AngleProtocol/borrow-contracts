@@ -26,11 +26,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @param symbol_ Symbol of the token
     /// @param stableMaster_ Reference to the `StableMaster` contract associated to this agToken
     /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        address stableMaster_
-    ) external initializer {
+    function initialize(string memory name_, string memory symbol_, address stableMaster_) external initializer {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         require(stableMaster_ != address(0), "0");
@@ -115,11 +111,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @param account Account to burn on behalf of
     /// @param amount Amount to burn
     /// @param poolManager Reference to the `PoolManager` contract for which the `stocksUsers` will need to be updated
-    function burnFromNoRedeem(
-        address account,
-        uint256 amount,
-        address poolManager
-    ) external {
+    function burnFromNoRedeem(address account, uint256 amount, address poolManager) external {
         _burnFromNoRedeem(amount, account, msg.sender);
         IStableMaster(stableMaster).updateStocksUsers(amount, poolManager);
     }
@@ -139,11 +131,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     }
 
     /// @inheritdoc IAgToken
-    function burnFrom(
-        uint256 amount,
-        address burner,
-        address sender
-    ) external onlyMinter {
+    function burnFrom(uint256 amount, address burner, address sender) external onlyMinter {
         _burnFromNoRedeem(amount, burner, sender);
     }
 
@@ -179,11 +167,7 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
     /// @notice Internal version of the function `burnFromNoRedeem`
     /// @param amount Amount to burn
     /// @dev It is at the level of this function that allowance checks are performed
-    function _burnFromNoRedeem(
-        uint256 amount,
-        address burner,
-        address sender
-    ) internal {
+    function _burnFromNoRedeem(uint256 amount, address burner, address sender) internal {
         if (burner != sender) {
             uint256 currentAllowance = allowance(burner, sender);
             if (currentAllowance < amount) revert BurnAmountExceedsAllowance();

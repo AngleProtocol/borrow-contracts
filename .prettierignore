@@ -1,0 +1,8 @@
+lib
+artifacts
+node_modules
+cache-forge
+cache-hh
+export
+out
+typechain

@@ -16,21 +16,10 @@ interface IAngleRouter {
         address collateral
     ) external;
 
-    function burn(
-        address user,
-        uint256 amount,
-        uint256 minAmountOut,
-        address stablecoin,
-        address collateral
-    ) external;
+    function burn(address user, uint256 amount, uint256 minAmountOut, address stablecoin, address collateral) external;
 
-    function mapPoolManagers(address stableMaster, address collateral)
-        external
-        view
-        returns (
-            address poolManager,
-            address perpetualManager,
-            address sanToken,
-            address gauge
-        );
+    function mapPoolManagers(
+        address stableMaster,
+        address collateral
+    ) external view returns (address poolManager, address perpetualManager, address sanToken, address gauge);
 }

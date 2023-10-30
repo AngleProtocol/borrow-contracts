@@ -26,11 +26,7 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @param _name Name of the token corresponding to this contract
     /// @param _lzEndpoint Layer zero endpoint to pass messages
     /// @param _treasury Address of the treasury contract used for access control
-    function initialize(
-        string memory _name,
-        address _lzEndpoint,
-        address _treasury
-    ) external initializer {
+    function initialize(string memory _name, address _lzEndpoint, address _treasury) external initializer {
         __LzAppUpgradeable_init(_lzEndpoint, _treasury);
         name = _name;
         canonicalToken = IERC20(address(ITreasury(_treasury).stablecoin()));
@@ -76,43 +72,27 @@ contract LayerZeroBridge is OFTCore, PausableUpgradeable {
     /// @notice Withdraws `amount` from the balance of the `from` address and sends these tokens to the `to` address
     /// @dev It's important to make sure that `from` is either the `msg.sender` or that `from` and `to` are the same
     /// addresses
-    function _withdraw(
-        uint256 amount,
-        address from,
-        address to
-    ) internal whenNotPaused returns (uint256) {
+    function _withdraw(uint256 amount, address from, address to) internal whenNotPaused returns (uint256) {
         balanceOf[from] -= amount; // Will overflow if the amount is too big
         canonicalToken.transfer(to, amount);
         return amount;
     }
 
     /// @inheritdoc OFTCore
-    function _debitFrom(
-        uint16,
-        bytes memory,
-        uint256 _amount
-    ) internal override whenNotPaused returns (uint256) {
+    function _debitFrom(uint16, bytes memory, uint256 _amount) internal override whenNotPaused returns (uint256) {
         // No need to use safeTransferFrom as we know this implementation reverts on failure
         canonicalToken.transferFrom(msg.sender, address(this), _amount);
         return _amount;
     }
 
     /// @inheritdoc OFTCore
-    function _debitCreditFrom(
-        uint16,
-        bytes memory,
-        uint256 _amount
-    ) internal override whenNotPaused returns (uint256) {
+    function _debitCreditFrom(uint16, bytes memory, uint256 _amount) internal override whenNotPaused returns (uint256) {
         balanceOf[msg.sender] -= _amount;
         return _amount;
     }
 
     /// @inheritdoc OFTCore
-    function _creditTo(
-        uint16,
-        address _toAddress,
-        uint256 _amount
-    ) internal override whenNotPaused returns (uint256) {
+    function _creditTo(uint16, address _toAddress, uint256 _amount) internal override whenNotPaused returns (uint256) {
         // Should never revert as all the LayerZero bridge tokens come from
         // this contract
         uint256 balance = canonicalToken.balanceOf(address(this));

@@ -15,7 +15,7 @@ abstract contract BaseOracleChainlinkMultiTwoFeeds is BaseOracleChainlinkMulti {
 
     /// @notice Returns the quote amount of the oracle contract
     function _getQuoteAmount() internal view virtual returns (uint256) {
-        return 10**18;
+        return 10 ** 18;
     }
 
     /// @inheritdoc IOracle

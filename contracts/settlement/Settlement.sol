@@ -20,12 +20,12 @@ contract Settlement {
     using SafeERC20 for IERC20;
 
     /// @notice Base used for parameter computation
-    uint256 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_PARAMS = 10 ** 9;
     /// @notice Base used for interest computation
-    uint256 public constant BASE_INTEREST = 10**27;
+    uint256 public constant BASE_INTEREST = 10 ** 27;
     /// @notice Base used for exchange rate computation. It is assumed
     /// that stablecoins have this base
-    uint256 public constant BASE_STABLECOIN = 10**18;
+    uint256 public constant BASE_STABLECOIN = 10 ** 18;
     /// @notice Duration of the claim period for over-collateralized vaults
     uint256 public constant OVER_COLLATERALIZED_CLAIM_DURATION = 3 * 24 * 3600;
 
@@ -86,7 +86,7 @@ contract Settlement {
         vaultManager = _vaultManager;
         stablecoin = _vaultManager.stablecoin();
         collateral = _vaultManager.collateral();
-        _collatBase = 10**(IERC20Metadata(address(collateral)).decimals());
+        _collatBase = 10 ** (IERC20Metadata(address(collateral)).decimals());
     }
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
@@ -240,11 +240,7 @@ contract Settlement {
     /// @dev This function can be used to rebalance stablecoin balances across different settlement contracts
     /// to make sure every stablecoin can be redeemed for the same value of collateral
     /// @dev It can also be used to recover tokens that are mistakenly sent to this contract
-    function recoverERC20(
-        address tokenAddress,
-        address to,
-        uint256 amountToRecover
-    ) external onlyGovernor {
+    function recoverERC20(address tokenAddress, address to, uint256 amountToRecover) external onlyGovernor {
         if (tokenAddress == address(collateral)) {
             if (!exchangeRateComputed) revert GlobalClaimPeriodNotStarted();
             leftOverCollateral -= amountToRecover;

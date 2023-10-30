@@ -16,7 +16,7 @@ contract MockEulerPool {
     constructor(IERC20 collateral_, uint256 poolSize_) {
         collateral = collateral_;
         poolSize = poolSize_;
-        interestRateAccumulator = 10**18;
+        interestRateAccumulator = 10 ** 18;
         MAX_SANE_AMOUNT = type(uint112).max;
     }
 
@@ -37,20 +37,20 @@ contract MockEulerPool {
     }
 
     function balanceOfUnderlying(address account) external view returns (uint256) {
-        return (users[account] * interestRateAccumulator) / 10**18;
+        return (users[account] * interestRateAccumulator) / 10 ** 18;
     }
 
     function deposit(uint256, uint256 amount) external {
-        users[msg.sender] += (amount * 10**18) / interestRateAccumulator;
+        users[msg.sender] += (amount * 10 ** 18) / interestRateAccumulator;
         poolSize += amount;
         collateral.transferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256, uint256 amount) external {
-        if (amount == type(uint256).max) amount = (users[msg.sender] * interestRateAccumulator) / 10**18;
+        if (amount == type(uint256).max) amount = (users[msg.sender] * interestRateAccumulator) / 10 ** 18;
 
         require(amount <= poolSize, "4");
-        users[msg.sender] -= (amount * 10**18) / interestRateAccumulator;
+        users[msg.sender] -= (amount * 10 ** 18) / interestRateAccumulator;
         collateral.transfer(msg.sender, amount);
     }
 }

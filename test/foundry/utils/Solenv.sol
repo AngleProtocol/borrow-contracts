@@ -91,11 +91,7 @@ library strings {
         uint256 _ptr;
     }
 
-    function memcpy(
-        uint256 dest,
-        uint256 src,
-        uint256 len
-    ) private pure {
+    function memcpy(uint256 dest, uint256 src, uint256 len) private pure {
         // Copy word-length chunks while possible
         for (; len >= 32; len -= 32) {
             assembly {
@@ -108,7 +104,7 @@ library strings {
         // Copy remaining bytes
         uint256 mask = type(uint256).max;
         if (len > 0) {
-            mask = 256**(32 - len) - 1;
+            mask = 256 ** (32 - len) - 1;
         }
         assembly {
             let srcpart := and(mload(src), not(mask))
@@ -271,7 +267,7 @@ library strings {
                 // Mask out irrelevant bytes and check again
                 uint256 mask = type(uint256).max; // 0xffff...
                 if (shortest < 32) {
-                    mask = ~(2**(8 * (32 - shortest + idx)) - 1);
+                    mask = ~(2 ** (8 * (32 - shortest + idx)) - 1);
                 }
                 unchecked {
                     uint256 diff = (a & mask) - (b & mask);
@@ -361,7 +357,7 @@ library strings {
 
         uint256 word;
         uint256 length;
-        uint256 divisor = 2**248;
+        uint256 divisor = 2 ** 248;
 
         // Load the rune into the MSBs of b
         assembly {
@@ -537,7 +533,7 @@ library strings {
             if (needlelen <= 32) {
                 bytes32 mask;
                 if (needlelen > 0) {
-                    mask = bytes32(~(2**(8 * (32 - needlelen)) - 1));
+                    mask = bytes32(~(2 ** (8 * (32 - needlelen)) - 1));
                 }
 
                 bytes32 needledata;
@@ -593,7 +589,7 @@ library strings {
             if (needlelen <= 32) {
                 bytes32 mask;
                 if (needlelen > 0) {
-                    mask = bytes32(~(2**(8 * (32 - needlelen)) - 1));
+                    mask = bytes32(~(2 ** (8 * (32 - needlelen)) - 1));
                 }
 
                 bytes32 needledata;
@@ -674,11 +670,7 @@ library strings {
      * @param token An output parameter to which the first token is written.
      * @return `token`.
      */
-    function split(
-        slice memory self,
-        slice memory needle,
-        slice memory token
-    ) internal pure returns (slice memory) {
+    function split(slice memory self, slice memory needle, slice memory token) internal pure returns (slice memory) {
         uint256 ptr = findPtr(self._len, self._ptr, needle._len, needle._ptr);
         token._ptr = self._ptr;
         token._len = ptr - self._ptr;
@@ -715,11 +707,7 @@ library strings {
      * @param token An output parameter to which the first token is written.
      * @return `token`.
      */
-    function rsplit(
-        slice memory self,
-        slice memory needle,
-        slice memory token
-    ) internal pure returns (slice memory) {
+    function rsplit(slice memory self, slice memory needle, slice memory token) internal pure returns (slice memory) {
         uint256 ptr = rfindPtr(self._len, self._ptr, needle._len, needle._ptr);
         token._ptr = ptr;
         token._len = self._len - (ptr - self._ptr);

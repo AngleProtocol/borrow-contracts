@@ -56,12 +56,10 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     /// @param percentageToMiner Percentage to pay to miner expressed in bps (10000)
     /// @dev This is the main entry point for actions to be executed. The `isDelegateCall` flag is used for calling function inside this `KeeperMulticall` contract,
     /// if we call other contracts, the flag should be false
-    function executeActions(Action[] memory actions, uint256 percentageToMiner)
-        external
-        payable
-        onlyRole(KEEPER_ROLE)
-        returns (bytes[] memory)
-    {
+    function executeActions(
+        Action[] memory actions,
+        uint256 percentageToMiner
+    ) external payable onlyRole(KEEPER_ROLE) returns (bytes[] memory) {
         uint256 numberOfActions = actions.length;
         if (numberOfActions == 0) revert IncompatibleLengths();
 
@@ -159,11 +157,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     /// @param token Address of the token to approve
     /// @param spender Address of the spender to approve
     /// @param amount Amount to approve
-    function approve(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) external onlyRole(KEEPER_ROLE) {
+    function approve(IERC20 token, address spender, uint256 amount) external onlyRole(KEEPER_ROLE) {
         uint256 currentAllowance = token.allowance(address(this), spender);
         if (currentAllowance < amount) {
             token.safeIncreaseAllowance(spender, amount - currentAllowance);
@@ -178,11 +172,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
     /// @param token Address of the token to recover
     /// @param receiver Address where to send the tokens
     /// @param amount Amount to recover
-    function withdrawStuckFunds(
-        address token,
-        address receiver,
-        uint256 amount
-    ) external onlyRole(KEEPER_ROLE) {
+    function withdrawStuckFunds(address token, address receiver, uint256 amount) external onlyRole(KEEPER_ROLE) {
         if (receiver == address(0)) revert ZeroAddress();
         if (token == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             payable(receiver).transfer(amount);

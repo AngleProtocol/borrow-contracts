@@ -43,28 +43,15 @@ contract MockStableMaster {
         poolManagerMap[poolManager] += amount;
     }
 
-    function burnSelf(
-        IAgToken agToken,
-        uint256 amount,
-        address burner
-    ) external {
+    function burnSelf(IAgToken agToken, uint256 amount, address burner) external {
         agToken.burnSelf(amount, burner);
     }
 
-    function burnFrom(
-        IAgToken agToken,
-        uint256 amount,
-        address burner,
-        address sender
-    ) external {
+    function burnFrom(IAgToken agToken, uint256 amount, address burner, address sender) external {
         agToken.burnFrom(amount, burner, sender);
     }
 
-    function mint(
-        IAgToken agToken,
-        address account,
-        uint256 amount
-    ) external {
+    function mint(IAgToken agToken, address account, uint256 amount) external {
         agToken.mint(account, amount);
     }
 }
@@ -77,15 +64,11 @@ contract MockStableMasterSanWrapper is MockStableMaster {
 
     constructor() MockStableMaster() {}
 
-    uint256 internal constant _BASE_TOKENS = 10**18;
-    uint256 internal constant _BASE_PARAMS = 10**9;
+    uint256 internal constant _BASE_TOKENS = 10 ** 18;
+    uint256 internal constant _BASE_PARAMS = 10 ** 9;
     IERC20 public token;
 
-    function deposit(
-        uint256 assets,
-        address receiver,
-        address poolManager
-    ) external {
+    function deposit(uint256 assets, address receiver, address poolManager) external {
         token.safeTransferFrom(msg.sender, address(this), assets);
         Collateral storage col = collateralMap[poolManager];
         _updateSanRate(col);
@@ -93,12 +76,7 @@ contract MockStableMasterSanWrapper is MockStableMaster {
         col.sanToken.mint(receiver, amount);
     }
 
-    function withdraw(
-        uint256 assets,
-        address sender,
-        address receiver,
-        address poolManager
-    ) external {
+    function withdraw(uint256 assets, address sender, address receiver, address poolManager) external {
         Collateral storage col = collateralMap[poolManager];
         _updateSanRate(col);
         col.sanToken.burn(sender, assets);
@@ -133,10 +111,10 @@ contract MockStableMasterSanWrapper is MockStableMaster {
                 // Checking if the update is too important and should be made in multiple blocks
                 if (_lockedInterests > col.slpData.maxInterestsDistributed) {
                     // `sanRate` is expressed in `BASE_TOKENS`
-                    col.sanRate += (col.slpData.maxInterestsDistributed * 10**18) / sanMint;
+                    col.sanRate += (col.slpData.maxInterestsDistributed * 10 ** 18) / sanMint;
                     _lockedInterests -= col.slpData.maxInterestsDistributed;
                 } else {
-                    col.sanRate += (_lockedInterests * 10**18) / sanMint;
+                    col.sanRate += (_lockedInterests * 10 ** 18) / sanMint;
                     _lockedInterests = 0;
                 }
             } else {
@@ -160,10 +138,10 @@ contract MockStableMasterSanWrapper is MockStableMaster {
                 // Checking if the update is too important and should be made in multiple blocks
                 if (_lockedInterests > col.slpData.maxInterestsDistributed) {
                     // `sanRate` is expressed in `BASE_TOKENS`
-                    col.sanRate += (col.slpData.maxInterestsDistributed * 10**18) / sanMint;
+                    col.sanRate += (col.slpData.maxInterestsDistributed * 10 ** 18) / sanMint;
                     _lockedInterests -= col.slpData.maxInterestsDistributed;
                 } else {
-                    col.sanRate += (_lockedInterests * 10**18) / sanMint;
+                    col.sanRate += (_lockedInterests * 10 ** 18) / sanMint;
                     _lockedInterests = 0;
                 }
             } else {

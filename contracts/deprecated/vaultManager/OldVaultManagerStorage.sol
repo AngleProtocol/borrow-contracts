@@ -26,11 +26,11 @@ import "../../interfaces/governance/IVeBoostProxy.sol";
 // solhint-disable-next-line max-states-count
 contract OldVaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Base used for parameter computation: almost all the parameters of this contract are set in `BASE_PARAMS`
-    uint256 public constant BASE_PARAMS = 10**9;
+    uint256 public constant BASE_PARAMS = 10 ** 9;
     /// @notice Base used for interest rate computation
-    uint256 public constant BASE_INTEREST = 10**27;
+    uint256 public constant BASE_INTEREST = 10 ** 27;
     /// @notice Used for interest rate computation
-    uint256 public constant HALF_BASE_INTEREST = 10**27 / 2;
+    uint256 public constant HALF_BASE_INTEREST = 10 ** 27 / 2;
 
     // ================================= REFERENCES ================================
 

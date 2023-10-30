@@ -13,7 +13,7 @@ import "./BaseOracleChainlinkMulti.sol";
 /// @dev This is a template and a more gas-efficient implementation of the `OracleChainlinkMulti` contract
 contract OracleChainlinkMultiTemplate is BaseOracleChainlinkMulti {
     // ===================== To be modified before deployment ======================
-    uint256 public constant OUTBASE = 10**18;
+    uint256 public constant OUTBASE = 10 ** 18;
     string public constant DESCRIPTION = "ETH/EUR Oracle";
 
     // =============================================================================

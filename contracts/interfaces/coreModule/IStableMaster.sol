@@ -71,7 +71,9 @@ interface IStableMaster {
 
     function updateStocksUsers(uint256 amount, address poolManager) external;
 
-    function collateralMap(address poolManager)
+    function collateralMap(
+        address poolManager
+    )
         external
         view
         returns (
@@ -88,16 +90,7 @@ interface IStableMaster {
 
     function paused(bytes32) external view returns (bool);
 
-    function deposit(
-        uint256 amount,
-        address user,
-        address poolManager
-    ) external;
+    function deposit(uint256 amount, address user, address poolManager) external;
 
-    function withdraw(
-        uint256 amount,
-        address burner,
-        address dest,
-        address poolManager
-    ) external;
+    function withdraw(uint256 amount, address burner, address dest, address poolManager) external;
 }

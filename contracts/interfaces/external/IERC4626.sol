@@ -28,22 +28,14 @@ interface IERC4626 {
     /// @param to Address to transfer assets to
     /// @param from Address to burn shares from
     /// @return shares Amount of shares burnt in the operation
-    function withdraw(
-        uint256 amount,
-        address to,
-        address from
-    ) external returns (uint256 shares);
+    function withdraw(uint256 amount, address to, address from) external returns (uint256 shares);
 
     /// @notice Burns a given amount of shares to the reactor and transfer assets accordingly
     /// @param shares Given amount of shares
     /// @param to Address to transfer assets to
     /// @param from Address to burn shares from
     /// @return amount Amount of assets redeemed in the operation
-    function redeem(
-        uint256 shares,
-        address to,
-        address from
-    ) external returns (uint256 amount);
+    function redeem(uint256 shares, address to, address from) external returns (uint256 amount);
 
     /// @notice Returns the total assets managed by this reactor
     function totalAssets() external view returns (uint256);

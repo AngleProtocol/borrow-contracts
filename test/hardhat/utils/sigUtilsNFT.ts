@@ -1,6 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { TypedDataUtils } from 'eth-sig-util';
 import { fromRpcSig } from 'ethereumjs-util';
+import { config } from 'hardhat';
 
 export type TypePermitNFT = {
   contract: string;
@@ -32,8 +33,12 @@ export async function domainSeparator(
   name: string,
   verifyingContract: string,
   version = '1',
-  chainId = 1337,
+  chainId?: number,
 ): Promise<string> {
+  if (!chainId) {
+    chainId = config.networks.hardhat.chainId;
+  }
+
   return (
     '0x' +
     TypedDataUtils.hashStruct('EIP712Domain', { name, version, chainId, verifyingContract }, { EIP712Domain }).toString(
@@ -67,9 +72,13 @@ export async function signPermitNFT(
   spender: string,
   approved: boolean,
   name: string,
-  chainId = 1337,
+  chainId?: number,
   version = '1',
 ): Promise<TypePermitNFT> {
+  if (!chainId) {
+    chainId = config.networks.hardhat.chainId;
+  }
+
   const data = buildDataNFT(
     owner.address,
     chainId,
