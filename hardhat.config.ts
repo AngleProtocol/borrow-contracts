@@ -380,6 +380,19 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    filecoin: {
+      live: true,
+      url: nodeUrl('filecoin'),
+      accounts: accounts('filecoin'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 314,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('filecoin'),
+        },
+      },
+    },
   },
   paths: {
     sources: './contracts',
