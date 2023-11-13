@@ -74,4 +74,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['coreBorrow'];
+func.dependencies = ['proxyAdmin'];
 export default func;
