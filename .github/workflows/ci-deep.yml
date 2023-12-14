@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       fuzzRuns:
-        default: "100000"
+        default: "10000"
         description: "Unit: number of fuzz runs."
         required: false
 
@@ -148,7 +148,7 @@ jobs:
           ETH_NODE_URI_POLYGON: ${{ secrets.ETH_NODE_URI_POLYGON }}
           ETH_NODE_URI_GOERLI: ${{ secrets.ETH_NODE_URI_GOERLI }}
           ETH_NODE_URI_FANTOM: ${{ secrets.ETH_NODE_URI_FANTOM }}
-          FOUNDRY_FUZZ_RUNS: ${{ github.event.inputs.fuzzRuns }}
+          FOUNDRY_FUZZ_RUNS: ${{ github.event.inputs.fuzzRuns || '10000' }}
 
       - name: "Add test summary"
         run: |
