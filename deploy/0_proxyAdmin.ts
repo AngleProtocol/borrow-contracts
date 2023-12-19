@@ -1,5 +1,4 @@
 // To be used in other chains than mainnet to deploy proxy admin for our upgradeable contracts
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 // import { DeployFunction } from '@matterlabs/hardhat-zksync-deploy';
 import yargs from 'yargs';

@@ -380,6 +380,45 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    filecoin: {
+      live: true,
+      url: nodeUrl('filecoin'),
+      accounts: accounts('filecoin'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 314,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('filecoin'),
+        },
+      },
+    },
+    thundercore: {
+      live: true,
+      url: nodeUrl('thundercore'),
+      accounts: accounts('thundercore'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 108,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('thundercore'),
+        },
+      },
+    },
+    coredao: {
+      live: true,
+      url: nodeUrl('coredao'),
+      accounts: accounts('coredao'),
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 1116,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('coredao'),
+        },
+      },
+    },
   },
   paths: {
     sources: './contracts',

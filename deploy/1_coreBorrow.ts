@@ -2,7 +2,6 @@ import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { expect } from '../test/hardhat/utils/chai-setup';
 import { CoreBorrow__factory } from '../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -33,13 +32,11 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   name = 'CoreMerkl';
   proxyAdmin = (await deployments.get('ProxyAdminGuardian')).address;
 
-  console.log('Let us get started with deployment');
-
-  console.log('Now deploying CoreBorrow');
-  console.log('Starting with the implementation');
-
   // TODO: comment if implementation has already been deployed
   /*
+  console.log('Let us get started with deployment');
+  console.log('Now deploying CoreBorrow');
+  console.log('Starting with the implementation');
   await deploy('CoreBorrow_Implementation', {
     contract: 'CoreBorrow',
     from: deployer.address,
@@ -48,7 +45,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   */
 
   const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
-
   console.log(`Successfully deployed the implementation for CoreBorrow at ${coreBorrowImplementation}`);
   console.log('');
 
@@ -78,4 +74,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['coreBorrow'];
+func.dependencies = ['proxyAdmin'];
 export default func;

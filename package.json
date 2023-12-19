@@ -11,7 +11,7 @@
     "check-upgradeability": "hardhat run scripts/upgradeability.ts",
     "coverage": "hardhat coverage",
     "coverage:foundry": "forge coverage --report lcov",
-    "deploy": "hardhat deploy --network mantle --tags",
+    "deploy": "hardhat deploy --network coredao --tags",
     "etherscan": "hardhat etherscan-verify --network",
     "foundry:deploy": "forge script --broadcast --verify -vvvv --rpc-url",
     "generate-types-from-abis": "typechain --target ethers-v5 --out-dir typechain './export/abi/*.json'",
