@@ -34,7 +34,7 @@ contract VaultManagerTest is Test {
 
         _contractAgToken = new AgToken();
         vm.store(address(_contractAgToken), bytes32(uint256(0)), bytes32(uint256(0)));
-        _contractAgToken.initialize("agEUR", "agEUR", address(_contractStableMaster));
+        _contractAgToken.initialize("agEUR", "agEUR", address(_contractTreasury));
 
         _contractCoreBorrow = new CoreBorrow();
         vm.store(address(_contractCoreBorrow), bytes32(uint256(0)), bytes32(uint256(0)));
@@ -61,9 +61,6 @@ contract VaultManagerTest is Test {
             baseBoost: 1e9
         });
         _contractVaultManager.initialize(_contractTreasury, _collateral, _oracle, params, "wETH");
-
-        vm.prank(0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
-        _contractAgToken.setUpTreasury(address(_contractTreasury));
 
         vm.startPrank(_governor);
         _contractVaultManager.togglePause();
