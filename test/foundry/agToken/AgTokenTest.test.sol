@@ -20,8 +20,19 @@ contract AgTokenTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        _treasury = new MockTreasury(IAgToken(address(0)), _GOVERNOR, _GUARDIAN, address(0), address(0), address(0));
-        _agToken = new AgToken();
+        AgToken _agTokenImplem = new AgToken();
+        bytes memory emptyData;
+        _agToken = AgToken(deployUpgradeable(address(_agTokenImplem), emptyData));
+
+        _treasury = new MockTreasury(
+            IAgToken(address(_agToken)),
+            _GOVERNOR,
+            _GUARDIAN,
+            address(0),
+            address(0),
+            address(0)
+        );
+
         _agToken.initialize(_NAME, _SYMBOL, address(_treasury));
 
         vm.prank(_GOVERNOR);
@@ -40,6 +51,7 @@ contract AgTokenTest is BaseTest {
     function testAlreadyInitalizeFail() public {
         string memory name2 = "Angle stablecoin XXX";
         string memory symbol2 = "agXXX";
+        vm.expectRevert();
         _agToken.initialize(name2, symbol2, _alice);
 
         assertEq(_agToken.name(), _NAME);
