@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.12;
 
-import "./BaseAgToken.sol";
+import "./AgToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @notice Contract for Angle agTokens on other chains than Ethereum mainnet
 /// @dev This contract supports bridge tokens having a minting right on the stablecoin (also referred to as the canonical
 /// or the native token)
-contract AgTokenSideChainMultiBridge is BaseAgToken {
+contract AgTokenSideChainMultiBridge is AgToken {
     using SafeERC20 for IERC20;
 
     /// @notice Base used for fee computation
@@ -71,17 +71,6 @@ contract AgTokenSideChainMultiBridge is BaseAgToken {
     error TooBigAmount();
     error TooHighParameterValue();
     error ZeroAddress();
-
-    // ================================ CONSTRUCTOR ================================
-
-    /// @notice Initializes the `AgToken` contract
-    /// @param name_ Name of the token
-    /// @param symbol_ Symbol of the token
-    /// @param _treasury Reference to the `Treasury` contract associated to this agToken
-    /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
-    function initialize(string memory name_, string memory symbol_, address _treasury) external {
-        _initialize(name_, symbol_, _treasury);
-    }
 
     // ================================= MODIFIERS =================================
 
