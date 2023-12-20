@@ -87,10 +87,7 @@ contract('Oracles Chainlink', () => {
     oracleWSTETHXAU = await new OracleWSTETHXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleUSDCXAU = await new OracleUSDCXAUChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleIB01 = await new OracleIB01EURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
-<<<<<<< HEAD
     oracleHIGH = await new OracleHIGHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
-=======
->>>>>>> a391901 (add USDC collateral)
     oracleUSDC = await new OracleUSDCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
