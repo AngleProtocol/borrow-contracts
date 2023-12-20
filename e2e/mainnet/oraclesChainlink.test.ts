@@ -50,7 +50,6 @@ contract('Oracles Chainlink', () => {
   let oracleIB01: OracleIB01EURChainlink;
   let oracleHIGH: OracleHIGHEURChainlink;
   let oracleUSDC: OracleUSDCEURChainlink;
-
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
