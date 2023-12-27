@@ -307,8 +307,9 @@ const config: HardhatUserConfig = {
       url: nodeUrl('gnosis'),
       accounts: accounts('gnosis'),
       gas: 'auto',
-      gasMultiplier: 1.3,
+      gasMultiplier: 2,
       chainId: 100,
+      initialBaseFeePerGas: 1000000000,
       verify: {
         etherscan: {
           apiKey: etherscanKey('gnosis'),
