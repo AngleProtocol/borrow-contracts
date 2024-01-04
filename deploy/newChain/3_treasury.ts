@@ -2,8 +2,8 @@ import { ChainId, registry } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../typechain';
-import { deployProxy } from './helpers';
+import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../../typechain';
+import { deployProxy } from '../helpers';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 

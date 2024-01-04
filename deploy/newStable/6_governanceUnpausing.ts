@@ -4,8 +4,8 @@ import { formatBytes32String, parseEther } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { VaultManager, VaultManager__factory } from '../typechain';
-import params from './networks';
+import { VaultManager, VaultManager__factory } from '../../typechain';
+import params from '../networks';
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const json = await import('./networks/' + network.name + '.json');

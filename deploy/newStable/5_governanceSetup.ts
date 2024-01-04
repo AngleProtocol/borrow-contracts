@@ -3,8 +3,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { ProxyAdmin, ProxyAdmin__factory, Treasury, Treasury__factory } from '../typechain';
-import params from './networks';
+import { ProxyAdmin, ProxyAdmin__factory, Treasury, Treasury__factory } from '../../typechain';
+import params from './../networks';
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   // This file is only useful in mainnet fork

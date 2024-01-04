@@ -97,7 +97,7 @@
     "ganache-cli": "6.12.1",
     "graphql": "15.5.1",
     "graphql-request": "3.4.0",
-    "hardhat": "2.19.0",
+    "hardhat": "2.19.4",
     "hardhat-abi-exporter": "2.2.1",
     "hardhat-contract-sizer": "2.0.3",
     "hardhat-deploy": "0.11.11",

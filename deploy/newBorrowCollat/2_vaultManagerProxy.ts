@@ -5,10 +5,10 @@ import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { expect } from '../test/hardhat/utils/chai-setup';
-import { Treasury__factory, VaultManager__factory } from '../typechain';
-import { deployProxy } from './helpers';
-import params from './networks';
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { Treasury__factory, VaultManager__factory } from '../../typechain';
+import { deployProxy } from '../helpers';
+import params from '../networks';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {

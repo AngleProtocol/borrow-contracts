@@ -1,9 +1,8 @@
 // To be used in other chains than mainnet to deploy proxy admin for our upgradeable contracts
 import { DeployFunction } from 'hardhat-deploy/types';
-// import { DeployFunction } from '@matterlabs/hardhat-zksync-deploy';
 import yargs from 'yargs';
 
-import { ProxyAdmin, ProxyAdmin__factory } from '../typechain';
+import { ProxyAdmin, ProxyAdmin__factory } from '../../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {

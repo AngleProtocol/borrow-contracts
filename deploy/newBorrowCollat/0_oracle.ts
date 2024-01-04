@@ -2,7 +2,7 @@ import { ChainId, registry } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { OracleIB01EURChainlink, OracleIB01EURChainlink__factory } from '../typechain';
+import { OracleIB01EURChainlink, OracleIB01EURChainlink__factory } from '../../typechain';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 

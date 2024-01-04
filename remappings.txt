@@ -4,3 +4,5 @@
 @uniswap/=node_modules/@uniswap/
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
+stringutils/=lib/solidity-stringutils
+prb/math/=lib/prb-math/src/

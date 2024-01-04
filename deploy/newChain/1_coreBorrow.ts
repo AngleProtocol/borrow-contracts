@@ -1,8 +1,9 @@
+// To be used when deploying governance for the first time on a new chain
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
-import { CoreBorrow__factory } from '../typechain';
+import { CoreBorrow__factory } from '../../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {

@@ -7,13 +7,13 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const stableName = 'EUR';
+  const stableName = 'USD';
 
   let implementationName: string;
   let proxyAdmin: string;
 
   if (network.config.chainId == 1 || !network.live) {
-    implementationName = 'AgTokenSideChain';
+    implementationName = 'AgToken';
     proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
   } else {
     implementationName = 'AgTokenSideChainMultiBridge';
@@ -34,6 +34,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log('Deploying the proxy for the agToken contract');
 
+  // TODO deploying with a vanity address
+
   await deploy(`AgToken_${stableName}`, {
     contract: 'TransparentUpgradeableProxy',
     from: deployer.address,
@@ -48,6 +50,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('');
 };
 
-func.tags = ['agTokenImplementation'];
-// func.dependencies = ['coreBorrow'];
+func.tags = ['agTokenImplementationStablecoin'];
 export default func;
