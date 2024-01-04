@@ -16,7 +16,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const agTokenName = `Angle ${stableName}`;
   const agTokenSymbol = `ag${stableName}`;
 
-  const agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
+  const agTokenAddress = '0x0000206329b97DB379d5E1Bf586BbDB969C63274';
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet

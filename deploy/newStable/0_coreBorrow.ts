@@ -1,4 +1,4 @@
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
+import { ChainId, registry } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
@@ -17,7 +17,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
-    proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.ProxyAdmin!;
+    proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdmin = (await deployments.get('ProxyAdmin')).address;

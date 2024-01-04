@@ -9,5 +9,5 @@
   "oneInchRouter": "0x1111111254EEB25477B68fb85Ed929f73A960582",
   "angleRouter": "0xBB755240596530be0c1DE5DFD77ec6398471561d",
   "dust": "0",
-  "vaultsList": ["bHIGH"]
+  "vaultsList": ["wstETH"]
 }
