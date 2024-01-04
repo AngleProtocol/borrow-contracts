@@ -2,7 +2,7 @@ import { Contract } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { LayerZeroBridge, LayerZeroBridge__factory } from '../../typechain';
-import { OFTs } from '../bridges/OFTs';
+import { OFTs } from '../constants';
 import LZ_CHAINIDS from '../constants/layerzeroChainIds.json';
 
 // For more details on trustedRemote, check: https://layerzero.gitbook.io/docs/evm-guides/master/set-trusted-remotes

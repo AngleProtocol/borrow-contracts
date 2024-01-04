@@ -3,6 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { TransparentUpgradeableProxy, TransparentUpgradeableProxy__factory } from '../../typechain';
+import { immutableCreate2Factory, minedAddress } from '../constants';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -13,14 +14,13 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   let implementationName: string;
   let proxyAdmin: string;
-  const minedAddress = '0x0000206329b97DB379d5E1Bf586BbDB969C63274';
 
   if (network.config.chainId == 1 || !network.live) {
     implementationName = 'AgToken';
     proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
   } else {
     implementationName = 'AgTokenSideChainMultiBridge';
-    proxyAdmin = (await deployments.get('ProxyAdmin')).address;
+    proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
   }
 
   console.log(`Now deploying the implementation for AgToken on ${network.name}`);
@@ -43,11 +43,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     'function safeCreate2(bytes32 salt, bytes memory initCode) external payable returns (address deploymentAddress)',
     'function findCreate2Address(bytes32 salt,bytes calldata initCode) external view returns (address deploymentAddress)',
   ]);
-  const immutableCreate2 = new ethers.Contract(
-    '0x0000000000FFe8B47B3e2130213B802212439497',
-    immutableCreate2Interface,
-    deployer,
-  );
+  const immutableCreate2 = new ethers.Contract(immutableCreate2Factory, immutableCreate2Interface, deployer);
   const computedAddress = await immutableCreate2.findCreate2Address(json.salt, initCode);
   if (computedAddress != minedAddress) throw Error('Invalid Mined address');
   console.log('Deploying agToken');
@@ -65,5 +61,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('Success');
 };
 
-func.tags = ['agTokenImplementationStablecoin'];
+func.tags = ['agTokenNewStable'];
+func.dependencies = ['coreNewStable'];
 export default func;

@@ -1,48 +1,19 @@
-import { ChainId, parseAmount, registry } from '@angleprotocol/sdk/dist';
-import { BigNumber, Contract } from 'ethers';
-import { formatBytes32String, parseEther } from 'ethers/lib/utils';
+import { ChainId, registry } from '@angleprotocol/sdk/dist';
+import { Contract } from 'ethers';
+import { formatBytes32String } from 'ethers/lib/utils';
 import hre from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { Treasury__factory, VaultManager__factory } from '../../typechain';
+import { stableName, vaultManagers, vaultsList } from '../constants';
 const argv = yargs.env('').boolean('ci').parseSync();
-
-const interestRate5 = BigNumber.from('158153934393112649');
-
-const vaultManagers = {
-  USD: {
-    vaults: [
-      {
-        collateral: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
-        symbol: 'wstETH-USD',
-        oracle: 'WSTETH_USD',
-        params: {
-          debtCeiling: parseEther('1000'),
-          collateralFactor: parseAmount.gwei('0.75'),
-          targetHealthFactor: parseAmount.gwei('1.05'),
-          borrowFee: parseAmount.gwei('0'),
-          repayFee: parseAmount.gwei('0'),
-          interestRate: interestRate5,
-          liquidationSurcharge: parseAmount.gwei('0.98'),
-          maxLiquidationDiscount: parseAmount.gwei('0.1'),
-          whitelistingActivated: false,
-          baseBoost: parseAmount.gwei('1.5'),
-          dust: parseEther('0'),
-          dustCollateral: parseEther('0'),
-          dustLiquidation: parseEther('10'),
-        },
-      },
-    ],
-  },
-};
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   /**
    * TODO: change implementation depending on what is being deployed
    */
   const implementationName = 'VaultManager_NoDust';
-  const implementation = (await ethers.getContract(implementationName)).address;
 
   /**
    * TODO: set to false if deployer is not admin
@@ -50,20 +21,32 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const isDeployerAdmin = true;
 
   /**
-   * TODO: update the vaults list to deploy
+   * TODO: make sure that the vaultsList to deploy is updated
    */
-  const json = await import('./networks/' + network.name + '.json');
-  const vaultsList = json.vaultsList;
 
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
-  const stableName = 'USD';
+  let implementation: string;
+  try {
+    implementation = (await ethers.getContract(implementationName)).address;
+  } catch {
+    // Typically if we're in mainnet fork
+    console.log('Now deploying VaultManager implementation');
+    await deploy(implementationName, {
+      contract: 'VaultManagerLiquidationBoost',
+      from: deployer.address,
+      args: [],
+      log: !argv.ci,
+    });
+    implementation = (await ethers.getContract(implementationName)).address;
+  }
+
   if (!network.live || network.config.chainId == 1) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
     const proxyAdminAddress = registry(ChainId.MAINNET)?.ProxyAdmin!;
     const treasuryAddress = (await deployments.get(`Treasury_${stableName}`)).address;
-    console.log(proxyAdminAddress, treasuryAddress);
+    console.log(`Treasury: ${treasuryAddress}`);
 
     console.log(`Deploying proxies for the following vaultManager: ${vaultsList}`);
 
@@ -170,11 +153,11 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     console.log('Proxy deployments done');
   } else {
     console.log('');
-    console.log('Not deploying any vault on this chain');
+    console.log(`Not deploying any vault on ${network.name}`);
     console.log('');
   }
 };
 
-func.tags = ['vaultManagerProxy'];
-func.dependencies = ['oracle'];
+func.tags = ['vaultNewStable'];
+func.dependencies = ['oracleNewStable'];
 export default func;

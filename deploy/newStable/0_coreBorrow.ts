@@ -5,6 +5,10 @@ import yargs from 'yargs';
 import { CoreBorrow__factory } from '../../typechain';
 const argv = yargs.env('').boolean('ci').parseSync();
 
+/**
+ * TODO: before starting the deployment, make sure that the constant are up to date with the stablecoin name
+ */
+
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   // This is for a test CoreBorrow implementation
   const { deploy } = deployments;
@@ -20,7 +24,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network
-    proxyAdmin = (await deployments.get('ProxyAdmin')).address;
+    proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
   }
 
   // Implementation has already been deployed on every chain here
@@ -34,7 +38,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     coreBorrowInterface,
   ).interface.encodeFunctionData('initialize', [governor, guardian]);
 
-  console.log(`Now deploying the Proxy for ${name}`);
+  console.log(`Deploying the Proxy for ${name}`);
   console.log('The contract will be initialized with the following governor and guardian addresses');
   console.log(governor, guardian);
 
@@ -52,5 +56,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('');
 };
 
-func.tags = ['coreBorrowStablecoin'];
+func.tags = ['coreNewStable'];
 export default func;

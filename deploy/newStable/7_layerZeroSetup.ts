@@ -2,7 +2,7 @@ import { Contract } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { LayerZeroBridge, LayerZeroBridge__factory } from '../../typechain';
-import { OFTs } from '../bridges/OFTs';
+import { OFTs } from '../constants';
 import LZ_CHAINIDS from '../constants/layerzeroChainIds.json';
 
 // For more details on trustedRemote, check: https://layerzero.gitbook.io/docs/evm-guides/master/set-trusted-remotes
@@ -14,7 +14,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
   const local = OFTs[stable]?.[network.name] as string;
   const contractAngleOFT = new Contract(local, LayerZeroBridge__factory.abi, deployer) as LayerZeroBridge;
 
-  console.log('Getting payloads to execute on every chain');
+  console.log(`Setting the trusted remote addresses on ${network.name}`);
   console.log('--------------------------------------------');
   for (const chain of Object.keys(OFTs[stable])) {
     if (chain !== network.name) {
@@ -25,11 +25,10 @@ const func: DeployFunction = async ({ ethers, network }) => {
       console.log(
         contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [(LZ_CHAINIDS as any)[chain], trustedRemote]),
       );
-
       console.log((LZ_CHAINIDS as any)[chain], trustedRemote);
       console.log('');
 
-      console.log('Now executing the transaction');
+      console.log('Now setting the trusted remote');
       // Check admin rights here
       await (
         await contractAngleOFT.connect(deployer).setTrustedRemote((LZ_CHAINIDS as any)[chain], trustedRemote)
@@ -41,5 +40,5 @@ const func: DeployFunction = async ({ ethers, network }) => {
   console.log('');
 };
 
-func.tags = ['LayerZeroSources'];
+func.tags = ['lzSetupNewStable'];
 export default func;

@@ -80,14 +80,14 @@ contract AgToken is IAgToken, ERC20PermitUpgradeable {
         __ERC20Permit_init(name_);
         __ERC20_init(name_, symbol_);
         treasury = _treasury;
-        emit TreasuryUpdated(address(_treasury));
+        emit TreasuryUpdated(_treasury);
     }
 
     // ================================= MODIFIERS =================================
 
     /// @notice Checks to see if it is the `Treasury` calling this contract
     modifier onlyTreasury() {
-        if (msg.sender != address(treasury)) revert NotTreasury();
+        if (msg.sender != treasury) revert NotTreasury();
         _;
     }
 

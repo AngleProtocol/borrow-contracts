@@ -3,6 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../../typechain';
+import { minedAddress, stableName } from '../constants';
 import { deployProxy } from '../helpers';
 
 const argv = yargs.env('').boolean('ci').parseSync();
@@ -12,25 +13,37 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdmin: string;
   let coreBorrow: string;
-  const stableName = 'USD';
+
   const agTokenName = `Angle ${stableName}`;
   const agTokenSymbol = `ag${stableName}`;
-
-  const agTokenAddress = '0x0000206329b97DB379d5E1Bf586BbDB969C63274';
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
     proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
   } else {
-    proxyAdmin = (await deployments.get('ProxyAdmin')).address;
+    proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
   }
   coreBorrow = (await deployments.get('CoreBorrowTest')).address;
-  const treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
+  let treasuryImplementation: string;
+
+  try {
+    treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
+  } catch {
+    // Typically if we're in mainnet fork
+    console.log('Now deploying Treasury implementation');
+    await deploy('Treasury_Implementation', {
+      contract: 'Treasury',
+      from: deployer.address,
+      args: [],
+      log: !argv.ci,
+    });
+    treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
+  }
 
   const treasuryInterface = Treasury__factory.createInterface();
   const dataTreasury = new ethers.Contract(treasuryImplementation, treasuryInterface).interface.encodeFunctionData(
     'initialize',
-    [coreBorrow, agTokenAddress],
+    [coreBorrow, minedAddress],
   );
 
   const treasury = await deployProxy(`Treasury_${stableName}`, treasuryImplementation, proxyAdmin, dataTreasury);
@@ -39,7 +52,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   console.log('Initializing the agToken contract now that we have the treasury address');
   const agToken = new ethers.Contract(
-    agTokenAddress,
+    minedAddress,
     AgTokenSideChainMultiBridge__factory.createInterface(),
     deployer,
   ) as AgTokenSideChainMultiBridge;
@@ -47,6 +60,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('Success: agToken successfully initialized');
 };
 
-func.tags = ['treasury'];
-func.dependencies = ['agTokenImplementationStablecoin'];
+func.tags = ['treasuryNewStable'];
+func.dependencies = ['agTokenNewStable'];
 export default func;

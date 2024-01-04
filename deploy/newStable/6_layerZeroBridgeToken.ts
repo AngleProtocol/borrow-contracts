@@ -1,0 +1,88 @@
+import { parseEther } from 'ethers/lib/utils';
+import { DeployFunction } from 'hardhat-deploy/types';
+import yargs from 'yargs';
+
+import {
+  AgTokenSideChainMultiBridge,
+  AgTokenSideChainMultiBridge__factory,
+  LayerZeroBridgeToken,
+  LayerZeroBridgeToken__factory,
+} from '../../typechain';
+import { minedAddress, stableName } from '../constants';
+import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
+import { deployProxy } from '../helpers';
+
+const argv = yargs.env('').boolean('ci').parseSync();
+const func: DeployFunction = async ({ ethers, network, deployments }) => {
+  const { deploy } = deployments;
+  const { deployer } = await ethers.getNamedSigners();
+  const isDeployerAdmin = true;
+  if (network.config.chainId !== 1 && network.name !== 'localhost') {
+    const treasury = await ethers.getContract(`Treasury_${stableName}`);
+    const proxyAdmin = await ethers.getContract('ProxyAdmin');
+    console.log(treasury.address, proxyAdmin.address);
+
+    const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
+    console.log(`[${network.name}] LayerZero Endpoint address: ${endpointAddr}`);
+    const deploymentName = 'LayerZeroBridgeToken_V1_0_Implementation';
+
+    let implementationAddress;
+    try {
+      implementationAddress = (await ethers.getContract(deploymentName)).address;
+    } catch {
+      await deploy(deploymentName, {
+        contract: 'LayerZeroBridgeToken',
+        from: deployer.address,
+        log: !argv.ci,
+      });
+      implementationAddress = (await ethers.getContract(deploymentName)).address;
+    }
+
+    const lzAddress = await deployProxy(
+      `LayerZeroBridge_${stableName}`,
+      implementationAddress,
+      proxyAdmin.address,
+      LayerZeroBridgeToken__factory.createInterface().encodeFunctionData('initialize', [
+        `LayerZero Bridge ag${stableName}`,
+        `LZ-ag${stableName}`,
+        endpointAddr,
+        treasury.address,
+        parseEther('0'),
+      ]),
+    );
+
+    if (isDeployerAdmin) {
+      const lzTokenContract = new ethers.Contract(
+        lzAddress,
+        LayerZeroBridgeToken__factory.createInterface(),
+        deployer,
+      ) as LayerZeroBridgeToken;
+      const agTokenContract = new ethers.Contract(
+        minedAddress,
+        AgTokenSideChainMultiBridge__factory.createInterface(),
+        deployer,
+      ) as AgTokenSideChainMultiBridge;
+      console.log('Setting the useCustomAdapterParams');
+      await (await lzTokenContract.setUseCustomAdapterParams(1)).wait();
+      console.log('Success');
+      console.log('Adding bridge token');
+      await (
+        await agTokenContract.addBridgeToken(lzAddress, parseEther('1000000'), parseEther('50000'), 0, false)
+      ).wait();
+      console.log('Success');
+      console.log('Setting chain total hourly limit');
+      await (await agTokenContract.setChainTotalHourlyLimit(parseEther('5000'))).wait();
+      console.log('Success');
+    }
+
+    // The last thing to be done is to set the trusted remote once everything has been deployed
+  } else {
+    console.log('');
+    console.log('Not deploying anything on Ethereum');
+    console.log('');
+  }
+};
+
+func.tags = ['lzBridgeTokenNewStable'];
+func.dependencies = ['lzBridgeNewStable'];
+export default func;
