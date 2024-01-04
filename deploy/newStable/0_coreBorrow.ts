@@ -3,6 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { CoreBorrow__factory } from '../../typechain';
+import { forkedChain } from '../constants/constants';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 /**
@@ -20,15 +21,25 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   let proxyAdmin: string;
 
   if (!network.live) {
-    // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
-    proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
+    proxyAdmin = registry(forkedChain)?.ProxyAdmin!;
   } else {
-    // Otherwise, we're using the proxy admin address from the desired network
     proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
   }
 
-  // Implementation has already been deployed on every chain here
-  const coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
+  let coreBorrowImplementation;
+  try {
+    coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
+  } catch {
+    // Typically if we're in mainnet fork
+    console.log('Now deploying CoreBorrow implementation');
+    await deploy('CoreBorrow_Implementation', {
+      contract: 'CoreBorrow',
+      from: deployer.address,
+      args: [],
+      log: !argv.ci,
+    });
+    coreBorrowImplementation = (await ethers.getContract('CoreBorrow_Implementation')).address;
+  }
   console.log('');
 
   const coreBorrowInterface = CoreBorrow__factory.createInterface();

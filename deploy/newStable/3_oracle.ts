@@ -1,15 +1,16 @@
+import { ChainId } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { OracleWSTETHUSDChainlink, OracleWSTETHUSDChainlink__factory } from '../../typechain';
-import { stableName } from '../constants';
+import { forkedChain, stableName } from '../constants/constants';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  if (!network.live || network.config.chainId == 1) {
+  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
     const treasury = (await deployments.get(`Treasury_${stableName}`)).address;
     console.log(`Treasury: ${treasury}`);
     console.log('Now deploying the Oracle wstETH/USD');

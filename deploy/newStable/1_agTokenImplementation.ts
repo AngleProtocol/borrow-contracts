@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { TransparentUpgradeableProxy, TransparentUpgradeableProxy__factory } from '../../typechain';
-import { immutableCreate2Factory, minedAddress } from '../constants';
+import { forkedChain, immutableCreate2Factory, minedAddress } from '../constants/constants';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -15,9 +15,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   let implementationName: string;
   let proxyAdmin: string;
 
-  if (network.config.chainId == 1 || !network.live) {
+  if (network.config.chainId == 1 || (!network.live && forkedChain === ChainId.MAINNET)) {
     implementationName = 'AgToken';
     proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
+  } else if (!network.live && forkedChain != ChainId.MAINNET) {
+    implementationName = 'AgTokenSideChainMultiBridge';
+    proxyAdmin = registry(forkedChain)?.ProxyAdmin!;
   } else {
     implementationName = 'AgTokenSideChainMultiBridge';
     proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;

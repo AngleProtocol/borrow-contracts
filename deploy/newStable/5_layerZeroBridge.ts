@@ -2,16 +2,13 @@ import { ChainId, registry } from '@angleprotocol/sdk/dist';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { LayerZeroBridge__factory } from '../../typechain';
+import { forkedChain, stableName } from '../constants/constants';
 import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deployImplem, deployProxy } from '../helpers';
 
-const stable = 'USD';
-
 const func: DeployFunction = async ({ ethers, network, deployments }) => {
-  if (network.config.chainId !== 1 && network.name !== 'localhost') {
-    console.log(`Bridge is built for L1, and you're on ${network.name}`);
-  } else {
-    const treasury = await ethers.getContract(`Treasury_${stable}`);
+  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
+    const treasury = await ethers.getContract(`Treasury_${stableName}`);
     const proxyAdminAddress = registry(ChainId.MAINNET)?.ProxyAdmin!;
     console.log(treasury, proxyAdminAddress);
 
@@ -26,15 +23,17 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
     }
 
     await deployProxy(
-      `LayerZeroBridge_${stable}`,
+      `LayerZeroBridge_${stableName}`,
       layerZeroBridgeImplem,
       proxyAdminAddress,
       LayerZeroBridge__factory.createInterface().encodeFunctionData('initialize', [
-        `LayerZero Bridge ag${stable}`,
+        `LayerZero Bridge ag${stableName}`,
         endpointAddr,
         treasury.address,
       ]),
     );
+  } else {
+    console.log(`Not deploying any oracle on ${network.name}`);
   }
 };
 

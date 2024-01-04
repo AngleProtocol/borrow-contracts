@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../../typechain';
-import { minedAddress, stableName } from '../constants';
+import { forkedChain, minedAddress, stableName } from '../constants/constants';
 import { deployProxy } from '../helpers';
 
 const argv = yargs.env('').boolean('ci').parseSync();
@@ -18,14 +18,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const agTokenSymbol = `ag${stableName}`;
 
   if (!network.live) {
-    // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
-    proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
+    proxyAdmin = registry(forkedChain)?.ProxyAdmin!;
   } else {
     proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
   }
   coreBorrow = (await deployments.get('CoreBorrowTest')).address;
   let treasuryImplementation: string;
-
   try {
     treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
   } catch {

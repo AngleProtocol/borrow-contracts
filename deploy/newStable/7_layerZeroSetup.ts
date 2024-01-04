@@ -2,11 +2,12 @@ import { Contract } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { LayerZeroBridge, LayerZeroBridge__factory } from '../../typechain';
-import { OFTs } from '../constants';
+import { OFTs } from '../constants/constants';
 import LZ_CHAINIDS from '../constants/layerzeroChainIds.json';
 
 // For more details on trustedRemote, check: https://layerzero.gitbook.io/docs/evm-guides/master/set-trusted-remotes
 // LayerZero chains: https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
+// TODO make sure that the OFT table is up to date before running this script
 const func: DeployFunction = async ({ ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   const stable = 'USD';

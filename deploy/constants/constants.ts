@@ -1,10 +1,11 @@
-import { parseAmount } from '@angleprotocol/sdk/dist';
+import { ChainId, parseAmount } from '@angleprotocol/sdk/dist';
 import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 // Mined address for the stablecoin
 export const minedAddress = '0x0000206329b97DB379d5E1Bf586BbDB969C63274';
 export const stableName = 'USD';
 export const vaultsList = ['wstETH'];
+export const forkedChain = ChainId.MAINNET;
 
 export const immutableCreate2Factory = '0x0000000000FFe8B47B3e2130213B802212439497';
 

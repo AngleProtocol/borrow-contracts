@@ -6,7 +6,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { Treasury__factory, VaultManager__factory } from '../../typechain';
-import { stableName, vaultManagers, vaultsList } from '../constants';
+import { forkedChain, stableName, vaultManagers, vaultsList } from '../constants/constants';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
@@ -27,22 +27,21 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
-  let implementation: string;
-  try {
-    implementation = (await ethers.getContract(implementationName)).address;
-  } catch {
-    // Typically if we're in mainnet fork
-    console.log('Now deploying VaultManager implementation');
-    await deploy(implementationName, {
-      contract: 'VaultManagerLiquidationBoost',
-      from: deployer.address,
-      args: [],
-      log: !argv.ci,
-    });
-    implementation = (await ethers.getContract(implementationName)).address;
-  }
-
-  if (!network.live || network.config.chainId == 1) {
+  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
+    let implementation: string;
+    try {
+      implementation = (await ethers.getContract(implementationName)).address;
+    } catch {
+      // Typically if we're in mainnet fork
+      console.log('Now deploying VaultManager implementation');
+      await deploy(implementationName, {
+        contract: 'VaultManagerLiquidationBoost',
+        from: deployer.address,
+        args: [],
+        log: !argv.ci,
+      });
+      implementation = (await ethers.getContract(implementationName)).address;
+    }
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
     const proxyAdminAddress = registry(ChainId.MAINNET)?.ProxyAdmin!;
     const treasuryAddress = (await deployments.get(`Treasury_${stableName}`)).address;

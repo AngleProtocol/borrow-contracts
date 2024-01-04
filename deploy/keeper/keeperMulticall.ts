@@ -1,12 +1,13 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { AngleHelpers__factory } from '../typechain';
+import { KeeperMulticall__factory } from '../../typechain';
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdmin: string;
+  const KEEPER = '0xcC617C6f9725eACC993ac626C7efC6B96476916E';
 
   if (!network.live) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
@@ -15,31 +16,33 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     // Otherwise, we're using the proxy admin address from the desired network
     proxyAdmin = CONTRACTS_ADDRESSES[network.config.chainId as ChainId].ProxyAdmin!;
   }
-  // Using the proxyAdminGuardian for Avalanche
-  proxyAdmin = '0xe14bFA5575d9906BA35beb15C9DBe5C77bFdd5b5';
-  console.log('deployer ', deployer.address);
 
-  console.log('Now deploying the AngleHelpers contract');
+  console.log('Now deploying KeeperMulticall');
   console.log('Starting with the implementation');
-  const angleHelpersImplementation = await deploy('AngleHelpers_Avalanche_Implementation', {
-    contract: 'AngleBorrowHelpers',
+  const keeperMulticallImplementation = await deploy('KeeperMulticall_Implementation', {
+    contract: 'KeeperMulticall',
     from: deployer.address,
   });
 
   console.log(
-    `Successfully deployed the Avalanche implementation for AngleBorrowHelpers at ${angleHelpersImplementation.address}\n`,
+    `Successfully deployed the implementation for KeeperMulticall at ${keeperMulticallImplementation.address}\n`,
   );
+
+  const initializeData = KeeperMulticall__factory.createInterface().encodeFunctionData('initialize', [KEEPER]);
 
   console.log('Now deploying the Proxy');
   console.log(`Proxy admin: ${proxyAdmin}`);
-  const angleHelpers = await deploy('AngleBorrowHelpersAvalanche', {
+  const keeperMulticall = await deploy('KeeperMulticall', {
     contract: 'TransparentUpgradeableProxy',
     from: deployer.address,
-    args: [angleHelpersImplementation.address, proxyAdmin, '0x'],
+    args: [keeperMulticallImplementation.address, proxyAdmin, initializeData],
   });
 
-  console.log(`Successfully deployed AngleHelpers at the address ${angleHelpers.address}\n`);
+  console.log(`Successfully deployed KeeperMulticall at the address ${keeperMulticall.address}\n`);
+
+  // Next step: change Keeper to this new keeper contract where needed (strategy, ...)
+  // see: scripts/mainnet-fork/changeKeeper.ts
 };
 
-func.tags = ['angleHelpers'];
+func.tags = ['keeper_multicall'];
 export default func;

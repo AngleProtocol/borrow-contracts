@@ -1,3 +1,4 @@
+import { ChainId } from '@angleprotocol/sdk';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
@@ -8,7 +9,7 @@ import {
   LayerZeroBridgeToken,
   LayerZeroBridgeToken__factory,
 } from '../../typechain';
-import { minedAddress, stableName } from '../constants';
+import { forkedChain, minedAddress, stableName } from '../constants/constants';
 import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deployProxy } from '../helpers';
 
@@ -17,7 +18,11 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const isDeployerAdmin = true;
-  if (network.config.chainId !== 1 && network.name !== 'localhost') {
+  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
+    console.log('');
+    console.log('Not deploying anything on Ethereum');
+    console.log('');
+  } else {
     const treasury = await ethers.getContract(`Treasury_${stableName}`);
     const proxyAdmin = await ethers.getContract('ProxyAdmin');
     console.log(treasury.address, proxyAdmin.address);
@@ -74,12 +79,7 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
       await (await agTokenContract.setChainTotalHourlyLimit(parseEther('5000'))).wait();
       console.log('Success');
     }
-
     // The last thing to be done is to set the trusted remote once everything has been deployed
-  } else {
-    console.log('');
-    console.log('Not deploying anything on Ethereum');
-    console.log('');
   }
 };
 
