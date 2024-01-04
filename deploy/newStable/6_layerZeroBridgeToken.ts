@@ -1,4 +1,4 @@
-import { ChainId } from '@angleprotocol/sdk';
+import { ChainId, registry } from '@angleprotocol/sdk';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
@@ -18,14 +18,20 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   const isDeployerAdmin = true;
-  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
+  if ((!network.live && (forkedChain as ChainId) == ChainId.MAINNET) || network.config.chainId == 1) {
     console.log('');
     console.log('Not deploying any bridge token on Ethereum');
     console.log('');
   } else {
     const treasury = await ethers.getContract(`Treasury_${stableName}`);
-    const proxyAdmin = await ethers.getContract('ProxyAdmin');
-    console.log(treasury.address, proxyAdmin.address);
+    let proxyAdmin;
+    if (!network.live) {
+      proxyAdmin = registry(forkedChain)?.ProxyAdmin!;
+    } else {
+      proxyAdmin = registry(network.config.chainId as ChainId)?.ProxyAdmin!;
+    }
+
+    console.log(treasury.address, proxyAdmin);
 
     const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[forkedChainName];
     console.log(`[${forkedChainName}] LayerZero Endpoint address: ${endpointAddr}`);
@@ -46,7 +52,7 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
     const lzAddress = await deployProxy(
       `LayerZeroBridge_${stableName}`,
       implementationAddress,
-      proxyAdmin.address,
+      proxyAdmin,
       LayerZeroBridgeToken__factory.createInterface().encodeFunctionData('initialize', [
         `LayerZero Bridge ag${stableName}`,
         `LZ-ag${stableName}`,

@@ -149,6 +149,7 @@ const config: HardhatUserConfig = {
 
         url: nodeUrl('mainnet'),
         blockNumber: 18935762,
+
         // Polygon
         /*
         url: nodeUrl('forkpolygon'),
@@ -158,8 +159,8 @@ const config: HardhatUserConfig = {
         // Optimism
         /*
         url: nodeUrl('optimism'),
-        blockNumber: 17614765,
-        */
+        blockNumber: 114397708,
+*/
         // Arbitrum
         /*
         url: nodeUrl('arbitrum'),
@@ -183,7 +184,7 @@ const config: HardhatUserConfig = {
             interval: 1000,
           }
         : { auto: true },
-      chainId: 1,
+      chainId: 0,
     },
     rinkeby: {
       live: true,

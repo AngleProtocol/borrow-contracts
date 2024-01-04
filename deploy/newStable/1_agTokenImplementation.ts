@@ -15,10 +15,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   let implementationName: string;
   let proxyAdmin: string;
 
-  if (network.config.chainId == 1 || (!network.live && forkedChain === ChainId.MAINNET)) {
+  if (network.config.chainId == 1 || (!network.live && (forkedChain as ChainId) === ChainId.MAINNET)) {
     implementationName = 'AgToken';
     proxyAdmin = registry(ChainId.MAINNET)?.ProxyAdmin!;
-  } else if (!network.live && forkedChain != ChainId.MAINNET) {
+  } else if (!network.live && (forkedChain as ChainId) != ChainId.MAINNET) {
     implementationName = 'AgTokenSideChainMultiBridge';
     proxyAdmin = registry(forkedChain)?.ProxyAdmin!;
   } else {

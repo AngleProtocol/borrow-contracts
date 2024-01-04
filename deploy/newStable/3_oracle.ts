@@ -10,7 +10,12 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
+  if ((!network.live && (forkedChain as ChainId) === ChainId.MAINNET) || network.config.chainId == 1) {
+    console.log(forkedChain);
+    console.log(forkedChain as ChainId);
+    console.log((forkedChain as ChainId) === ChainId.MAINNET);
+    console.log((forkedChain as ChainId) == ChainId.MAINNET);
+    console.log((!network.live && (forkedChain as ChainId) === ChainId.MAINNET) || network.config.chainId == 1);
     const treasury = (await deployments.get(`Treasury_${stableName}`)).address;
     console.log('Now deploying the Oracle wstETH/USD');
     console.log(`Treasury: ${treasury}`);

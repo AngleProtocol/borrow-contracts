@@ -27,7 +27,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
 
-  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
+  if ((!network.live && (forkedChain as ChainId) == ChainId.MAINNET) || network.config.chainId == 1) {
     let implementation: string;
     try {
       implementation = (await ethers.getContract(implementationName)).address;
@@ -153,7 +153,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     console.log('Proxy deployments done');
     console.log('');
   } else {
-    console.log('');
     console.log(`Not deploying any vault on ${forkedChainName}`);
     console.log('');
   }

@@ -7,7 +7,7 @@ import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deployImplem, deployProxy } from '../helpers';
 
 const func: DeployFunction = async ({ ethers, network, deployments }) => {
-  if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
+  if ((!network.live && (forkedChain as ChainId) == ChainId.MAINNET) || network.config.chainId == 1) {
     const treasury = await ethers.getContract(`Treasury_${stableName}`);
     const proxyAdminAddress = registry(ChainId.MAINNET)?.ProxyAdmin!;
     console.log(treasury.address, proxyAdminAddress);
@@ -34,7 +34,8 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
       ]),
     );
   } else {
-    console.log(`Not deploying any oracle on ${forkedChainName}`);
+    console.log(`Not deploying any LayerZeroBridge contract on ${forkedChainName}`);
+    console.log('');
   }
 };
 
