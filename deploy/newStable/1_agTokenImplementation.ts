@@ -49,7 +49,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const immutableCreate2 = new ethers.Contract(immutableCreate2Factory, immutableCreate2Interface, deployer);
   const computedAddress = await immutableCreate2.findCreate2Address(json.salt, initCode);
   if (computedAddress != minedAddress) throw Error('Invalid Mined address');
-  console.log('Deploying agToken');
+  console.log(`Deploying agToken at the address ${computedAddress}`);
   await (await immutableCreate2.safeCreate2(json.salt, initCode)).wait();
   console.log('agToken deployed');
   const agToken = new ethers.Contract(
@@ -59,9 +59,11 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   ) as TransparentUpgradeableProxy;
   console.log('Upgrading the implementation');
   await (await agToken.upgradeTo(agTokenImplementation)).wait();
+  console.log('Success');
   console.log('Changing the admin');
   await (await agToken.changeAdmin(proxyAdmin)).wait();
   console.log('Success');
+  console.log('');
 };
 
 func.tags = ['agTokenNewStable'];

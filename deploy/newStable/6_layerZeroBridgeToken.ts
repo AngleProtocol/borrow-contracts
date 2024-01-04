@@ -9,7 +9,7 @@ import {
   LayerZeroBridgeToken,
   LayerZeroBridgeToken__factory,
 } from '../../typechain';
-import { forkedChain, minedAddress, stableName } from '../constants/constants';
+import { forkedChain, forkedChainName, minedAddress, stableName } from '../constants/constants';
 import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deployProxy } from '../helpers';
 
@@ -20,15 +20,15 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
   const isDeployerAdmin = true;
   if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
     console.log('');
-    console.log('Not deploying anything on Ethereum');
+    console.log('Not deploying any bridge token on Ethereum');
     console.log('');
   } else {
     const treasury = await ethers.getContract(`Treasury_${stableName}`);
     const proxyAdmin = await ethers.getContract('ProxyAdmin');
     console.log(treasury.address, proxyAdmin.address);
 
-    const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
-    console.log(`[${network.name}] LayerZero Endpoint address: ${endpointAddr}`);
+    const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[forkedChainName];
+    console.log(`[${forkedChainName}] LayerZero Endpoint address: ${endpointAddr}`);
     const deploymentName = 'LayerZeroBridgeToken_V1_0_Implementation';
 
     let implementationAddress;
@@ -78,6 +78,7 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
       console.log('Setting chain total hourly limit');
       await (await agTokenContract.setChainTotalHourlyLimit(parseEther('5000'))).wait();
       console.log('Success');
+      console.log('');
     }
     // The last thing to be done is to set the trusted remote once everything has been deployed
   }

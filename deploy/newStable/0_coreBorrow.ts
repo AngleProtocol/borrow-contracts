@@ -14,7 +14,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   // This is for a test CoreBorrow implementation
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const json = await import('./networks/' + network.name + '.json');
+  const json = await import('../networks/' + network.name + '.json');
   const name = 'CoreBorrowTest';
   const governor = deployer.address;
   const guardian = json.guardian;

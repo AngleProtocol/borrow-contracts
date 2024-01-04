@@ -56,6 +56,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   ) as AgTokenSideChainMultiBridge;
   await (await agToken.connect(deployer).initialize(agTokenName, agTokenSymbol, treasury)).wait();
   console.log('Success: agToken successfully initialized');
+  console.log('');
 };
 
 func.tags = ['treasuryNewStable'];

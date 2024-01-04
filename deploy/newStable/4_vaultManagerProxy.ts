@@ -6,7 +6,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
 import { Treasury__factory, VaultManager__factory } from '../../typechain';
-import { forkedChain, stableName, vaultManagers, vaultsList } from '../constants/constants';
+import { forkedChain, forkedChainName, stableName, vaultManagers, vaultsList } from '../constants/constants';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
@@ -115,6 +115,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       await (await treasury.connect(signer).addVaultManager(vaultManagerAddress)).wait();
       console.log(`Success`);
 
+      console.log('Unpausing vaultManager');
       await (await vaultManager.togglePause()).wait();
       console.log('Success');
 
@@ -132,8 +133,8 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
         console.log(`RepayFee of ${vaultManagerParams.params.repayFee} set successfully`);
       }
       if (
-        !vaultManagerParams.params.dust.isZero() &&
-        !vaultManagerParams.params.dustLiquidation.isZero() &&
+        !vaultManagerParams.params.dust.isZero() ||
+        !vaultManagerParams.params.dustLiquidation.isZero() ||
         !vaultManagerParams.params.dustCollateral.isZero()
       ) {
         console.log('Setting dusts');
@@ -150,9 +151,10 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
       }
     }
     console.log('Proxy deployments done');
+    console.log('');
   } else {
     console.log('');
-    console.log(`Not deploying any vault on ${network.name}`);
+    console.log(`Not deploying any vault on ${forkedChainName}`);
     console.log('');
   }
 };

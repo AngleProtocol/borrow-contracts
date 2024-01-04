@@ -2,7 +2,7 @@ import { ChainId, registry } from '@angleprotocol/sdk/dist';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { LayerZeroBridge__factory } from '../../typechain';
-import { forkedChain, stableName } from '../constants/constants';
+import { forkedChain, forkedChainName, stableName } from '../constants/constants';
 import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deployImplem, deployProxy } from '../helpers';
 
@@ -10,9 +10,10 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
   if ((!network.live && forkedChain == ChainId.MAINNET) || network.config.chainId == 1) {
     const treasury = await ethers.getContract(`Treasury_${stableName}`);
     const proxyAdminAddress = registry(ChainId.MAINNET)?.ProxyAdmin!;
-    console.log(treasury, proxyAdminAddress);
+    console.log(treasury.address, proxyAdminAddress);
 
-    const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
+    const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string }).mainnet;
+    console.log('Now deploying the LayerZero bridge contract');
     console.log(`[${network.name}] LayerZero Endpoint address: ${endpointAddr}`);
     let layerZeroBridgeImplem;
     try {
@@ -33,7 +34,7 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
       ]),
     );
   } else {
-    console.log(`Not deploying any oracle on ${network.name}`);
+    console.log(`Not deploying any oracle on ${forkedChainName}`);
   }
 };
 
