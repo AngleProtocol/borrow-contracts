@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.17;
 
-import { Utils } from "./Utils.s.sol";
 import { console } from "forge-std/console.sol";
+import "forge-std/Script.sol";
+import { StdAssertions } from "forge-std/Test.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import "stringutils/strings.sol";
 
@@ -12,7 +13,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 import { ImmutableCreate2Factory } from "../../../contracts/interfaces/external/create2/ImmutableCreate2Factory.sol";
 
 /// @dev Script to run to find the init code of a contract to get a vanity address from it
-contract FindInitCode is Utils {
+contract FindInitCode is Script, StdAssertions {
     using stdJson for string;
     using strings for *;
 

@@ -2,14 +2,17 @@
 
 pragma solidity ^0.8.17;
 
-import { Utils } from "./Utils.s.sol";
 import "stringutils/strings.sol";
+import "forge-std/Script.sol";
+import { StdAssertions } from "forge-std/Test.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { console } from "forge-std/console.sol";
 import "./Constants.s.sol";
 
-contract VanityAddress is Utils {
+contract VanityAddress is Script, StdAssertions {
     using stdJson for string;
+
+    string constant JSON_VANITY_PATH = "./scripts/vanity.json";
 
     function _findDeploymentAddress(
         bytes32 salt,
