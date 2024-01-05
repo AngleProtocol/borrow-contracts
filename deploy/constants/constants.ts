@@ -26,6 +26,7 @@ export const OFTs: OFTsStructure = {
     mantle: '0x2859a4eBcB58c8Dd5cAC1419C4F63A071b642B20',
   },
   USD: {
+    // TODO: update because mock
     mainnet: '0x4Fa745FCCC04555F2AFA8874cd23961636CdF982',
   },
 };

@@ -4,17 +4,17 @@ pragma solidity ^0.8.12;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-import "../../../BaseOracleChainlinkMultiOneFeed.sol";
+import "../../../BaseOracleChainlinkOneFeed.sol";
 import "../../../../interfaces/external/lido/IStETH.sol";
 
 /// @title OracleWSTETHUSDChainlink
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of wSTETH in USD in base 18
-contract OracleWSTETHUSDChainlink is BaseOracleChainlinkMultiOneFeed {
+contract OracleWSTETHUSDChainlink is BaseOracleChainlinkOneFeed {
     string public constant DESCRIPTION = "wSTETH/USD Oracle";
     IStETH public constant STETH = IStETH(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
 
-    constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMultiOneFeed(_stalePeriod, _treasury) {}
+    constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkOneFeed(_stalePeriod, _treasury) {}
 
     /// @inheritdoc IOracle
     function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
@@ -24,7 +24,7 @@ contract OracleWSTETHUSDChainlink is BaseOracleChainlinkMultiOneFeed {
         return _circuitChainlink;
     }
 
-    /// @inheritdoc BaseOracleChainlinkMultiOneFeed
+    /// @inheritdoc BaseOracleChainlinkOneFeed
     function _getQuoteAmount() internal view override returns (uint256) {
         return STETH.getPooledEthByShares(1 ether);
     }

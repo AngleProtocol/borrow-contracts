@@ -6,10 +6,10 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "./BaseOracleChainlinkMulti.sol";
 
-/// @title BaseOracleChainlinkMultiOneFeed
+/// @title BaseOracleChainlinkOneFeed
 /// @author Angle Labs, Inc.
 /// @notice Base contract for an oracle that reads into one Chainlink feeds with 8 decimals
-abstract contract BaseOracleChainlinkMultiOneFeed is BaseOracleChainlinkMulti {
+abstract contract BaseOracleChainlinkOneFeed is BaseOracleChainlinkMulti {
     constructor(uint32 _stalePeriod, address _treasury) BaseOracleChainlinkMulti(_stalePeriod, _treasury) {}
 
     /// @notice Returns the quote amount of the oracle contract
