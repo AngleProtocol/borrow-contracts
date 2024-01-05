@@ -36,7 +36,8 @@
     "test:all": "yarn test && yarn test:e2e:mainnet",
     "foundry:setup": "curl -L https://foundry.paradigm.xyz | bash && foundryup && git submodule update --init --recursive",
     "foundry:run": "docker run -it --rm -v $(pwd):/app -w /app ghcr.io/foundry-rs/foundry sh",
-    "foundry:test": "forge test -vvvv"
+    "foundry:test": "forge test -vvvv",
+    "vanity": "forge script --skip test --slow -vvvv --rpc-url mainnet ./scripts/foundry/utils/VanityAddress.s.sol"
   },
   "repository": {
     "type": "git",
