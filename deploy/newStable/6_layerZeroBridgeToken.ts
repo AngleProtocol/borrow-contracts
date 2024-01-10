@@ -80,16 +80,18 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
       await (
         await agTokenContract.addBridgeToken(lzAddress, parseEther('1000000'), parseEther('50000'), 0, false)
       ).wait();
+      /*
       console.log('Success');
       console.log('Setting chain total hourly limit');
       await (await agTokenContract.setChainTotalHourlyLimit(parseEther('5000'))).wait();
       console.log('Success');
       console.log('');
+      */
     }
     // The last thing to be done is to set the trusted remote once everything has been deployed
   }
 };
 
 func.tags = ['lzBridgeTokenNewStable'];
-func.dependencies = ['lzBridgeNewStable'];
+// func.dependencies = ['lzBridgeNewStable'];
 export default func;
