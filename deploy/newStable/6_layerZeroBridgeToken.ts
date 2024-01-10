@@ -9,7 +9,7 @@ import {
   LayerZeroBridgeToken,
   LayerZeroBridgeToken__factory,
 } from '../../typechain';
-import { forkedChain, forkedChainName, minedAddress, stableName } from '../constants/constants';
+import { forkedChain, minedAddress, stableName } from '../constants/constants';
 import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deployProxy } from '../helpers';
 
@@ -33,8 +33,8 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
 
     console.log(treasury.address, proxyAdmin);
 
-    const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[forkedChainName];
-    console.log(`[${forkedChainName}] LayerZero Endpoint address: ${endpointAddr}`);
+    const endpointAddr = (LZ_ENDPOINTS as { [name: string]: string })[network.name];
+    console.log(`[${network.name}] LayerZero Endpoint address: ${endpointAddr}`);
     const deploymentName = 'LayerZeroBridgeToken_V1_0_Implementation';
 
     let implementationAddress;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.12;
 
 import { console } from "forge-std/console.sol";
 import "forge-std/Script.sol";
@@ -29,6 +29,7 @@ contract FindInitCode is Script, StdAssertions {
         );
         console.log("Proxy bytecode");
         console.logBytes(initCode);
+        console.logBytes(abi.encode(IMMUTABLE_CREATE2_FACTORY_ADDRESS, DEPLOYER, emptyData));
         console.log("");
     }
 }

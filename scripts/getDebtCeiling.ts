@@ -1,7 +1,8 @@
-import { ChainId, formatAmount, registry } from '@angleprotocol/sdk';
+import { ChainId, registry } from '@angleprotocol/sdk';
 import { ethers, network } from 'hardhat';
 
 import { Treasury, Treasury__factory, VaultManager, VaultManager__factory } from '../typechain';
+import { formatAmount } from '../utils/bignumber';
 
 async function main() {
   const { deployer } = await ethers.getNamedSigners();

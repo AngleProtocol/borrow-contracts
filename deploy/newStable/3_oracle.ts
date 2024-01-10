@@ -1,4 +1,4 @@
-import { ChainId, formatAmount } from '@angleprotocol/sdk';
+import { ChainId } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
@@ -11,11 +11,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
   if ((!network.live && (forkedChain as ChainId) === ChainId.MAINNET) || network.config.chainId == 1) {
-    console.log(forkedChain);
-    console.log(forkedChain as ChainId);
-    console.log((forkedChain as ChainId) === ChainId.MAINNET);
-    console.log((forkedChain as ChainId) == ChainId.MAINNET);
-    console.log((!network.live && (forkedChain as ChainId) === ChainId.MAINNET) || network.config.chainId == 1);
     const treasury = (await deployments.get(`Treasury_${stableName}`)).address;
     console.log('Now deploying the Oracle wstETH/USD');
     console.log(`Treasury: ${treasury}`);
@@ -35,7 +30,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
     ) as OracleWSTETHUSDChainlink;
 
     const oracleValue = await oracleContract.read();
-    console.log('Oracle address', formatAmount.ether(oracleValue));
+    console.log('Oracle address', oracleValue);
     console.log('');
   } else {
     console.log(`Not deploying any oracle on ${forkedChainName}`);

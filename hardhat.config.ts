@@ -186,25 +186,6 @@ const config: HardhatUserConfig = {
         : { auto: true },
       chainId: 0,
     },
-    rinkeby: {
-      live: true,
-      url: nodeUrl('rinkeby'),
-      accounts: accounts('rinkeby'),
-      gas: 'auto',
-      // gasPrice: 12e8,
-      chainId: 4,
-    },
-    mainnetForkRemote: {
-      live: false,
-      url: nodeUrl('mainnetForkRemote'),
-      chainId: 1,
-    },
-    mumbai: {
-      live: true,
-      url: nodeUrl('mumbai'),
-      accounts: accounts('mumbai'),
-      gas: 'auto',
-    },
     polygon: {
       live: true,
       url: nodeUrl('polygon'),
@@ -216,13 +197,6 @@ const config: HardhatUserConfig = {
           apiKey: etherscanKey('polygon'),
         },
       },
-    },
-    fantom: {
-      live: true,
-      url: nodeUrl('fantom'),
-      accounts: accounts('fantom'),
-      gas: 'auto',
-      chainId: 250,
     },
     mainnet: {
       live: true,
@@ -285,13 +259,6 @@ const config: HardhatUserConfig = {
           apiKey: etherscanKey('bsc'),
         },
       },
-    },
-    aurora: {
-      live: true,
-      url: nodeUrl('aurora'),
-      accounts: accounts('aurora'),
-      gas: 'auto',
-      chainId: 1313161554,
     },
     celo: {
       live: true,
@@ -422,6 +389,20 @@ const config: HardhatUserConfig = {
           apiKey: etherscanKey('coredao'),
         },
       },
+    },
+    fantom: {
+      live: true,
+      url: nodeUrl('fantom'),
+      accounts: accounts('fantom'),
+      gas: 'auto',
+      chainId: 250,
+    },
+    aurora: {
+      live: true,
+      url: nodeUrl('aurora'),
+      accounts: accounts('aurora'),
+      gas: 'auto',
+      chainId: 1313161554,
     },
   },
   paths: {
