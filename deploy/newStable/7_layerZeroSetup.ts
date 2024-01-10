@@ -12,29 +12,31 @@ const func: DeployFunction = async ({ ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   const stable = 'USD';
 
-  const local = OFTs[stable]?.[network.name] as string;
+  let networkName = network.name;
+  if (!network.live) networkName = 'mainnet';
+
+  const local = OFTs[stable]?.[networkName] as string;
   const contractAngleOFT = new Contract(local, LayerZeroBridge__factory.abi, deployer) as LayerZeroBridge;
 
-  console.log(`Setting the trusted remote addresses on ${network.name}`);
+  console.log(`Setting the trusted remote addresses on ${networkName}`);
+  console.log(`On this chain, the LZ address is ${local}`);
   console.log('--------------------------------------------');
   for (const chain of Object.keys(OFTs[stable])) {
-    if (chain !== network.name) {
-      console.log(chain);
+    if (chain !== networkName) {
+      console.log(`LZ ${stable} contract on ${chain} is ${OFTs[stable][chain]}`);
       const trustedRemote = ethers.utils.solidityPack(['address', 'address'], [OFTs[stable][chain], local]);
-      console.log(`Trusted remote ${trustedRemote}`);
-      console.log(local);
       console.log(
+        'Encoded data',
         contractAngleOFT.interface.encodeFunctionData('setTrustedRemote', [(LZ_CHAINIDS as any)[chain], trustedRemote]),
       );
-      console.log((LZ_CHAINIDS as any)[chain], trustedRemote);
-      console.log('');
-
-      console.log('Now setting the trusted remote');
+      console.log('LZ Chain ID & Trusted remote', (LZ_CHAINIDS as any)[chain], trustedRemote);
+      console.log(`Now creating the transaction to connect ${chain} to ${networkName}`);
       // Check admin rights here
       await (
         await contractAngleOFT.connect(deployer).setTrustedRemote((LZ_CHAINIDS as any)[chain], trustedRemote)
       ).wait();
       console.log('Success');
+      console.log('');
     }
   }
   console.log('--------------------------------------------');
