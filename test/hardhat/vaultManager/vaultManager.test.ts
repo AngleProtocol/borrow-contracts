@@ -1,4 +1,3 @@
-import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, Signer, utils } from 'ethers';
 import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
@@ -135,9 +134,9 @@ contract('VaultManagerLiquidationBoost', () => {
   describe('oracle', () => {
     it('success - read', async () => {
       const oracle = (await ethers.getContractAt(
-        Oracle__factory.abi,
+        MockOracle__factory.abi,
         await vaultManager.oracle(),
-      )) as unknown as Oracle;
+      )) as unknown as MockOracle;
       expect(await oracle.read()).to.be.equal(parseUnits('2', 18));
     });
   });
