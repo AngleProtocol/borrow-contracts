@@ -1,4 +1,4 @@
-# <img src="logo.svg" alt="Angle Borrowing Module" height="40px"> Angle Borrowing Module
+# <img src=".github/assets/logo.svg" alt="Angle Borrowing Module" height="40px"> Angle Borrowing Module
 
 [![CI](https://github.com/AngleProtocol/borrow-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/AngleProtocol/borrow-contracts/actions)
 [![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-blue)](https://docs.angle.money/angle-borrowing-module/borrowing-module)
