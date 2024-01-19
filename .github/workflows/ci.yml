@@ -168,6 +168,14 @@ jobs:
       - name: 'Check out the repo'
         uses: 'actions/checkout@v3'
 
+      - name: 'Restore the cached build'
+        uses: 'actions/cache/restore@v3'
+        with:
+          fail-on-cache-miss: true
+          key: 'build-${{ github.sha }}'
+          path: |
+            node_modules
+
       - name: 'Run Slither analysis'
         uses: 'crytic/slither-action@v0.3.0'
         id: 'slither'
