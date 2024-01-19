@@ -175,6 +175,14 @@ jobs:
           key: 'build-${{ github.sha }}'
           path: |
             node_modules
+      
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+    
+      - name: Compile foundry
+        run: forge build --build-info --force
 
       - name: 'Run Slither analysis'
         uses: 'crytic/slither-action@v0.3.0'
@@ -183,6 +191,7 @@ jobs:
           fail-on: 'none'
           sarif: 'results.sarif'
           node-version: 18
+          ignore-compile: true
 
       - name: 'Upload SARIF file to GitHub code scanning'
         uses: 'github/codeql-action/upload-sarif@v2'
