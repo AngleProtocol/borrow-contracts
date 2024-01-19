@@ -174,15 +174,20 @@ jobs:
           fail-on-cache-miss: true
           key: 'build-${{ github.sha }}'
           path: |
+            cache-forge
+            out
+            cache-hh
+            artifacts
+            typechain
             node_modules
-      
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-    
+
       - name: Compile foundry
-        run: forge build --build-info --force
+        run: forge clean && forge build --build-info --force
 
       - name: 'Run Slither analysis'
         uses: 'crytic/slither-action@v0.3.0'
