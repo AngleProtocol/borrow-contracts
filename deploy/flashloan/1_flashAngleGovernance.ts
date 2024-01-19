@@ -17,7 +17,7 @@ import { parseAmount } from '../../utils/bignumber';
 
 const flashLoanParams = {
   // 3m at the moment, should not be too big with respect to the total agEUR in circulation
-  maxBorrowable: parseAmount.ether('3000000'),
+  maxBorrowable: parseAmount.ether('300000'),
   // Free flash loans for agEUR
   flashLoanFee: parseAmount.gwei('0'),
 };
