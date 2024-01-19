@@ -91,6 +91,15 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/vaultManager/VaultManagerERC1155Receiver.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
       'contracts/deprecated/OldVaultManager.sol': {
         version: '0.8.12',
         settings: {

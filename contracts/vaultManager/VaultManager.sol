@@ -925,7 +925,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param target Address to toggle
     /// @dev If the `target` address is the zero address then this function toggles whitelisting
     /// for all addresses
-    function toggleWhitelist(address target) external virtual onlyGovernor {
+    function toggleWhitelist(address target) external virtual onlyGovernorOrGuardian {
         if (target != address(0)) {
             isWhitelisted[target] = 1 - isWhitelisted[target];
         } else {
