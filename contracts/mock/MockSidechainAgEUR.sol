@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.12;
 
-import "../agToken/BaseAgTokenSideChain.sol";
+import "../agToken/AgToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @dev References:
 ///      - FRAX implementation: https://polygonscan.com/address/0x45c32fA6DF82ead1e2EF74d17b76547EDdFaFF89#code
 ///      - QiDAO implementation: https://snowtrace.io/address/0x5c49b268c9841AFF1Cc3B0a418ff5c3442eE3F3b#code
-contract MockSidechainAgEUR is BaseAgTokenSideChain {
+contract MockSidechainAgEUR is AgToken {
     using SafeERC20 for IERC20;
 
     /// @notice Base used for fee computation
@@ -72,17 +72,6 @@ contract MockSidechainAgEUR is BaseAgTokenSideChain {
     error ZeroAddress();
 
     // ============================= Constructor ===================================
-
-    /// @notice Initializes the `AgToken` contract
-    /// @param name_ Name of the token
-    /// @param symbol_ Symbol of the token
-    /// @param _treasury Reference to the `Treasury` contract associated to this agToken
-    /// @dev By default, agTokens are ERC-20 tokens with 18 decimals
-    function initialize(string memory name_, string memory symbol_, address _treasury) external {
-        _initialize(name_, symbol_, _treasury);
-    }
-
-    // =============================== Modifiers ===================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {

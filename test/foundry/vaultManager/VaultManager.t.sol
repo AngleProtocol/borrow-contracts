@@ -6,7 +6,6 @@ import { stdStorage, StdStorage, Test } from "forge-std/Test.sol";
 import { VaultManager, VaultManagerStorage } from "../../../contracts/vaultManager/VaultManager.sol";
 import { ActionType, VaultParameters } from "../../../contracts/interfaces/IVaultManager.sol";
 import { Treasury } from "../../../contracts/treasury/Treasury.sol";
-import { MockStableMaster } from "../../../contracts/mock/MockStableMaster.sol";
 import "../../../contracts/mock/MockOracle.sol";
 import "../../../contracts/mock/MockToken.sol";
 import { CoreBorrow } from "../../../contracts/coreBorrow/CoreBorrow.sol";
@@ -20,7 +19,6 @@ contract VaultManagerTest is Test {
     address internal _governor = address(uint160(uint256(keccak256(abi.encodePacked("governor")))));
     address internal _guardian = address(uint160(uint256(keccak256(abi.encodePacked("guardian")))));
 
-    MockStableMaster internal _contractStableMaster;
     VaultManager internal _contractVaultManager;
     CoreBorrow internal _contractCoreBorrow;
     Treasury internal _contractTreasury;
@@ -30,19 +28,17 @@ contract VaultManagerTest is Test {
     MockOracle internal _oracle;
 
     function setUp() public virtual {
-        _contractStableMaster = new MockStableMaster();
-
-        _contractAgToken = new AgToken();
-        vm.store(address(_contractAgToken), bytes32(uint256(0)), bytes32(uint256(0)));
-        _contractAgToken.initialize("agEUR", "agEUR", address(_contractStableMaster));
-
         _contractCoreBorrow = new CoreBorrow();
         vm.store(address(_contractCoreBorrow), bytes32(uint256(0)), bytes32(uint256(0)));
         _contractCoreBorrow.initialize(_governor, _guardian);
 
         _contractTreasury = new Treasury();
+        _contractAgToken = new AgToken();
         vm.store(address(_contractTreasury), bytes32(uint256(0)), bytes32(uint256(0)));
         _contractTreasury.initialize(_contractCoreBorrow, _contractAgToken);
+
+        vm.store(address(_contractAgToken), bytes32(uint256(0)), bytes32(uint256(0)));
+        _contractAgToken.initialize("agEUR", "agEUR", address(_contractTreasury));
 
         _oracle = new MockOracle(5 ether, _contractTreasury);
         _collateral = new MockToken("Name", "SYM", 18);
@@ -61,9 +57,6 @@ contract VaultManagerTest is Test {
             baseBoost: 1e9
         });
         _contractVaultManager.initialize(_contractTreasury, _collateral, _oracle, params, "wETH");
-
-        vm.prank(0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8);
-        _contractAgToken.setUpTreasury(address(_contractTreasury));
 
         vm.startPrank(_governor);
         _contractVaultManager.togglePause();

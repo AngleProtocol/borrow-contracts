@@ -26,14 +26,7 @@ import { accounts, etherscanKey, nodeUrl } from './utils/network';
 // Otherwise, ".sol" files from "test" are picked up during compilation and throw an error
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
   const paths = await runSuper();
-  return paths.filter(
-    (p: string) =>
-      !(
-        p.includes('/test/foundry/') ||
-        p.includes('/MockVaultManagerLiquidationBoostImmutable.sol') ||
-        p.includes('/VaultManagerLiquidationBoostImmutable.sol')
-      ),
-  );
+  return paths.filter((p: string) => !p.includes('/test/foundry/'));
 });
 
 const argv = yargs
@@ -155,7 +148,8 @@ const config: HardhatUserConfig = {
         // Mainnet
 
         url: nodeUrl('mainnet'),
-        blockNumber: 17411982,
+        blockNumber: 18976806,
+
         // Polygon
         /*
         url: nodeUrl('forkpolygon'),
@@ -165,8 +159,8 @@ const config: HardhatUserConfig = {
         // Optimism
         /*
         url: nodeUrl('optimism'),
-        blockNumber: 17614765,
-        */
+        blockNumber: 114397708,
+*/
         // Arbitrum
         /*
         url: nodeUrl('arbitrum'),
@@ -190,26 +184,7 @@ const config: HardhatUserConfig = {
             interval: 1000,
           }
         : { auto: true },
-      chainId: 1,
-    },
-    rinkeby: {
-      live: true,
-      url: nodeUrl('rinkeby'),
-      accounts: accounts('rinkeby'),
-      gas: 'auto',
-      // gasPrice: 12e8,
-      chainId: 4,
-    },
-    mainnetForkRemote: {
-      live: false,
-      url: nodeUrl('mainnetForkRemote'),
-      chainId: 1,
-    },
-    mumbai: {
-      live: true,
-      url: nodeUrl('mumbai'),
-      accounts: accounts('mumbai'),
-      gas: 'auto',
+      chainId: 0,
     },
     polygon: {
       live: true,
@@ -222,13 +197,6 @@ const config: HardhatUserConfig = {
           apiKey: etherscanKey('polygon'),
         },
       },
-    },
-    fantom: {
-      live: true,
-      url: nodeUrl('fantom'),
-      accounts: accounts('fantom'),
-      gas: 'auto',
-      chainId: 250,
     },
     mainnet: {
       live: true,
@@ -291,13 +259,6 @@ const config: HardhatUserConfig = {
           apiKey: etherscanKey('bsc'),
         },
       },
-    },
-    aurora: {
-      live: true,
-      url: nodeUrl('aurora'),
-      accounts: accounts('aurora'),
-      gas: 'auto',
-      chainId: 1313161554,
     },
     celo: {
       live: true,
@@ -428,6 +389,20 @@ const config: HardhatUserConfig = {
           apiKey: etherscanKey('coredao'),
         },
       },
+    },
+    fantom: {
+      live: true,
+      url: nodeUrl('fantom'),
+      accounts: accounts('fantom'),
+      gas: 'auto',
+      chainId: 250,
+    },
+    aurora: {
+      live: true,
+      url: nodeUrl('aurora'),
+      accounts: accounts('aurora'),
+      gas: 'auto',
+      chainId: 1313161554,
     },
   },
   paths: {

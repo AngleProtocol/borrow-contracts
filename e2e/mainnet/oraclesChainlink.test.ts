@@ -29,6 +29,8 @@ import {
   OracleUSDCXAUChainlink__factory,
   OracleWSTETHEURChainlink,
   OracleWSTETHEURChainlink__factory,
+  OracleWSTETHUSDChainlink,
+  OracleWSTETHUSDChainlink__factory,
   OracleWSTETHXAUChainlink,
   OracleWSTETHXAUChainlink__factory,
 } from '../../typechain';
@@ -50,6 +52,7 @@ contract('Oracles Chainlink', () => {
   let oracleIB01: OracleIB01EURChainlink;
   let oracleHIGH: OracleHIGHEURChainlink;
   let oracleUSDC: OracleUSDCEURChainlink;
+  let oracleWSTETHUSD: OracleWSTETHUSDChainlink;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -62,7 +65,7 @@ contract('Oracles Chainlink', () => {
         {
           forking: {
             jsonRpcUrl: process.env.ETH_NODE_URI_FORK,
-            blockNumber: 17465158,
+            blockNumber: 18940732,
           },
         },
       ],
@@ -88,6 +91,7 @@ contract('Oracles Chainlink', () => {
     oracleIB01 = await new OracleIB01EURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleHIGH = await new OracleHIGHEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
     oracleUSDC = await new OracleUSDCEURChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleWSTETHUSD = await new OracleWSTETHUSDChainlink__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle wStETHEUR', () => {
@@ -101,6 +105,19 @@ contract('Oracles Chainlink', () => {
       expect(await oracleWSTETH.STETH()).to.be.equal('0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84');
       expect(await oracleWSTETH.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleWSTETH.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle wStETHUSD', () => {
+    it('read', async () => {
+      const receipt = await oracleWSTETHUSD.read();
+      const gas = await oracleWSTETHUSD.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleWSTETHUSD.STETH()).to.be.equal('0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84');
+      expect(await oracleWSTETHUSD.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleWSTETHUSD.treasury()).to.be.equal(treasury.address);
     });
   });
   describe('Oracle ETHEUR', () => {

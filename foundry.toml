@@ -1,29 +1,77 @@
 [profile.default]
 src = 'contracts'
 out = 'out'
-test = 'test/foundry'
+test = 'test'
 libs = ['node_modules', 'lib']
-script = 'scripts/foundry'
+script = 'scripts'
 cache_path = 'cache-forge'
 gas_reports = ["*"]
+via_ir = false
+sizes = true
+optimizer = true
 optimizer_runs=1
-
-# solc_version = '0.8.14'
-
+solc_version = '0.8.17'
 ffi = true
+fs_permissions = [{ access = "read-write", path = "./scripts/vanity.json"}, { access = "read-write", path = "../../../deploy/vanity.json"}]
+memory_limit = 1000043554432
 
 [fuzz]
-runs = 500
+runs = 10000
 
 [invariant]
-runs = 500
+runs = 1000
+depth = 30
 
 [rpc_endpoints]
+arbitrum = "${ETH_NODE_URI_ARBITRUM}"
+gnosis = "${ETH_NODE_URI_GNOSIS}"
 mainnet = "${ETH_NODE_URI_MAINNET}"
+optimism = "${ETH_NODE_URI_OPTIMISM}"
 polygon = "${ETH_NODE_URI_POLYGON}"
-goerli = "${ETH_NODE_URI_GOERLI}"
+fork = "${ETH_NODE_URI_FORK}"
+avalanche = "${ETH_NODE_URI_AVALANCHE}"
+celo = "${ETH_NODE_URI_CELO}"
+polygon-zkevm = "${ETH_NODE_URI_POLYGONZKEVM}"
+bsc = "${ETH_NODE_URI_BSC}"
+base = "${ETH_NODE_URI_BASE}"
+linea = "${ETH_NODE_URI_LINEA}"
 
 [etherscan]
-mainnet = { key = "$MAINNET_ETHERSCAN_API_KEY}" }
+arbitrum = { key = "${ARBITRUM_ETHERSCAN_API_KEY}" }
+gnosis = { key = "${GNOSIS_ETHERSCAN_API_KEY}" , url = "https://api.gnosisscan.io/api"}
+mainnet = { key = "${MAINNET_ETHERSCAN_API_KEY}" }
+optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" }
 polygon = { key = "${POLYGON_ETHERSCAN_API_KEY}" }
-goerli = { key = "${GOERLI_ETHERSCAN_API_KEY}" }
+avalanche = { key = "${AVALANCHE_ETHERSCAN_API_KEY}" }
+celo = { key = "${CELO_ETHERSCAN_API_KEY}", url = "https://api.celoscan.io/api" }
+base = { key = "${BASE_ETHERSCAN_API_KEY}", url = "https://api.basescan.org/api" }
+polygon-zkevm = { key = "${POLYGONZKEVM_ETHERSCAN_API_KEY}", url = "https://api-zkevm.polygonscan.com/api" }
+bsc = { key = "${BSC_ETHERSCAN_API_KEY}"}
+linea = { key = "${LINEA_ETHERSCAN_API_KEY}"}
+
+[profile.dev]
+optimizer = true
+via_ir = false
+src = 'contracts'
+gas_reports = ["*"]
+
+[profile.dev.fuzz]
+runs = 2000
+
+[profile.dev.invariant]
+runs = 10
+depth = 1
+fail_on_revert = false
+
+[profile.ci]
+src = 'contracts'
+via_ir = false
+gas_reports = ["*"]
+
+[profile.ci.fuzz]
+runs = 100
+
+[profile.ci.invariant]
+runs = 10
+depth = 30
+fail_on_revert = false

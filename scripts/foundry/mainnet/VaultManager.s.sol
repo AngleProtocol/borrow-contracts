@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
 import { IOracle } from "../../../contracts/interfaces/IOracle.sol";
 import { OracleETHXAUChainlink } from "../../../contracts/oracle/implementations/mainnet/XAU/OracleETHXAUChainlink.sol";
-import { TreasuryImmutable, ITreasury } from "../../../contracts/treasury/TreasuryImmutable.sol";
-import { IAgToken, AgTokenSideChainImmutable } from "../../../contracts/agToken/AgTokenSideChainImmutable.sol";
-import { VaultManagerLiquidationBoostImmutable, VaultParameters, VaultManagerStorage, IERC20 } from "../../../contracts/vaultManager/VaultManagerLiquidationBoostImmutable.sol";
+import { Treasury, ITreasury } from "../../../contracts/treasury/Treasury.sol";
+import { IAgToken, AgToken } from "../../../contracts/agToken/AgToken.sol";
+import { VaultManagerLiquidationBoost, VaultParameters, VaultManagerStorage, IERC20 } from "../../../contracts/vaultManager/VaultManagerLiquidationBoost.sol";
 import "./MainnetConstants.s.sol";
 
 contract DeployVaultManagerMainnet is Script, MainnetConstants {
@@ -26,7 +26,7 @@ contract DeployVaultManagerMainnet is Script, MainnetConstants {
     uint256 public constant BASE_BOOST = (25 * BASE_PARAMS) / 10;
     uint32 public constant STALE_PERIOD = 3600 * 48;
 
-    VaultManagerLiquidationBoostImmutable public vaultManager;
+    VaultManagerLiquidationBoost public vaultManager;
     IOracle public oracle;
 
     error ZeroAdress();
@@ -55,18 +55,13 @@ contract DeployVaultManagerMainnet is Script, MainnetConstants {
             address(AGGOLD_TREASURY) == address(0) || address(COLLATERAL) == address(0) || address(oracle) == address(0)
         ) revert ZeroAdress();
 
-        vaultManager = new VaultManagerLiquidationBoostImmutable(
-            ITreasury(AGGOLD_TREASURY),
-            COLLATERAL,
-            oracle,
-            params,
-            SYMBOL
-        );
+        vaultManager = new VaultManagerLiquidationBoost();
+        vaultManager.initialize(ITreasury(AGGOLD_TREASURY), COLLATERAL, oracle, params, SYMBOL);
 
         console.log("Successfully deployed vaultManager ETH-GOLD at the address: ", address(vaultManager));
 
         // TODO Governance should add vaultManager to Treasury
-        TreasuryImmutable(AGGOLD_TREASURY).addVaultManager(address(vaultManager));
+        Treasury(AGGOLD_TREASURY).addVaultManager(address(vaultManager));
 
         vm.stopBroadcast();
     }

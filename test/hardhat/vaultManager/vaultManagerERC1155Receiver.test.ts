@@ -1,12 +1,9 @@
-import { parseAmount } from '@angleprotocol/sdk';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
-  AgToken,
-  AgToken__factory,
   AngleHelpers,
   AngleHelpers__factory,
   MockOracle,
@@ -17,9 +14,12 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
+  OldAgEUR,
+  OldAgEUR__factory,
   VaultManagerERC1155Receiver,
   VaultManagerERC1155Receiver__factory,
 } from '../../../typechain';
+import { parseAmount } from '../../../utils/bignumber';
 import { expect } from '../utils/chai-setup';
 import { deployUpgradeable, ZERO_ADDRESS } from '../utils/helpers';
 
@@ -32,7 +32,7 @@ contract('VaultManagerERC1155Receiver', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: AgToken;
+  let agToken: OldAgEUR;
   let vaultManager: VaultManagerERC1155Receiver;
   let helpers: AngleHelpers;
 
@@ -70,7 +70,7 @@ contract('VaultManagerERC1155Receiver', () => {
 
   beforeEach(async () => {
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
-    agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
+    agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
     collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);
     vaultManager = (await deployUpgradeable(

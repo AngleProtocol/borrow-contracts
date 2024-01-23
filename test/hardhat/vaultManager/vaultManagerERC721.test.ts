@@ -4,8 +4,6 @@ import { parseEther } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
 import {
-  AgToken,
-  AgToken__factory,
   AngleHelpers,
   AngleHelpers__factory,
   MockERC721Receiver__factory,
@@ -17,6 +15,8 @@ import {
   MockToken__factory,
   MockTreasury,
   MockTreasury__factory,
+  OldAgEUR,
+  OldAgEUR__factory,
   VaultManagerLiquidationBoost,
   VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
@@ -36,7 +36,7 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: AgToken;
+  let agToken: OldAgEUR;
   let vaultManager: VaultManagerLiquidationBoost;
   let helpers: AngleHelpers;
 
@@ -79,7 +79,7 @@ contract('VaultManagerLiquidationBoost - ERC721', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
+    agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('USDC', 'USDC', collatBase);

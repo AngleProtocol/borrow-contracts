@@ -11,7 +11,7 @@
     "check-upgradeability": "hardhat run scripts/upgradeability.ts",
     "coverage": "hardhat coverage",
     "coverage:foundry": "forge coverage --report lcov",
-    "deploy": "hardhat deploy --network gnosis --tags",
+    "deploy": "hardhat deploy --tags lzSetupNewStable --network ",
     "etherscan": "hardhat etherscan-verify --network",
     "foundry:deploy": "forge script --broadcast --verify -vvvv --rpc-url",
     "generate-types-from-abis": "typechain --target ethers-v5 --out-dir typechain './export/abi/*.json'",
@@ -36,7 +36,9 @@
     "test:all": "yarn test && yarn test:e2e:mainnet",
     "foundry:setup": "curl -L https://foundry.paradigm.xyz | bash && foundryup && git submodule update --init --recursive",
     "foundry:run": "docker run -it --rm -v $(pwd):/app -w /app ghcr.io/foundry-rs/foundry sh",
-    "foundry:test": "forge test -vvvv"
+    "foundry:test": "forge test -vvvv",
+    "vanity": "forge script --skip test --slow -vvvv --rpc-url mainnet ./scripts/foundry/utils/VanityAddress.s.sol",
+    "verify": "forge verify-contract --num-of-optimizations 1000000 --watch --constructor-args 0000000000000000000000000000000000ffe8b47b3e2130213b802212439497000000000000000000000000fda462548ce04282f4b6d6619823a7c64fdc018500000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000 --compiler-version v0.8.17+commit.8df45f5f 0x0000206329b97DB379d5E1Bf586BbDB969C63274 node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy --chain"
   },
   "repository": {
     "type": "git",
@@ -50,7 +52,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "3.0.56",
+    "@angleprotocol/sdk": "0.21.1",
     "@chainlink/contracts": "0.2.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "3.1.0",
@@ -97,7 +99,7 @@
     "ganache-cli": "6.12.1",
     "graphql": "15.5.1",
     "graphql-request": "3.4.0",
-    "hardhat": "2.19.0",
+    "hardhat": "2.19.4",
     "hardhat-abi-exporter": "2.2.1",
     "hardhat-contract-sizer": "2.0.3",
     "hardhat-deploy": "0.11.11",

@@ -1,4 +1,3 @@
-import { ProxyAdmin_Interface } from '@angleprotocol/sdk/dist/constants/interfaces';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Signer, utils } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
@@ -16,6 +15,7 @@ import {
   MockToken,
   MockToken__factory,
   ProxyAdmin,
+  ProxyAdmin__factory,
   TokenPolygonUpgradeable,
   TokenPolygonUpgradeable__factory,
   Treasury,
@@ -74,7 +74,7 @@ contract('TokenPolygonUpgradeable - End-to-end Upgrade', () => {
   before(async () => {
     proxyAdmin = new ethers.Contract(
       '0xbfca293e17e067e8abdca30a5d35addd0cbae6d6',
-      ProxyAdmin_Interface,
+      ProxyAdmin__factory.createInterface(),
       deployer,
     ) as ProxyAdmin;
 

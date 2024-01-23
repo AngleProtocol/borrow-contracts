@@ -1,12 +1,9 @@
-import { Oracle, Oracle__factory } from '@angleprotocol/sdk/dist/constants/types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, Signer, utils } from 'ethers';
 import { formatBytes32String, parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers, web3 } from 'hardhat';
 
 import {
-  AgToken,
-  AgToken__factory,
   MockOracle,
   MockOracle__factory,
   MockStableMaster,
@@ -21,6 +18,8 @@ import {
   MockTreasury__factory,
   MockVeBoostProxy,
   MockVeBoostProxy__factory,
+  OldAgEUR,
+  OldAgEUR__factory,
   VaultManagerLiquidationBoost,
   VaultManagerLiquidationBoost__factory,
 } from '../../../typechain';
@@ -60,7 +59,7 @@ contract('VaultManagerLiquidationBoost', () => {
   let collateral: MockToken;
   let oracle: MockOracle;
   let stableMaster: MockStableMaster;
-  let agToken: AgToken;
+  let agToken: OldAgEUR;
   let vaultManager: VaultManagerLiquidationBoost;
   let mockSwapper: MockSwapper;
   let mockSwapperWithSwap: MockSwapperWithSwap;
@@ -106,7 +105,7 @@ contract('VaultManagerLiquidationBoost', () => {
 
     stableMaster = await new MockStableMaster__factory(deployer).deploy();
 
-    agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
+    agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
     await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
 
     collateral = await new MockToken__factory(deployer).deploy('A', 'A', collatBase);
@@ -135,9 +134,9 @@ contract('VaultManagerLiquidationBoost', () => {
   describe('oracle', () => {
     it('success - read', async () => {
       const oracle = (await ethers.getContractAt(
-        Oracle__factory.abi,
+        MockOracle__factory.abi,
         await vaultManager.oracle(),
-      )) as unknown as Oracle;
+      )) as unknown as MockOracle;
       expect(await oracle.read()).to.be.equal(parseUnits('2', 18));
     });
   });
@@ -1148,7 +1147,7 @@ contract('VaultManagerLiquidationBoost', () => {
     beforeEach(async () => {
       // Need to have agToken as a collateral here
       stableMaster = await new MockStableMaster__factory(deployer).deploy();
-      agToken = (await deployUpgradeable(new AgToken__factory(deployer))) as AgToken;
+      agToken = (await deployUpgradeable(new OldAgEUR__factory(deployer))) as OldAgEUR;
       await agToken.connect(deployer).initialize('agEUR', 'agEUR', stableMaster.address);
       vaultManager = (await deployUpgradeable(
         new VaultManagerLiquidationBoost__factory(deployer),
