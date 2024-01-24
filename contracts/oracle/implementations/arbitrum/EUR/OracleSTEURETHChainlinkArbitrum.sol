@@ -31,5 +31,18 @@ contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds {
         return STEUR.convertToAssets(1 ether);
     }
 
-    // TODO: latestAnswer
+    /// @notice Returns the decimals of the oracle
+    function decimals() external pure returns (uint8) {
+        return 18;
+    }
+
+    /// @notice Chainlink interface compatibility
+    /// @return roundID
+    /// @return aggregatorPrice
+    /// @return startedAt
+    /// @return timestamp
+    /// @return answeredInRound
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
+        return (0, int256(read()), 0, block.timestamp, 0);
+    }
 }

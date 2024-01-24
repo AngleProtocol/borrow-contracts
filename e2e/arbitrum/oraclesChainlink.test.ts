@@ -57,6 +57,16 @@ contract('Oracles Chainlink', () => {
       const gas = await oracleSTEUR.estimateGas.read();
       console.log(gas.toString());
       console.log(receipt.toString());
+
+      const latestAnswer = await oracleSTEUR.latestRoundData();
+      console.log(
+        latestAnswer[0].toString(),
+        latestAnswer[1].toString(),
+        latestAnswer[2].toString(),
+        latestAnswer[3].toString(),
+        latestAnswer[4].toString(),
+      );
+      expect(await oracleSTEUR.decimals()).to.be.equal(18);
     });
     it('initialization', async () => {
       expect(await oracleSTEUR.stalePeriod()).to.be.equal(stalePeriod);
