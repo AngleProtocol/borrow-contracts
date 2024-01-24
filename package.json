@@ -31,6 +31,7 @@
     "size": "yarn hardhat:compile && hardhat size-contracts",
     "hardhat:test": "hardhat test",
     "test:e2e:mainnet": "FORK=true hardhat test e2e/mainnet/oraclesChainlink.test.ts",
+    "test:e2e:arbitrum": "FORK=true hardhat test e2e/arbitrum/oraclesChainlink.test.ts",
     "test:e2e:balance": "FORK=true hardhat test e2e/mainnet/balanceOf.test.ts",
     "test:e2e": "FORK=true hardhat test",
     "test:all": "yarn test && yarn test:e2e:mainnet",
