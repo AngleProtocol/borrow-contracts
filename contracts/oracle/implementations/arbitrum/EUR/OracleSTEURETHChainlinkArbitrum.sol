@@ -35,18 +35,22 @@ contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds, Ag
                                            CHAINLINK INTERFACE COMPATIBILITY                                        
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
+    /// @inheritdoc AggregatorV3Interface
     function decimals() external pure returns (uint8) {
         return 18;
     }
 
+    /// @inheritdoc AggregatorV3Interface
     function description() external pure returns (string memory desc) {
         desc = "Angle stEUR/ETH Price Feed";
     }
 
+    /// @inheritdoc AggregatorV3Interface
     function version() external pure returns (uint256) {
         return 1;
     }
 
+    /// @inheritdoc AggregatorV3Interface
     /// @return roundID
     /// @return aggregatorPrice
     /// @return startedAt
@@ -61,6 +65,7 @@ contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds, Ag
         return (0, int256(read()), 0, block.timestamp, 0);
     }
 
+    /// @inheritdoc AggregatorV3Interface
     /// @dev This function always returns the latestRoundData
     function getRoundData(uint80) external view returns (uint80, int256, uint256, uint256, uint80) {
         return latestRoundData();
