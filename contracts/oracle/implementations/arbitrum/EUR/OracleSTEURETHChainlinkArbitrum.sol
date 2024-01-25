@@ -10,7 +10,7 @@ import "../../../../interfaces/external/IERC4626.sol";
 /// @title OracleSTEURETHChainlinkArbitrum
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of stEUR in ETH in base 18
-contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds {
+contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds, AggregatorV3Interface {
     string public constant DESCRIPTION = "stEUR/ETH Oracle";
     IERC4626 public constant STEUR = IERC4626(0x004626A008B1aCdC4c74ab51644093b155e59A23);
 
@@ -19,9 +19,9 @@ contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds {
     /// @inheritdoc IOracle
     function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
         AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
-        // Oracle agEUR/USD
+        // Oracle agEUR/USD - Redstone
         _circuitChainlink[0] = AggregatorV3Interface(0x37963F10245e7c3a10c0E9d43a6E617B4Bc8440A);
-        // Oracle ETH/USD
+        // Oracle ETH/USD - Chainlink
         _circuitChainlink[1] = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);
         return _circuitChainlink;
     }
@@ -31,18 +31,34 @@ contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds {
         return STEUR.convertToAssets(1 ether);
     }
 
-    /// @notice Returns the decimals of the oracle
+    /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                           CHAINLINK INTERFACE COMPATIBILITY                                        
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
     function decimals() external pure returns (uint8) {
         return 18;
     }
 
-    /// @notice Chainlink interface compatibility
+    function description() external pure returns (string memory desc) {
+        desc = "Angle stEUR/ETH Price Feed";
+    }
+
+    function version() external pure returns (uint256) {
+        return 1;
+    }
+
     /// @return roundID
     /// @return aggregatorPrice
     /// @return startedAt
     /// @return timestamp
     /// @return answeredInRound
-    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
+    /// @dev The roundId, startedAt and answeredInRound values return in this function must be disregarded
+    function latestRoundData() public view returns (uint80, int256, uint256, uint256, uint80) {
         return (0, int256(read()), 0, block.timestamp, 0);
+    }
+
+    /// @dev This function always returns the latestRoundData
+    function getRoundData(uint80) external view returns (uint80, int256, uint256, uint256, uint80) {
+        return latestRoundData();
     }
 }

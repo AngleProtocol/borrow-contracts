@@ -67,6 +67,14 @@ contract('Oracles Chainlink', () => {
         latestAnswer[4].toString(),
       );
       expect(await oracleSTEUR.decimals()).to.be.equal(18);
+      expect(await oracleSTEUR.description()).to.be.equal('Angle stEUR/ETH Price Feed');
+      expect(await oracleSTEUR.version()).to.be.equal(1);
+      const answer = await oracleSTEUR.getRoundData(1);
+      expect(answer[0]).to.be.equal(latestAnswer[0]);
+      expect(answer[1]).to.be.equal(latestAnswer[1]);
+      expect(answer[2]).to.be.equal(latestAnswer[2]);
+      expect(answer[3]).to.be.equal(latestAnswer[3]);
+      expect(answer[4]).to.be.equal(latestAnswer[4]);
     });
     it('initialization', async () => {
       expect(await oracleSTEUR.stalePeriod()).to.be.equal(stalePeriod);
