@@ -23,7 +23,7 @@ contract OracleHIGHEURChainlink is BaseOracleChainlinkMultiTwoFeeds {
     }
 
     /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function read() external view override returns (uint256 quoteAmount) {
+    function read() public view override returns (uint256 quoteAmount) {
         quoteAmount = _readChainlinkFeed(_getQuoteAmount(), circuitChainlink()[0], 1, 8);
     }
 }

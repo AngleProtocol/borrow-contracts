@@ -146,10 +146,10 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
-
+        /*
         url: nodeUrl('mainnet'),
         blockNumber: 18976806,
-
+        */
         // Polygon
         /*
         url: nodeUrl('forkpolygon'),
@@ -162,10 +162,8 @@ const config: HardhatUserConfig = {
         blockNumber: 114397708,
 */
         // Arbitrum
-        /*
         url: nodeUrl('arbitrum'),
-        blockNumber: 19356874,
-        */
+        blockNumber: 173676662,
         // Avalanche
         /*
         url: nodeUrl('avalanche'),
