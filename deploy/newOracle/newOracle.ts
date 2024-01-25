@@ -11,7 +11,7 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   // const treasury = (await deployments.get(`Treasury`)).address;
   // Treasury_EUR Arbitrum
-  const treasury = '0x37963F10245e7c3a10c0E9d43a6E617B4Bc8440A';
+  const treasury = '0x0D710512E100C171139D2Cf5708f22C680eccF52';
   console.log('Now deploying the Oracle stEUR/ETH');
   console.log(`Treasury: ${treasury}`);
   await deploy('Oracle_STEUR_ETH', {
