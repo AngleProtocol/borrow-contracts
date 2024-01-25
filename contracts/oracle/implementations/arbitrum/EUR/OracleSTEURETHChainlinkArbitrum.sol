@@ -52,7 +52,11 @@ contract OracleSTEURETHChainlinkArbitrum is BaseOracleChainlinkMultiTwoFeeds, Ag
     /// @return startedAt
     /// @return timestamp
     /// @return answeredInRound
-    /// @dev The roundId, startedAt and answeredInRound values return in this function must be disregarded
+    /// @dev The `roundId`, `startedAt` and `answeredInRound` values return in this function must be disregarded
+    /// @dev In order not to multiply oracle calls, the timestamp returned here is the `block.timestamp`.
+    /// The contract still performs an heartbeat check for every oracle value that it reads, and the accurate
+    /// value of the `timestamp` (if this one is taken as the minimum between the last update timestamp
+    /// of the two oracles) is between: current timestamp and the current timestamp minus `stalePeriod`
     function latestRoundData() public view returns (uint80, int256, uint256, uint256, uint80) {
         return (0, int256(read()), 0, block.timestamp, 0);
     }
