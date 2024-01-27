@@ -27,7 +27,7 @@ contract OracleCBETHEURChainlink is BaseOracleChainlinkMultiTwoFeeds {
     }
 
     /// @inheritdoc BaseOracleChainlinkMultiTwoFeeds
-    function read() external view virtual override returns (uint256 quoteAmount) {
+    function read() public view virtual override returns (uint256 quoteAmount) {
         quoteAmount = _getQuoteAmount();
         AggregatorV3Interface[] memory _circuitChainlink = circuitChainlink();
         uint8[3] memory circuitChainIsMultiplied = [1, 1, 0];
