@@ -9,3 +9,6 @@
 	path = lib/prb-math
 	url = https://github.com/PaulRBerg/prb-math
 	ignore = dirty
+[submodule "lib/utils"]
+	path = lib/utils
+	url = https://github.com/AngleProtocol/utils
