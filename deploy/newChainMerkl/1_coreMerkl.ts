@@ -9,22 +9,18 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const json = await import('../networks/' + network.name + '.json');
+  const json = await import('../' + network.name + '.json');
   let governor;
   let guardian;
-  let name;
-  name = 'CoreBorrow';
-  governor = json.governor;
-  guardian = json.guardian;
-  let proxyAdmin: string;
+  const name = 'CoreMerkl';
+  const angleLabs = json.angleLabs;
+  const deployerGuardian = '0xA9DdD91249DFdd450E81E1c56Ab60E1A62651701'
+  const proxyAdmin = (await deployments.get('ProxyAdminAngleLabs')).address;
 
-
-  // Otherwise, we're using the proxy admin address from the desired network
-  proxyAdmin = (await deployments.get('ProxyAdmin')).address;
-
+  governor = angleLabs
+  guardian = deployerGuardian
 
   // TODO: comment if implementation has already been deployed
-  
   console.log('Let us get started with deployment');
   console.log('Now deploying CoreBorrow');
   console.log('Starting with the implementation');
@@ -63,6 +59,6 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('');
 };
 
-func.tags = ['coreBorrow'];
-func.dependencies = ['proxyAdmin'];
+func.tags = ['coreMerkl'];
+func.dependencies = ['proxyAdminAngleLabs'];
 export default func;

@@ -21,7 +21,11 @@ import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/ta
 import { HardhatUserConfig, subtask } from 'hardhat/config';
 import yargs from 'yargs';
 
+<<<<<<< HEAD
 import { accounts, etherscanKey, getPkey, nodeUrl } from './utils/network';
+=======
+import { accounts, etherscanKey, nodeUrl, getPkey } from './utils/network';
+>>>>>>> 881bc66 (prepare deployment)
 
 // Otherwise, ".sol" files from "test" are picked up during compilation and throw an error
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
@@ -232,6 +236,18 @@ const config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiKey: etherscanKey('optimism'),
+        },
+      },
+    },
+    immutable: {
+      live: true,
+      url: nodeUrl('immutable'),
+      accounts: accounts('immutable'),
+      gas: 'auto',
+      chainId: 13371,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('immutable'),
         },
       },
     },
