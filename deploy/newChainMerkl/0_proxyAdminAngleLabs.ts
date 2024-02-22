@@ -32,5 +32,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('Success');
 };
 
-func.tags = ['proxyAdminAngleLabs'];
+// func.tags = ['proxyAdminAngleLabs'];
 export default func;

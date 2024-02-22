@@ -1,5 +1,4 @@
 // To be used when deploying governance for the first time on a new chain
-import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
 
@@ -9,7 +8,7 @@ const argv = yargs.env('').boolean('ci').parseSync();
 const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const json = await import('../' + network.name + '.json');
+  const json = await import('../networks/' + network.name + '.json');
   let governor;
   let guardian;
   const name = 'CoreMerkl';
