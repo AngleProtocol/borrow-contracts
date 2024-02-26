@@ -7,3 +7,4 @@ forge-std/=lib/forge-std/src/
 stringutils/=lib/solidity-stringutils
 prb/math/=lib/prb-math/src/
 utils/=lib/utils/
+abdk/math/=lib/abdk-libraries-solidity
