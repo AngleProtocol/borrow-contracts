@@ -7,9 +7,9 @@ import "../AgTokenSideChainMultiBridge.sol";
 /// @title AgTokenSideChainMultiBridgeNameable
 /// @author Angle Labs, Inc.
 contract AgTokenSideChainMultiBridgeNameable is AgTokenSideChainMultiBridge {
-    string private __name;
+    string internal __name;
 
-    string private __symbol;
+    string internal __symbol;
 
     uint256[48] private __gapNameable;
 

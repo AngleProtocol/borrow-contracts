@@ -14,9 +14,9 @@ contract AgTokenNameable is AgToken {
         if (!ITreasury(treasury).isGovernor(msg.sender)) revert NotGovernor();
         _;
     }
-    string private __name;
+    string internal __name;
 
-    string private __symbol;
+    string internal __symbol;
 
     uint256[48] private __gapNameable;
 

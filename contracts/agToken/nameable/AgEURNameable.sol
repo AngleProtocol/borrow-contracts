@@ -13,9 +13,9 @@ contract AgEURNameable is AgEUR {
         _;
     }
 
-    string private __name;
+    string internal __name;
 
-    string private __symbol;
+    string internal __symbol;
 
     uint256[48] private __gapNameable;
 
