@@ -30,6 +30,7 @@
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
     "size": "yarn hardhat:compile && hardhat size-contracts",
     "hardhat:test": "hardhat test",
+    "test": "FOUNDRY_PROFILE=dev forge test -vvvv",
     "test:e2e:mainnet": "FORK=true hardhat test e2e/mainnet/oraclesChainlink.test.ts",
     "test:e2e:arbitrum": "FORK=true hardhat test e2e/arbitrum/oraclesChainlink.test.ts",
     "test:e2e:balance": "FORK=true hardhat test e2e/mainnet/balanceOf.test.ts",

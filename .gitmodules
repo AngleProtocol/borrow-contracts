@@ -12,9 +12,6 @@
 [submodule "lib/utils"]
 	path = lib/utils
 	url = https://github.com/AngleProtocol/utils
-[submodule "lib/abdk-libraries-solidity"]
-	path = lib/abdk-libraries-solidity
-	url = https://github.com/abdk-consulting/abdk-libraries-solidity
 [submodule "lib/pendle-core-v2-public"]
 	path = lib/pendle-core-v2-public
 	url = https://github.com/pendle-finance/pendle-core-v2-public

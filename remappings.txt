@@ -8,3 +8,4 @@ stringutils/=lib/solidity-stringutils
 prb/math/=lib/prb-math/src/
 utils/=lib/utils/
 abdk/math/=lib/abdk-libraries-solidity
+pendle/=lib/pendle-core-v2-public/contracts
