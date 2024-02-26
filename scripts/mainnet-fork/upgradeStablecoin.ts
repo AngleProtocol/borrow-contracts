@@ -16,6 +16,13 @@ import yargs from 'yargs';
 const argv = yargs.env('').boolean('ci').parseSync();
 
 async function main() {
+    /**
+     * This is a script to test the stablecoin upgrade for the Euro and the dollar.
+     * For the actual upgrade we need to deploy:
+     * 2 implems on Ethereum and Polygon (one corresponding to each token)
+     * 1 implem on all other chains since agEUR and agUSD share the same implementation
+     * It's important to make sure that the contract upgrade and name upgrade take place in the exact same transaction
+     */
 
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
