@@ -250,7 +250,7 @@ const config: HardhatUserConfig = {
     scroll: {
       live: true,
       url: nodeUrl('scroll'),
-      accounts: [getPkey()],
+      accounts: accounts('mainnet'),
       gas: 'auto',
       chainId: 534352,
       verify: {
@@ -262,7 +262,7 @@ const config: HardhatUserConfig = {
     manta: {
       live: true,
       url: nodeUrl('manta'),
-      accounts: [getPkey()],
+      accounts: accounts('mainnet'),
       gas: 'auto',
       chainId: 169,
       verify: {
