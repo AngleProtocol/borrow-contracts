@@ -247,6 +247,30 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    scroll: {
+      live: true,
+      url: nodeUrl('scroll'),
+      accounts: [getPkey()],
+      gas: 'auto',
+      chainId: 534352,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('scroll'),
+        },
+      },
+    },
+    manta: {
+      live: true,
+      url: nodeUrl('manta'),
+      accounts: [getPkey()],
+      gas: 'auto',
+      chainId: 169,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('manta'),
+        },
+      },
+    },
     arbitrum: {
       live: true,
       url: nodeUrl('arbitrum'),
