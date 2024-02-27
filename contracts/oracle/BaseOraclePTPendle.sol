@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.12;
 
-import { UNIT, UD60x18, ud, intoUint256 } from "prb/math/UD60x18.sol";
+import { UNIT, UD60x18, ud } from "prb/math/UD60x18.sol";
 import "pendle/interfaces/IPMarket.sol";
 import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
 import "../interfaces/ITreasury.sol";
@@ -58,7 +58,7 @@ abstract contract BaseOraclePTPendle {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     function _economicalPTLowerBoundPrice() internal view returns (uint256) {
-        uint256 exp = block.timestamp > MATURITY() ? 0 : MATURITY() - block.timestamp;
+        uint256 exp = block.timestamp > maturity() ? 0 : maturity() - block.timestamp;
         if (exp == 0) return BASE_18;
 
         UD60x18 denominator = UNIT.add(ud(maxImpliedRate)).pow(ud(exp).div(ud(YEAR)));
@@ -67,12 +67,12 @@ abstract contract BaseOraclePTPendle {
     }
 
     function _pendlePTPrice() internal view returns (uint256) {
-        return PendlePtOracleLib.getPtToAssetRate(IPMarket(MARKET()), twapDuration);
+        return PendlePtOracleLib.getPtToAssetRate(IPMarket(market()), twapDuration);
     }
 
     function _detectHackRatio() internal view returns (uint256) {
-        uint256 assetBalanceSY = IERC20(ASSET()).balanceOf(SY());
-        uint256 totalSupplySY = IERC20(SY()).totalSupply();
+        uint256 assetBalanceSY = IERC20(asset()).balanceOf(sy());
+        uint256 totalSupplySY = IERC20(sy()).totalSupply();
         return assetBalanceSY > totalSupplySY ? BASE_18 : (assetBalanceSY * BASE_18) / totalSupplySY;
     }
 
@@ -80,13 +80,13 @@ abstract contract BaseOraclePTPendle {
                                                        OVERRIDES                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-    function ASSET() public pure virtual returns (address);
+    function asset() public pure virtual returns (address);
 
-    function SY() public pure virtual returns (address);
+    function sy() public pure virtual returns (address);
 
-    function MATURITY() public pure virtual returns (uint256);
+    function maturity() public pure virtual returns (uint256);
 
-    function MARKET() public pure virtual returns (address);
+    function market() public pure virtual returns (address);
 
     function _onlyGovernorOrGuardian() internal view virtual;
 }

@@ -44,19 +44,19 @@ contract OraclePTweETHEUR is BaseOracleChainlinkMultiTwoFeeds, BaseOraclePTPendl
                                                        OVERRIDES                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-    function ASSET() public pure override returns (address) {
+    function asset() public pure override returns (address) {
         return 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     }
 
-    function SY() public pure override returns (address) {
+    function sy() public pure override returns (address) {
         return 0xAC0047886a985071476a1186bE89222659970d65;
     }
 
-    function MATURITY() public pure override returns (uint256) {
+    function maturity() public pure override returns (uint256) {
         return 1719446400;
     }
 
-    function MARKET() public pure override returns (address) {
+    function market() public pure override returns (address) {
         return 0xF32e58F92e60f4b0A37A69b95d642A471365EAe8;
     }
 

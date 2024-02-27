@@ -142,6 +142,7 @@ contract BaseOraclePendlePT is Test {
 
 contract BaseOraclePendlePTTest is BaseOraclePendlePT {
     using stdStorage for StdStorage;
+
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                         SETTERS                                                     
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -189,19 +190,19 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
     function test_EconomicalLowerBound_tooSmall() public {
         vm.prank(_governor);
         _oracle.setMaxImpliedRate(uint256(1e1));
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.MARKET()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
 
         assertEq(_oracle.read(), _read(pendleAMMPrice));
     }
 
     function test_AfterMaturity_Success() public {
         // Adavnce to the PT maturity
-        vm.warp(_oracle.MATURITY());
+        vm.warp(_oracle.maturity());
 
         // Update the last timestamp oracle push
         _updateChainlinkTimestamp(block.timestamp);
 
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.MARKET()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
         uint256 value = _oracle.read();
         assertEq(value, _read(pendleAMMPrice));
         assertEq(value, _read(1 ether));
@@ -210,12 +211,12 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
     function test_HackRemove_Success(uint256 slash) public {
         slash = bound(slash, 1, BASE_18);
         // Remove part of the SY backing collateral to simulate a hack
-        IERC20 weETH = IERC20(address(_oracle.ASSET()));
-        uint256 prevBalance = weETH.balanceOf(_oracle.SY());
+        IERC20 weETH = IERC20(address(_oracle.asset()));
+        uint256 prevBalance = weETH.balanceOf(_oracle.sy());
         uint256 postBalance = (prevBalance * slash) / BASE_18;
-        deal(address(weETH), _oracle.SY(), postBalance);
+        deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.MATURITY());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
         uint256 value = _oracle.read();
 
         assertLe(value, _read((lowerBound * slash) / BASE_18));
@@ -225,15 +226,14 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
     function test_HackExpand_Success(uint256 expand) public {
         expand = bound(expand, BASE_18, BASE_18 * 1e7);
         // Remove part of the SY backing collateral to simulate a hack
-        IERC20 weETH = IERC20(address(_oracle.ASSET()));
-        uint256 prevBalance = weETH.balanceOf(_oracle.SY());
+        IERC20 weETH = IERC20(address(_oracle.asset()));
+        uint256 prevBalance = weETH.balanceOf(_oracle.sy());
         uint256 postBalance = (prevBalance * expand) / BASE_18;
-        deal(address(weETH), _oracle.SY(), postBalance);
+        deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.MATURITY());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
         uint256 value = _oracle.read();
 
         assertEq(value, _read((lowerBound)));
     }
 }
-
