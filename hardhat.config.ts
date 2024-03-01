@@ -146,41 +146,67 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
-        /*
         url: nodeUrl('mainnet'),
-        blockNumber: 18976806,
-        */
-        // Polygon
-        /*
-        url: nodeUrl('forkpolygon'),
-        blockNumber: 35592019,
-        */
+        blockNumber: 19340884,
 
         // Optimism
         /*
         url: nodeUrl('optimism'),
-        blockNumber: 116673826,
+        blockNumber: 116855226,
         */
+
         // Arbitrum
         /*
         url: nodeUrl('arbitrum'),
         blockNumber: 173676662,
         */
-        // Polygon
 
+        // Polygon
+        /*
         url: nodeUrl('polygon'),
-        blockNumber: 53976980,
+        blockNumber: 54141400,
+        */
 
         // Avalanche
         /*
         url: nodeUrl('avalanche'),
-        blockNumber: 23545788,
+        blockNumber: 21081281,
+        */
+
+        // Gnosis
+        /*
+        url: nodeUrl('gnosis'),
+        blockNumber: 32712797,
+        */
+
+        // Linea
+        /*
+        url: nodeUrl('linea'),
+        blockNumber: 2613012,
+        */
+
+        // BSC
+        /*
+        url: nodeUrl('bsc'),
+        blockNumber: 36593372,
+        */
+
+        // Celo
+        /*
+        url: nodeUrl('celo'),
+        blockNumber: 24328130,
         */
 
         // Polygon zkEVM
         /*
         url: nodeUrl('polygonzkevm'),
-        blockNumber: 130090,
+        blockNumber: 10375777,
+        */
+
+        // Base
+        /*
+        url: nodeUrl('base'),
+        blockNumber: 11261506,
         */
       },
       mining: argv.disableAutoMining
