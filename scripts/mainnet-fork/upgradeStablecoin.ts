@@ -26,10 +26,10 @@ async function main() {
 
   const { deploy } = deployments;
   const { deployer } = await ethers.getNamedSigners();
-  const deployerAddress = '0xfdA462548Ce04282f4B6D6619823a7C64Fdc0185';
+  const deployerAddress = deployer.address;
 
   // TODO: can be changed
-  const chainIdForked = ChainId.AVALANCHE;
+  const chainIdForked = ChainId.BASE;
   const stablecoin: 'EUR' | 'USD' = 'EUR';
 
   console.log(`Testing upgrade for chain ${chainIdForked} and ${stablecoin}`);
