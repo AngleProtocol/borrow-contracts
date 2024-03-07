@@ -48,6 +48,8 @@ contract AgTokenSideChainMultiBridge is AgToken {
     uint256 public chainTotalHourlyLimit;
     /// @notice Usage per hour on that chain. Maps an hourly timestamp to the total volume swapped out on the chain
     mapping(uint256 => uint256) public chainTotalUsage;
+    
+    uint256[44] private __gapMultiBridge;
 
     // =================================== EVENTS ==================================
 
