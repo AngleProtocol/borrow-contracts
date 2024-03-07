@@ -29,7 +29,7 @@ async function main() {
   const deployerAddress = deployer.address;
 
   // TODO: can be changed
-  const chainId = ChainId.LINEA;
+  const chainId = ChainId.GNOSIS;
   const stablecoin: 'EUR' | 'USD' = 'USD';
 
   console.log(`Testing upgrade for chain ${chainId} and ${stablecoin}`);

@@ -172,14 +172,12 @@ const config: HardhatUserConfig = {
         */
 
         // Gnosis
-        /*
         url: nodeUrl('gnosis'),
-        blockNumber: 32712797,
-        */
+        blockNumber: 32812898,
 
         // Linea
-        url: nodeUrl('linea'),
-        blockNumber: 2613012,
+        // url: nodeUrl('linea'),
+        // blockNumber: 2613012,
 
         // BSC
         /*
