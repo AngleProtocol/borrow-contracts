@@ -146,8 +146,8 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
-        url: nodeUrl('mainnet'),
-        blockNumber: 19340884,
+        // url: nodeUrl('mainnet'),
+        // blockNumber: 19340884,
 
         // Optimism
         /*
@@ -162,10 +162,8 @@ const config: HardhatUserConfig = {
         */
 
         // Polygon
-        /*
-        url: nodeUrl('polygon'),
-        blockNumber: 54141400,
-        */
+        // url: nodeUrl('polygon'),
+        // blockNumber: 54141400,
 
         // Avalanche
         /*
@@ -180,10 +178,8 @@ const config: HardhatUserConfig = {
         */
 
         // Linea
-        /*
         url: nodeUrl('linea'),
         blockNumber: 2613012,
-        */
 
         // BSC
         /*

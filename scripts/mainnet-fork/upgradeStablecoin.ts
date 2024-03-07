@@ -4,6 +4,8 @@ import { deployments, ethers, network } from 'hardhat';
 import yargs from 'yargs';
 
 import {
+  AgEUR,
+  AgEUR__factory,
   AgTokenSideChainMultiBridgeNameable,
   AgTokenSideChainMultiBridgeNameable__factory,
   ProxyAdmin,
@@ -27,8 +29,8 @@ async function main() {
   const deployerAddress = deployer.address;
 
   // TODO: can be changed
-  const chainId = ChainId.MAINNET;
-  const stablecoin: 'EUR' | 'USD' = 'EUR';
+  const chainId = ChainId.LINEA;
+  const stablecoin: 'EUR' | 'USD' = 'USD';
 
   console.log(`Testing upgrade for chain ${chainId} and ${stablecoin}`);
 
@@ -109,15 +111,64 @@ async function main() {
   await stableContract.connect(signer).setNameAndSymbol(`${stablecoin}A`, `${stablecoin}A`);
   console.log('Just updated the name and symbol');
 
-  console.log('Treasury Address', await stableContract.treasury());
-  console.log('New name', await stableContract.connect(signer).name());
-  console.log('New symbol', await stableContract.symbol());
+  const treasuryAddress = await stableContract.treasury();
+  if (treasuryAddress !== registry(chainId)?.[`ag${stablecoin}`]?.Treasury!) {
+    throw new Error(`Treasury should be ${registry(chainId)?.[`ag${stablecoin}`]?.Treasury} but is ${treasuryAddress}`);
+  } else console.log('Treasury Address ', treasuryAddress);
+
+  const newName = await stableContract.name();
+  // @ts-ignore
+  const trueName = stablecoin === 'USD' ? 'USDA' : 'EURA';
+  if (newName !== trueName) {
+    throw new Error(`Name should be ${trueName} but is ${newName}`);
+  } else console.log('New name ', newName);
+
+  const newSymbol = await stableContract.symbol();
+  // @ts-ignore
+  const trueSymbol = stablecoin === 'USD' ? 'USDA' : 'EURA';
+  if (newSymbol !== trueSymbol) {
+    throw new Error(`Symbol should be ${trueSymbol} but is ${newSymbol}`);
+  } else console.log('New symbol ', newSymbol);
+
+  const governorIsMinter = await stableContract.isMinter(governor);
+  if (governorIsMinter !== false) {
+    throw new Error(`Governor should not be a minter`);
+  } else console.log('Governor is not a minter');
+
+  const treasuryIsMinter = await stableContract.isMinter(treasuryAddress);
+  if (treasuryIsMinter !== false) {
+    throw new Error(`Treasury should not be a minter`);
+  } else console.log('Treasury is not a minter');
+
+  const deployerIsMinter = await stableContract.isMinter(deployerAddress);
+  if (deployerIsMinter !== false) {
+    throw new Error(`Deployer should not be a minter`);
+  } else console.log('Deployer is not a minter');
+
   console.log('Total supply', formatAmount.ether(await stableContract.totalSupply()));
   console.log('Deployer balance', formatAmount.ether(await stableContract.balanceOf(deployerAddress)));
-  // @ts-ignore
-  if (chainId !== ChainId.MAINNET) {
+
+  if (chainId === ChainId.MAINNET) {
+    // @ts-ignore
+    if (stablecoin === 'EUR') {
+      const agEURContract = new Contract(stablecoinAddress, AgEUR__factory.abi, deployer) as AgEUR;
+      const treasuryInit = await agEURContract.treasuryInitialized();
+      if (treasuryInit !== true) {
+        throw new Error(`treasuryInitialized should be true`);
+      } else console.log('Treasury Initialized ', treasuryInit);
+    }
+  } else {
+    const bridgeTokens = await stableContract.allBridgeTokens();
+    if (bridgeTokens.length !== 1 || bridgeTokens[0] !== registry(chainId)?.[`ag${stablecoin}`]?.bridges?.LayerZero) {
+      throw new Error(`Bridge token should be ${bridgeTokens}`);
+    } else console.log('Bridge token is LayerZero ', bridgeTokens);
+
+    const bridgeInfo = await stableContract.bridges(bridgeTokens[0]);
+    if (!bridgeInfo.fee.eq(BigNumber.from('0')) || bridgeInfo.allowed !== true || bridgeInfo.paused !== false) {
+      throw new Error(`Bridge token info ${bridgeInfo}`);
+    } else console.log('Bridge token info ', bridgeInfo);
+
     console.log('Chain hourly limit', formatAmount.ether(await stableContract.chainTotalHourlyLimit()));
-    console.log('First bridge token address', await stableContract.bridgeTokensList(0));
   }
 
   // Checks of random holders
@@ -192,6 +243,20 @@ async function main() {
       }
     }
   }
+
+  // This checks are done at the end because on USD it depends on the chain
+  // @ts-ignore
+  const isNotMinter = stablecoin === 'USD' && chainId === ChainId.MAINNET;
+
+  const FlashLoanIsMinter = await stableContract.isMinter(registry(chainId)?.FlashAngle!);
+  if (FlashLoanIsMinter === isNotMinter) {
+    throw new Error(`FlashLoan is minter: ${FlashLoanIsMinter}`);
+  } else console.log(`FlashLoan is minter: ${FlashLoanIsMinter}`);
+
+  const timelockIsMinter = await stableContract.isMinter(timelock);
+  if (timelockIsMinter === isNotMinter) {
+    throw new Error(`Timelock is minter: ${timelockIsMinter}`);
+  } else console.log(`Timelock is minter: ${timelockIsMinter}`);
 }
 
 main().catch(error => {
