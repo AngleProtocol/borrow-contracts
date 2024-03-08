@@ -29,8 +29,8 @@ async function main() {
   const deployerAddress = deployer.address;
 
   // TODO: can be changed
-  const chainId = ChainId.GNOSIS;
-  const stablecoin: 'EUR' | 'USD' = 'USD';
+  const chainId = ChainId.POLYGON;
+  const stablecoin: 'EUR' | 'USD' = 'EUR';
 
   console.log(`Testing upgrade for chain ${chainId} and ${stablecoin}`);
 
@@ -194,8 +194,8 @@ async function main() {
         throw new Error(`Balance should be ${expectedBalance} but is ${balance}`);
       }
     } else if (chainId === ChainId.ARBITRUM) {
-      balance = await stableContract.balanceOf('0xa079a2828653c40340883d3fd50c705350ff5bdd');
-      expectedBalance = BigNumber.from('47990229023153895444216');
+      balance = await stableContract.balanceOf('0x4cb6F0ef0Eeb503f8065AF1A6E6D5DD46197d3d9');
+      expectedBalance = BigNumber.from('10192159719759421795706');
       if (!balance.eq(expectedBalance)) {
         throw new Error(`Balance should be ${expectedBalance} but is ${balance}`);
       }
