@@ -145,7 +145,7 @@ const config: HardhatUserConfig = {
       hardfork: 'london',
       forking: {
         enabled: argv.fork || false,
-<<<<<<< HEAD
+
         // Mainnet
         // url: nodeUrl('mainnet'),
         // blockNumber: 19340884,
@@ -189,38 +189,6 @@ const config: HardhatUserConfig = {
         // Base
         // url: nodeUrl('base'),
         // blockNumber: 11261506,
-=======
-        /*
-        url: nodeUrl('mainnet'),
-        blockNumber: 18976806,
-        */
-        /*
-        url: nodeUrl('forkpolygon'),
-        blockNumber: 35592019,
-        */
-        /*
-        url: nodeUrl('optimism'),
-        blockNumber: 114397708,
-        */
-        /*
-        url: nodeUrl('arbitrum'),
-        blockNumber: 173676662,
-        */
-        /*
-        url: nodeUrl('avalanche'),
-        blockNumber: 23545788,
-        */
-        /*
-        url: nodeUrl('polygonzkevm'),
-        blockNumber: 130090,
-        */
-        /*
-        url: nodeUrl('scroll'),
-        blockNumber: 3672151,
-        */
-        url: nodeUrl('manta'),
-        blockNumber: 1480155,
->>>>>>> 6ed9c8c (feat: lint)
       },
       mining: argv.disableAutoMining
         ? {
