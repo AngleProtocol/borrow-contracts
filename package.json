@@ -25,6 +25,7 @@
     "lint:sol:check": "solhint --max-warnings 20 \"**/*.sol\"",
     "mainnetForkRemote:deploy": "rm -rf ./deployments/mainnetForkRemote && hardhat deploy --network mainnetForkRemote --tags unpausing",
     "node:fork": "FORK=true hardhat node --tags",
+    "node:instant": "FORK=true hardhat node --tags instant",
     "prettier": "yarn prettier:js && yarn prettier:sol",
     "prettier:sol": "prettier --write '**/*.sol'",
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
@@ -53,7 +54,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "0.21.1",
+    "@angleprotocol/sdk": "0.31.3",
     "@chainlink/contracts": "0.2.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "3.1.0",

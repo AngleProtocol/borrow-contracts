@@ -21,7 +21,7 @@ import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/ta
 import { HardhatUserConfig, subtask } from 'hardhat/config';
 import yargs from 'yargs';
 
-import { accounts, etherscanKey, nodeUrl } from './utils/network';
+import { accounts, etherscanKey, getPkey, nodeUrl } from './utils/network';
 
 // Otherwise, ".sol" files from "test" are picked up during compilation and throw an error
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
@@ -146,35 +146,48 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
-        /*
-        url: nodeUrl('mainnet'),
-        blockNumber: 18976806,
-        */
-        // Polygon
-        /*
-        url: nodeUrl('forkpolygon'),
-        blockNumber: 35592019,
-        */
+        // url: nodeUrl('mainnet'),
+        // blockNumber: 19340884,
 
         // Optimism
-        /*
-        url: nodeUrl('optimism'),
-        blockNumber: 114397708,
-*/
+        // url: nodeUrl('optimism'),
+        // blockNumber: 116855226,
+
         // Arbitrum
-        url: nodeUrl('arbitrum'),
-        blockNumber: 173676662,
+        // url: nodeUrl('arbitrum'),
+        // blockNumber: 188286007,
+
+        // Polygon
+        url: nodeUrl('polygon'),
+        blockNumber: 54141400,
+
+        // Gnosis
+        // url: nodeUrl('gnosis'),
+        // blockNumber: 32825438,
+
+        // Linea
+        // url: nodeUrl('linea'),
+        // blockNumber: 2613012,
+
+        // BSC
+        // url: nodeUrl('bsc'),
+        // blockNumber: 36786797,
+
+        // Celo
+        // url: nodeUrl('celo'),
+        // blockNumber: 24444656,
+
         // Avalanche
-        /*
-        url: nodeUrl('avalanche'),
-        blockNumber: 23545788,
-        */
+        // url: nodeUrl('avalanche'),
+        // blockNumber: 42633334,
 
         // Polygon zkEVM
-        /*
-        url: nodeUrl('polygonzkevm'),
-        blockNumber: 130090,
-        */
+        // url: nodeUrl('polygonzkevm'),
+        // blockNumber: 10570826,
+
+        // Base
+        // url: nodeUrl('base'),
+        // blockNumber: 11261506,
       },
       mining: argv.disableAutoMining
         ? {
@@ -187,7 +200,7 @@ const config: HardhatUserConfig = {
     polygon: {
       live: true,
       url: nodeUrl('polygon'),
-      accounts: accounts('polygon'),
+      accounts: [getPkey()],
       gas: 'auto',
       chainId: 137,
       verify: {
@@ -199,7 +212,7 @@ const config: HardhatUserConfig = {
     mainnet: {
       live: true,
       url: nodeUrl('mainnet'),
-      accounts: accounts('mainnet'),
+      accounts: [getPkey()],
       gas: 'auto',
       gasMultiplier: 1.3,
       // gasPrice: 50000000000,
@@ -213,7 +226,7 @@ const config: HardhatUserConfig = {
     optimism: {
       live: true,
       url: nodeUrl('optimism'),
-      accounts: accounts('optimism'),
+      accounts: [getPkey()],
       gas: 'auto',
       chainId: 10,
       verify: {
@@ -225,7 +238,7 @@ const config: HardhatUserConfig = {
     arbitrum: {
       live: true,
       url: nodeUrl('arbitrum'),
-      accounts: accounts('arbitrum'),
+      accounts: [getPkey()],
       gas: 'auto',
       chainId: 42161,
       verify: {
@@ -237,7 +250,7 @@ const config: HardhatUserConfig = {
     avalanche: {
       live: true,
       url: nodeUrl('avalanche'),
-      accounts: accounts('avalanche'),
+      accounts: [getPkey()],
       gas: 'auto',
       chainId: 43114,
       verify: {
@@ -249,7 +262,7 @@ const config: HardhatUserConfig = {
     bsc: {
       live: true,
       url: nodeUrl('bsc'),
-      accounts: accounts('bsc'),
+      accounts: [getPkey()],
       gas: 'auto',
       chainId: 56,
       verify: {
@@ -261,7 +274,7 @@ const config: HardhatUserConfig = {
     celo: {
       live: true,
       url: nodeUrl('celo'),
-      accounts: accounts('celo'),
+      accounts: [getPkey()],
       gas: 'auto',
       chainId: 42220,
       verify: {
@@ -273,7 +286,7 @@ const config: HardhatUserConfig = {
     gnosis: {
       live: true,
       url: nodeUrl('gnosis'),
-      accounts: accounts('gnosis'),
+      accounts: [getPkey()],
       gas: 'auto',
       gasMultiplier: 2,
       chainId: 100,
@@ -287,7 +300,7 @@ const config: HardhatUserConfig = {
     polygonzkevm: {
       live: true,
       url: nodeUrl('polygonzkevm'),
-      accounts: accounts('polygonzkevm'),
+      accounts: [getPkey()],
       gas: 'auto',
       gasMultiplier: 1.3,
       chainId: 1101,
@@ -300,7 +313,7 @@ const config: HardhatUserConfig = {
     base: {
       live: true,
       url: nodeUrl('base'),
-      accounts: accounts('base'),
+      accounts: [getPkey()],
       gas: 'auto',
       gasMultiplier: 1.3,
       chainId: 8453,
@@ -313,7 +326,7 @@ const config: HardhatUserConfig = {
     linea: {
       live: true,
       url: nodeUrl('linea'),
-      accounts: accounts('linea'),
+      accounts: [getPkey()],
       gas: 'auto',
       gasMultiplier: 1.3,
       chainId: 59144,
@@ -442,6 +455,29 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.BSC_ETHERSCAN_API_KEY,
+    // {
+    //   polygon: process.env.POLYGON_ETHERSCAN_API_KEY,
+    //   mainnet: process.env.MAINNET_ETHERSCAN_API_KEY,
+    //   optimism: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+    //   arbitrum: process.env.ARBITRUM_ETHERSCAN_API_KEY,
+    //   avalanche: process.env.AVALANCHE_ETHERSCAN_API_KEY,
+    //   bsc: process.env.BSC_ETHERSCAN_API_KEY,
+    //   celo: process.env.CELO_ETHERSCAN_API_KEY,
+    //   gnosis: process.env.GNOSIS_ETHERSCAN_API_KEY,
+    //   polygonzkevm: process.env.POLYGON_ZKEVM_ETHERSCAN_API_KEY,
+    //   base: process.env.BASE_ETHERSCAN_API_KEY,
+    // linea: process.env.LINEA_ETHERSCAN_API_KEY,
+    // },
+    customChains: [
+      {
+        network: 'linea',
+        chainId: 59144,
+        urls: {
+          apiURL: 'https://api.lineascan.build/api',
+          browserURL: 'https://lineascan.build/',
+        },
+      },
+    ],
   },
   typechain: {
     outDir: 'typechain',

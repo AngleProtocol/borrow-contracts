@@ -28,14 +28,37 @@ async function main() {
   // Uncomment to check all valid build names
   // console.log((await artifacts.getAllFullyQualifiedNames()));
 
-  testUpgradeability('LayerZeroBridgeToken', 'contracts/agToken/layerZero/LayerZeroBridgeToken.sol');
-  testUpgradeability('LayerZeroBridge', 'contracts/agToken/layerZero/LayerZeroBridge.sol');
+  testUpgradeability('AgEURNameable', 'contracts/agToken/nameable/AgEURNameable.sol');
+  testUpgradeability('AgTokenNameable', 'contracts/agToken/nameable/AgTokenNameable.sol');
+  testUpgradeability('AgTokenSideChainMultiBridgeNameable', 'contracts/agToken/nameable/AgTokenSideChainMultiBridgeNameable.sol');
+  testUpgradeability('TokenPolygonUpgradeableNameable', 'contracts/agToken/nameable/TokenPolygonUpgradeableNameable.sol');
 
   testStorage(
-    'OldLayerZeroBridgeToken',
-    'contracts/deprecated/layerZero/OldLayerZeroBridgeToken.sol',
-    'LayerZeroBridgeToken',
-    'contracts/agToken/layerZero/LayerZeroBridgeToken.sol',
+    'AgEUR',
+    'contracts/agToken/AgEUR.sol',
+    'AgEURNameable',
+    'contracts/agToken/nameable/AgEURNameable.sol',
+  );
+
+  testStorage(
+    'AgToken',
+    'contracts/agToken/AgToken.sol',
+    'AgTokenNameable',
+    'contracts/agToken/nameable/AgTokenNameable.sol',
+  );
+
+  testStorage(
+    'AgTokenSideChainMultiBridge',
+    'contracts/agToken/AgTokenSideChainMultiBridge.sol',
+    'AgTokenSideChainMultiBridgeNameable',
+    'contracts/agToken/nameable/AgTokenSideChainMultiBridgeNameable.sol',
+  );
+
+  testStorage(
+    'TokenPolygonUpgradeable',
+    'contracts/agToken/polygon/TokenPolygonUpgradeable.sol',
+    'TokenPolygonUpgradeableNameable',
+    'contracts/agToken/nameable/TokenPolygonUpgradeableNameable.sol',
   );
 }
 
