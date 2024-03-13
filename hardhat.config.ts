@@ -412,6 +412,19 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    mode: {
+      live: true,
+      url: nodeUrl('mode'),
+      accounts: [getPkey()],
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 34443,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('mode'),
+        },
+      },
+    },
     filecoin: {
       live: true,
       url: nodeUrl('filecoin'),
