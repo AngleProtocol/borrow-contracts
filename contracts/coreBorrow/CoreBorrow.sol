@@ -97,7 +97,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     }
 
     /// @inheritdoc ICoreBorrow
-    function isGovernor(address admin) external view returns (bool) {
+    function isGovernor(address admin) external view virtual returns (bool) {
         return hasRole(GOVERNOR_ROLE, admin);
     }
 
