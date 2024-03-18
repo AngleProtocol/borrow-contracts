@@ -15,7 +15,7 @@ contract VanityAddressScript is Script, VanityAddress {
 
     string constant JSON_VANITY_PATH = "./scripts/vanity.json";
 
-     using stdJson for string;
+    using stdJson for string;
 
     function run() external {
         // Deploy diamond
