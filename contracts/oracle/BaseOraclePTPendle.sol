@@ -66,6 +66,7 @@ abstract contract BaseOraclePTPendle {
         return lowerBound;
     }
 
+    // TODO need to check what decimals the rate is returned if the underlying token is not in 18 decimals
     function _pendlePTPrice() internal view returns (uint256) {
         return PendlePtOracleLib.getPtToAssetRate(IPMarket(market()), twapDuration);
     }
