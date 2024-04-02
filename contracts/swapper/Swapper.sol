@@ -173,9 +173,6 @@ contract Swapper is ISwapper {
     }
 
     /// @notice Changes 1Inch endpoint to swap tokens
-    /// @param tokens Addresses of the tokens to allow
-    /// @param spenders Addresses to allow transfer
-    /// @param amounts Amounts to allow
     function update1Inch(address new1inch) external {
         if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         if (new1inch == address(0) || new1inch == oneInch) revert ZeroAddress();
