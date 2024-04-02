@@ -70,7 +70,7 @@ contract MorphoFeedPTPendleTest is Test {
 
         _TWAP_DURATION = 1 hours;
         _STALE_PERIOD = 24 hours;
-        _MAX_IMPLIED_RATE = 50 * 1e17;
+        _MAX_IMPLIED_RATE = 0.5 ether;
 
         vm.selectFork(forkIdentifier[CHAIN_ETHEREUM]);
         coreBorrow = new MockCoreBorrow();

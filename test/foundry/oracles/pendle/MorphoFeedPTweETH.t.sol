@@ -12,7 +12,7 @@ contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
 
         _TWAP_DURATION = 1 hours;
         _STALE_PERIOD = 24 hours;
-        _MAX_IMPLIED_RATE = 3 * 1e17;
+        _MAX_IMPLIED_RATE = 0.5 ether;
 
         _oracle = new MorphoFeedPTweETH(IAccessControlManager(address(coreBorrow)), _MAX_IMPLIED_RATE, _TWAP_DURATION);
     }
@@ -29,7 +29,7 @@ contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
-        assertApproxEqAbs(value, 1.03 ether, 0.01 ether);
+        assertApproxEqAbs(value, 0.91 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {
