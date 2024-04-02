@@ -43,16 +43,16 @@ import "./BaseOraclePTPendle.sol";
 /// @title BaseFeedPtPendle
 /// @author Angle Labs, Inc.
 /// @notice Base Contract to implement the AggregatorV3Interface for Pendle PT tokens
-abstract contract BaseFeedPtPendle is AccessControlManager, AggregatorV3Interface, BaseOraclePTPendle {
+abstract contract BaseFeedPTPendle is AccessControl, AggregatorV3Interface, BaseOraclePTPendle {
     // =================================== Errors ===================================
 
     /// @notice Constructor for an oracle following AggregatorV3Interface
     /// @param accessControlManager Contract managing authorization
     constructor(
-        address accessControlManager,
+        IAccessControlManager accessControlManager,
         uint256 _maxImpliedRate,
         uint32 _twapDuration
-    ) AccessControlManager(accessControlManager) BaseOraclePTPendle(_maxImpliedRate, _twapDuration) {}
+    ) AccessControl(accessControlManager) BaseOraclePTPendle(_maxImpliedRate, _twapDuration) {}
 
     function _onlyGovernorOrGuardian() internal view override {
         if (!accessControlManager.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
@@ -80,7 +80,7 @@ abstract contract BaseFeedPtPendle is AccessControlManager, AggregatorV3Interfac
         view
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
-        return (0, _getQuoteAmount(), 0, block.timestamp, 0);
+        return (0, int256(_getQuoteAmount()), 0, block.timestamp, 0);
     }
 
     /// @inheritdoc AggregatorV3Interface
@@ -89,6 +89,6 @@ abstract contract BaseFeedPtPendle is AccessControlManager, AggregatorV3Interfac
         view
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
-        return (0, _getQuoteAmount(), 0, block.timestamp, 0);
+        return (0, int256(_getQuoteAmount()), 0, block.timestamp, 0);
     }
 }

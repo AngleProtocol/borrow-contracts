@@ -40,10 +40,6 @@ contract AccessControl {
                                                        FUNCTIONS                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-    function _onlyGovernorOrGuardian() internal view {
-        if (!accessControlManager.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
-    }
-
     /// @notice Checks whether `admin` has the governor role
     function isGovernor(address admin) external view returns (bool) {
         return accessControlManager.isGovernor(admin);

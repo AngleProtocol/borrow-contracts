@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import "./BaseOraclePTPendle.t.sol";
+import "./MorphoFeedPTPendle.t.sol";
+import { IAccessControlManager } from "interfaces/IAccessControlManager.sol";
 
-contract OraclePTweETH is BaseOraclePendlePT {
+contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
     using stdStorage for StdStorage;
 
     function setUp() public override {
@@ -13,24 +14,22 @@ contract OraclePTweETH is BaseOraclePendlePT {
         _STALE_PERIOD = 24 hours;
         _MAX_IMPLIED_RATE = 3 * 1e17;
 
-        vm.selectFork(forkIdentifier[CHAIN_ETHEREUM]);
-        _contractTreasury = new MockTreasury(
-            IAgToken(address(0)),
-            _governor,
-            _guardian,
-            address(0),
-            address(0),
-            address(0)
-        );
-        _oracle = new OraclePTweETHEUR(_STALE_PERIOD, address(_contractTreasury), _MAX_IMPLIED_RATE, _TWAP_DURATION);
+        _oracle = new MorphoFeedPTweETH(IAccessControlManager(address(coreBorrow)), _MAX_IMPLIED_RATE, _TWAP_DURATION);
     }
 
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                       CORE LOGIC                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
+    function test_Description_Success() public {
+        assertEq(_oracle.description(), "PT-weETH/weETH Oracle");
+    }
+
     function test_Simple_Success() public {
-        assertApproxEqAbs(_oracle.read(), 2750 ether, 20 ether);
+        (, int256 answer, , , ) = _oracle.latestRoundData();
+        uint256 value = uint256(answer);
+
+        assertApproxEqAbs(value, 1.03 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {
@@ -38,20 +37,22 @@ contract OraclePTweETH is BaseOraclePendlePT {
         _oracle.setMaxImpliedRate(uint256(1e1));
         uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
 
-        assertEq(_oracle.read(), _read(pendleAMMPrice));
+        (, int256 answer, , , ) = _oracle.latestRoundData();
+        uint256 value = uint256(answer);
+
+        assertEq(value, pendleAMMPrice);
     }
 
     function test_AfterMaturity_Success() public {
         // Adavnce to the PT maturity
         vm.warp(_oracle.maturity());
 
-        // Update the last timestamp oracle push
-        _updateChainlinkTimestamp(block.timestamp);
-
         uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
-        uint256 value = _oracle.read();
-        assertEq(value, _read(pendleAMMPrice));
-        assertEq(value, _read(1 ether));
+        (, int256 answer, , , ) = _oracle.latestRoundData();
+        uint256 value = uint256(answer);
+
+        assertEq(value, pendleAMMPrice);
+        assertEq(value, 1 ether);
     }
 
     function test_HackRemove_Success(uint256 slash) public {
@@ -63,10 +64,11 @@ contract OraclePTweETH is BaseOraclePendlePT {
         deal(address(weETH), _oracle.sy(), postBalance);
 
         uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
-        uint256 value = _oracle.read();
+        (, int256 answer, , , ) = _oracle.latestRoundData();
+        uint256 value = uint256(answer);
 
-        assertLe(value, _read((lowerBound * slash) / BASE_18));
-        if (slash > 0) assertGe(value, _read((lowerBound * (slash - 1)) / BASE_18));
+        assertLe(value, (lowerBound * slash) / BASE_18);
+        if (slash > 0) assertGe(value, (lowerBound * (slash - 1)) / BASE_18);
     }
 
     function test_HackExpand_Success(uint256 expand) public {
@@ -78,8 +80,9 @@ contract OraclePTweETH is BaseOraclePendlePT {
         deal(address(weETH), _oracle.sy(), postBalance);
 
         uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
-        uint256 value = _oracle.read();
+        (, int256 answer, , , ) = _oracle.latestRoundData();
+        uint256 value = uint256(answer);
 
-        assertEq(value, _read((lowerBound)));
+        assertEq(value, lowerBound);
     }
 }

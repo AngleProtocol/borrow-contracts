@@ -6,14 +6,14 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "contracts/oracle/BaseFeedPTPendle.sol";
 
-/// @title OraclePTweETHEURChainlink
+/// @title MorphoFeedPTweETH
 /// @author Angle Labs, Inc.
-/// @notice Gives the price of PT-weETH in Euro in base 18
-contract OraclePTweETHEUR is BaseFeedPTPendle {
+/// @notice Gives the price of PT-weETH in ETH in base 18
+contract MorphoFeedPTweETH is BaseFeedPTPendle {
     string public constant description = "PT-weETH/weETH Oracle";
 
     constructor(
-        address accessControlManager,
+        IAccessControlManager accessControlManager,
         uint256 _maxImpliedRate,
         uint32 _twapDuration
     ) BaseFeedPTPendle(accessControlManager, _maxImpliedRate, _twapDuration) {}
