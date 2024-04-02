@@ -116,53 +116,6 @@ contract Swapper is ISwapper {
         uint256 inTokenObtained,
         bytes memory data
     ) external {
-        _swapInternal(inToken, outToken, outTokenRecipient, outTokenOwed, inTokenObtained, data);
-    }
-
-    // ============================ GOVERNANCE FUNCTION ============================
-
-    /// @notice Changes allowances of this contract for different tokens
-    /// @param tokens Addresses of the tokens to allow
-    /// @param spenders Addresses to allow transfer
-    /// @param amounts Amounts to allow
-    function changeAllowance(
-        IERC20[] calldata tokens,
-        address[] calldata spenders,
-        uint256[] calldata amounts
-    ) external {
-        if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
-        uint256 tokensLength = tokens.length;
-        if (tokensLength != spenders.length || tokensLength != amounts.length) revert IncompatibleLengths();
-        for (uint256 i; i < tokensLength; ++i) {
-            _changeAllowance(tokens[i], spenders[i], amounts[i]);
-        }
-    }
-
-    /// @notice Changes 1Inch endpoint to swap tokens
-    /// @param tokens Addresses of the tokens to allow
-    /// @param spenders Addresses to allow transfer
-    /// @param amounts Amounts to allow
-    function update1Inch(address new1inch) external {
-        if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
-        if (new1inch == address(0) || new1inch == oneInch) revert ZeroAddress();
-        oneInch = new1inch;
-    }
-
-    // ========================= INTERNAL UTILITY FUNCTIONS ========================
-
-    /// @dev This function swaps the `inToken` to the `outToken` by doing a UniV3 swap, a 1inch swap or by interacting
-    /// with the `AngleRouter` contract
-    /// @dev One slippage check is performed at the end of the call
-    /// @dev In this implementation, the function tries to make sure that the `outTokenRecipient` address has at the end
-    /// of the call `outTokenOwed`, leftover tokens are sent to a `to` address which by default is the `outTokenRecipient`
-    function _swapInternal(
-        IERC20 inToken,
-        IERC20 outToken,
-        address outTokenRecipient,
-        uint256 outTokenOwed,
-        uint256 inTokenObtained,
-        bytes memory data
-    ) internal {
         // Address to receive the surplus amount of token at the end of the call
         address to;
         // For slippage protection, it is checked at the end of the call
@@ -199,6 +152,37 @@ contract Swapper is ISwapper {
         inTokenObtained = inToken.balanceOf(address(this));
         if (inTokenObtained != 0) inToken.safeTransfer(to, inTokenObtained);
     }
+
+    // ============================ GOVERNANCE FUNCTION ============================
+
+    /// @notice Changes allowances of this contract for different tokens
+    /// @param tokens Addresses of the tokens to allow
+    /// @param spenders Addresses to allow transfer
+    /// @param amounts Amounts to allow
+    function changeAllowance(
+        IERC20[] calldata tokens,
+        address[] calldata spenders,
+        uint256[] calldata amounts
+    ) external {
+        if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        uint256 tokensLength = tokens.length;
+        if (tokensLength != spenders.length || tokensLength != amounts.length) revert IncompatibleLengths();
+        for (uint256 i; i < tokensLength; ++i) {
+            _changeAllowance(tokens[i], spenders[i], amounts[i]);
+        }
+    }
+
+    /// @notice Changes 1Inch endpoint to swap tokens
+    /// @param tokens Addresses of the tokens to allow
+    /// @param spenders Addresses to allow transfer
+    /// @param amounts Amounts to allow
+    function update1Inch(address new1inch) external {
+        if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        if (new1inch == address(0) || new1inch == oneInch) revert ZeroAddress();
+        oneInch = new1inch;
+    }
+
+    // ========================= INTERNAL UTILITY FUNCTIONS ========================
 
     /// @notice Internal version of the `_changeAllowance` function
     function _changeAllowance(IERC20 token, address spender, uint256 amount) internal {
