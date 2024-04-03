@@ -28,7 +28,7 @@ contract MainnetConstants {
 
     address constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
     address constant EZETH = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
-    address constant PTETHFI = 0xc69Ad9baB1dEE23F4605a82b3354F8E40d1E5966;
+    address constant PTWeETH = 0xc69Ad9baB1dEE23F4605a82b3354F8E40d1E5966;
     address constant RSETH = 0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7;
 
     address constant EZETH_ETH_ORACLE = 0xF4a3e183F59D2599ee3DF213ff78b1B3b1923696;
@@ -43,9 +43,9 @@ contract MainnetConstants {
     address constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     address constant IRM_MODEL = 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC;
 
-    uint256 constant LLTV_86 = 860000000000000000;
-    uint256 constant LLTV_77 = 770000000000000000;
-    uint256 constant LLTV_62 = 625000000000000000;
+    uint256 constant LLTV_86 = 0.86 ether;
+    uint256 constant LLTV_77 = 0.77 ether;
+    uint256 constant LLTV_62 = 0.625 ether;
 
     function deployUpgradeable(address implementation, bytes memory data) public returns (address) {
         return address(new TransparentUpgradeableProxy(implementation, PROXY_ADMIN, data));

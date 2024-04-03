@@ -6,15 +6,15 @@ import { console } from "forge-std/console.sol";
 import { IMorpho, MarketParams } from "../../../contracts/interfaces/external/morpho/IMorpho.sol";
 import { IMorphoChainlinkOracleV2Factory, IMorphoOracle } from "../../../contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2.sol";
 import "./MainnetConstants.s.sol";
-import { StdCheats } from "forge-std/Test.sol";
+import { StdCheats, StdAssertions } from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Before running this script, ensure that the deployer has the necessary balance in all tokens to seed the markets
-contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats {
+contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertions {
     error ZeroAdress();
 
     function run() external {
-        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("MNEMONIC_MAINNET"), "m/44'/60'/0'/0/", 0);
+        uint256 deployerPrivateKey = vm.deriveKey(vm.envString("DEPLOYER_PRIVATE_KEY"), "m/44'/60'/0'/0/", 0);
         address deployer = vm.addr(deployerPrivateKey);
         console.log("Address: %s", deployer);
         console.log(deployer.balance);
@@ -26,7 +26,7 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats {
         // TODO: comment when testing in prod
         deal(EZETH, deployer, 10 ** 16);
         deal(RSETH, deployer, 10 ** 16);
-        deal(PTETHFI, deployer, 10 ** 16);
+        deal(PTWeETH, deployer, 10 ** 16);
         deal(USDA, deployer, 3 ether);
 
         IERC20(USDA).approve(MORPHO_BLUE, type(uint256).max);
@@ -49,7 +49,9 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats {
                 18,
                 salt
             );
-            console.log(IMorphoOracle(ezETHOracle).price());
+            uint256 price = IMorphoOracle(ezETHOracle).price();
+            console.log(price);
+            assertApproxEqRel(price, 3500 * 10 ** 18, 10 ** 17);
             params.collateralToken = EZETH;
             params.irm = IRM_MODEL;
             params.lltv = LLTV_77;
@@ -83,8 +85,9 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats {
                 salt
             );
 
-            console.log(IMorphoOracle(rsETHOracle).price());
-
+            uint256 price = IMorphoOracle(rsETHOracle).price();
+            console.log(price);
+            assertApproxEqRel(price, 3500 * 10 ** 18, 10 ** 17);
             params.collateralToken = RSETH;
             params.irm = IRM_MODEL;
             params.lltv = LLTV_77;
@@ -118,15 +121,17 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats {
                     18,
                     salt
                 );
-            console.log(IMorphoOracle(ptETHFIOracle).price());
-            params.collateralToken = PTETHFI;
+            uint256 price = IMorphoOracle(ptETHFIOracle).price();
+            console.log(price);
+            assertApproxEqRel(price, 3500 * 10 ** 18, 10 ** 17);
+            params.collateralToken = PTWeETH;
             params.irm = IRM_MODEL;
             params.lltv = LLTV_62;
             params.oracle = ptETHFIOracle;
             params.loanToken = USDA;
             IMorpho(MORPHO_BLUE).createMarket(params);
             IMorpho(MORPHO_BLUE).supply(params, 1 ether, 0, deployer, emptyData);
-            IERC20(PTETHFI).approve(MORPHO_BLUE, 10 ** 16);
+            IERC20(PTWeETH).approve(MORPHO_BLUE, 10 ** 16);
             IMorpho(MORPHO_BLUE).supplyCollateral(params, 10 ** 16, deployer, emptyData);
             IMorpho(MORPHO_BLUE).borrow(params, (1 ether * 9) / 10, 0, deployer, deployer);
         }
