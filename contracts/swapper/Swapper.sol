@@ -213,7 +213,7 @@ contract Swapper is ISwapper {
     /// after the call to this function
     function _swap(IERC20 inToken, uint256 amount, SwapType swapType, bytes memory args) internal {
         if (swapType == SwapType.UniswapV3) _swapOnUniswapV3(inToken, amount, args);
-        else if (swapType == SwapType.oneInch) _swapOnAggregator(inToken, args);
+        else if (swapType == SwapType.Aggregator) _swapOnAggregator(inToken, args);
         else if (swapType == SwapType.AngleRouter) _angleRouterActions(inToken, args);
         else if (swapType == SwapType.Leverage) _swapLeverage(args);
     }
