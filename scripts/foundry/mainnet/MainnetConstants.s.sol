@@ -3,8 +3,10 @@ pragma solidity ^0.8.12;
 
 import "../../../contracts/external/ProxyAdmin.sol";
 import "../../../contracts/external/TransparentUpgradeableProxy.sol";
+import { CommonUtils } from "../../../lib/utils/src/CommonUtils.sol";
+import { ContractType } from "../../../lib/utils/src/Constants.sol";
 
-contract MainnetConstants {
+contract MainnetConstants is CommonUtils {
     address constant GOVERNOR = 0xdC4e6DFe07EFCa50a197DF15D9200883eF4Eb1c8;
     address constant GUARDIAN = 0x0C2553e4B9dFA9f83b1A6D3EAB96c4bAaB42d430;
     address constant PROXY_ADMIN = 0x1D941EF0D3Bba4ad67DBfBCeE5262F4CEE53A32b;
