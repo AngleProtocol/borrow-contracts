@@ -13,6 +13,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertions {
     error ZeroAdress();
 
+    address public USDA;
+
+    function setUp() {
+        USDA = _chainToContract(1, ContractType.AgUSD);
+    }
+
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
