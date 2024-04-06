@@ -15,7 +15,7 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertio
 
     address public USDA;
 
-    function setUp() {
+    function setUp() public {
         USDA = _chainToContract(1, ContractType.AgUSD);
     }
 
