@@ -13,12 +13,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertions {
     error ZeroAdress();
 
-    address public USDA;
-
-    function setUp() public {
-        USDA = _chainToContract(1, ContractType.AgUSD);
-    }
-
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
@@ -65,6 +59,8 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertio
             params.lltv = LLTV_77;
             params.oracle = ezETHOracle;
             params.loanToken = USDA;
+            console.log("ezETH Market");
+            _logMarket(params);
             IMorpho(MORPHO_BLUE).createMarket(params);
             IMorpho(MORPHO_BLUE).supply(params, 1 ether, 0, deployer, emptyData);
             // 0.009 ezETH
@@ -101,6 +97,8 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertio
             params.lltv = LLTV_77;
             params.oracle = rsETHOracle;
             params.loanToken = USDA;
+            console.log("rsETH Market");
+            _logMarket(params);
             IMorpho(MORPHO_BLUE).createMarket(params);
             IMorpho(MORPHO_BLUE).supply(params, 1 ether, 0, deployer, emptyData);
             IERC20(RSETH).approve(MORPHO_BLUE, 9 * 10 ** 15);
@@ -146,5 +144,15 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertio
         */
 
         vm.stopBroadcast();
+    }
+
+    function _logMarket(MarketParams memory params) internal view {
+        console.log("");
+        console.log("collateral", params.collateralToken);
+        console.log("irm", params.irm);
+        console.log("lltv", params.lltv);
+        console.log("oracle", params.oracle);
+        console.log("loan token", params.loanToken);
+        console.log("");
     }
 }
