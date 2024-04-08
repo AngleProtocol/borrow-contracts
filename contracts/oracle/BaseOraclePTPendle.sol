@@ -73,6 +73,10 @@ abstract contract BaseOraclePTPendle {
         return lowerBound;
     }
 
+    /// @dev Depending on the market you should use
+    ///       - getPtToSy() should be used if the underlying token is tradable,
+    ///       - getPtToAsset() if not
+    /// @dev https://docs.pendle.finance/Developers/Contracts/StandardizedYield#asset-of-sy--assetinfo-function
     function _pendlePTPrice() internal view returns (uint256) {
         return PendlePtOracleLib.getPtToAssetRate(IPMarket(market()), twapDuration);
     }
