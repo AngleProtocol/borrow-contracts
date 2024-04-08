@@ -12,8 +12,6 @@ contract AccessControl {
     /// @notice `accessControlManager` used to check roles
     IAccessControlManager public accessControlManager;
 
-    uint256[49] private __gapAccessControl;
-
     /// @notice Initializes the immutable variables of the contract `accessControlManager`
     constructor(IAccessControlManager _accessControlManager) {
         if (address(_accessControlManager) == address(0)) revert ZeroAddress();
@@ -31,7 +29,7 @@ contract AccessControl {
     }
 
     /// @notice Checks whether the `msg.sender` has the guardian role
-    modifier onlyGuardian() {
+    modifier onlyGovernorOrGuardian() {
         if (!accessControlManager.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         _;
     }

@@ -89,6 +89,6 @@ abstract contract BaseFeedPTPendle is AccessControl, AggregatorV3Interface, Base
         view
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
-        return (0, int256(_getQuoteAmount()), 0, block.timestamp, 0);
+        return (0, int256(_getQuoteAmount()), 0, 0, 0);
     }
 }

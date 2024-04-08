@@ -5,7 +5,6 @@ pragma solidity ^0.8.12;
 import { UNIT, UD60x18, ud } from "prb/math/UD60x18.sol";
 import "pendle/interfaces/IPMarket.sol";
 import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
-import "../interfaces/ITreasury.sol";
 
 /// @title BaseOraclePTPendle
 /// @author Angle Labs, Inc.
@@ -19,6 +18,12 @@ abstract contract BaseOraclePTPendle {
     uint32 public twapDuration;
 
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                        ERRORS                                                      
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+    error TwapDurationTooLow();
+
+    /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                         EVENTS                                                      
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
@@ -26,6 +31,7 @@ abstract contract BaseOraclePTPendle {
     event TwapPTDurationUpdated(uint256 _twapDuration);
 
     constructor(uint256 _maxImpliedRate, uint32 _twapDuration) {
+        if (_twapDuration < 15 minutes) revert TwapDurationTooLow();
         maxImpliedRate = _maxImpliedRate;
         twapDuration = _twapDuration;
     }
@@ -49,6 +55,7 @@ abstract contract BaseOraclePTPendle {
     }
 
     function setTwapDuration(uint32 _twapDuration) external onlyGovernorOrGuardian {
+        if (_twapDuration < 15 minutes) revert TwapDurationTooLow();
         twapDuration = _twapDuration;
         emit TwapPTDurationUpdated(_twapDuration);
     }
