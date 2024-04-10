@@ -32,6 +32,10 @@ contract MainnetConstants is CommonUtils {
     address constant EZETH = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
     address constant PTWeETH = 0xc69Ad9baB1dEE23F4605a82b3354F8E40d1E5966;
     address constant RSETH = 0xA1290d69c65A6Fe4DF752f95823fae25cB99e5A7;
+    address constant GTETHPRIME = 0x2371e134e3455e0593363cBF89d3b6cf53740618;
+    address constant GTUSDCPRIME = 0xdd0f28e19C1780eb6396170735D45153D261490d;
+    address constant RE7ETH = 0x78Fc2c2eD1A4cDb5402365934aE5648aDAd094d0;
+    address constant RE7USDT = 0x95EeF579155cd2C5510F312c8fA39208c3Be01a8;
 
     address constant EZETH_ETH_ORACLE = 0xF4a3e183F59D2599ee3DF213ff78b1B3b1923696;
     address constant RSETH_ETH_ORACLE = 0xA736eAe8805dDeFFba40cAB8c99bCB309dEaBd9B;
@@ -40,6 +44,8 @@ contract MainnetConstants is CommonUtils {
     address constant WEETH_USD_ORACLE = 0xdDb6F90fFb4d3257dd666b69178e5B3c5Bf41136;
 
     address constant CHAINLINK_ETH_USD_ORACLE = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address constant CHAINLINK_USDT_USD_ORACLE = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
+    address constant CHAINLINK_USDC_USD_ORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
 
     address constant MORPHO_ORACLE_FACTORY = 0x3A7bB36Ee3f3eE32A60e9f2b33c1e5f2E83ad766;
     address constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
@@ -48,6 +54,9 @@ contract MainnetConstants is CommonUtils {
     uint256 constant LLTV_86 = 0.86 ether;
     uint256 constant LLTV_77 = 0.77 ether;
     uint256 constant LLTV_62 = 0.625 ether;
+
+    uint256 BASE_DEPOSIT_ETH_AMOUNT = 9 * 10 ** 15;
+    uint256 BASE_DEPOSIT_USD_AMOUNT = 5 ether;
 
     function deployUpgradeable(address implementation, bytes memory data) public returns (address) {
         return address(new TransparentUpgradeableProxy(implementation, PROXY_ADMIN, data));
