@@ -40,6 +40,13 @@ export const OFTs: OFTsStructure = {
     polygon: '0xe70575daaB2B1b3fa9658fa76cC506fcB0007169',
     polygonzkevm: '0x1E5B48c08D6b5efE0792d04f27602bD90026514a',
   },
+  ANGLE: {
+    mainnet: '0x1056178977457A5F4BE33929520455A7d2E28670',
+    optimism: '0x9201cC18965792808549566e6B06B016d915313A',
+    arbitrum: '0x366CEE609A64037a4910868c5b3cd62b9D019695',
+    bsc: '0x16cd38b1B54E7abf307Cb2697E2D9321e843d5AA',
+    avalanche: '0xC011882d0f7672D8942e7fE2248C174eeD640c8f'
+  }
 };
 
 interface CurrencyNetworkAddresses {
