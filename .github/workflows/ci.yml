@@ -53,13 +53,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Compile hardhat
-        run: yarn hardhat:compile
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: Compile hardhat
+        run: yarn hardhat:compile
 
       - name: Compile foundry
         run: yarn foundry:compile --sizes
