@@ -11,7 +11,7 @@ import "pendle/interfaces/IPMarket.sol";
 import "utils/src/Constants.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import { UNIT, UD60x18, ud, intoUint256 } from "prb/math/UD60x18.sol";
-import "contracts/utils/Errors.sol" as ErrorsAngle;
+import "borrow-contracts/utils/Errors.sol" as ErrorsAngle;
 
 contract BaseOraclePendlePT is Test {
     using stdStorage for StdStorage;

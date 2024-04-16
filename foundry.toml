@@ -10,7 +10,7 @@ via_ir = false
 sizes = true
 optimizer = true
 optimizer_runs=1
-solc_version = '0.8.20'
+solc_version = '0.8.22'
 ffi = true
 fs_permissions = [{ access = "read-write", path = "./scripts/vanity.json"}, { access = "read-write", path = "../../../deploy/vanity.json"}]
 memory_limit = 1000043554432
@@ -31,7 +31,7 @@ polygon = "${ETH_NODE_URI_POLYGON}"
 fork = "${ETH_NODE_URI_FORK}"
 avalanche = "${ETH_NODE_URI_AVALANCHE}"
 celo = "${ETH_NODE_URI_CELO}"
-polygon-zkevm = "${ETH_NODE_URI_POLYGON_ZKEVM}"
+polygon-zkevm = "${ETH_NODE_URI_POLYGONZKEVM}"
 bsc = "${ETH_NODE_URI_BSC}"
 base = "${ETH_NODE_URI_BASE}"
 linea = "${ETH_NODE_URI_LINEA}"

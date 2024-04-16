@@ -3,14 +3,14 @@ pragma solidity ^0.8.0;
 
 import { console } from "forge-std/console.sol";
 import { stdStorage, StdStorage, Test } from "forge-std/Test.sol";
-import { MorphoFeedPTweETH, BaseFeedPTPendle } from "contracts/oracle/morpho/mainnet/MorphoFeedPTweETH.sol";
-import { MockTreasury } from "contracts/mock/MockTreasury.sol";
-import { IAgToken } from "contracts/interfaces/IAgToken.sol";
-import { IMorphoChainlinkOracleV2Factory } from "contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2Factory.sol";
-import { IMorphoChainlinkOracleV2 } from "contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2.sol";
-import { IAccessControlManager } from "interfaces/IAccessControlManager.sol";
-import "contracts/utils/Errors.sol" as Errors;
-import "contracts/mock/MockCoreBorrow.sol";
+import { MorphoFeedPTweETH, BaseFeedPTPendle } from "borrow-contracts/oracle/morpho/mainnet/MorphoFeedPTweETH.sol";
+import { MockTreasury } from "borrow-contracts/mock/MockTreasury.sol";
+import { IAgToken } from "borrow-contracts/interfaces/IAgToken.sol";
+import { IMorphoChainlinkOracleV2Factory } from "borrow-contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2Factory.sol";
+import { IMorphoChainlinkOracleV2 } from "borrow-contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2.sol";
+import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
+import "borrow-contracts/utils/Errors.sol" as Errors;
+import "borrow-contracts/mock/MockCoreBorrow.sol";
 import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
 import { IPMarket } from "pendle/interfaces/IPMarket.sol";
 import "utils/src/Constants.sol";
@@ -19,7 +19,7 @@ import { UNIT, UD60x18, ud, intoUint256 } from "prb/math/UD60x18.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { CommonUtils } from "utils/src/CommonUtils.sol";
-import { IERC4626 } from "interfaces/external/IERC4626.sol";
+import { IERC4626 } from "borrow-contracts/interfaces/external/IERC4626.sol";
 import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
 
 contract MorphoChainlinkOracleTest is Test, CommonUtils {

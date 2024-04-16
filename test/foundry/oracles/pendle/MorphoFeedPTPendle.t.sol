@@ -3,12 +3,12 @@ pragma solidity ^0.8.12;
 
 import { console } from "forge-std/console.sol";
 import { stdStorage, StdStorage, Test } from "forge-std/Test.sol";
-import { MorphoFeedPTweETH, BaseFeedPTPendle } from "contracts/oracle/morpho/mainnet/MorphoFeedPTweETH.sol";
-import { MockTreasury } from "contracts/mock/MockTreasury.sol";
-import { IAgToken } from "contracts/interfaces/IAgToken.sol";
-import { IAccessControlManager } from "interfaces/IAccessControlManager.sol";
-import "contracts/utils/Errors.sol" as Errors;
-import "contracts/mock/MockCoreBorrow.sol";
+import { MorphoFeedPTweETH, BaseFeedPTPendle } from "borrow-contracts/oracle/morpho/mainnet/MorphoFeedPTweETH.sol";
+import { MockTreasury } from "borrow-contracts/mock/MockTreasury.sol";
+import { IAgToken } from "borrow-contracts/interfaces/IAgToken.sol";
+import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
+import "borrow-contracts/utils/Errors.sol" as Errors;
+import "borrow-contracts/mock/MockCoreBorrow.sol";
 import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
 import { IPMarket } from "pendle/interfaces/IPMarket.sol";
 import "utils/src/Constants.sol";

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "./MorphoFeedPTPendle.t.sol";
-import { IAccessControlManager } from "interfaces/IAccessControlManager.sol";
+import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
 
 contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
     using stdStorage for StdStorage;
