@@ -9,7 +9,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 /// @custom:contact security@morpho.org
 /// @notice Interface that oracles used by Morpho must implement.
 /// @dev It is the user's responsibility to select markets with safe oracles.
-interface IOracle {
+interface IOracleMorpho {
     /// @notice Returns the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by 1e36.
     /// @dev It corresponds to the price of 10**(collateral token decimals) assets of collateral token quoted in
     /// 10**(loan token decimals) assets of loan token with `36 + loan token decimals - collateral token decimals`
@@ -21,7 +21,7 @@ interface IOracle {
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
 /// @notice Interface of MorphoChainlinkOracleV2.
-interface IMorphoChainlinkOracleV2 is IOracle {
+interface IMorphoChainlinkOracleV2 is IOracleMorpho {
     /// @notice Returns the address of the base ERC4626 vault.
     function BASE_VAULT() external view returns (IERC4626);
 
