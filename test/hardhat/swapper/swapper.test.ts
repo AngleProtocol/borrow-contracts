@@ -48,7 +48,7 @@ contract('Swapper', () => {
     it('success - contract initialized', async () => {
       expect(await swapper.core()).to.be.equal(core.address);
       expect(await swapper.angleRouter()).to.be.equal(router.address);
-      expect(await swapper.oneInch()).to.be.equal(router.address);
+      expect(await swapper.aggregator()).to.be.equal(router.address);
       expect(await swapper.uniV3Router()).to.be.equal(router.address);
     });
     it('reverts - zero address', async () => {
@@ -352,6 +352,19 @@ contract('Swapper', () => {
   });
 
   describe('swap - 1Inch', () => {
+    it('reverts - not governor', async () => {
+      await expect(swapper.setAggregator(stETH.address)).to.be.revertedWith('NotGovernorOrGuardian');
+    });
+    it('reverts - wrong aggregator', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await expect(swapper.connect(alice).setAggregator(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress');
+      await expect(swapper.connect(alice).setAggregator(router.address)).to.be.revertedWith('ZeroAddress');
+    });
+    it('success - update aggregator', async () => {
+      await core.connect(alice).toggleGuardian(alice.address);
+      await swapper.connect(alice).setAggregator(stETH.address);
+      expect(await swapper.aggregator()).to.be.equal(stETH.address);
+    });
     it('reverts - nonexistent function', async () => {
       await collateral.mint(swapper.address, parseEther('1'));
       await stablecoin.mint(router.address, parseEther('1'));

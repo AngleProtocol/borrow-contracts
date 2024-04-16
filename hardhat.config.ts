@@ -16,6 +16,7 @@ import '@openzeppelin/hardhat-upgrades';
 import 'solidity-coverage';
 import '@tenderly/hardhat-tenderly';
 import '@typechain/hardhat';
+import '@nomicfoundation/hardhat-foundry';
 
 import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names';
 import { HardhatUserConfig, subtask } from 'hardhat/config';
@@ -46,7 +47,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.17',
+        version: '0.8.22',
         settings: {
           optimizer: {
             enabled: true,

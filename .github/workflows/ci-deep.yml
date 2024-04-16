@@ -57,13 +57,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Compile hardhat
-        run: yarn hardhat:compile
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: Compile hardhat
+        run: yarn hardhat:compile
 
       - name: Compile foundry
         run: yarn foundry:compile --sizes
@@ -118,7 +118,16 @@ jobs:
           CI: true
           ETH_NODE_URI_POLYGON: ${{ secrets.ETH_NODE_URI_POLYGON }}
           ETH_NODE_URI_FORK: ${{ secrets.ETH_NODE_URI_FORK }}
-          ETH_NODE_URI_MAINNET: ${{ secrets.ETH_NODE_URI_MAINNET }}
+          ETH_NODE_URI_ETHEREUM: ${{ secrets.ETH_NODE_URI_ETHEREUM }}
+          ETH_NODE_URI_ARBITRUM: ${{ secrets.ETH_NODE_URI_ARBITRUM }}
+          ETH_NODE_URI_OPTIMISM: ${{ secrets.ETH_NODE_URI_OPTIMISM }}
+          ETH_NODE_URI_GNOSIS: ${{ secrets.ETH_NODE_URI_GNOSIS }}
+          ETH_NODE_URI_CELO: ${{ secrets.ETH_NODE_URI_CELO }}
+          ETH_NODE_URI_BSC: ${{ secrets.ETH_NODE_URI_BSC }}
+          ETH_NODE_URI_BASE: ${{ secrets.ETH_NODE_URI_BASE }}
+          ETH_NODE_URI_AVALANCHE: ${{ secrets.ETH_NODE_URI_AVALANCHE }}
+          ETH_NODE_URI_LINEA: ${{ secrets.ETH_NODE_URI_LINEA }}
+          ETH_NODE_URI_POLYGON_ZKEVM: ${{ secrets.ETH_NODE_URI_POLYGON_ZKEVM }}
 
       - name: 'Add test summary'
         run: |
@@ -154,10 +163,18 @@ jobs:
       - name: Run Foundry tests
         run: yarn foundry:test
         env:
-          ETH_NODE_URI_MAINNET: ${{ secrets.ETH_NODE_URI_MAINNET }}
           ETH_NODE_URI_POLYGON: ${{ secrets.ETH_NODE_URI_POLYGON }}
-          ETH_NODE_URI_GOERLI: ${{ secrets.ETH_NODE_URI_GOERLI }}
-          ETH_NODE_URI_FANTOM: ${{ secrets.ETH_NODE_URI_FANTOM }}
+          ETH_NODE_URI_FORK: ${{ secrets.ETH_NODE_URI_FORK }}
+          ETH_NODE_URI_ETHEREUM: ${{ secrets.ETH_NODE_URI_ETHEREUM }}
+          ETH_NODE_URI_ARBITRUM: ${{ secrets.ETH_NODE_URI_ARBITRUM }}
+          ETH_NODE_URI_OPTIMISM: ${{ secrets.ETH_NODE_URI_OPTIMISM }}
+          ETH_NODE_URI_GNOSIS: ${{ secrets.ETH_NODE_URI_GNOSIS }}
+          ETH_NODE_URI_CELO: ${{ secrets.ETH_NODE_URI_CELO }}
+          ETH_NODE_URI_BSC: ${{ secrets.ETH_NODE_URI_BSC }}
+          ETH_NODE_URI_BASE: ${{ secrets.ETH_NODE_URI_BASE }}
+          ETH_NODE_URI_AVALANCHE: ${{ secrets.ETH_NODE_URI_AVALANCHE }}
+          ETH_NODE_URI_LINEA: ${{ secrets.ETH_NODE_URI_LINEA }}
+          ETH_NODE_URI_POLYGON_ZKEVM: ${{ secrets.ETH_NODE_URI_POLYGON_ZKEVM }}
           FOUNDRY_FUZZ_RUNS: ${{ github.event.inputs.fuzzRuns || '10000' }}
 
       - name: 'Add test summary'

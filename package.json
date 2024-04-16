@@ -31,6 +31,7 @@
     "prettier:js": "prettier --write 'test/**/*.{js,ts}' '*.{js,ts}'",
     "size": "yarn hardhat:compile && hardhat size-contracts",
     "hardhat:test": "hardhat test",
+    "test": "FOUNDRY_PROFILE=dev forge test -vvv",
     "test:e2e:mainnet": "FORK=true hardhat test e2e/mainnet/oraclesChainlink.test.ts",
     "test:e2e:arbitrum": "FORK=true hardhat test e2e/arbitrum/oraclesChainlink.test.ts",
     "test:e2e:balance": "FORK=true hardhat test e2e/mainnet/balanceOf.test.ts",
@@ -54,8 +55,9 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "0.31.3",
+    "@angleprotocol/sdk": "1.0.4",
     "@chainlink/contracts": "0.2.1",
+    "@nomicfoundation/hardhat-foundry": "^1.1.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "3.1.0",
     "@nomiclabs/hardhat-solhint": "2.0.0",

@@ -29,10 +29,10 @@ contract VanityAddressScript is Script, VanityAddress {
         console.log("Computed: ", computed);
         console.log("Found: ", found);
 
-        // write result to json vanity path
-        json = "";
-        vm.serializeUint(json, "init", found);
-        string memory finalJson = vm.serializeAddress(json, "salt", computed);
-        vm.writeFile(JSON_VANITY_PATH, finalJson);
+        // // write result to json vanity path
+        // json = "";
+        // vm.serializeUint(json, "init", found);
+        // string memory finalJson = vm.serializeAddress(json, "salt", computed);
+        // vm.writeFile(JSON_VANITY_PATH, finalJson);
     }
 }

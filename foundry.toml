@@ -10,7 +10,7 @@ via_ir = false
 sizes = true
 optimizer = true
 optimizer_runs=1
-solc_version = '0.8.17'
+solc_version = '0.8.22'
 ffi = true
 fs_permissions = [{ access = "read-write", path = "./scripts/vanity.json"}, { access = "read-write", path = "../../../deploy/vanity.json"}]
 memory_limit = 1000043554432
