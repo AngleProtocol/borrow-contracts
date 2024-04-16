@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-error ZeroAddress();
 error NotGovernor();
 error NotGovernorOrGuardian();
+error TwapDurationTooLow();
+error ZeroAddress();

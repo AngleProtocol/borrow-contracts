@@ -11,6 +11,7 @@ import "pendle/interfaces/IPMarket.sol";
 import "utils/src/Constants.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import { UNIT, UD60x18, ud, intoUint256 } from "prb/math/UD60x18.sol";
+import "contracts/utils/Errors.sol" as ErrorsAngle;
 
 contract BaseOraclePendlePT is Test {
     using stdStorage for StdStorage;
@@ -66,7 +67,7 @@ contract BaseOraclePendlePT is Test {
 
         _TWAP_DURATION = 1 hours;
         _STALE_PERIOD = 24 hours;
-        _MAX_IMPLIED_RATE = 3 * 1e17;
+        _MAX_IMPLIED_RATE = 0.5 ether;
 
         vm.selectFork(forkIdentifier[CHAIN_ETHEREUM]);
         _contractTreasury = new MockTreasury(
@@ -166,10 +167,19 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
     function test_RevertWhen_SetTwapDuration_NotAuthorized() public {
         vm.prank(_alice);
         vm.expectRevert(abi.encodeWithSelector(BaseOracleChainlinkMulti.NotGovernorOrGuardian.selector));
-        _oracle.setMaxImpliedRate(10);
+        _oracle.setTwapDuration(10);
+    }
+
+    function test_RevertWhen_SetTwapDuration_TooLow() public {
+        vm.prank(_governor);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsAngle.TwapDurationTooLow.selector));
+        _oracle.setTwapDuration(10);
     }
 
     function test_SetTwapDuration_Success(uint32 twap1, uint32 twap2) public {
+        twap1 = uint32(bound(twap1, 15 minutes, 365 days));
+        twap2 = uint32(bound(twap2, 15 minutes, 365 days));
+
         vm.prank(_governor);
         _oracle.setTwapDuration(twap1);
         assertEq(_oracle.twapDuration(), uint256(twap1));

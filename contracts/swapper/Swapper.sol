@@ -173,7 +173,7 @@ contract Swapper is ISwapper {
     }
 
     /// @notice Changes `aggregator` endpoint to swap tokens
-    function updateAggregator(address _aggregator) external {
+    function setAggregator(address _aggregator) external {
         if (!core.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         if (_aggregator == address(0) || _aggregator == aggregator) revert ZeroAddress();
         aggregator = _aggregator;

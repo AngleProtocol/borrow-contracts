@@ -20,6 +20,11 @@ contract OraclePTweETHEUR is BaseOracleChainlinkMultiTwoFeeds, BaseOraclePTPendl
         uint32 _twapDuration
     ) BaseOracleChainlinkMultiTwoFeeds(_stalePeriod, _treasury) BaseOraclePTPendle(_maxImpliedRate, _twapDuration) {}
 
+    modifier onlyGovernorOrGuardian() override(BaseOraclePTPendle) {
+        if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        _;
+    }
+
     /// @inheritdoc IOracle
     function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
         AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
@@ -58,9 +63,5 @@ contract OraclePTweETHEUR is BaseOracleChainlinkMultiTwoFeeds, BaseOraclePTPendl
 
     function market() public pure override returns (address) {
         return 0xF32e58F92e60f4b0A37A69b95d642A471365EAe8;
-    }
-
-    function _onlyGovernorOrGuardian() internal view override {
-        if (!treasury.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
     }
 }

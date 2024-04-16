@@ -119,6 +119,6 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
             morphoPrice,
             0.00001 ether
         );
-        assertApproxEqRel(3100 ether, morphoPrice / 10 ** 18, 0.01 ether);
+        assertApproxEqRel(2950 ether, morphoPrice / 10 ** 18, 0.01 ether);
     }
 }

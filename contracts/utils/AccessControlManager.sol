@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-import { IAccessControlManager } from "interfaces/IAccessControlManager.sol";
+import { IAccessControlManager } from "contracts/interfaces/IAccessControlManager.sol";
 
 import "./Errors.sol";
 
@@ -29,7 +29,7 @@ contract AccessControl {
     }
 
     /// @notice Checks whether the `msg.sender` has the guardian role
-    modifier onlyGovernorOrGuardian() {
+    modifier onlyGovernorOrGuardian() virtual {
         if (!accessControlManager.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
         _;
     }

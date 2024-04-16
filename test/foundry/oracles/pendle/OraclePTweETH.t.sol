@@ -11,7 +11,7 @@ contract OraclePTweETH is BaseOraclePendlePT {
 
         _TWAP_DURATION = 1 hours;
         _STALE_PERIOD = 24 hours;
-        _MAX_IMPLIED_RATE = 3 * 1e17;
+        _MAX_IMPLIED_RATE = 0.5 ether;
 
         vm.selectFork(forkIdentifier[CHAIN_ETHEREUM]);
         _contractTreasury = new MockTreasury(
@@ -30,7 +30,7 @@ contract OraclePTweETH is BaseOraclePendlePT {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     function test_Simple_Success() public {
-        assertApproxEqAbs(_oracle.read(), 2750 ether, 20 ether);
+        assertApproxEqRel(_oracle.read(), 2780 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {

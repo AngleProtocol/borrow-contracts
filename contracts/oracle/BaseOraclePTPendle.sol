@@ -5,6 +5,7 @@ pragma solidity ^0.8.12;
 import { UNIT, UD60x18, ud } from "prb/math/UD60x18.sol";
 import "pendle/interfaces/IPMarket.sol";
 import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
+import "contracts/utils/Errors.sol";
 
 /// @title BaseOraclePTPendle
 /// @author Angle Labs, Inc.
@@ -16,12 +17,6 @@ abstract contract BaseOraclePTPendle {
     uint256 public maxImpliedRate;
     // @notice The duration of the TWAP used to calculate the PT price
     uint32 public twapDuration;
-
-    /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                                        ERRORS                                                      
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-
-    error TwapDurationTooLow();
 
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                         EVENTS                                                      
@@ -36,10 +31,7 @@ abstract contract BaseOraclePTPendle {
         twapDuration = _twapDuration;
     }
 
-    modifier onlyGovernorOrGuardian() {
-        _onlyGovernorOrGuardian();
-        _;
-    }
+    modifier onlyGovernorOrGuardian() virtual;
 
     function _getQuoteAmount() internal view virtual returns (uint256) {
         uint256 economicalLowerBound = _economicalPTLowerBoundPrice();
@@ -98,6 +90,4 @@ abstract contract BaseOraclePTPendle {
     function maturity() public pure virtual returns (uint256);
 
     function market() public pure virtual returns (address);
-
-    function _onlyGovernorOrGuardian() internal view virtual;
 }

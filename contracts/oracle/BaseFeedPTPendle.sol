@@ -54,8 +54,9 @@ abstract contract BaseFeedPTPendle is AccessControl, AggregatorV3Interface, Base
         uint32 _twapDuration
     ) AccessControl(accessControlManager) BaseOraclePTPendle(_maxImpliedRate, _twapDuration) {}
 
-    function _onlyGovernorOrGuardian() internal view override {
+    modifier onlyGovernorOrGuardian() override(AccessControl, BaseOraclePTPendle) {
         if (!accessControlManager.isGovernorOrGuardian(msg.sender)) revert NotGovernorOrGuardian();
+        _;
     }
 
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,12 +64,12 @@ abstract contract BaseFeedPTPendle is AccessControl, AggregatorV3Interface, Base
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc AggregatorV3Interface
-    function decimals() external view returns (uint8) {
+    function decimals() external pure returns (uint8) {
         return 18;
     }
 
     /// @inheritdoc AggregatorV3Interface
-    function version() external view returns (uint256) {
+    function version() external pure returns (uint256) {
         return 1;
     }
 

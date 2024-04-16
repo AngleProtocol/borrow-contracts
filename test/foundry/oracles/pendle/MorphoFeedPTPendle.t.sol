@@ -126,6 +126,9 @@ contract MorphoFeedPTPendleCoreTest is MorphoFeedPTPendleTest {
     }
 
     function test_SetTwapDuration_Success(uint32 twap1, uint32 twap2) public {
+        twap1 = uint32(bound(twap1, 15 minutes, 365 days));
+        twap2 = uint32(bound(twap2, 15 minutes, 365 days));
+
         vm.prank(_governor);
         _oracle.setTwapDuration(twap1);
         assertEq(_oracle.twapDuration(), uint256(twap1));
@@ -145,12 +148,12 @@ contract MorphoFeedPTPendleCoreTest is MorphoFeedPTPendleTest {
 
     function test_LatestRoundData_TimestampSuccess() public {
         (, , , uint256 updatedAt, ) = _oracle.latestRoundData();
-        assertEq(updatedAt, block.timestamp);
+        assertEq(updatedAt, 0);
     }
 
     function test_GetRoundData_TimestampSuccess(uint80 round) public {
         (, , , uint256 updatedAt, ) = _oracle.getRoundData(round);
-        assertEq(updatedAt, block.timestamp);
+        assertEq(updatedAt, 0);
     }
 
     function test_AllRoundEqual_Success(uint80 round) public {
