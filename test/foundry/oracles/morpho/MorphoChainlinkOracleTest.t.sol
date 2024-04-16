@@ -58,7 +58,7 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
         uint256 chainId = CHAIN_ETHEREUM;
         arbitrumFork = vm.createFork(vm.envString("ETH_NODE_URI_ARBITRUM"));
         avalancheFork = vm.createFork(vm.envString("ETH_NODE_URI_AVALANCHE"));
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_MAINNET"));
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"));
         optimismFork = vm.createFork(vm.envString("ETH_NODE_URI_OPTIMISM"));
         polygonFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"));
         gnosisFork = vm.createFork(vm.envString("ETH_NODE_URI_GNOSIS"));
