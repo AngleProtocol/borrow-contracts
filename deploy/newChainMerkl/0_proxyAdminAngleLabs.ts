@@ -10,11 +10,12 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   const { deployer } = await ethers.getNamedSigners();
   let proxyAdmin: ProxyAdmin;
   const json = await import('../networks/' + network.name + '.json');
-  const admin = 'ProxyAdmin';
-  const name = json.governor;
+  const admin = json.angleLabs;
+  const name = 'ProxyAdminAngleLabs';
 
   console.log(`Now deploying ${name} on the chain ${network.config.chainId}`);
   console.log('Admin address is ', admin);
+  console.log(deployer.address)
 
   await deploy(name, {
     contract: 'ProxyAdmin',
@@ -31,5 +32,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
   console.log('Success');
 };
 
-func.tags = ['proxyAdmin'];
+func.tags = ['proxyAdminAngleLabs'];
 export default func;

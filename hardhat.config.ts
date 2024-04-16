@@ -145,6 +145,7 @@ const config: HardhatUserConfig = {
       hardfork: 'london',
       forking: {
         enabled: argv.fork || false,
+
         // Mainnet
         // url: nodeUrl('mainnet'),
         // blockNumber: 19340884,
@@ -232,6 +233,42 @@ const config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiKey: etherscanKey('optimism'),
+        },
+      },
+    },
+    immutable: {
+      live: true,
+      url: nodeUrl('immutable'),
+      accounts: accounts('immutable'),
+      gas: 'auto',
+      chainId: 13371,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('immutable'),
+        },
+      },
+    },
+    scroll: {
+      live: true,
+      url: nodeUrl('scroll'),
+      accounts: accounts('mainnet'),
+      gas: 'auto',
+      chainId: 534352,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('scroll'),
+        },
+      },
+    },
+    manta: {
+      live: true,
+      url: nodeUrl('manta'),
+      accounts: accounts('mainnet'),
+      gas: 'auto',
+      chainId: 169,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('manta'),
         },
       },
     },
@@ -359,6 +396,32 @@ const config: HardhatUserConfig = {
       verify: {
         etherscan: {
           apiKey: etherscanKey('mantle'),
+        },
+      },
+    },
+    blast: {
+      live: true,
+      url: nodeUrl('blast'),
+      accounts: [getPkey()],
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 81457,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('blast'),
+        },
+      },
+    },
+    mode: {
+      live: true,
+      url: nodeUrl('mode'),
+      accounts: [getPkey()],
+      gas: 'auto',
+      gasMultiplier: 1.3,
+      chainId: 34443,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('mode'),
         },
       },
     },
