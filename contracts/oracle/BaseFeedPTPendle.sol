@@ -37,7 +37,7 @@ pragma solidity ^0.8.12;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-import "contracts/utils/AccessControlManager.sol";
+import "../utils/AccessControlManager.sol";
 import "./BaseOraclePTPendle.sol";
 
 /// @title BaseFeedPtPendle
