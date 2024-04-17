@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.19;
 
-import { IAccessControlManager } from "contracts/interfaces/IAccessControlManager.sol";
+import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
 
 import "./Errors.sol";
 

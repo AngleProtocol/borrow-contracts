@@ -5,7 +5,7 @@ pragma solidity ^0.8.12;
 import { UNIT, UD60x18, ud } from "prb/math/UD60x18.sol";
 import "pendle/interfaces/IPMarket.sol";
 import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
-import "contracts/utils/Errors.sol";
+import "borrow-contracts/utils/Errors.sol";
 
 /// @title BaseOraclePTPendle
 /// @author Angle Labs, Inc.

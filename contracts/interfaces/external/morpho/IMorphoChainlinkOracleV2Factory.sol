@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 import { IMorphoChainlinkOracleV2 } from "./IMorphoChainlinkOracleV2.sol";
-import { IERC4626 } from "contracts/interfaces/external/IERC4626.sol";
+import { IERC4626 } from "borrow-contracts/interfaces/external/IERC4626.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /// @title IMorphoChainlinkOracleV2Factory
