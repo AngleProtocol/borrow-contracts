@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-import "borrow-contracts/oracle/BaseFeedPTPendle.sol";
+import "../../BaseFeedPTPendle.sol";
 
 /// @title MorphoFeedPTweETH
 /// @author Angle Labs, Inc.

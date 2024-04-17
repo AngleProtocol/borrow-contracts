@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-import { IERC4626 } from "borrow-contracts/interfaces/external/IERC4626.sol";
+import { IERC4626 } from "../IERC4626.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /// @title IOracle
