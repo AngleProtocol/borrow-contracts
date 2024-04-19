@@ -3,9 +3,9 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
-import { IMorpho, MarketParams } from "../../../contracts/interfaces/external/morpho/IMorpho.sol";
-import { IMorphoChainlinkOracleV2Factory, IMorphoOracle } from "../../../contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2.sol";
-import "./MainnetConstants.s.sol";
+import { IMorpho, MarketParams } from "../../../../contracts/interfaces/external/morpho/IMorpho.sol";
+import { IMorphoChainlinkOracleV2Factory, IMorphoOracle } from "../../../../contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2.sol";
+import "../MainnetConstants.s.sol";
 import { StdCheats, StdAssertions } from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -105,43 +105,6 @@ contract CreateMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertio
             IMorpho(MORPHO_BLUE).supplyCollateral(params, 9 * 10 ** 15, deployer, emptyData);
             IMorpho(MORPHO_BLUE).borrow(params, (1 ether * 9) / 10, 0, deployer, deployer);
         }
-
-        /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                                    SETUP PT WEETH                                                  
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-        /*
-        {
-            bytes32 salt;
-            address ptETHFIOracle = IMorphoChainlinkOracleV2Factory(MORPHO_ORACLE_FACTORY)
-                .createMorphoChainlinkOracleV2(
-                    address(0),
-                    1,
-                    // TODO: make sure it's been updated
-                    PTEETH_WEETH_ORACLE,
-                    WEETH_USD_ORACLE,
-                    18,
-                    address(0),
-                    1,
-                    address(0),
-                    address(0),
-                    18,
-                    salt
-                );
-            uint256 price = IMorphoOracle(ptETHFIOracle).price();
-            console.log(price);
-            assertApproxEqRel(price, 3500 * 10 ** 18, 10 ** 17);
-            params.collateralToken = PTWeETH;
-            params.irm = IRM_MODEL;
-            params.lltv = LLTV_62;
-            params.oracle = ptETHFIOracle;
-            params.loanToken = USDA;
-            IMorpho(MORPHO_BLUE).createMarket(params);
-            IMorpho(MORPHO_BLUE).supply(params, 1 ether, 0, deployer, emptyData);
-            IERC20(PTWeETH).approve(MORPHO_BLUE, 10 ** 16);
-            IMorpho(MORPHO_BLUE).supplyCollateral(params, 10 ** 16, deployer, emptyData);
-            IMorpho(MORPHO_BLUE).borrow(params, (1 ether * 9) / 10, 0, deployer, deployer);
-        }
-        */
 
         vm.stopBroadcast();
     }

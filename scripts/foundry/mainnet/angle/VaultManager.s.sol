@@ -3,12 +3,12 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
-import { IOracle } from "../../../contracts/interfaces/IOracle.sol";
-import { OracleETHXAUChainlink } from "../../../contracts/oracle/implementations/mainnet/XAU/OracleETHXAUChainlink.sol";
-import { Treasury, ITreasury } from "../../../contracts/treasury/Treasury.sol";
-import { IAgToken, AgToken } from "../../../contracts/agToken/AgToken.sol";
-import { VaultManagerLiquidationBoost, VaultParameters, VaultManagerStorage, IERC20 } from "../../../contracts/vaultManager/VaultManagerLiquidationBoost.sol";
-import "./MainnetConstants.s.sol";
+import { IOracle } from "../../../../contracts/interfaces/IOracle.sol";
+import { OracleETHXAUChainlink } from "../../../../contracts/oracle/implementations/mainnet/XAU/OracleETHXAUChainlink.sol";
+import { Treasury, ITreasury } from "../../../../contracts/treasury/Treasury.sol";
+import { IAgToken, AgToken } from "../../../../contracts/agToken/AgToken.sol";
+import { VaultManagerLiquidationBoost, VaultParameters, VaultManagerStorage, IERC20 } from "../../../../contracts/vaultManager/VaultManagerLiquidationBoost.sol";
+import "../MainnetConstants.s.sol";
 
 contract DeployVaultManagerMainnet is Script, MainnetConstants {
     // TODO to be changed at deployment depending on the vaultManager
