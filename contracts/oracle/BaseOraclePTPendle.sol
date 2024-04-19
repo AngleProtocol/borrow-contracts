@@ -69,7 +69,7 @@ abstract contract BaseOraclePTPendle {
     ///       - getPtToSy() should be used if the underlying token is tradable,
     ///       - getPtToAsset() if not
     /// @dev https://docs.pendle.finance/Developers/Contracts/StandardizedYield#asset-of-sy--assetinfo-function
-    function _pendlePTPrice() internal view returns (uint256) {
+    function _pendlePTPrice() internal view virtual returns (uint256) {
         return PendlePtOracleLib.getPtToAssetRate(IPMarket(market()), twapDuration);
     }
 
