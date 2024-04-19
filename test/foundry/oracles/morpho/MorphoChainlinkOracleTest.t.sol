@@ -64,7 +64,7 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
         gnosisFork = vm.createFork(vm.envString("ETH_NODE_URI_GNOSIS"));
         bnbFork = vm.createFork(vm.envString("ETH_NODE_URI_BSC"));
         celoFork = vm.createFork(vm.envString("ETH_NODE_URI_CELO"));
-        polygonZkEVMFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGONZKEVM"));
+        // polygonZkEVMFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGONZKEVM"));
         baseFork = vm.createFork(vm.envString("ETH_NODE_URI_BASE"));
         lineaFork = vm.createFork(vm.envString("ETH_NODE_URI_LINEA"));
 
@@ -76,7 +76,7 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
         forkIdentifier[CHAIN_GNOSIS] = gnosisFork;
         forkIdentifier[CHAIN_BNB] = bnbFork;
         forkIdentifier[CHAIN_CELO] = celoFork;
-        forkIdentifier[CHAIN_POLYGONZKEVM] = polygonZkEVMFork;
+        // forkIdentifier[CHAIN_POLYGONZKEVM] = polygonZkEVMFork;
         forkIdentifier[CHAIN_BASE] = baseFork;
         forkIdentifier[CHAIN_LINEA] = lineaFork;
 
