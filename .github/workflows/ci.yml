@@ -85,6 +85,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
 
       - uses: actions/setup-node@v3
         with:
@@ -108,6 +110,7 @@ jobs:
             artifacts
             typechain
             node_modules
+
       - run: export NODE_OPTIONS=--max_old_space_size=11264
       - name: Run unit tests
         run: yarn hardhat:test
