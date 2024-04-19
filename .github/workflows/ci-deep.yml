@@ -127,7 +127,7 @@ jobs:
           ETH_NODE_URI_BASE: ${{ secrets.ETH_NODE_URI_BASE }}
           ETH_NODE_URI_AVALANCHE: ${{ secrets.ETH_NODE_URI_AVALANCHE }}
           ETH_NODE_URI_LINEA: ${{ secrets.ETH_NODE_URI_LINEA }}
-          ETH_NODE_URI_POLYGON_ZKEVM: ${{ secrets.ETH_NODE_URI_POLYGON_ZKEVM }}
+          ETH_NODE_URI_POLYGONZKEVM: ${{ secrets.ETH_NODE_URI_POLYGON_ZKEVM }}
 
       - name: 'Add test summary'
         run: |
@@ -174,7 +174,7 @@ jobs:
           ETH_NODE_URI_BASE: ${{ secrets.ETH_NODE_URI_BASE }}
           ETH_NODE_URI_AVALANCHE: ${{ secrets.ETH_NODE_URI_AVALANCHE }}
           ETH_NODE_URI_LINEA: ${{ secrets.ETH_NODE_URI_LINEA }}
-          ETH_NODE_URI_POLYGON_ZKEVM: ${{ secrets.ETH_NODE_URI_POLYGON_ZKEVM }}
+          ETH_NODE_URI_POLYGONZKEVM: ${{ secrets.ETH_NODE_URI_POLYGON_ZKEVM }}
           FOUNDRY_FUZZ_RUNS: ${{ github.event.inputs.fuzzRuns || '10000' }}
 
       - name: 'Add test summary'
