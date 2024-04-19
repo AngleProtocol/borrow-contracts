@@ -57,7 +57,7 @@ contract MainnetConstants is CommonUtils {
     uint256 constant LLTV_62 = 0.625 ether;
 
     uint256 BASE_SUPPLY_ETH_AMOUNT = 0.01 ether;
-    uint256 BASE_SUPPLY_USD_AMOUNT = 12 ether;
+    uint256 BASE_SUPPLY_USD_AMOUNT = 11.70 ether;
     uint256 BASE_BORROW_USD_AMOUNT = 1 ether;
 
     function deployUpgradeable(address implementation, bytes memory data) public returns (address) {

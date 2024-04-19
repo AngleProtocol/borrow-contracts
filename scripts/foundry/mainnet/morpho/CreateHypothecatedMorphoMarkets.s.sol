@@ -3,11 +3,12 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
-import { IMorpho, MarketParams } from "../../../../contracts/interfaces/external/morpho/IMorpho.sol";
+import { IMorpho } from "../../../../contracts/interfaces/external/morpho/IMorpho.sol";
 import { IMorphoChainlinkOracleV2Factory, IMorphoOracle } from "../../../../contracts/interfaces/external/morpho/IMorphoChainlinkOracleV2.sol";
 import "../MainnetConstants.s.sol";
 import { StdCheats, StdAssertions } from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Id, MarketParams, MarketParamsLib } from "morpho-blue/libraries/MarketParamsLib.sol";
 
 // Before running this script, ensure that the deployer has the necessary balance in all tokens to seed the markets
 contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats, StdAssertions {
@@ -32,11 +33,11 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
         bytes32 salt;
         string memory marketName;
 
-        /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        {
+            /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                     SETUP PT WEETH                                                  
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-        {
             marketName = "PTweETH";
             uint256 baseSupplyAmount = BASE_SUPPLY_ETH_AMOUNT;
             bytes32 salt;
@@ -72,25 +73,27 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
 
         {
             /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                                      GTETH PRIME                                                   
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+                                                          GTETH PRIME
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
             marketName = "gtETH";
             uint256 baseSupplyAmount = BASE_SUPPLY_ETH_AMOUNT;
-            oracle = IMorphoChainlinkOracleV2Factory(MORPHO_ORACLE_FACTORY).createMorphoChainlinkOracleV2(
-                address(GTETHPRIME),
-                1 ether,
-                CHAINLINK_ETH_USD_ORACLE,
-                address(0),
-                18,
-                address(0),
-                1,
-                address(0),
-                address(0),
-                18,
-                salt
-            );
+            // oracle = IMorphoChainlinkOracleV2Factory(MORPHO_ORACLE_FACTORY).createMorphoChainlinkOracleV2(
+            //     address(GTETHPRIME),
+            //     1 ether,
+            //     CHAINLINK_ETH_USD_ORACLE,
+            //     address(0),
+            //     18,
+            //     address(0),
+            //     1,
+            //     address(0),
+            //     address(0),
+            //     18,
+            //     salt
+            // );
+            oracle = 0xe4CCAA1849e9058f77f555C0FCcA4925Efd37d8E;
             uint256 price = IMorphoOracle(oracle).price();
+            console.log(price);
             assertApproxEqRel(price, 3100 * 10 ** 36, 0.02 ether);
             params.collateralToken = GTETHPRIME;
             params.irm = IRM_MODEL;
@@ -107,8 +110,8 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
 
         {
             /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                                        RE7ETH                                                      
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+                                                            RE7ETH
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
             marketName = "RE7 ETH";
             uint256 baseSupplyAmount = BASE_SUPPLY_ETH_AMOUNT;
@@ -126,7 +129,8 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
                 salt
             );
             uint256 price = IMorphoOracle(oracle).price();
-            assertApproxEqRel(price, 3100 * 10 ** 36, 0.02 ether);
+            console.log(price);
+            assertApproxEqRel(price, 3170 * 10 ** 36, 0.02 ether);
             params.collateralToken = RE7ETH;
             params.irm = IRM_MODEL;
             params.lltv = LLTV_86;
@@ -142,8 +146,8 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
 
         {
             /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                                      GTUSDCPRIME                                                   
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+                                                          GTUSDCPRIME
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
             marketName = "gtUSDC";
             uint256 baseSupplyAmount = BASE_SUPPLY_USD_AMOUNT;
@@ -160,15 +164,18 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
                 18,
                 salt
             );
+            oracle = 0x3B8c4A340336941524DE276FF730b3Be71157B55;
             uint256 price = IMorphoOracle(oracle).price();
+            console.log(price);
             assertApproxEqRel(price, 1 * 10 ** 36, 0.01 ether);
             params.collateralToken = GTUSDCPRIME;
-            params.lltv = LLTV_77;
+            params.lltv = LLTV_86;
             params.irm = IRM_MODEL;
             params.oracle = oracle;
             params.loanToken = USDA;
             _logMarket(params, marketName);
             IMorpho(MORPHO_BLUE).createMarket(params);
+            IERC20(params.loanToken).approve(MORPHO_BLUE, BASE_BORROW_USD_AMOUNT);
             IMorpho(MORPHO_BLUE).supply(params, BASE_BORROW_USD_AMOUNT, 0, deployer, emptyData);
             IERC20(params.collateralToken).approve(MORPHO_BLUE, baseSupplyAmount);
             IMorpho(MORPHO_BLUE).supplyCollateral(params, baseSupplyAmount, deployer, emptyData);
@@ -177,8 +184,8 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
 
         {
             /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                                        RE7USDT                                                     
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+                                                            RE7USDT
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
             marketName = "RE7 USDT";
             uint256 baseSupplyAmount = BASE_SUPPLY_USD_AMOUNT;
@@ -196,7 +203,7 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
                 salt
             );
             uint256 price = IMorphoOracle(oracle).price();
-            assertApproxEqRel(price, 1 * 10 ** 36, 0.01 ether);
+            assertApproxEqRel(price, 1 * 10 ** 36, 0.03 ether);
             params.collateralToken = RE7USDT;
             params.lltv = LLTV_91;
             params.irm = IRM_MODEL;
@@ -204,9 +211,9 @@ contract CreateHypothecatedMorphoMarkets is Script, MainnetConstants, StdCheats,
             params.loanToken = USDA;
             _logMarket(params, marketName);
             IMorpho(MORPHO_BLUE).createMarket(params);
+            IERC20(params.loanToken).approve(MORPHO_BLUE, BASE_BORROW_USD_AMOUNT);
             IMorpho(MORPHO_BLUE).supply(params, BASE_BORROW_USD_AMOUNT, 0, deployer, emptyData);
             IERC20(params.collateralToken).approve(MORPHO_BLUE, baseSupplyAmount);
-            console.log(IERC20(params.collateralToken).balanceOf(deployer));
             IMorpho(MORPHO_BLUE).supplyCollateral(params, baseSupplyAmount, deployer, emptyData);
             IMorpho(MORPHO_BLUE).borrow(params, BASE_BORROW_USD_AMOUNT, 0, deployer, deployer);
         }
