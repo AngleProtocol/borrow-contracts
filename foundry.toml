@@ -1,4 +1,5 @@
 [profile.default]
+evm_version = "shanghai"
 src = 'contracts'
 out = 'out'
 test = 'test'
