@@ -44,29 +44,8 @@ contract MorphoFeedPTPendleTest is Test {
     MorphoFeedPTweETH internal _oracle;
 
     function setUp() public virtual {
-        // arbitrumFork = vm.createFork(vm.envString("ETH_NODE_URI_ARBITRUM"));
-        // avalancheFork = vm.createFork(vm.envString("ETH_NODE_URI_AVALANCHE"));
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"));
-        // optimismFork = vm.createFork(vm.envString("ETH_NODE_URI_OPTIMISM"));
-        // polygonFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"));
-        // gnosisFork = vm.createFork(vm.envString("ETH_NODE_URI_GNOSIS"));
-        // bnbFork = vm.createFork(vm.envString("ETH_NODE_URI_BSC"));
-        // celoFork = vm.createFork(vm.envString("ETH_NODE_URI_CELO"));
-        // polygonZkEVMFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGONZKEVM"));
-        // baseFork = vm.createFork(vm.envString("ETH_NODE_URI_BASE"));
-        // lineaFork = vm.createFork(vm.envString("ETH_NODE_URI_LINEA"));
-
-        // forkIdentifier[CHAIN_ARBITRUM] = arbitrumFork;
-        // forkIdentifier[CHAIN_AVALANCHE] = avalancheFork;
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19739082);
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
-        // forkIdentifier[CHAIN_OPTIMISM] = optimismFork;
-        // forkIdentifier[CHAIN_POLYGON] = polygonFork;
-        // forkIdentifier[CHAIN_GNOSIS] = gnosisFork;
-        // forkIdentifier[CHAIN_BNB] = bnbFork;
-        // forkIdentifier[CHAIN_CELO] = celoFork;
-        // forkIdentifier[CHAIN_POLYGONZKEVM] = polygonZkEVMFork;
-        // forkIdentifier[CHAIN_BASE] = baseFork;
-        // forkIdentifier[CHAIN_LINEA] = lineaFork;
 
         _TWAP_DURATION = 1 hours;
         _STALE_PERIOD = 24 hours;

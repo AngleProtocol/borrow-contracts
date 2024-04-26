@@ -26,17 +26,7 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
     using stdStorage for StdStorage;
 
     mapping(uint256 => uint256) internal forkIdentifier;
-    uint256 public arbitrumFork;
-    uint256 public avalancheFork;
     uint256 public ethereumFork;
-    uint256 public optimismFork;
-    uint256 public polygonFork;
-    uint256 public gnosisFork;
-    uint256 public bnbFork;
-    uint256 public celoFork;
-    uint256 public polygonZkEVMFork;
-    uint256 public baseFork;
-    uint256 public lineaFork;
 
     address internal _alice = address(uint160(uint256(keccak256(abi.encodePacked("alice")))));
     address internal _governor = address(uint160(uint256(keccak256(abi.encodePacked("governor")))));
@@ -56,29 +46,8 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
 
     function setUp() public {
         uint256 chainId = CHAIN_ETHEREUM;
-        arbitrumFork = vm.createFork(vm.envString("ETH_NODE_URI_ARBITRUM"));
-        avalancheFork = vm.createFork(vm.envString("ETH_NODE_URI_AVALANCHE"));
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"));
-        optimismFork = vm.createFork(vm.envString("ETH_NODE_URI_OPTIMISM"));
-        polygonFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"));
-        gnosisFork = vm.createFork(vm.envString("ETH_NODE_URI_GNOSIS"));
-        bnbFork = vm.createFork(vm.envString("ETH_NODE_URI_BSC"));
-        celoFork = vm.createFork(vm.envString("ETH_NODE_URI_CELO"));
-        // polygonZkEVMFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGONZKEVM"));
-        baseFork = vm.createFork(vm.envString("ETH_NODE_URI_BASE"));
-        lineaFork = vm.createFork(vm.envString("ETH_NODE_URI_LINEA"));
-
-        forkIdentifier[CHAIN_ARBITRUM] = arbitrumFork;
-        forkIdentifier[CHAIN_AVALANCHE] = avalancheFork;
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19739082);
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
-        forkIdentifier[CHAIN_OPTIMISM] = optimismFork;
-        forkIdentifier[CHAIN_POLYGON] = polygonFork;
-        forkIdentifier[CHAIN_GNOSIS] = gnosisFork;
-        forkIdentifier[CHAIN_BNB] = bnbFork;
-        forkIdentifier[CHAIN_CELO] = celoFork;
-        // forkIdentifier[CHAIN_POLYGONZKEVM] = polygonZkEVMFork;
-        forkIdentifier[CHAIN_BASE] = baseFork;
-        forkIdentifier[CHAIN_LINEA] = lineaFork;
 
         _TWAP_DURATION = 1 hours;
         _STALE_PERIOD = 24 hours;
@@ -119,6 +88,6 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
             morphoPrice,
             0.00001 ether
         );
-        assertApproxEqRel(2950 ether, morphoPrice / 10 ** 18, 0.01 ether);
+        assertApproxEqRel(3040 ether, morphoPrice / 10 ** 18, 0.01 ether);
     }
 }
