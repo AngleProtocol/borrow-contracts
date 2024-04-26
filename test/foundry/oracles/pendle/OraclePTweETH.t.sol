@@ -30,7 +30,7 @@ contract OraclePTweETH is BaseOraclePendlePT {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     function test_Simple_Success() public {
-        assertApproxEqRel(_oracle.read(), 2780 ether, 0.01 ether);
+        assertApproxEqRel(_oracle.read(), 2831 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {

@@ -9,10 +9,10 @@ const func: DeployFunction = async ({ deployments, ethers }) => {
 
   console.log('Now deploying MockTokens');
   // wBTC will not have a permit
-  await deploy('aglaMerkl', {
+  await deploy('MockEUR', {
     contract: 'MockToken',
     from: deployer.address,
-    args: ['aglaMerkl', 'aglaMerkl', 8],
+    args: ['mockEUR', 'mockEUR', 18],
     log: !argv.ci,
   });
   const token1 = (await deployments.get('aglaMerkl')).address;
