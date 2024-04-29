@@ -41,10 +41,10 @@ contract MorphoFeedPTPendleTest is Test {
     uint256 internal _MAX_IMPLIED_RATE;
 
     MockCoreBorrow public coreBorrow;
-    MorphoFeedPTweETH internal _oracle;
+    BaseFeedPTPendle internal _oracle;
 
     function setUp() public virtual {
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19739082);
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19740549);
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
 
         _TWAP_DURATION = 1 hours;
@@ -55,7 +55,11 @@ contract MorphoFeedPTPendleTest is Test {
         coreBorrow = new MockCoreBorrow();
         coreBorrow.toggleGuardian(_guardian);
         coreBorrow.toggleGovernor(_governor);
-        _oracle = new MorphoFeedPTweETH(IAccessControlManager(address(coreBorrow)), _MAX_IMPLIED_RATE, _TWAP_DURATION);
+        _oracle = BaseFeedPTPendle(
+            address(
+                new MorphoFeedPTweETH(IAccessControlManager(address(coreBorrow)), _MAX_IMPLIED_RATE, _TWAP_DURATION)
+            )
+        );
     }
 
     function _economicLowerBound(uint256 maxImpliedRate, uint256 maturity) internal view returns (uint256) {
