@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
-import { MorphoFeedPTweETH } from "borrow-contracts/oracle/morpho/mainnet/MorphoFeedPTweETH.sol";
+import { MorphoFeedPTweETHDec24 } from "borrow-contracts/oracle/morpho/mainnet/MorphoFeedPTweETHDec24.sol";
 import "utils/src/CommonUtils.sol";
 import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
 
@@ -15,12 +15,12 @@ contract PTweETHOracleDeploy is Script, CommonUtils {
 
         // TODO
         uint256 chainId = CHAIN_ETHEREUM;
-        address coreBorrow = 0x5bc6BEf80DA563EBf6Df6D6913513fa9A7ec89BE;
+        address coreBorrow = _chainToContract(chainId, ContractType.CoreBorrow);
         uint32 _TWAP_DURATION = 30 minutes;
-        uint256 _MAX_IMPLIED_RATE = 0.5 ether;
+        uint256 _MAX_IMPLIED_RATE = 0.4 ether;
         // end TODO
 
-        MorphoFeedPTweETH oracle = new MorphoFeedPTweETH(
+        MorphoFeedPTweETHDec24 oracle = new MorphoFeedPTweETHDec24(
             IAccessControlManager(address(coreBorrow)),
             _MAX_IMPLIED_RATE,
             _TWAP_DURATION

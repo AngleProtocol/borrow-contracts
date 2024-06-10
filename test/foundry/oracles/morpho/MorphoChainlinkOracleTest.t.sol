@@ -26,9 +26,6 @@ import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
 contract MorphoChainlinkOracleTest is Test, CommonUtils {
     using stdStorage for StdStorage;
 
-    mapping(uint256 => uint256) internal forkIdentifier;
-    uint256 public ethereumFork;
-
     address internal _alice = address(uint160(uint256(keccak256(abi.encodePacked("alice")))));
     address internal _governor = address(uint160(uint256(keccak256(abi.encodePacked("governor")))));
     address internal _guardian = address(uint160(uint256(keccak256(abi.encodePacked("guardian")))));
