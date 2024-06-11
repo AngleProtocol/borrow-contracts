@@ -49,7 +49,7 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
 
     function setUp() public {
         uint256 chainId = CHAIN_ETHEREUM;
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"));
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19739302);
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
 
         _TWAP_DURATION = 15 minutes;
