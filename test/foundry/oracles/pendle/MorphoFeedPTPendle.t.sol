@@ -46,7 +46,7 @@ contract MorphoFeedPTPendleTest is Test {
     BaseFeedPTPendle internal _oracle;
 
     function setUp() public virtual {
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19740549);
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 20067842);
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
 
         _TWAP_DURATION = 1 hours;
