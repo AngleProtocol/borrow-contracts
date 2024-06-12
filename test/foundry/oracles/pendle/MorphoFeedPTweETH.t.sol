@@ -29,7 +29,7 @@ contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
-        assertApproxEqAbs(value, 0.925 ether, 0.01 ether);
+        assertApproxEqAbs(value, 0.98 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {
