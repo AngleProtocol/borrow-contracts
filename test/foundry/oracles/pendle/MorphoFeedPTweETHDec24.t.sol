@@ -19,6 +19,7 @@ contract MorphoFeedPTweETHDec24Test is MorphoFeedPTPendleTest {
             _MAX_IMPLIED_RATE,
             _TWAP_DURATION
         );
+        syExchangeRate = IStandardizedYield(_oracle.sy()).exchangeRate();
     }
 
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,13 +34,13 @@ contract MorphoFeedPTweETHDec24Test is MorphoFeedPTPendleTest {
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
-        assertApproxEqAbs(value, 0.84 ether, 0.01 ether);
+        assertApproxEqAbs(value, 0.8 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {
         vm.prank(_governor);
         _oracle.setMaxImpliedRate(uint256(1e1));
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToSyRate(IPMarket(_oracle.market()), _TWAP_DURATION);
 
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
@@ -51,12 +52,12 @@ contract MorphoFeedPTweETHDec24Test is MorphoFeedPTPendleTest {
         // Adavnce to the PT maturity
         vm.warp(_oracle.maturity());
 
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToSyRate(IPMarket(_oracle.market()), _TWAP_DURATION);
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
         assertEq(value, pendleAMMPrice);
-        assertEq(value, 1 ether);
+        assertApproxEqAbs(value, (1 ether * 1 ether) / syExchangeRate, 100 wei);
     }
 
     function test_HackRemove_Success(uint256 slash) public {
@@ -67,7 +68,7 @@ contract MorphoFeedPTweETHDec24Test is MorphoFeedPTPendleTest {
         uint256 postBalance = (prevBalance * slash) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), syExchangeRate);
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
@@ -83,7 +84,7 @@ contract MorphoFeedPTweETHDec24Test is MorphoFeedPTPendleTest {
         uint256 postBalance = (prevBalance * expand) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), syExchangeRate);
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 

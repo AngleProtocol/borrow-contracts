@@ -6,11 +6,12 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "../../../BaseOracleChainlinkMultiTwoFeeds.sol";
 import "../../../BaseOraclePTPendle.sol";
+import "../../../FeedPTForSY.sol";
 
 /// @title OraclePTweETHEURChainlink
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of PT-weETH in Euro in base 18
-contract OraclePTweETHEUR is BaseOracleChainlinkMultiTwoFeeds, BaseOraclePTPendle {
+contract OraclePTweETHEUR is BaseOracleChainlinkMultiTwoFeeds, BaseOraclePTPendle, FeedPTForSY {
     string public constant DESCRIPTION = "PT-weETH/EUR Oracle";
 
     constructor(
@@ -48,6 +49,12 @@ contract OraclePTweETHEUR is BaseOracleChainlinkMultiTwoFeeds, BaseOraclePTPendl
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                        OVERRIDES                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+    function _pendlePTPrice(
+        IPMarket _market,
+        uint32 _twapDuration
+    ) internal view override(BaseOraclePTPendle, FeedPTForSY) returns (uint256, uint256) {
+        return FeedPTForSY._pendlePTPrice(_market, _twapDuration);
+    }
 
     function asset() public pure override returns (address) {
         return 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;

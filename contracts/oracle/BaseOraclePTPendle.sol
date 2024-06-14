@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 
 import { UNIT, UD60x18, ud } from "prb/math/UD60x18.sol";
 import "pendle/interfaces/IPMarket.sol";
-import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
+import { PendlePYOracleLib } from "pendle/oracles/PendlePYOracleLib.sol";
 import "../utils/Errors.sol";
 
 /// @title BaseOraclePTPendle
@@ -34,8 +34,8 @@ abstract contract BaseOraclePTPendle {
     modifier onlyGovernorOrGuardian() virtual;
 
     function _getQuoteAmount() internal view virtual returns (uint256) {
-        uint256 economicalLowerBound = _economicalPTLowerBoundPrice();
-        uint256 pendlePrice = _pendlePTPrice();
+        (uint256 pendlePrice, uint256 index) = _pendlePTPrice(IPMarket(market()), twapDuration);
+        uint256 economicalLowerBound = (_economicalPTLowerBoundPrice() * BASE_18) / index;
         uint256 minPrice = economicalLowerBound > pendlePrice ? pendlePrice : economicalLowerBound;
         uint256 quote = (_detectHackRatio() * minPrice) / BASE_18;
         return quote;
@@ -69,8 +69,8 @@ abstract contract BaseOraclePTPendle {
     ///       - getPtToSy() should be used if the underlying token is tradable,
     ///       - getPtToAsset() if not
     /// @dev https://docs.pendle.finance/Developers/Contracts/StandardizedYield#asset-of-sy--assetinfo-function
-    function _pendlePTPrice() internal view virtual returns (uint256) {
-        return PendlePtOracleLib.getPtToAssetRate(IPMarket(market()), twapDuration);
+    function _pendlePTPrice(IPMarket _market, uint32 _twapDuration) internal view virtual returns (uint256, uint256) {
+        return (PendlePYOracleLib.getPtToAssetRate(_market, _twapDuration), BASE_18);
     }
 
     function _detectHackRatio() internal view returns (uint256) {

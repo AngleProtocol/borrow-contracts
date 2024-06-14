@@ -5,11 +5,12 @@ pragma solidity ^0.8.12;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 import "../../BaseFeedPTPendle.sol";
+import "../../FeedPTForSY.sol";
 
 /// @title MorphoFeedPTweETH
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of PT-weETH in ETH in base 18
-contract MorphoFeedPTweETH is BaseFeedPTPendle {
+contract MorphoFeedPTweETH is BaseFeedPTPendle, FeedPTForSY {
     string public constant description = "PT-weETH/weETH Oracle";
 
     constructor(
@@ -21,6 +22,12 @@ contract MorphoFeedPTweETH is BaseFeedPTPendle {
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                        OVERRIDES                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+    function _pendlePTPrice(
+        IPMarket _market,
+        uint32 _twapDuration
+    ) internal view override(BaseOraclePTPendle, FeedPTForSY) returns (uint256, uint256) {
+        return FeedPTForSY._pendlePTPrice(_market, _twapDuration);
+    }
 
     function asset() public pure override returns (address) {
         return 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
