@@ -31,13 +31,13 @@ contract OraclePTweETH is BaseOraclePendlePT {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     function test_Simple_Success() public {
-        assertApproxEqRel(_oracle.read(), 2717 ether, 0.01 ether);
+        assertApproxEqRel(_oracle.read(), 2719 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {
         vm.prank(_governor);
         _oracle.setMaxImpliedRate(uint256(1e1));
-        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToSyRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
 
         assertEq(_oracle.read(), _read(pendleAMMPrice));
     }
@@ -49,10 +49,10 @@ contract OraclePTweETH is BaseOraclePendlePT {
         // Update the last timestamp oracle push
         _updateChainlinkTimestamp(block.timestamp);
 
-        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToSyRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
         uint256 value = _oracle.read();
         assertEq(value, _read(pendleAMMPrice));
-        assertApproxEqAbs(value, _read((1 ether * 1 ether) / syExchangeRate), 100 wei);
+        assertEq(value, _read(1 ether));
     }
 
     function test_HackRemove_Success(uint256 slash) public {
@@ -63,7 +63,7 @@ contract OraclePTweETH is BaseOraclePendlePT {
         uint256 postBalance = (prevBalance * slash) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), syExchangeRate);
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         uint256 value = _oracle.read();
 
         assertLe(value, _read((lowerBound * slash) / BASE_18));
@@ -78,7 +78,7 @@ contract OraclePTweETH is BaseOraclePendlePT {
         uint256 postBalance = (prevBalance * expand) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), syExchangeRate);
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         uint256 value = _oracle.read();
 
         assertEq(value, _read((lowerBound)));
