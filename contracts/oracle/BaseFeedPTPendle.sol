@@ -79,6 +79,7 @@ abstract contract BaseFeedPTPendle is AccessControl, AggregatorV3Interface, Base
     )
         external
         view
+        virtual
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         return (0, int256(_getQuoteAmount()), 0, 0, 0);
@@ -88,6 +89,7 @@ abstract contract BaseFeedPTPendle is AccessControl, AggregatorV3Interface, Base
     function latestRoundData()
         external
         view
+        virtual
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         return (0, int256(_getQuoteAmount()), 0, 0, 0);

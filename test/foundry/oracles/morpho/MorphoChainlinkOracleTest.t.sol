@@ -12,7 +12,6 @@ import { IMorphoChainlinkOracleV2 } from "borrow-contracts/interfaces/external/m
 import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
 import "borrow-contracts/utils/Errors.sol" as Errors;
 import "borrow-contracts/mock/MockCoreBorrow.sol";
-import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
 import { IPMarket } from "pendle/interfaces/IPMarket.sol";
 import "utils/src/Constants.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -21,13 +20,9 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { CommonUtils } from "utils/src/CommonUtils.sol";
 import { IERC4626 } from "borrow-contracts/interfaces/external/IERC4626.sol";
-import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
 
 contract MorphoChainlinkOracleTest is Test, CommonUtils {
     using stdStorage for StdStorage;
-
-    mapping(uint256 => uint256) internal forkIdentifier;
-    uint256 public ethereumFork;
 
     address internal _alice = address(uint160(uint256(keccak256(abi.encodePacked("alice")))));
     address internal _governor = address(uint160(uint256(keccak256(abi.encodePacked("governor")))));
@@ -52,7 +47,7 @@ contract MorphoChainlinkOracleTest is Test, CommonUtils {
 
     function setUp() public {
         uint256 chainId = CHAIN_ETHEREUM;
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"));
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19739302);
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
 
         _TWAP_DURATION = 15 minutes;

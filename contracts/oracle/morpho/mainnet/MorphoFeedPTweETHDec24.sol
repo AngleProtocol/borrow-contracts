@@ -9,7 +9,7 @@ import "../../BaseFeedPTPendle.sol";
 /// @title MorphoFeedPTweETH
 /// @author Angle Labs, Inc.
 /// @notice Gives the price of PT-weETH in ETH in base 18
-contract MorphoFeedPTweETH is BaseFeedPTPendle {
+contract MorphoFeedPTweETHDec24 is BaseFeedPTPendle {
     string public constant description = "PT-weETH/ETH Oracle";
 
     constructor(
@@ -21,6 +21,7 @@ contract MorphoFeedPTweETH is BaseFeedPTPendle {
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                        OVERRIDES                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
     function asset() public pure override returns (address) {
         return 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
     }
@@ -30,10 +31,10 @@ contract MorphoFeedPTweETH is BaseFeedPTPendle {
     }
 
     function maturity() public pure override returns (uint256) {
-        return 1719446400;
+        return 1735171200;
     }
 
     function market() public pure override returns (address) {
-        return 0xF32e58F92e60f4b0A37A69b95d642A471365EAe8;
+        return 0x7d372819240D14fB477f17b964f95F33BeB4c704;
     }
 }

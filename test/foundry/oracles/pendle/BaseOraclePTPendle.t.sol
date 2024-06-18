@@ -6,28 +6,19 @@ import { stdStorage, StdStorage, Test } from "forge-std/Test.sol";
 import { OraclePTweETHEUR, BaseOracleChainlinkMulti } from "../../../../contracts/oracle/implementations/mainnet/EUR/OraclePTweETHEUR.sol";
 import { MockTreasury } from "../../../../contracts/mock/MockTreasury.sol";
 import { IAgToken } from "../../../../contracts/interfaces/IAgToken.sol";
-import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
+import { PendlePYOracleLib } from "pendle/oracles/PendlePYOracleLib.sol";
 import "pendle/interfaces/IPMarket.sol";
 import "utils/src/Constants.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import { UNIT, UD60x18, ud, intoUint256 } from "prb/math/UD60x18.sol";
 import "borrow-contracts/utils/Errors.sol" as ErrorsAngle;
+import { IStandardizedYield } from "pendle/interfaces/IStandardizedYield.sol";
 
 contract BaseOraclePendlePT is Test {
     using stdStorage for StdStorage;
 
     mapping(uint256 => uint256) internal forkIdentifier;
-    uint256 public arbitrumFork;
-    uint256 public avalancheFork;
     uint256 public ethereumFork;
-    uint256 public optimismFork;
-    uint256 public polygonFork;
-    uint256 public gnosisFork;
-    uint256 public bnbFork;
-    uint256 public celoFork;
-    uint256 public polygonZkEVMFork;
-    uint256 public baseFork;
-    uint256 public lineaFork;
 
     address internal _alice = address(uint160(uint256(keccak256(abi.encodePacked("alice")))));
     address internal _governor = address(uint160(uint256(keccak256(abi.encodePacked("governor")))));
@@ -39,31 +30,11 @@ contract BaseOraclePendlePT is Test {
 
     MockTreasury internal _contractTreasury;
     OraclePTweETHEUR internal _oracle;
+    uint256 public syExchangeRate;
 
     function setUp() public virtual {
-        arbitrumFork = vm.createFork(vm.envString("ETH_NODE_URI_ARBITRUM"));
-        avalancheFork = vm.createFork(vm.envString("ETH_NODE_URI_AVALANCHE"));
         ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19740549);
-        optimismFork = vm.createFork(vm.envString("ETH_NODE_URI_OPTIMISM"));
-        polygonFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGON"));
-        gnosisFork = vm.createFork(vm.envString("ETH_NODE_URI_GNOSIS"));
-        bnbFork = vm.createFork(vm.envString("ETH_NODE_URI_BSC"));
-        celoFork = vm.createFork(vm.envString("ETH_NODE_URI_CELO"));
-        // polygonZkEVMFork = vm.createFork(vm.envString("ETH_NODE_URI_POLYGONZKEVM"));
-        baseFork = vm.createFork(vm.envString("ETH_NODE_URI_BASE"));
-        lineaFork = vm.createFork(vm.envString("ETH_NODE_URI_LINEA"));
-
-        forkIdentifier[CHAIN_ARBITRUM] = arbitrumFork;
-        forkIdentifier[CHAIN_AVALANCHE] = avalancheFork;
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
-        forkIdentifier[CHAIN_OPTIMISM] = optimismFork;
-        forkIdentifier[CHAIN_POLYGON] = polygonFork;
-        forkIdentifier[CHAIN_GNOSIS] = gnosisFork;
-        forkIdentifier[CHAIN_BNB] = bnbFork;
-        forkIdentifier[CHAIN_CELO] = celoFork;
-        // forkIdentifier[CHAIN_POLYGONZKEVM] = polygonZkEVMFork;
-        forkIdentifier[CHAIN_BASE] = baseFork;
-        forkIdentifier[CHAIN_LINEA] = lineaFork;
 
         _TWAP_DURATION = 1 hours;
         _STALE_PERIOD = 24 hours;
@@ -79,6 +50,7 @@ contract BaseOraclePendlePT is Test {
             address(0)
         );
         _oracle = new OraclePTweETHEUR(_STALE_PERIOD, address(_contractTreasury), _MAX_IMPLIED_RATE, _TWAP_DURATION);
+        syExchangeRate = IStandardizedYield(_oracle.sy()).exchangeRate();
     }
 
     /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,12 +104,16 @@ contract BaseOraclePendlePT is Test {
         else return (quoteAmount * (10 ** decimals)) / castedRatio;
     }
 
-    function _economicLowerBound(uint256 maxImpliedRate, uint256 maturity) internal view returns (uint256) {
+    function _economicLowerBound(
+        uint256 maxImpliedRate,
+        uint256 maturity,
+        uint256 exchangeRate
+    ) internal view returns (uint256) {
         uint256 exp = block.timestamp > maturity ? 0 : maturity - block.timestamp;
         if (exp == 0) return BASE_18;
         UD60x18 denominator = UNIT.add(ud(maxImpliedRate)).pow(ud(exp).div(ud(YEAR)));
         uint256 lowerBound = UNIT.div(denominator).unwrap();
-        return lowerBound;
+        return (lowerBound * BASE_18) / exchangeRate;
     }
 }
 
@@ -200,7 +176,7 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
     function test_EconomicalLowerBound_tooSmall() public {
         vm.prank(_governor);
         _oracle.setMaxImpliedRate(uint256(1e1));
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
 
         assertEq(_oracle.read(), _read(pendleAMMPrice));
     }
@@ -212,7 +188,7 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
         // Update the last timestamp oracle push
         _updateChainlinkTimestamp(block.timestamp);
 
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
         uint256 value = _oracle.read();
         assertEq(value, _read(pendleAMMPrice));
         assertEq(value, _read(1 ether));
@@ -226,7 +202,7 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
         uint256 postBalance = (prevBalance * slash) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         uint256 value = _oracle.read();
 
         assertLe(value, _read((lowerBound * slash) / BASE_18));
@@ -241,7 +217,7 @@ contract BaseOraclePendlePTTest is BaseOraclePendlePT {
         uint256 postBalance = (prevBalance * expand) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         uint256 value = _oracle.read();
 
         assertEq(value, _read((lowerBound)));

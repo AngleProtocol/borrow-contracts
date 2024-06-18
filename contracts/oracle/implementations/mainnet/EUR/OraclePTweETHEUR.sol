@@ -28,8 +28,8 @@ contract OraclePTweETHEUR is BaseOracleChainlinkMultiTwoFeeds, BaseOraclePTPendl
     /// @inheritdoc IOracle
     function circuitChainlink() public pure override returns (AggregatorV3Interface[] memory) {
         AggregatorV3Interface[] memory _circuitChainlink = new AggregatorV3Interface[](2);
-        // Oracle weETH/USD
-        _circuitChainlink[0] = AggregatorV3Interface(0xdDb6F90fFb4d3257dd666b69178e5B3c5Bf41136);
+        // Oracle ETH/USD
+        _circuitChainlink[0] = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
         // Oracle EUR/USD
         _circuitChainlink[1] = AggregatorV3Interface(0xb49f677943BC038e9857d61E7d053CaA2C1734C1);
         return _circuitChainlink;

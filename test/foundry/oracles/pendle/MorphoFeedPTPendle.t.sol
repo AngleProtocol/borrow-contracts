@@ -4,17 +4,20 @@ pragma solidity ^0.8.12;
 import { console } from "forge-std/console.sol";
 import { stdStorage, StdStorage, Test } from "forge-std/Test.sol";
 import { MorphoFeedPTweETH, BaseFeedPTPendle } from "borrow-contracts/oracle/morpho/mainnet/MorphoFeedPTweETH.sol";
+import { MorphoFeedPTweETHDec24 } from "borrow-contracts/oracle/morpho/mainnet/MorphoFeedPTweETHDec24.sol";
+import { MorphoFeedPTezETHDec24 } from "borrow-contracts/oracle/morpho/mainnet/MorphoFeedPTezETHDec24.sol";
 import { MockTreasury } from "borrow-contracts/mock/MockTreasury.sol";
 import { IAgToken } from "borrow-contracts/interfaces/IAgToken.sol";
 import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
 import "borrow-contracts/utils/Errors.sol" as Errors;
 import "borrow-contracts/mock/MockCoreBorrow.sol";
-import { PendlePtOracleLib } from "pendle/oracles/PendlePtOracleLib.sol";
+import { PendlePYOracleLib } from "pendle/oracles/PendlePYOracleLib.sol";
 import { IPMarket } from "pendle/interfaces/IPMarket.sol";
 import "utils/src/Constants.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import { UNIT, UD60x18, ud, intoUint256 } from "prb/math/UD60x18.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IStandardizedYield } from "pendle/interfaces/IStandardizedYield.sol";
 
 contract MorphoFeedPTPendleTest is Test {
     using stdStorage for StdStorage;
@@ -42,9 +45,10 @@ contract MorphoFeedPTPendleTest is Test {
 
     MockCoreBorrow public coreBorrow;
     BaseFeedPTPendle internal _oracle;
+    uint256 public syExchangeRate;
 
     function setUp() public virtual {
-        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 19740549);
+        ethereumFork = vm.createFork(vm.envString("ETH_NODE_URI_ETHEREUM"), 20067842);
         forkIdentifier[CHAIN_ETHEREUM] = ethereumFork;
 
         _TWAP_DURATION = 1 hours;
@@ -60,14 +64,19 @@ contract MorphoFeedPTPendleTest is Test {
                 new MorphoFeedPTweETH(IAccessControlManager(address(coreBorrow)), _MAX_IMPLIED_RATE, _TWAP_DURATION)
             )
         );
+        syExchangeRate = IStandardizedYield(_oracle.sy()).exchangeRate();
     }
 
-    function _economicLowerBound(uint256 maxImpliedRate, uint256 maturity) internal view returns (uint256) {
+    function _economicLowerBound(
+        uint256 maxImpliedRate,
+        uint256 maturity,
+        uint256 exchangeRate
+    ) internal view returns (uint256) {
         uint256 exp = block.timestamp > maturity ? 0 : maturity - block.timestamp;
         if (exp == 0) return BASE_18;
         UD60x18 denominator = UNIT.add(ud(maxImpliedRate)).pow(ud(exp).div(ud(YEAR)));
         uint256 lowerBound = UNIT.div(denominator).unwrap();
-        return lowerBound;
+        return (lowerBound * BASE_18) / exchangeRate;
     }
 }
 
@@ -126,7 +135,7 @@ contract MorphoFeedPTPendleCoreTest is MorphoFeedPTPendleTest {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     function test_Description_Success() public {
-        assertEq(_oracle.description(), "PT-weETH/weETH Oracle");
+        assertEq(_oracle.description(), "PT-weETH/ETH Oracle");
     }
 
     function test_LatestRoundData_TimestampSuccess() public {
@@ -148,7 +157,7 @@ contract MorphoFeedPTPendleCoreTest is MorphoFeedPTPendleTest {
     function test_EconomicalLowerBound_tooSmall() public {
         vm.prank(_governor);
         _oracle.setMaxImpliedRate(uint256(1e1));
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
 
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
@@ -160,7 +169,7 @@ contract MorphoFeedPTPendleCoreTest is MorphoFeedPTPendleTest {
         // Adavnce to the PT maturity
         vm.warp(_oracle.maturity());
 
-        uint256 pendleAMMPrice = PendlePtOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
+        uint256 pendleAMMPrice = PendlePYOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
@@ -176,7 +185,7 @@ contract MorphoFeedPTPendleCoreTest is MorphoFeedPTPendleTest {
         uint256 postBalance = (prevBalance * slash) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
@@ -192,7 +201,7 @@ contract MorphoFeedPTPendleCoreTest is MorphoFeedPTPendleTest {
         uint256 postBalance = (prevBalance * expand) / BASE_18;
         deal(address(weETH), _oracle.sy(), postBalance);
 
-        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity());
+        uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 

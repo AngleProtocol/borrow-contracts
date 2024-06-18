@@ -3,18 +3,23 @@ pragma solidity ^0.8.12;
 
 import "./MorphoFeedPTPendle.t.sol";
 import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
+contract MorphoFeedPTezETHDec24Test is MorphoFeedPTPendleTest {
     using stdStorage for StdStorage;
 
     function setUp() public override {
         super.setUp();
 
-        _TWAP_DURATION = 1 hours;
+        _TWAP_DURATION = 15 minutes;
         _STALE_PERIOD = 24 hours;
-        _MAX_IMPLIED_RATE = 0.5 ether;
+        _MAX_IMPLIED_RATE = 0.2 ether;
 
-        _oracle = new MorphoFeedPTweETH(IAccessControlManager(address(coreBorrow)), _MAX_IMPLIED_RATE, _TWAP_DURATION);
+        _oracle = new MorphoFeedPTezETHDec24(
+            IAccessControlManager(address(coreBorrow)),
+            _MAX_IMPLIED_RATE,
+            _TWAP_DURATION
+        );
         syExchangeRate = IStandardizedYield(_oracle.sy()).exchangeRate();
     }
 
@@ -23,21 +28,20 @@ contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     function test_Description_Success() public {
-        assertEq(_oracle.description(), "PT-weETH/ETH Oracle");
+        assertEq(_oracle.description(), "PT-ezETH/ETH Oracle");
     }
 
     function test_Simple_Success() public {
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
-        assertApproxEqAbs(value, 0.99 ether, 0.01 ether);
+        assertApproxEqAbs(value, 0.91 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {
         vm.prank(_governor);
         _oracle.setMaxImpliedRate(uint256(1e1));
         uint256 pendleAMMPrice = PendlePYOracleLib.getPtToAssetRate(IPMarket(_oracle.market()), _TWAP_DURATION);
-
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
@@ -59,10 +63,10 @@ contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
     function test_HackRemove_Success(uint256 slash) public {
         slash = bound(slash, 1, BASE_18);
         // Remove part of the SY backing collateral to simulate a hack
-        IERC20 weETH = IERC20(address(_oracle.asset()));
-        uint256 prevBalance = weETH.balanceOf(_oracle.sy());
+        IERC20 ezETH = IERC20(address(_oracle.asset()));
+        uint256 prevBalance = ezETH.balanceOf(_oracle.sy());
         uint256 postBalance = (prevBalance * slash) / BASE_18;
-        deal(address(weETH), _oracle.sy(), postBalance);
+        deal(address(ezETH), _oracle.sy(), postBalance);
 
         uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         (, int256 answer, , , ) = _oracle.latestRoundData();
@@ -75,10 +79,10 @@ contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
     function test_HackExpand_Success(uint256 expand) public {
         expand = bound(expand, BASE_18, BASE_18 * 1e7);
         // Remove part of the SY backing collateral to simulate a hack
-        IERC20 weETH = IERC20(address(_oracle.asset()));
-        uint256 prevBalance = weETH.balanceOf(_oracle.sy());
+        IERC20 ezETH = IERC20(address(_oracle.asset()));
+        uint256 prevBalance = ezETH.balanceOf(_oracle.sy());
         uint256 postBalance = (prevBalance * expand) / BASE_18;
-        deal(address(weETH), _oracle.sy(), postBalance);
+        deal(address(ezETH), _oracle.sy(), postBalance);
 
         uint256 lowerBound = _economicLowerBound(_MAX_IMPLIED_RATE, _oracle.maturity(), BASE_18);
         (, int256 answer, , , ) = _oracle.latestRoundData();

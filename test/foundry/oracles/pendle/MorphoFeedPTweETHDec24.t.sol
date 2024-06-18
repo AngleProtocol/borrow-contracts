@@ -4,17 +4,21 @@ pragma solidity ^0.8.12;
 import "./MorphoFeedPTPendle.t.sol";
 import { IAccessControlManager } from "borrow-contracts/interfaces/IAccessControlManager.sol";
 
-contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
+contract MorphoFeedPTweETHDec24Test is MorphoFeedPTPendleTest {
     using stdStorage for StdStorage;
 
     function setUp() public override {
         super.setUp();
 
-        _TWAP_DURATION = 1 hours;
+        _TWAP_DURATION = 30 minutes;
         _STALE_PERIOD = 24 hours;
-        _MAX_IMPLIED_RATE = 0.5 ether;
+        _MAX_IMPLIED_RATE = 0.4 ether;
 
-        _oracle = new MorphoFeedPTweETH(IAccessControlManager(address(coreBorrow)), _MAX_IMPLIED_RATE, _TWAP_DURATION);
+        _oracle = new MorphoFeedPTweETHDec24(
+            IAccessControlManager(address(coreBorrow)),
+            _MAX_IMPLIED_RATE,
+            _TWAP_DURATION
+        );
         syExchangeRate = IStandardizedYield(_oracle.sy()).exchangeRate();
     }
 
@@ -30,7 +34,7 @@ contract MorphoFeedPTweETHTest is MorphoFeedPTPendleTest {
         (, int256 answer, , , ) = _oracle.latestRoundData();
         uint256 value = uint256(answer);
 
-        assertApproxEqAbs(value, 0.99 ether, 0.01 ether);
+        assertApproxEqAbs(value, 0.84 ether, 0.01 ether);
     }
 
     function test_EconomicalLowerBound_tooSmall() public {
