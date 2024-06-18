@@ -23,13 +23,6 @@ contract MorphoFeedPTezETHDec24 is BaseFeedPTPendle {
                                                        OVERRIDES                                                    
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
-    // function _pendlePTPrice(
-    //     IPMarket _market,
-    //     uint32 _twapDuration
-    // ) internal view override(BaseOraclePTPendle, FeedPTForSY) returns (uint256, uint256) {
-    //     return BaseOraclePTPendle._pendlePTPrice(_market, _twapDuration);
-    // }
-
     function asset() public pure override returns (address) {
         return 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
     }
