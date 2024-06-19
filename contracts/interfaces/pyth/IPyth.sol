@@ -8,7 +8,7 @@ import "./PythStructs.sol";
 /// @author Pyth Data Association
 interface IPyth {
     /// @notice Returns the period (in seconds) that a price feed is considered valid since its publish time
-    function getValidTimePeriod() external view returns (uint validTimePeriod);
+    function getValidTimePeriod() external view returns (uint256 validTimePeriod);
 
     /// @notice Returns the price and confidence interval.
     /// @dev Reverts if the price has not been updated within the last `getValidTimePeriod()` seconds.
@@ -37,7 +37,7 @@ interface IPyth {
     /// applications that require a sufficiently-recent price. Reverts if the price wasn't updated sufficiently
     /// recently.
     /// @return price - please read the documentation of PythStructs.Price to understand how to use this safely.
-    function getPriceNoOlderThan(bytes32 id, uint age) external view returns (PythStructs.Price memory price);
+    function getPriceNoOlderThan(bytes32 id, uint256 age) external view returns (PythStructs.Price memory price);
 
     /// @notice Returns the exponentially-weighted moving average price of a price feed without any sanity checks.
     /// @dev This function returns the same price as `getEmaPrice` in the case where the price is available.
@@ -58,7 +58,7 @@ interface IPyth {
     /// applications that require a sufficiently-recent price. Reverts if the price wasn't updated sufficiently
     /// recently.
     /// @return price - please read the documentation of PythStructs.Price to understand how to use this safely.
-    function getEmaPriceNoOlderThan(bytes32 id, uint age) external view returns (PythStructs.Price memory price);
+    function getEmaPriceNoOlderThan(bytes32 id, uint256 age) external view returns (PythStructs.Price memory price);
 
     /// @notice Update price feeds with given update messages.
     /// This method requires the caller to pay a fee in wei; the required fee can be computed by calling
@@ -94,7 +94,7 @@ interface IPyth {
     /// @notice Returns the required fee to update an array of price updates.
     /// @param updateData Array of price update data.
     /// @return feeAmount The required fee in Wei.
-    function getUpdateFee(bytes[] calldata updateData) external view returns (uint feeAmount);
+    function getUpdateFee(bytes[] calldata updateData) external view returns (uint256 feeAmount);
 
     /// @notice Parse `updateData` and return price feeds of the given `priceIds` if they are all published
     /// within `minPublishTime` and `maxPublishTime`.
