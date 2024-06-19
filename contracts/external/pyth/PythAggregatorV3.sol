@@ -14,8 +14,8 @@ import { IPyth } from "../../interfaces/pyth/IPyth.sol";
  * Users should deploy an instance of this contract to wrap every price feed id that they need to use.
  */
 contract PythAggregatorV3 {
-    bytes32 public priceId;
-    IPyth public pyth;
+    bytes32 public immutable priceId;
+    IPyth public immutable pyth;
 
     constructor(address _pyth, bytes32 _priceId) {
         priceId = _priceId;
