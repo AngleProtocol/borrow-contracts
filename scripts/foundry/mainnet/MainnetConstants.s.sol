@@ -29,6 +29,9 @@ contract MainnetConstants is CommonUtils {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
     address constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
+    address constant EURA = 0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8;
+    address constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address constant EZETH = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
     address constant PTWeETH = 0xc69Ad9baB1dEE23F4605a82b3354F8E40d1E5966;
     address constant PTUSDe = 0xa0021EF8970104c2d008F38D92f115ad56a9B8e1;
@@ -50,6 +53,11 @@ contract MainnetConstants is CommonUtils {
     address constant CHAINLINK_ETH_USD_ORACLE = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address constant CHAINLINK_USDT_USD_ORACLE = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
     address constant CHAINLINK_USDC_USD_ORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+    address constant CHAINLINK_EUR_USD_ORACLE = 0xb49f677943BC038e9857d61E7d053CaA2C1734C1;
+    address constant CHAINLINK_WBTC_BTC_ORACLE = 0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23;
+    address constant CHAINLINK_BTC_USD_ORACLE = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
+    address constant CHAINLINK_WSTETH_WETH_ORACLE = 0x4F67e4d9BD67eFa28236013288737D39AeF48e79;
+    address constant CHAINLINK_WETH_USD_ORACLE = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
     address constant MORPHO_ORACLE_FACTORY = 0x3A7bB36Ee3f3eE32A60e9f2b33c1e5f2E83ad766;
     address constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;

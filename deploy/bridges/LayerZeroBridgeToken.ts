@@ -46,8 +46,8 @@ const func: DeployFunction = async ({ ethers, network, deployments }) => {
 
   /* The following things need to be done after this deployment:
   - setTrustedRemote on the LayerZeroBridgeToken -> for all the supported bridge tokens. Use LayerZeroSetSources for this
-  - addBridgeToken in the canonical agEUR -> limit should be higher than the limit which has already been minted in the contract
-  - setChainTotalHourlyLimit in the canonical agEUR
+  - addBridgeToken in the canonical stablecoin -> limit should be higher than the limit which has already been minted in the contract
+  - setChainTotalHourlyLimit in the canonical stablecoin
   - setUseCustomAdapterParams in the lz-agEUR contract
   */
 };
