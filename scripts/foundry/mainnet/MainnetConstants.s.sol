@@ -42,6 +42,8 @@ contract MainnetConstants is CommonUtils {
     address constant RE7USDT = 0x95EeF579155cd2C5510F312c8fA39208c3Be01a8;
     address constant STEUR = 0x004626A008B1aCdC4c74ab51644093b155e59A23;
     address constant EURE = 0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f;
+    address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address constant STUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
 
     address constant EZETH_ETH_ORACLE = 0xF4a3e183F59D2599ee3DF213ff78b1B3b1923696;
     address constant RSETH_ETH_ORACLE = 0xA736eAe8805dDeFFba40cAB8c99bCB309dEaBd9B;
