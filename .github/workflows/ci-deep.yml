@@ -90,11 +90,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
 
       - uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: 'yarn'
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: 'Restore the cached build'
         uses: 'actions/cache/restore@v3'
@@ -110,7 +117,6 @@ jobs:
             node_modules
 
       - run: export NODE_OPTIONS=--max_old_space_size=11264
-
       - name: Run unit tests
         run: yarn hardhat:test
         env:
