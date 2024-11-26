@@ -8,15 +8,14 @@ if (process.argv.length < 3) {
 const command = process.argv[2];
 const extraArgs = process.argv.slice(3).join(' ');
 
-
 exec(`node lib/utils/utils/${command}.js ${extraArgs}`, (error, stdout, stderr) => {
     if (error) {
         console.log(error);
-        return;
+        process.exit(1);
     }
     if (stderr) {
         console.log(stderr);
-        return;
+        process.exit(1);
     }
     console.log(stdout);
 });

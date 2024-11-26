@@ -56,7 +56,7 @@
   },
   "homepage": "https://github.com/AngleProtocol/angle-borrow#readme",
   "devDependencies": {
-    "@angleprotocol/sdk": "1.0.4",
+    "@angleprotocol/sdk": "^2.31.10",
     "@chainlink/contracts": "0.2.1",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
