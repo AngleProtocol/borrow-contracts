@@ -30,6 +30,6 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: echo "//npm.pkg.github.com/:_authToken=$GH_REGISTRY_ACCESS_TOKEN" >> .npmrc && yarn install --frozen-lockfile --verbose  && rm -f .npmrc
+      run: echo "//npm.pkg.github.com/:_authToken=$SDK_READ_ACCESS_TOKEN" >> .npmrc && yarn install --frozen-lockfile --verbose  && rm -f .npmrc
       env:
-        GH_REGISTRY_ACCESS_TOKEN: ${{ inputs.registry-token }}
+        SDK_READ_ACCESS_TOKEN: ${{ inputs.registry-token }}
